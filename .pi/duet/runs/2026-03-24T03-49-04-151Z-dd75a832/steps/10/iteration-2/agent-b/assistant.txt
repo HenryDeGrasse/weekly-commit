@@ -1,0 +1,28 @@
+Reviewed the Step 10 diff in:
+- `frontend/src/routes/Rcdos.tsx`
+- `frontend/src/api/{rcdoTypes.ts,rcdoApi.ts,rcdoHooks.ts}`
+- `frontend/src/components/rcdo/**`
+- `frontend/src/__tests__/{RcdoTreeView.test.tsx,RcdoNodeForm.test.tsx,RcdoPage.test.tsx}`
+
+I also ran:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+All pass.
+
+I found one material defect and fixed it:
+- The Outcome-only “Target Metric” field was presented in the form and described as being stored in the description, but it was actually discarded on submit.
+- I fixed `RcdoNodeForm` to merge the target metric into the submitted `description` payload and added a component test covering that behavior.
+
+Files changed:
+- `frontend/src/components/rcdo/RcdoNodeForm.tsx`
+- `frontend/src/__tests__/RcdoNodeForm.test.tsx`
+
+```observations
+- [low] frontend/src/routes/Rcdos.tsx: Permission logic is inferred from feature flags (`rcdoAdminEnabled`, `managerReviewEnabled`) rather than an explicit host role. It works for now, but a future host contract revision should expose role/permissions directly.
+- [low] frontend/src/components/rcdo/RcdoNodeForm.tsx: Owner team/user are still free-text inputs rather than selectors. Functional for now, but not ideal UX.
+```
+
+Verdict: changes_made

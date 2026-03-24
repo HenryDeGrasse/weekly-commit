@@ -1,0 +1,33 @@
+All 100 tests pass. Here's a summary of what was implemented:
+
+---
+
+## What was implemented
+
+### New API layer
+- **`src/api/rcdoTypes.ts`** — TypeScript types mirroring the backend DTOs: `RcdoTreeNode`, `RcdoNodeDetail`, `RcdoNodeWithPath`, `CreateRcdoNodePayload`, `UpdateRcdoNodePayload`
+- **`src/api/rcdoApi.ts`** — RCDO API functions wrapping all backend endpoints (getTree, getNode, listNodes, createNode, updateNode, activateNode, archiveNode, moveNode)
+- **`src/api/rcdoHooks.ts`** — React hooks (`useRcdoApi`, `useRcdoTree`, `useRcdoNode`) that build a typed API client from the host bridge
+
+### New components (`src/components/rcdo/`)
+- **`RcdoTreeView.tsx`** — Expandable tree with node type icons (🎯📋✅), status badges (Draft/Active/Archived with colour coding), expand/collapse per node, expand-all/collapse-all, status filter, case-insensitive title search (auto-expands on search), `aria-selected` and `role="treeitem"` accessibility
+- **`RcdoNodeForm.tsx`** — Dual-mode create/edit form with: required title validation, parent selector showing only non-archived valid parents (RC→DO, DO→Outcome), target metric field visible only for Outcomes, read-only status display in edit mode, API error display, `exactOptionalPropertyTypes`-safe payload construction
+- **`RcdoBreadcrumb.tsx`** — Accessible `<nav aria-label="RCDO path">` breadcrumb with clickable ancestor nodes and `aria-current="page"` on the selected node
+- **`ArchiveConfirmDialog.tsx`** — Modal dialog with impact explanation; disabled confirm button and explicit blocked message when node has active children
+- **`MoveNodeDialog.tsx`** — Re-parent dialog showing only valid non-archived parents of the correct type; blocks Rally Cries from being moved
+
+### Updated page
+- **`src/routes/Rcdos.tsx`** — Full two-panel layout: left (search + status filter radio group + tree), right (empty state / node detail + actions / create form / edit form). Permission hooks derive Admin/Manager/IC from `featureFlags.rcdoAdminEnabled` and `featureFlags.managerReviewEnabled`. Archive dialog opens with active-children detection. Move dialog available for non-Rally Cry nodes.
+
+### Tests (100 total)
+- **`__tests__/RcdoTreeView.test.tsx`** (24 tests) — hierarchy rendering, expand/collapse, expand-all/collapse-all, status filtering, search filtering, aria attributes
+- **`__tests__/RcdoNodeForm.test.tsx`** (22 tests) — required-field validation, parent selector per node type, target metric Outcome-only, edit mode pre-fill, API error handling
+- **`__tests__/RcdoPage.test.tsx`** (26 new tests) — loading/error states, selection, breadcrumb updates, archive dialog + active-children blocking, permission-based action hiding (IC/Manager/Admin)
+
+```observations
+- [low] frontend/src/components/rcdo/RcdoNodeForm.tsx: The "Owner Team" and "Owner User" fields accept free-text UUIDs. In a future step these should become proper selectors backed by a team/user API. For now they're text inputs with placeholder guidance.
+- [low] frontend/src/routes/Rcdos.tsx: The `rcdoAdminEnabled` feature flag is not declared in the `FeatureFlags` interface in shared/src/host.ts. It works via the `[key: string]: boolean` index signature, but a future step could add it explicitly to the interface for better discoverability.
+- [low] frontend/src/components/rcdo/RcdoNodeForm.tsx: The "Target Metric" field (Outcomes only) is UI-only — it isn't included in the API payload since the backend schema has no `targetMetric` column. Step description notes this is an Outcome field; a future step should add it to the domain model and persist it.
+```
+
+Verdict: changes_made
