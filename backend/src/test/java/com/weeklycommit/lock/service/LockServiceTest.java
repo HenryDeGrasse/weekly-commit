@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.weeklycommit.ai.service.RiskDetectionService;
+import com.weeklycommit.audit.service.AuditLogService;
 import com.weeklycommit.report.service.ReadModelRefreshService;
 import com.weeklycommit.domain.entity.LockSnapshotCommit;
 import com.weeklycommit.domain.entity.LockSnapshotHeader;
@@ -67,6 +68,9 @@ class LockServiceTest {
 
 	@Mock
 	private ReadModelRefreshService readModelRefreshService;
+
+	@Mock
+	private AuditLogService auditLogService;
 
 	@Spy
 	private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
@@ -139,6 +143,7 @@ class LockServiceTest {
 	@BeforeEach
 	void stubSave() {
 		lenient().when(planRepo.save(any(WeeklyPlan.class))).thenAnswer(inv -> inv.getArgument(0));
+		lenient().when(headerRepo.findByPlanId(any())).thenReturn(Optional.empty());
 		lenient().when(headerRepo.save(any(LockSnapshotHeader.class))).thenAnswer(inv -> {
 			LockSnapshotHeader h = inv.getArgument(0);
 			if (h.getId() == null)

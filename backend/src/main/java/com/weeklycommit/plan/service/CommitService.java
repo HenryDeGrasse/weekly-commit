@@ -1,5 +1,6 @@
 package com.weeklycommit.plan.service;
 
+import com.weeklycommit.audit.service.AuditLogService;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.entity.WorkItem;
@@ -15,6 +16,7 @@ import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
 import com.weeklycommit.rcdo.service.RcdoLinkageValidator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -34,13 +36,16 @@ public class CommitService {
 	private final WeeklyPlanRepository planRepo;
 	private final WorkItemRepository workItemRepo;
 	private final RcdoLinkageValidator rcdoLinkageValidator;
+	private final AuditLogService auditLogService;
 
 	public CommitService(WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo,
-			WorkItemRepository workItemRepo, RcdoLinkageValidator rcdoLinkageValidator) {
+			WorkItemRepository workItemRepo, RcdoLinkageValidator rcdoLinkageValidator,
+			AuditLogService auditLogService) {
 		this.commitRepo = commitRepo;
 		this.planRepo = planRepo;
 		this.workItemRepo = workItemRepo;
 		this.rcdoLinkageValidator = rcdoLinkageValidator;
+		this.auditLogService = auditLogService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -80,7 +85,10 @@ public class CommitService {
 		commit.setSuccessCriteria(req.successCriteria());
 		commit.setPriorityOrder(nextPriorityOrder(planId));
 
-		return commitRepo.save(commit);
+		WeeklyCommit saved = commitRepo.save(commit);
+		auditLogService.record(AuditLogService.COMMIT_CREATED, actorUserId, "IC", AuditLogService.TARGET_COMMIT,
+				saved.getId(), null, Map.of("planId", planId.toString(), "title", req.title()));
+		return saved;
 	}
 
 	// -------------------------------------------------------------------------
@@ -92,6 +100,7 @@ public class CommitService {
 		validateCommitBelongsToPlan(planId, commit);
 		WeeklyPlan plan = findPlan(commit.getPlanId());
 		validateDraftState(plan);
+		Map<String, Object> beforePayload = auditPayload(commit);
 
 		// Effective values after applying patch
 		ChessPiece effectivePiece = req.chessPiece() != null ? req.chessPiece() : commit.getChessPiece();
@@ -134,7 +143,10 @@ public class CommitService {
 			commit.setSuccessCriteria(req.successCriteria());
 		}
 
-		return commitRepo.save(commit);
+		WeeklyCommit saved = commitRepo.save(commit);
+		auditLogService.record(AuditLogService.COMMIT_UPDATED, actorUserId, "IC", AuditLogService.TARGET_COMMIT,
+				saved.getId(), beforePayload, auditPayload(saved));
+		return saved;
 	}
 
 	// -------------------------------------------------------------------------
@@ -147,6 +159,8 @@ public class CommitService {
 		WeeklyPlan plan = findPlan(commit.getPlanId());
 		validateDraftState(plan);
 
+		auditLogService.record(AuditLogService.COMMIT_DELETED, actorUserId, "IC", AuditLogService.TARGET_COMMIT,
+				commitId, Map.of("planId", planId.toString(), "title", commit.getTitle()), null);
 		commitRepo.delete(commit);
 
 		// Re-number remaining commits sequentially
@@ -252,5 +266,19 @@ public class CommitService {
 			return workItemRepo.findById(workItemId).map(WorkItem::getRcdoNodeId).orElse(null);
 		}
 		return null;
+	}
+
+	private Map<String, Object> auditPayload(WeeklyCommit commit) {
+		Map<String, Object> payload = new java.util.LinkedHashMap<>();
+		payload.put("planId", commit.getPlanId().toString());
+		payload.put("title", commit.getTitle());
+		payload.put("chessPiece", commit.getChessPiece() != null ? commit.getChessPiece().name() : null);
+		payload.put("priorityOrder", commit.getPriorityOrder());
+		payload.put("description", commit.getDescription());
+		payload.put("estimatePoints", commit.getEstimatePoints());
+		payload.put("successCriteria", commit.getSuccessCriteria());
+		payload.put("rcdoNodeId", commit.getRcdoNodeId() != null ? commit.getRcdoNodeId().toString() : null);
+		payload.put("workItemId", commit.getWorkItemId() != null ? commit.getWorkItemId().toString() : null);
+		return payload;
 	}
 }

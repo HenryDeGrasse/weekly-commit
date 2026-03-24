@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weeklycommit.audit.service.AuditLogService;
 import com.weeklycommit.config.dto.EffectiveCapacityResponse;
 import com.weeklycommit.config.service.ConfigurationService;
 import com.weeklycommit.domain.entity.UserAccount;
@@ -46,6 +47,9 @@ class WeeklyPlanServiceTest {
 
 	@Mock
 	private ConfigurationService configurationService;
+
+	@Mock
+	private AuditLogService auditLogService;
 
 	@InjectMocks
 	private WeeklyPlanService service;

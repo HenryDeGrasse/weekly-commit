@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 
+/** Append-only audit record. Never updated or deleted after creation. */
 @Entity
 @Table(name = "audit_log")
 public class AuditLog {
@@ -20,42 +21,48 @@ public class AuditLog {
 	@Column(nullable = false, updatable = false)
 	private UUID id;
 
-	@Column(name = "actor_user_id")
+	@Column(name = "actor_user_id", updatable = false)
 	private UUID actorUserId;
 
+	/** UserRole name of the acting user (IC / MANAGER / ADMIN / SYSTEM). */
+	@Column(name = "actor_role", updatable = false)
+	private String actorRole;
+
 	@NotBlank
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = false)
 	private String action;
 
 	@NotBlank
-	@Column(name = "entity_type", nullable = false)
+	@Column(name = "entity_type", nullable = false, updatable = false)
 	private String entityType;
 
-	@Column(name = "entity_id")
+	@Column(name = "entity_id", updatable = false)
 	private UUID entityId;
 
-	@Column(name = "old_value")
+	/** JSON snapshot of the entity state before the action. */
+	@Column(name = "old_value", updatable = false)
 	private String oldValue;
 
-	@Column(name = "new_value")
+	/** JSON snapshot of the entity state after the action. */
+	@Column(name = "new_value", updatable = false)
 	private String newValue;
 
-	@Column(name = "ip_address")
+	@Column(name = "ip_address", updatable = false)
 	private String ipAddress;
 
-	@Column(name = "user_agent")
+	@Column(name = "user_agent", updatable = false)
 	private String userAgent;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
+	// -------------------------------------------------------------------------
+	// Accessors
+	// -------------------------------------------------------------------------
+
 	public UUID getId() {
 		return id;
-	}
-
-	public void setId(UUID id) {
-		this.id = id;
 	}
 
 	public UUID getActorUserId() {
@@ -64,6 +71,14 @@ public class AuditLog {
 
 	public void setActorUserId(UUID actorUserId) {
 		this.actorUserId = actorUserId;
+	}
+
+	public String getActorRole() {
+		return actorRole;
+	}
+
+	public void setActorRole(String actorRole) {
+		this.actorRole = actorRole;
 	}
 
 	public String getAction() {

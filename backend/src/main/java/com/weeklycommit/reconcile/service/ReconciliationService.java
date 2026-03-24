@@ -3,6 +3,7 @@ package com.weeklycommit.reconcile.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weeklycommit.audit.service.AuditLogService;
 import com.weeklycommit.domain.entity.LockSnapshotCommit;
 import com.weeklycommit.domain.entity.LockSnapshotHeader;
 import com.weeklycommit.domain.entity.ReconcileSnapshotCommit;
@@ -83,13 +84,15 @@ public class ReconciliationService {
 	private final ObjectMapper objectMapper;
 	private final NotificationService notificationService;
 	private final ReadModelRefreshService readModelRefreshService;
+	private final AuditLogService auditLogService;
 
 	public ReconciliationService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			WorkItemRepository workItemRepo, ScopeChangeEventRepository eventRepo,
 			LockSnapshotHeaderRepository lockHeaderRepo, LockSnapshotCommitRepository lockCommitRepo,
 			ReconcileSnapshotHeaderRepository reconcileHeaderRepo,
 			ReconcileSnapshotCommitRepository reconcileCommitRepo, ObjectMapper objectMapper,
-			NotificationService notificationService, ReadModelRefreshService readModelRefreshService) {
+			NotificationService notificationService, ReadModelRefreshService readModelRefreshService,
+			AuditLogService auditLogService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.workItemRepo = workItemRepo;
@@ -101,6 +104,7 @@ public class ReconciliationService {
 		this.objectMapper = objectMapper;
 		this.notificationService = notificationService;
 		this.readModelRefreshService = readModelRefreshService;
+		this.auditLogService = auditLogService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -134,6 +138,9 @@ public class ReconciliationService {
 		planRepo.save(plan);
 
 		autoAchieveDoneTickets(plan.getId());
+
+		auditLogService.recordSystem(AuditLogService.RECONCILE_OPENED, AuditLogService.TARGET_PLAN, planId, null,
+				Map.of("state", "RECONCILING", "ownerUserId", plan.getOwnerUserId().toString()));
 
 		// Notify plan owner that reconciliation has been opened
 		try {
@@ -248,9 +255,14 @@ public class ReconciliationService {
 			throw new PlanValidationException("Outcome notes are required for outcome " + outcome);
 		}
 
+		String prevOutcome = commit.getOutcome() != null ? commit.getOutcome().name() : null;
 		commit.setOutcome(outcome);
 		commit.setOutcomeNotes(notes);
 		commitRepo.save(commit);
+
+		auditLogService.record(AuditLogService.COMMIT_OUTCOME_SET, plan.getOwnerUserId(), "IC",
+				AuditLogService.TARGET_COMMIT, commitId, prevOutcome != null ? Map.of("outcome", prevOutcome) : null,
+				Map.of("outcome", outcome.name(), "notes", notes != null ? notes : ""));
 
 		return CommitResponse.from(commit);
 	}
@@ -289,6 +301,12 @@ public class ReconciliationService {
 		boolean allAchieved = commits.stream()
 				.allMatch(c -> c.getOutcome() == CommitOutcome.ACHIEVED || c.getOutcome() == CommitOutcome.CANCELED);
 
+		// Immutability guard: reconcile snapshot is write-once per plan
+		if (reconcileHeaderRepo.findByPlanId(planId).isPresent()) {
+			throw new PlanValidationException(
+					"Reconcile snapshot already exists for plan " + planId + " — snapshots are immutable");
+		}
+
 		// Write immutable reconcile snapshot
 		ReconcileSnapshotHeader header = new ReconcileSnapshotHeader();
 		header.setPlanId(planId);
@@ -311,6 +329,9 @@ public class ReconciliationService {
 		planRepo.save(plan);
 
 		triggerReadModelRefresh(planId);
+
+		auditLogService.record(AuditLogService.RECONCILE_SUBMITTED, plan.getOwnerUserId(), "IC",
+				AuditLogService.TARGET_PLAN, planId, null, Map.of("state", "RECONCILED", "allAchieved", allAchieved));
 
 		return getReconciliationView(planId);
 	}

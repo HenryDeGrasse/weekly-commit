@@ -3,12 +3,14 @@ package com.weeklycommit.plan.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weeklycommit.audit.service.AuditLogService;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.ChessPiece;
@@ -47,6 +49,9 @@ class CommitServiceTest {
 
 	@Mock
 	private RcdoLinkageValidator rcdoLinkageValidator;
+
+	@Mock
+	private AuditLogService auditLogService;
 
 	@InjectMocks
 	private CommitService service;
@@ -270,7 +275,7 @@ class CommitServiceTest {
 	// -------------------------------------------------------------------------
 
 	@Test
-	void updateCommit_draftPlan_changesTitle() {
+	void updateCommit_draftPlan_changesTitle_and_auditsUpdate() {
 		WeeklyCommit c = commit(ChessPiece.ROOK);
 		when(commitRepo.findById(c.getId())).thenReturn(Optional.of(c));
 		when(planRepo.findById(planId)).thenReturn(Optional.of(draftPlan()));
@@ -278,6 +283,8 @@ class CommitServiceTest {
 		UpdateCommitRequest req = new UpdateCommitRequest("New Title", null, null, null, null, null, null);
 		WeeklyCommit result = service.updateCommit(planId, c.getId(), req, actorId);
 		assertThat(result.getTitle()).isEqualTo("New Title");
+		verify(auditLogService).record(eq(AuditLogService.COMMIT_UPDATED), eq(actorId), eq("IC"),
+				eq(AuditLogService.TARGET_COMMIT), eq(c.getId()), any(), any());
 	}
 
 	@Test

@@ -1,0 +1,66 @@
+
+> weekly-commit-monorepo@1.0.0 test
+> npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test
+
+
+> frontend@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend
+
+ ✓ src/__tests__/CapacityMeter.test.tsx (16 tests) 151ms
+ ✓ src/__tests__/PreLockValidation.test.tsx (9 tests) 113ms
+ ✓ src/__tests__/LockConfirmDialog.test.tsx (8 tests) 126ms
+ ✓ src/__tests__/CarryForwardLineageView.test.tsx (13 tests) 120ms
+ ✓ src/__tests__/FilterBar.test.tsx (22 tests) 311ms
+ ✓ src/__tests__/TeamHistoryView.test.tsx (13 tests) 371ms
+ ✓ src/__tests__/PlanHistoryView.test.tsx (16 tests) 328ms
+ ✓ src/__tests__/ScopeChangeDialog.test.tsx (12 tests) 384ms
+ ✓ src/__tests__/RcdoNodeForm.test.tsx (23 tests) 568ms
+ ✓ src/__tests__/RcdoTreeView.test.tsx (20 tests) 633ms
+ ✓ src/__tests__/CommitList.test.tsx (29 tests) 722ms
+ ✓ src/__tests__/ApiClient.test.ts (8 tests) 7ms
+ ✓ src/__tests__/ReconcilePage.test.tsx (25 tests) 826ms
+ ✓ src/__tests__/TicketsPage.test.tsx (30 tests) 820ms
+ ✓ src/__tests__/HostProvider.test.tsx (4 tests) 44ms
+ ✓ src/__tests__/RcdoPage.test.tsx (27 tests) 926ms
+ ✓ src/__tests__/QueryHooks.test.tsx (1 test) 23ms
+ ✓ src/__tests__/CommitForm.test.tsx (33 tests) 1167ms
+ ✓ src/__tests__/MyWeekPage.test.tsx (30 tests) 1001ms
+ ✓ src/__tests__/AppShell.test.tsx (9 tests) 243ms
+ ✓ src/App.test.tsx (1 test) 119ms
+ ✓ src/__tests__/Router.test.tsx (9 tests) 346ms
+ ✓ src/__tests__/TeamWeekPage.test.tsx (74 tests) 1547ms
+
+ Test Files  23 passed (23)
+      Tests  432 passed (432)
+   Start at  12:31:57
+   Duration  2.83s (transform 2.41s, setup 1.67s, collect 4.54s, tests 10.90s, environment 12.72s, prepare 1.56s)
+
+
+> @weekly-commit/shared@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/packages/shared
+
+ ✓ src/index.test.ts (5 tests) 3ms
+ ✓ src/validators.test.ts (15 tests) 3ms
+
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  12:32:00
+   Duration  188ms (transform 40ms, setup 0ms, collect 56ms, tests 6ms, environment 1ms, prepare 73ms)
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources UP-TO-DATE
+> Task :testClasses UP-TO-DATE
+> Task :test UP-TO-DATE
+
+BUILD SUCCESSFUL in 401ms
+5 actionable tasks: 5 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.1/userguide/configuration_cache_enabling.html

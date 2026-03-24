@@ -3,6 +3,7 @@ package com.weeklycommit.lock.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.service.RiskDetectionService;
+import com.weeklycommit.audit.service.AuditLogService;
 import com.weeklycommit.domain.entity.LockSnapshotCommit;
 import com.weeklycommit.domain.entity.LockSnapshotHeader;
 import com.weeklycommit.domain.entity.RcdoNode;
@@ -56,11 +57,13 @@ public class LockService {
 	private final NotificationService notificationService;
 	private final RiskDetectionService riskDetectionService;
 	private final ReadModelRefreshService readModelRefreshService;
+	private final AuditLogService auditLogService;
 
 	public LockService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			LockSnapshotHeaderRepository headerRepo, LockSnapshotCommitRepository commitSnapshotRepo,
 			RcdoNodeRepository rcdoNodeRepo, ObjectMapper objectMapper, NotificationService notificationService,
-			RiskDetectionService riskDetectionService, ReadModelRefreshService readModelRefreshService) {
+			RiskDetectionService riskDetectionService, ReadModelRefreshService readModelRefreshService,
+			AuditLogService auditLogService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.headerRepo = headerRepo;
@@ -70,6 +73,7 @@ public class LockService {
 		this.notificationService = notificationService;
 		this.riskDetectionService = riskDetectionService;
 		this.readModelRefreshService = readModelRefreshService;
+		this.auditLogService = auditLogService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -118,6 +122,9 @@ public class LockService {
 		triggerRiskDetection(plan.getId());
 		triggerReadModelRefresh(plan.getId());
 
+		auditLogService.record(AuditLogService.PLAN_LOCKED, actorUserId, "IC", AuditLogService.TARGET_PLAN, planId,
+				null, Map.of("state", "LOCKED", "onTime", onTime));
+
 		return LockResponse.success(buildPlanResponse(plan));
 	}
 
@@ -150,6 +157,10 @@ public class LockService {
 		captureSnapshot(plan, true, errors);
 		triggerRiskDetection(plan.getId());
 		triggerReadModelRefresh(plan.getId());
+
+		auditLogService.recordSystem(AuditLogService.PLAN_AUTO_LOCKED, AuditLogService.TARGET_PLAN, planId, null,
+				Map.of("state", "LOCKED", "systemLockedWithErrors", !errors.isEmpty(), "ownerUserId",
+						plan.getOwnerUserId().toString()));
 
 		// Notification hooks — fire-and-forget: failures must not roll back the lock
 		try {
@@ -262,7 +273,17 @@ public class LockService {
 		}
 	}
 
+	/**
+	 * Creates an immutable lock snapshot. Throws if a snapshot already exists for
+	 * this plan (write-once enforcement).
+	 */
 	private void captureSnapshot(WeeklyPlan plan, boolean bySystem, List<ValidationError> validationErrors) {
+		// Immutability guard: snapshot is write-once per plan
+		if (headerRepo.findByPlanId(plan.getId()).isPresent()) {
+			throw new PlanValidationException(
+					"Lock snapshot already exists for plan " + plan.getId() + " — snapshots are immutable");
+		}
+
 		List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());
 
 		String payload = buildSnapshotPayload(plan, commits, validationErrors);

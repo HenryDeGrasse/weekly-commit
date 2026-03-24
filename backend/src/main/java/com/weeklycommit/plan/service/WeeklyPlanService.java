@@ -1,5 +1,6 @@
 package com.weeklycommit.plan.service;
 
+import com.weeklycommit.audit.service.AuditLogService;
 import com.weeklycommit.config.service.ConfigurationService;
 import com.weeklycommit.domain.entity.UserAccount;
 import com.weeklycommit.domain.entity.WeeklyCommit;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,13 +32,16 @@ public class WeeklyPlanService {
 	private final UserAccountRepository userRepo;
 	private final WeeklyCommitRepository commitRepo;
 	private final ConfigurationService configurationService;
+	private final AuditLogService auditLogService;
 
 	public WeeklyPlanService(WeeklyPlanRepository planRepo, UserAccountRepository userRepo,
-			WeeklyCommitRepository commitRepo, ConfigurationService configurationService) {
+			WeeklyCommitRepository commitRepo, ConfigurationService configurationService,
+			AuditLogService auditLogService) {
 		this.planRepo = planRepo;
 		this.userRepo = userRepo;
 		this.commitRepo = commitRepo;
 		this.configurationService = configurationService;
+		this.auditLogService = auditLogService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -104,7 +109,13 @@ public class WeeklyPlanService {
 		plan.setLockDeadline(configurationService.computeLockDeadline(teamId, weekStartDate));
 		plan.setReconcileDeadline(configurationService.computeReconcileDeadline(teamId, weekStartDate));
 
-		return planRepo.save(plan);
+		WeeklyPlan saved = planRepo.save(plan);
+
+		auditLogService.record(AuditLogService.PLAN_CREATED, userId, "IC", AuditLogService.TARGET_PLAN, saved.getId(),
+				null, Map.of("ownerUserId", userId.toString(), "weekStartDate", weekStartDate.toString(), "teamId",
+						teamId.toString()));
+
+		return saved;
 	}
 
 	WeeklyPlan findById(UUID planId) {

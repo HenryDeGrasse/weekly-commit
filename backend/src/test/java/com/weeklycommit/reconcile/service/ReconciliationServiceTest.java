@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.weeklycommit.audit.service.AuditLogService;
 import com.weeklycommit.domain.entity.LockSnapshotHeader;
 import com.weeklycommit.domain.entity.ReconcileSnapshotCommit;
 import com.weeklycommit.domain.entity.ReconcileSnapshotHeader;
@@ -75,6 +76,9 @@ class ReconciliationServiceTest {
 
 	@Mock
 	private ReadModelRefreshService readModelRefreshService;
+
+	@Mock
+	private AuditLogService auditLogService;
 
 	@Spy
 	private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
@@ -144,6 +148,8 @@ class ReconciliationServiceTest {
 		lenient().when(eventRepo.findByPlanIdOrderByCreatedAtAsc(planId)).thenReturn(List.of());
 		lenient().when(lockHeaderRepo.findByPlanId(planId)).thenReturn(Optional.of(lockHeader()));
 		lenient().when(lockCommitRepo.findBySnapshotId(any())).thenReturn(List.of());
+		// Default: no existing reconcile snapshot (write-once guard returns empty)
+		lenient().when(reconcileHeaderRepo.findByPlanId(planId)).thenReturn(Optional.empty());
 	}
 
 	// =========================================================================
