@@ -1,0 +1,1549 @@
+stderr | src/__tests__/ReconcilePage.test.tsx > ReconcilePage — basic rendering > renders page with data-testid=page-reconcile
+Warning: An update to ReconcilePage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ReconcilePage (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Reconcile.tsx:985:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to ReconcilePage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ReconcilePage (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Reconcile.tsx:985:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/ReconcilePage.test.tsx > ReconcilePage — basic rendering > shows no-plan message when planId is missing
+Warning: An update to ReconcilePage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ReconcilePage (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Reconcile.tsx:985:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to ReconcilePage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ReconcilePage (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Reconcile.tsx:985:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/PlanHistoryView.test.tsx > PlanHistoryView — rendering > renders the history view with table
+Warning: Each child in a list should have a unique "key" prop.
+
+Check the render method of `PlanHistoryView`. See https://reactjs.org/link/warning-keys for more information.
+    at PlanHistoryView (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/myweek/PlanHistoryView.tsx:46:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — rendering > renders the page with data-testid=page-team-week
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — rendering > renders the team name from the response
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — rendering > renders the week selector
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — rendering > shows loading state while data is fetching
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — rendering > shows error message when team data fails to load
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — tab navigation > renders all tab buttons
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — tab navigation > shows overview panel by default
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — tab navigation > switches to By Person panel on tab click
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — tab navigation > switches to RCDO panel on tab click
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — tab navigation > switches to Chess Distribution panel on tab click
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — tab navigation > switches to Uncommitted Work panel on tab click
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — tab navigation > switches to Exceptions panel on tab click
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > TeamWeekPage — tab navigation > shows unresolved exception count badge on exceptions tab
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > OverviewSection — compliance cards > renders lock compliance card
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > OverviewSection — compliance cards > computes correct lock compliance (2/2 members locked)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > OverviewSection — compliance cards > computes partial lock compliance correctly
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > OverviewSection — compliance cards > renders reconcile compliance card
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > OverviewSection — compliance cards > computes correct planned points total
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > OverviewSection — compliance cards > computes achieved points from commits with ACHIEVED outcome
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > OverviewSection — compliance cards > renders exceptions overview card with severity breakdown
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > renders by-person section with table
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > renders a row for each direct report
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > shows member display names
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > shows plan state for each member
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > shows points committed/budget for each member
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > expands a member row on click to show commit list
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > shows commits in the expanded row
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > collapses the expanded row on second click
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByPersonSection — direct reports table > shows carry-forward streak badge for members with streak >= 1
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > renders the by-rcdo section with table
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > renders a row for each RCDO node in the tree
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > shows aggregated points for RCDO node with commits (rcdo-3: 12 pts)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > shows aggregated commit count for RCDO node (rcdo-3: 4)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > bubbles up points through the hierarchy (rcdo-2 inherits from rcdo-3: 12 pts)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > shows coverage gap for RCDO node with no commits (rcdo-4)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > does NOT show coverage gap for RCDO with commits
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > shows achieved points for RCDO branches based on achieved commit outcomes
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ByRcdoSection — RCDO rollup > renders planned-versus-achieved progress bars for RCDO branches
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ChessDistributionSection — chess distribution > renders chess distribution section
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+
+stderr | src/__tests__/TeamWeekPage.test.tsx > ChessDistributionSection — chess distribution > renders the distribution table with all chess pieces
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx:18:25)
+    at MockHostProvider (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx:78:3)
+    at Router (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6717:13)
+    at MemoryRouter (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6633:3)
+Warning: An update to TeamWeek inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at TeamWeek (/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx:55:57)
+    at RenderedRoute (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:5969:26)
+    at Routes (file:///Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/node_modules/react-router/dist/development/chunk-UVKPFVEO.mjs:6787:3)
+    at HostProvider (/Users/
+...[unit stderr truncated at 120000 chars to control duet artifact size]

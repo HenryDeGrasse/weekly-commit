@@ -3,11 +3,14 @@ package com.weeklycommit.plan.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weeklycommit.config.dto.EffectiveCapacityResponse;
+import com.weeklycommit.config.service.ConfigurationService;
 import com.weeklycommit.domain.entity.UserAccount;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.PlanState;
@@ -17,6 +20,7 @@ import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +44,9 @@ class WeeklyPlanServiceTest {
 	@Mock
 	private WeeklyCommitRepository commitRepo;
 
+	@Mock
+	private ConfigurationService configurationService;
+
 	@InjectMocks
 	private WeeklyPlanService service;
 
@@ -56,7 +63,7 @@ class WeeklyPlanServiceTest {
 	}
 
 	@BeforeEach
-	void stubSave() {
+	void stubCommonDependencies() {
 		lenient().when(planRepo.save(any(WeeklyPlan.class))).thenAnswer(inv -> {
 			WeeklyPlan p = inv.getArgument(0);
 			if (p.getId() == null) {
@@ -65,6 +72,14 @@ class WeeklyPlanServiceTest {
 			return p;
 		});
 		lenient().when(commitRepo.findByPlanIdOrderByPriorityOrder(any())).thenReturn(List.of());
+
+		// Default config stubs for plan creation
+		lenient().when(configurationService.getEffectiveCapacity(eq(userId), any(LocalDate.class)))
+				.thenReturn(new EffectiveCapacityResponse(userId, monday, 10, "SYSTEM_DEFAULT"));
+		lenient().when(configurationService.computeLockDeadline(eq(teamId), any(LocalDate.class)))
+				.thenReturn(Instant.parse("2025-06-02T12:00:00Z"));
+		lenient().when(configurationService.computeReconcileDeadline(eq(teamId), any(LocalDate.class)))
+				.thenReturn(Instant.parse("2025-06-06T17:00:00Z"));
 	}
 
 	// -------------------------------------------------------------------------
@@ -102,15 +117,31 @@ class WeeklyPlanServiceTest {
 	}
 
 	@Test
-	void getOrCreate_snapshotsCapacityFromUser() {
-		UserAccount user = userWithTeam();
-		user.setWeeklyCapacityPoints(8);
+	void getOrCreate_snapshotsCapacityFromEffectiveConfig() {
+		when(configurationService.getEffectiveCapacity(eq(userId), any(LocalDate.class)))
+				.thenReturn(new EffectiveCapacityResponse(userId, monday, 8, "TEAM_DEFAULT"));
 		when(planRepo.findByOwnerUserIdAndWeekStartDate(userId, monday)).thenReturn(Optional.empty());
-		when(userRepo.findById(userId)).thenReturn(Optional.of(user));
+		when(userRepo.findById(userId)).thenReturn(Optional.of(userWithTeam()));
 
 		WeeklyPlan result = service.getOrCreatePlan(userId, monday);
 
 		assertThat(result.getCapacityBudgetPoints()).isEqualTo(8);
+	}
+
+	@Test
+	void getOrCreate_usesCadenceDeadlinesFromEffectiveConfig() {
+		Instant lockDeadline = Instant.parse("2025-06-02T10:00:00Z");
+		Instant reconcileDeadline = Instant.parse("2025-06-09T09:00:00Z");
+		when(configurationService.computeLockDeadline(eq(teamId), eq(monday))).thenReturn(lockDeadline);
+		when(configurationService.computeReconcileDeadline(eq(teamId), eq(monday))).thenReturn(reconcileDeadline);
+
+		when(planRepo.findByOwnerUserIdAndWeekStartDate(userId, monday)).thenReturn(Optional.empty());
+		when(userRepo.findById(userId)).thenReturn(Optional.of(userWithTeam()));
+
+		WeeklyPlan result = service.getOrCreatePlan(userId, monday);
+
+		assertThat(result.getLockDeadline()).isEqualTo(lockDeadline);
+		assertThat(result.getReconcileDeadline()).isEqualTo(reconcileDeadline);
 	}
 
 	@Test

@@ -1,5 +1,6 @@
 package com.weeklycommit.plan.service;
 
+import com.weeklycommit.config.service.ConfigurationService;
 import com.weeklycommit.domain.entity.UserAccount;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
@@ -28,12 +29,14 @@ public class WeeklyPlanService {
 	private final WeeklyPlanRepository planRepo;
 	private final UserAccountRepository userRepo;
 	private final WeeklyCommitRepository commitRepo;
+	private final ConfigurationService configurationService;
 
 	public WeeklyPlanService(WeeklyPlanRepository planRepo, UserAccountRepository userRepo,
-			WeeklyCommitRepository commitRepo) {
+			WeeklyCommitRepository commitRepo, ConfigurationService configurationService) {
 		this.planRepo = planRepo;
 		this.userRepo = userRepo;
 		this.commitRepo = commitRepo;
+		this.configurationService = configurationService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -87,16 +90,19 @@ public class WeeklyPlanService {
 			throw new PlanValidationException("User " + userId + " has no home team; cannot create a weekly plan");
 		}
 
+		UUID teamId = user.getHomeTeamId();
+		int budgetPoints = configurationService.getEffectiveCapacity(userId, weekStartDate).budgetPoints();
+
 		WeeklyPlan plan = new WeeklyPlan();
 		plan.setOwnerUserId(userId);
-		plan.setTeamId(user.getHomeTeamId());
+		plan.setTeamId(teamId);
 		plan.setWeekStartDate(weekStartDate);
 		plan.setState(PlanState.DRAFT);
-		plan.setCapacityBudgetPoints(user.getWeeklyCapacityPoints());
+		plan.setCapacityBudgetPoints(budgetPoints);
 
-		// Default cadence: lock by Monday noon, reconcile due next Monday 10:00 UTC
-		plan.setLockDeadline(weekStartDate.atTime(12, 0).toInstant(ZoneOffset.UTC));
-		plan.setReconcileDeadline(weekStartDate.plusDays(7).atTime(10, 0).toInstant(ZoneOffset.UTC));
+		// Derive per-team cadence deadlines from effective configuration
+		plan.setLockDeadline(configurationService.computeLockDeadline(teamId, weekStartDate));
+		plan.setReconcileDeadline(configurationService.computeReconcileDeadline(teamId, weekStartDate));
 
 		return planRepo.save(plan);
 	}
