@@ -14,4 +14,8 @@ public interface AiSuggestionRepository extends JpaRepository<AiSuggestion, UUID
 	List<AiSuggestion> findByCommitId(UUID commitId);
 
 	List<AiSuggestion> findByPlanIdAndSuggestionType(UUID planId, String suggestionType);
+
+	List<AiSuggestion> findByUserId(UUID userId);
+
+	List<AiSuggestion> findByUserIdAndSuggestionType(UUID userId, String suggestionType);
 }

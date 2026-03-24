@@ -1,0 +1,58 @@
+The implementation is complete. Let me provide a comprehensive summary:
+
+---
+
+## Summary of Work Done
+
+### What was implemented:
+
+**Step 17: AI provider abstraction, commit assistance, and risk detection (backend only)**
+
+#### Flyway Migration
+- `V5__add_ai_suggestion_user_context.sql` — adds `user_id` (FK to user_account) and `context_hash` columns to `ai_suggestion` table, plus indexes.
+
+#### Domain updates
+- `AiSuggestion.java` — added `userId` and `contextHash` fields with getters/setters
+- `AiSuggestionRepository.java` — added `findByUserId` and `findByUserIdAndSuggestionType` methods
+
+#### AI Provider Abstraction (new `ai` package)
+- `AiContext` — input record with type constants (TYPE_COMMIT_DRAFT, TYPE_COMMIT_LINT, TYPE_RCDO_SUGGEST, TYPE_RISK_SIGNAL, TYPE_RECONCILE_ASSIST, TYPE_TEAM_SUMMARY)
+- `AiSuggestionResult` — output record with `available` flag for graceful degradation
+- `AiProvider` — strategy interface
+- `StubAiProvider` — development stub, always available, returns deterministic canned responses
+- `AiProviderRegistry` — manages providers, `ai.enabled` feature flag, graceful degradation (`generateSuggestion` never throws, returns unavailable result on error)
+
+#### Services
+- `AiSuggestionService` — stores suggestions (with SHA-256 context hash) and records feedback (ACCEPTED/DISMISSED/EDITED)
+- `CommitDraftAssistService` — capability 1: suggest improved title/description/criteria/estimate
+- `CommitLintService` — capability 2: rules-based lint with hard (blocks lock) and soft (informational) messages; checks: missing success criteria, duplicate titles, vague titles, parent-level RCDO, estimate inconsistency, over-fragmented plan
+- `RcdoSuggestService` — capability 3: suggest RCDO node, only surface above 0.7 confidence threshold, never auto-link
+- `RiskDetectionService` — capability 4: 5 risk signals (OVERCOMMIT, UNDERCOMMIT, REPEATED_CARRY_FORWARD, BLOCKED_CRITICAL >48h, SCOPE_VOLATILITY >3 changes); `@Scheduled` daily job at 07:00 UTC for all LOCKED plans
+- `ReconcileAssistService` — capability 5: likely outcomes, draft summary, carry-forward recommendations
+- `ManagerAiSummaryService` — capability 6: team summary citing RCDO branches, unresolved exceptions, carry-forward patterns, critical blocked items; access-denied for non-managers
+
+#### Controller
+- `AiController` — 7 endpoints: POST /api/ai/commit-draft-assist, POST /api/ai/commit-lint, POST /api/ai/rcdo-suggest, GET /api/plans/{id}/risk-signals, POST /api/ai/reconcile-assist, GET /api/teams/{id}/week/{weekStart}/ai-summary, POST /api/ai/feedback
+
+#### Unit Tests (7 test classes, all passing)
+- `AiProviderRegistryTest` — flag disabled, no providers, provider unavailable, provider throws, stub always available
+- `CommitDraftAssistServiceTest` — AI disabled, structured suggestions, unavailable result, storage
+- `CommitLintServiceTest` — hard validation (missing criteria, duplicates), soft guidance (vague title, parent RCDO, estimate inconsistency)
+- `RcdoSuggestServiceTest` — above/below threshold, node not found, provider unavailable
+- `RiskDetectionServiceTest` — all 5 signal types, daily job processes LOCKED plans, getRiskSignals
+- `ReconcileAssistServiceTest` — disabled, available, storage
+- `ManagerAiSummaryServiceTest` — IC access denied, manager allowed, disabled, cites exceptions, cites carry-forward patterns, provider unavailable
+
+#### Issues fixed during implementation:
+1. `AiProviderRegistry.isAiEnabled()` only checks `!providers.isEmpty()` (not `isAvailable()`) — corrected test stub
+2. `CommitLintService` skips `rcdoNodeRepo` call when `rcdoNodeId` is null — removed unnecessary stubs
+3. `RcdoSuggestService` used `Map.of()` with potential null description → NPE — switched to `HashMap`
+
+Verdict: changes_made
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/ai/service/CommitLintService.java: enrichSoftGuidanceFromAi() calls the AI provider purely for logging/learning purposes, and the result is discarded. Future steps could leverage AI provider output to augment soft guidance rather than just running rules-based checks.
+- [medium] backend/src/main/java/com/weeklycommit/ai/service/RiskDetectionService.java: detectAndStoreRiskSignals() deletes and re-inserts all RISK_SIGNAL entries on each run, which is idempotent but not efficient for high-frequency calls. A future step could add a timestamp guard to avoid re-running within the same day.
+- [medium] backend/src/main/java/com/weeklycommit/ai/provider/AiProviderRegistry.java: The `ai.enabled` feature flag is injected via @Value. It cannot be changed at runtime without restart. A future step could expose an admin endpoint to toggle AI at runtime.
+- [low] backend/src/main/java/com/weeklycommit/ai/service/ManagerAiSummaryService.java: Manager summary is protected by role check (MANAGER/ADMIN), but does not verify the caller is a member/manager of the specific team. An admin could fetch summaries for any team — this is intentional for ADMIN but could be tightened for MANAGER.
+```

@@ -2,6 +2,7 @@ package com.weeklycommit.lock.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weeklycommit.ai.service.RiskDetectionService;
 import com.weeklycommit.domain.entity.LockSnapshotCommit;
 import com.weeklycommit.domain.entity.LockSnapshotHeader;
 import com.weeklycommit.domain.entity.RcdoNode;
@@ -52,10 +53,12 @@ public class LockService {
 	private final RcdoNodeRepository rcdoNodeRepo;
 	private final ObjectMapper objectMapper;
 	private final NotificationService notificationService;
+	private final RiskDetectionService riskDetectionService;
 
 	public LockService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			LockSnapshotHeaderRepository headerRepo, LockSnapshotCommitRepository commitSnapshotRepo,
-			RcdoNodeRepository rcdoNodeRepo, ObjectMapper objectMapper, NotificationService notificationService) {
+			RcdoNodeRepository rcdoNodeRepo, ObjectMapper objectMapper, NotificationService notificationService,
+			RiskDetectionService riskDetectionService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.headerRepo = headerRepo;
@@ -63,6 +66,7 @@ public class LockService {
 		this.rcdoNodeRepo = rcdoNodeRepo;
 		this.objectMapper = objectMapper;
 		this.notificationService = notificationService;
+		this.riskDetectionService = riskDetectionService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -108,6 +112,7 @@ public class LockService {
 		planRepo.save(plan);
 
 		captureSnapshot(plan, false, List.of());
+		triggerRiskDetection(plan.getId());
 
 		return LockResponse.success(buildPlanResponse(plan));
 	}
@@ -139,6 +144,7 @@ public class LockService {
 		planRepo.save(plan);
 
 		captureSnapshot(plan, true, errors);
+		triggerRiskDetection(plan.getId());
 
 		// Notification hooks — fire-and-forget: failures must not roll back the lock
 		try {
@@ -234,6 +240,14 @@ public class LockService {
 	// -------------------------------------------------------------------------
 	// Snapshot creation (called within existing transaction)
 	// -------------------------------------------------------------------------
+
+	private void triggerRiskDetection(UUID planId) {
+		try {
+			riskDetectionService.detectAndStoreRiskSignalsById(planId);
+		} catch (Exception ex) {
+			log.warn("Failed to compute risk signals for plan {}: {}", planId, ex.getMessage());
+		}
+	}
 
 	private void captureSnapshot(WeeklyPlan plan, boolean bySystem, List<ValidationError> validationErrors) {
 		List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());

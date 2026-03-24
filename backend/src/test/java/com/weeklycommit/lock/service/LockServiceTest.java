@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.weeklycommit.ai.service.RiskDetectionService;
 import com.weeklycommit.domain.entity.LockSnapshotCommit;
 import com.weeklycommit.domain.entity.LockSnapshotHeader;
 import com.weeklycommit.domain.entity.RcdoNode;
@@ -59,6 +60,9 @@ class LockServiceTest {
 
 	@Mock
 	private RcdoNodeRepository rcdoNodeRepo;
+
+	@Mock
+	private RiskDetectionService riskDetectionService;
 
 	@Spy
 	private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
@@ -167,6 +171,17 @@ class LockServiceTest {
 		lockService.lockPlan(planId, userId);
 
 		assertThat(plan.isCompliant()).isTrue();
+	}
+
+	@Test
+	void lockPlan_success_triggersRiskDetection() {
+		WeeklyPlan plan = draftPlan(Instant.now().plusSeconds(3600));
+		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
+		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(validCommit(1)));
+
+		lockService.lockPlan(planId, userId);
+
+		verify(riskDetectionService).detectAndStoreRiskSignalsById(planId);
 	}
 
 	@Test
@@ -396,6 +411,17 @@ class LockServiceTest {
 		assertThat(plan.getState()).isEqualTo(PlanState.LOCKED);
 		assertThat(plan.isSystemLockedWithErrors()).isTrue();
 		verify(headerRepo, times(1)).save(any(LockSnapshotHeader.class));
+	}
+
+	@Test
+	void autoLockPlan_triggersRiskDetection() {
+		WeeklyPlan plan = draftPlan(Instant.now().minusSeconds(3600));
+		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
+		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(validCommit(1)));
+
+		lockService.autoLockPlan(planId);
+
+		verify(riskDetectionService).detectAndStoreRiskSignalsById(planId);
 	}
 
 	@Test

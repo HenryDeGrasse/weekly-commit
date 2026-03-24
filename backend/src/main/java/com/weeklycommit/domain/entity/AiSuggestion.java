@@ -20,11 +20,17 @@ public class AiSuggestion {
 	@Column(nullable = false, updatable = false)
 	private UUID id;
 
+	@Column(name = "user_id")
+	private UUID userId;
+
 	@Column(name = "plan_id")
 	private UUID planId;
 
 	@Column(name = "commit_id")
 	private UUID commitId;
+
+	@Column(name = "context_hash")
+	private String contextHash;
 
 	@NotBlank
 	@Column(name = "suggestion_type", nullable = false)
@@ -62,6 +68,14 @@ public class AiSuggestion {
 
 	public void setId(UUID id) {
 		this.id = id;
+	}
+
+	public UUID getUserId() {
+		return userId;
+	}
+
+	public void setUserId(UUID userId) {
+		this.userId = userId;
 	}
 
 	public UUID getPlanId() {
@@ -134,6 +148,14 @@ public class AiSuggestion {
 
 	public void setDismissed(Boolean dismissed) {
 		this.dismissed = dismissed;
+	}
+
+	public String getContextHash() {
+		return contextHash;
+	}
+
+	public void setContextHash(String contextHash) {
+		this.contextHash = contextHash;
 	}
 
 	public Instant getCreatedAt() {
