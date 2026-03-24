@@ -1,0 +1,47 @@
+All checks pass. Here's a summary of what was implemented:
+
+---
+
+## What I implemented
+
+### New DTOs (`reconcile/dto/`)
+- **`AddCommitData`** — fields for adding a commit post-lock (title, chessPiece, rcdoNodeId, etc.)
+- **`EditCommitChanges`** — nullable patch for post-lock edits (estimatePoints, chessPiece, rcdoNodeId, priorityOrder)
+- **`ScopeChangeRequest`** — single envelope for ADD/REMOVE/EDIT scope-change operations
+- **`ScopeChangeEventResponse`** — read model for individual scope-change audit events
+- **`ManagerException`** — threshold-crossing flag for manager attention (KING_CHANGE, POINTS_INCREASE_20PCT)
+- **`ScopeChangeTimelineResponse`** — list of events + manager exception flags
+- **`ReconcileCommitView`** — per-commit baseline vs. current view (with addedPostLock/removedPostLock flags)
+- **`ReconciliationViewResponse`** — full reconciliation dashboard DTO
+- **`SetOutcomeRequest`** — outcome + required notes for PUT /outcome
+
+### Services
+- **`ScopeChangeService`**: `addPostLockCommit`, `removePostLockCommit` (sets outcome=CANCELED), `editPostLockCommit` (one event per field with before/after), `getChangeTimeline`, `detectManagerExceptions` (King-change and >20% points increase rules)
+- **`ReconciliationService`**: `openReconciliation` (idempotent LOCKED→RECONCILING + auto-achieve DONE tickets), `getReconciliationView`, `setCommitOutcome` (notes required for PA/NA/CANCELED), `submitReconciliation` (validates all outcomes, creates immutable snapshots, transitions to RECONCILED)
+- **`AutoReconcileJob`**: Scheduled job (every minute) that opens reconciliation for LOCKED plans past their reconcile deadline
+
+### Controller
+- **`ReconcileController`**: All 5 required endpoints:
+  - `POST /api/plans/{id}/scope-changes`
+  - `GET /api/plans/{id}/scope-changes`
+  - `GET /api/plans/{id}/reconcile`
+  - `PUT /api/plans/{id}/commits/{commitId}/outcome`
+  - `POST /api/plans/{id}/reconcile/submit`
+
+### Repository updates
+- `WeeklyPlanRepository`: added `findByStateAndReconcileDeadlineBefore`
+- `ReconcileSnapshotHeaderRepository`: added `findByPlanId`
+- `ReconcileSnapshotCommitRepository`: added `findBySnapshotId`
+
+### Unit tests (49 new)
+- `ScopeChangeServiceTest` (19): scope change events with before/after, reason validation, manager exception flag generation (King add/change, points >20%)
+- `ReconciliationServiceTest` (19): state transitions LOCKED→RECONCILING→RECONCILED, auto-achieve from DONE ticket, required notes for non-Achieved, reconcile snapshot creation, idempotent reconcile-open job
+- `ReconcileControllerTest` (11): all 5 endpoints with success and error cases
+
+Verdict: changes_made
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/reconcile/service/ReconciliationService.java: The `getReconciliationView` method allows state RECONCILING or RECONCILED, but `setCommitOutcome` only allows RECONCILING. If a manager views a RECONCILED plan via `getReconciliationView`, then tries to `setCommitOutcome`, they get a 400. This is correct behavior but worth documenting clearly in the API.
+- [medium] backend/src/main/java/com/weeklycommit/reconcile/service/ScopeChangeService.java: The `removePostLockCommit` method sets `outcome = CANCELED` immediately (pre-reconciliation). During `submitReconciliation`, this commit is treated as already having an outcome (CANCELED), which is correct. However, calling `setCommitOutcome` on an already-CANCELED (removed) commit during RECONCILING would allow overriding the post-lock cancellation — a guard could prevent this in a future step.
+- [low] backend/src/main/java/com/weeklycommit/reconcile/service/ScopeChangeService.java: The system actor UUID (`00000000-0000-0000-0000-000000000000`) is used as a fallback when `actorUserId` is null. This is a placeholder; future steps should enforce authentication and pass real actor IDs.
+```

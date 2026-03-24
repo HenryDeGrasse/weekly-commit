@@ -1,0 +1,35 @@
+Reviewed the Step 6 diff in:
+- `backend/src/main/java/com/weeklycommit/reconcile/**`
+- `backend/src/main/java/com/weeklycommit/domain/repository/{WeeklyPlanRepository,ReconcileSnapshotHeaderRepository,ReconcileSnapshotCommitRepository}.java`
+- `backend/src/test/java/com/weeklycommit/reconcile/**`
+
+I also ran:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+All pass.
+
+I found two material defects and fixed them:
+
+1. Wrong-plan mutation bug on post-lock remove/edit  
+   - `POST /api/plans/{id}/scope-changes` ignored the route `planId` for REMOVE and EDIT.
+   - A commit from another plan could be changed through the wrong plan route.
+   - Fixed by passing `planId` into `ScopeChangeService.removePostLockCommit(...)` and `editPostLockCommit(...)`, and validating the commit belongs to that plan.
+
+2. Missing action-specific request validation for scope changes  
+   - `ADD` with missing `commitData`, `REMOVE` with missing `commitId`, or `EDIT` with missing `commitId`/`changes` could fall through to null-driven failures instead of returning a proper 400.
+   - Fixed by validating the request shape in `ReconcileController` and adding service guards for null `commitData` / `changes`.
+
+Files changed:
+- `backend/src/main/java/com/weeklycommit/reconcile/controller/ReconcileController.java`
+- `backend/src/main/java/com/weeklycommit/reconcile/service/ScopeChangeService.java`
+- `backend/src/test/java/com/weeklycommit/reconcile/controller/ReconcileControllerTest.java`
+- `backend/src/test/java/com/weeklycommit/reconcile/service/ScopeChangeServiceTest.java`
+
+```observations
+- [low] backend/src/test/java/com/weeklycommit/reconcile/controller/ReconcileControllerTest.java: Uses deprecated `@MockBean`, which currently only emits compile warnings.
+```
+
+Verdict: changes_made

@@ -24,5 +24,11 @@ public interface WeeklyPlanRepository extends JpaRepository<WeeklyPlan, UUID> {
 	/** Used by the auto-lock job to find expired DRAFT plans. */
 	List<WeeklyPlan> findByStateAndLockDeadlineBefore(PlanState state, Instant deadline);
 
+	/**
+	 * Used by the auto-reconcile job to find LOCKED plans past their reconcile-open
+	 * time.
+	 */
+	List<WeeklyPlan> findByStateAndReconcileDeadlineBefore(PlanState state, Instant deadline);
+
 	boolean existsByOwnerUserIdAndWeekStartDate(UUID ownerUserId, LocalDate weekStartDate);
 }

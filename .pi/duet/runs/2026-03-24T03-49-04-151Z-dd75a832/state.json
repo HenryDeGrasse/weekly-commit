@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-24T05:30:44.852Z",
+  "updatedAt": "2026-03-24T05:54:16.523Z",
   "runId": "2026-03-24T03-49-04-151Z-dd75a832",
   "handoffMode": "none",
   "postPlanMode": "review",
@@ -72,8 +72,8 @@
   "planSourcePath": "docs/prd.md",
   "round": 3,
   "activeSummary": {
-    "stepId": "step-5",
-    "stepTitle": "Lock lifecycle and baseline snapshot API",
+    "stepId": "step-6",
+    "stepTitle": "Post-lock scope change and reconciliation API",
     "gateResults": [
       {
         "id": "lint",
@@ -323,6 +323,6 @@
       }
     ]
   },
-  "stepIndex": 5,
+  "stepIndex": 6,
   "resumeAction": "run"
 }

@@ -1,0 +1,44 @@
+
+> weekly-commit-monorepo@1.0.0 test
+> npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test
+
+
+> frontend@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend
+
+ ✓ src/App.test.tsx (1 test) 1ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  00:54:14
+   Duration  138ms (transform 17ms, setup 0ms, collect 14ms, tests 1ms, environment 0ms, prepare 30ms)
+
+
+> @weekly-commit/shared@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/packages/shared
+
+ ✓ src/index.test.ts (5 tests) 1ms
+ ✓ src/validators.test.ts (15 tests) 2ms
+
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  00:54:14
+   Duration  151ms (transform 34ms, setup 0ms, collect 38ms, tests 3ms, environment 0ms, prepare 74ms)
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources UP-TO-DATE
+> Task :testClasses UP-TO-DATE
+> Task :test UP-TO-DATE
+
+BUILD SUCCESSFUL in 303ms
+5 actionable tasks: 5 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.1/userguide/configuration_cache_enabling.html
