@@ -12,6 +12,7 @@ import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.entity.WorkItem;
 import com.weeklycommit.domain.enums.CommitOutcome;
+import com.weeklycommit.domain.enums.NotificationEvent;
 import com.weeklycommit.domain.enums.PlanState;
 import com.weeklycommit.domain.enums.ScopeChangeCategory;
 import com.weeklycommit.domain.enums.TicketStatus;
@@ -23,6 +24,7 @@ import com.weeklycommit.domain.repository.ScopeChangeEventRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.domain.repository.WorkItemRepository;
+import com.weeklycommit.notification.service.NotificationService;
 import com.weeklycommit.plan.dto.CommitResponse;
 import com.weeklycommit.plan.dto.PlanResponse;
 import com.weeklycommit.plan.exception.PlanValidationException;
@@ -40,6 +42,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +65,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ReconciliationService {
 
+	private static final Logger log = LoggerFactory.getLogger(ReconciliationService.class);
+
 	/** Outcomes that require accompanying notes. */
 	private static final Set<CommitOutcome> NOTES_REQUIRED_OUTCOMES = Set.of(CommitOutcome.PARTIALLY_ACHIEVED,
 			CommitOutcome.NOT_ACHIEVED, CommitOutcome.CANCELED);
@@ -74,12 +80,14 @@ public class ReconciliationService {
 	private final ReconcileSnapshotHeaderRepository reconcileHeaderRepo;
 	private final ReconcileSnapshotCommitRepository reconcileCommitRepo;
 	private final ObjectMapper objectMapper;
+	private final NotificationService notificationService;
 
 	public ReconciliationService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			WorkItemRepository workItemRepo, ScopeChangeEventRepository eventRepo,
 			LockSnapshotHeaderRepository lockHeaderRepo, LockSnapshotCommitRepository lockCommitRepo,
 			ReconcileSnapshotHeaderRepository reconcileHeaderRepo,
-			ReconcileSnapshotCommitRepository reconcileCommitRepo, ObjectMapper objectMapper) {
+			ReconcileSnapshotCommitRepository reconcileCommitRepo, ObjectMapper objectMapper,
+			NotificationService notificationService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.workItemRepo = workItemRepo;
@@ -89,6 +97,7 @@ public class ReconciliationService {
 		this.reconcileHeaderRepo = reconcileHeaderRepo;
 		this.reconcileCommitRepo = reconcileCommitRepo;
 		this.objectMapper = objectMapper;
+		this.notificationService = notificationService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -122,6 +131,16 @@ public class ReconciliationService {
 		planRepo.save(plan);
 
 		autoAchieveDoneTickets(plan.getId());
+
+		// Notify plan owner that reconciliation has been opened
+		try {
+			notificationService.createNotification(plan.getOwnerUserId(), NotificationEvent.RECONCILIATION_OPENED,
+					"Reconciliation opened",
+					"Reconciliation has been opened for your weekly plan for " + plan.getWeekStartDate() + ".",
+					plan.getId(), "PLAN");
+		} catch (Exception ex) {
+			log.warn("Failed to send reconciliation-opened notification for plan {}: {}", planId, ex.getMessage());
+		}
 	}
 
 	// -------------------------------------------------------------------------

@@ -3,6 +3,7 @@ package com.weeklycommit.reconcile.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,6 +24,7 @@ import com.weeklycommit.domain.repository.LockSnapshotHeaderRepository;
 import com.weeklycommit.domain.repository.ScopeChangeEventRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
+import com.weeklycommit.notification.service.NotificationService;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.reconcile.dto.AddCommitData;
 import com.weeklycommit.reconcile.dto.EditCommitChanges;
@@ -56,6 +58,9 @@ class ScopeChangeServiceTest {
 
 	@Mock
 	private LockSnapshotHeaderRepository lockSnapshotRepo;
+
+	@Mock
+	private NotificationService notificationService;
 
 	@Spy
 	private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
@@ -145,6 +150,17 @@ class ScopeChangeServiceTest {
 		assertThat(event.getReason()).isEqualTo("Emergency scope");
 		assertThat(event.getNewValue()).isNotBlank();
 		assertThat(event.getPreviousValue()).isNull();
+	}
+
+	@Test
+	void addPostLockCommit_kingCommit_notifiesManager() {
+		AddCommitData data = new AddCommitData("New Commit", ChessPiece.KING, null, null, null, 2, null);
+		when(commitRepo.countByPlanId(planId)).thenReturn(1L);
+		when(notificationService.findManagerForTeam(any())).thenReturn(java.util.Optional.of(UUID.randomUUID()));
+
+		service.addPostLockCommit(planId, data, "Emergency scope", actorId);
+
+		verify(notificationService).createNotification(any(), any(), any(), any(), eq(planId), eq("PLAN"));
 	}
 
 	@Test

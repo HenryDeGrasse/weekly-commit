@@ -8,6 +8,7 @@ import com.weeklycommit.domain.entity.RcdoNode;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.ChessPiece;
+import com.weeklycommit.domain.enums.NotificationEvent;
 import com.weeklycommit.domain.enums.PlanState;
 import com.weeklycommit.domain.repository.LockSnapshotCommitRepository;
 import com.weeklycommit.domain.repository.LockSnapshotHeaderRepository;
@@ -17,6 +18,7 @@ import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.lock.dto.LockResponse;
 import com.weeklycommit.lock.dto.LockSnapshotHeaderResponse;
 import com.weeklycommit.lock.dto.ValidationError;
+import com.weeklycommit.notification.service.NotificationService;
 import com.weeklycommit.plan.dto.CommitResponse;
 import com.weeklycommit.plan.dto.PlanResponse;
 import com.weeklycommit.plan.dto.PlanWithCommitsResponse;
@@ -28,12 +30,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 public class LockService {
+
+	private static final Logger log = LoggerFactory.getLogger(LockService.class);
 
 	private static final int MAX_KING_PER_WEEK = 1;
 	private static final int MAX_QUEEN_PER_WEEK = 2;
@@ -45,16 +51,18 @@ public class LockService {
 	private final LockSnapshotCommitRepository commitSnapshotRepo;
 	private final RcdoNodeRepository rcdoNodeRepo;
 	private final ObjectMapper objectMapper;
+	private final NotificationService notificationService;
 
 	public LockService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			LockSnapshotHeaderRepository headerRepo, LockSnapshotCommitRepository commitSnapshotRepo,
-			RcdoNodeRepository rcdoNodeRepo, ObjectMapper objectMapper) {
+			RcdoNodeRepository rcdoNodeRepo, ObjectMapper objectMapper, NotificationService notificationService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.headerRepo = headerRepo;
 		this.commitSnapshotRepo = commitSnapshotRepo;
 		this.rcdoNodeRepo = rcdoNodeRepo;
 		this.objectMapper = objectMapper;
+		this.notificationService = notificationService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -111,6 +119,11 @@ public class LockService {
 	/**
 	 * Locks an expired DRAFT plan as a system action. If the plan has validation
 	 * errors the lock still proceeds but {@code system_locked_with_errors} is set.
+	 *
+	 * <p>
+	 * After locking, an {@code AUTO_LOCK_OCCURRED} notification is sent to the plan
+	 * owner and a {@code MANAGER_EXCEPTION_DIGEST} notification is sent to the
+	 * team's manager (if one exists).
 	 */
 	public void autoLockPlan(UUID planId) {
 		WeeklyPlan plan = planRepo.findById(planId).orElse(null);
@@ -126,6 +139,24 @@ public class LockService {
 		planRepo.save(plan);
 
 		captureSnapshot(plan, true, errors);
+
+		// Notification hooks — fire-and-forget: failures must not roll back the lock
+		try {
+			notificationService.createNotification(plan.getOwnerUserId(), NotificationEvent.AUTO_LOCK_OCCURRED,
+					"Plan auto-locked",
+					"Your weekly plan for " + plan.getWeekStartDate() + " was automatically locked by the system.",
+					plan.getId(), "PLAN");
+
+			notificationService.findManagerForTeam(plan.getTeamId())
+					.ifPresent(
+							managerId -> notificationService.createNotification(managerId,
+									NotificationEvent.MANAGER_EXCEPTION_DIGEST, "Auto-lock on team plan",
+									"A plan for week " + plan.getWeekStartDate() + " in your team was auto-locked"
+											+ (errors.isEmpty() ? "." : " with validation errors."),
+									plan.getId(), "PLAN"));
+		} catch (Exception ex) {
+			log.warn("Failed to send auto-lock notifications for plan {}: {}", planId, ex.getMessage());
+		}
 	}
 
 	// -------------------------------------------------------------------------

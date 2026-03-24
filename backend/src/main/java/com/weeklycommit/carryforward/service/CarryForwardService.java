@@ -11,6 +11,7 @@ import com.weeklycommit.domain.entity.UserAccount;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.CarryForwardReason;
+import com.weeklycommit.domain.enums.NotificationEvent;
 import com.weeklycommit.domain.enums.PlanState;
 import com.weeklycommit.domain.enums.ScopeChangeCategory;
 import com.weeklycommit.domain.repository.CarryForwardLinkRepository;
@@ -18,6 +19,7 @@ import com.weeklycommit.domain.repository.ScopeChangeEventRepository;
 import com.weeklycommit.domain.repository.UserAccountRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
+import com.weeklycommit.notification.service.NotificationService;
 import com.weeklycommit.plan.dto.CommitResponse;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.plan.service.WeeklyPlanService;
@@ -29,6 +31,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,20 +48,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class CarryForwardService {
 
+	private static final Logger log = LoggerFactory.getLogger(CarryForwardService.class);
+
+	/** Streak threshold at which a repeated-carry-forward reminder is sent. */
+	static final int CARRY_FORWARD_REMINDER_THRESHOLD = 2;
+
 	private final WeeklyCommitRepository commitRepo;
 	private final WeeklyPlanRepository planRepo;
 	private final UserAccountRepository userRepo;
 	private final CarryForwardLinkRepository linkRepo;
 	private final ScopeChangeEventRepository scopeChangeEventRepo;
+	private final NotificationService notificationService;
 
 	public CarryForwardService(WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo,
 			UserAccountRepository userRepo, CarryForwardLinkRepository linkRepo,
-			ScopeChangeEventRepository scopeChangeEventRepo) {
+			ScopeChangeEventRepository scopeChangeEventRepo, NotificationService notificationService) {
 		this.commitRepo = commitRepo;
 		this.planRepo = planRepo;
 		this.userRepo = userRepo;
 		this.linkRepo = linkRepo;
 		this.scopeChangeEventRepo = scopeChangeEventRepo;
+		this.notificationService = notificationService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -117,6 +128,19 @@ public class CarryForwardService {
 		link.setReason(reason);
 		link.setReasonNotes(reasonText);
 		CarryForwardLink savedLink = linkRepo.save(link);
+
+		// Send REPEATED_CARRY_FORWARD_REMINDER if streak reaches the threshold
+		if (saved.getCarryForwardStreak() >= CARRY_FORWARD_REMINDER_THRESHOLD) {
+			try {
+				notificationService.createNotification(ownerUserId, NotificationEvent.REPEATED_CARRY_FORWARD_REMINDER,
+						"Repeated carry-forward detected",
+						"\"" + saved.getTitle() + "\" has been carried forward for " + saved.getCarryForwardStreak()
+								+ " consecutive week(s). Consider re-scoping or " + "blocking it as a dependency.",
+						saved.getId(), "COMMIT");
+			} catch (Exception ex) {
+				log.warn("Failed to send carry-forward reminder for commit {}: {}", saved.getId(), ex.getMessage());
+			}
+		}
 
 		return new CarryForwardResponse(CommitResponse.from(saved), CarryForwardLinkResponse.from(savedLink),
 				postLockAdded);

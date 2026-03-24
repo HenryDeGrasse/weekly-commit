@@ -4,12 +4,15 @@ import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.entity.WorkItem;
 import com.weeklycommit.domain.entity.WorkItemStatusHistory;
+import com.weeklycommit.domain.enums.ChessPiece;
+import com.weeklycommit.domain.enums.NotificationEvent;
 import com.weeklycommit.domain.enums.TicketPriority;
 import com.weeklycommit.domain.enums.TicketStatus;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.domain.repository.WorkItemRepository;
 import com.weeklycommit.domain.repository.WorkItemStatusHistoryRepository;
+import com.weeklycommit.notification.service.NotificationService;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
 import com.weeklycommit.ticket.dto.CreateTicketFromCommitRequest;
@@ -27,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,6 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class TicketService {
+
+	private static final Logger log = LoggerFactory.getLogger(TicketService.class);
 
 	/** Valid Fibonacci-scale estimate values (mirrors CommitService). */
 	private static final Set<Integer> VALID_ESTIMATE_POINTS = Set.of(1, 2, 3, 5, 8);
@@ -60,13 +67,15 @@ public class TicketService {
 	private final WorkItemStatusHistoryRepository historyRepo;
 	private final WeeklyCommitRepository commitRepo;
 	private final WeeklyPlanRepository planRepo;
+	private final NotificationService notificationService;
 
 	public TicketService(WorkItemRepository workItemRepo, WorkItemStatusHistoryRepository historyRepo,
-			WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo) {
+			WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo, NotificationService notificationService) {
 		this.workItemRepo = workItemRepo;
 		this.historyRepo = historyRepo;
 		this.commitRepo = commitRepo;
 		this.planRepo = planRepo;
+		this.notificationService = notificationService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -210,7 +219,35 @@ public class TicketService {
 		WorkItem item = requireTicket(id);
 		transitionStatus(item, newStatus, changedByUserId);
 		workItemRepo.save(item);
+
+		// Notify commit owner(s) when a ticket linked to a King or Queen commit is
+		// blocked
+		if (newStatus == TicketStatus.BLOCKED) {
+			try {
+				notifyCriticalTicketBlocked(item);
+			} catch (Exception ex) {
+				log.warn("Failed to send CRITICAL_TICKET_BLOCKED notification for ticket {}: {}", id, ex.getMessage());
+			}
+		}
+
 		return getTicketDetail(item.getId());
+	}
+
+	/**
+	 * Sends a CRITICAL_TICKET_BLOCKED notification to the owner of any King or
+	 * Queen commit linked to this ticket.
+	 */
+	private void notifyCriticalTicketBlocked(WorkItem ticket) {
+		List<WeeklyCommit> linkedCommits = commitRepo.findByWorkItemId(ticket.getId());
+		for (WeeklyCommit commit : linkedCommits) {
+			if (commit.getChessPiece() == ChessPiece.KING || commit.getChessPiece() == ChessPiece.QUEEN) {
+				notificationService.createNotification(commit.getOwnerUserId(),
+						NotificationEvent.CRITICAL_TICKET_BLOCKED, "Blocked ticket linked to " + commit.getChessPiece(),
+						"Ticket \"" + ticket.getTitle() + "\" is now BLOCKED and is linked to your "
+								+ commit.getChessPiece() + " commit \"" + commit.getTitle() + "\".",
+						ticket.getId(), "TICKET");
+			}
+		}
 	}
 
 	// -------------------------------------------------------------------------

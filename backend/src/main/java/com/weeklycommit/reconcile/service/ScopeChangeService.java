@@ -9,12 +9,14 @@ import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.ChessPiece;
 import com.weeklycommit.domain.enums.CommitOutcome;
+import com.weeklycommit.domain.enums.NotificationEvent;
 import com.weeklycommit.domain.enums.PlanState;
 import com.weeklycommit.domain.enums.ScopeChangeCategory;
 import com.weeklycommit.domain.repository.LockSnapshotHeaderRepository;
 import com.weeklycommit.domain.repository.ScopeChangeEventRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
+import com.weeklycommit.notification.service.NotificationService;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
 import com.weeklycommit.reconcile.dto.AddCommitData;
@@ -25,6 +27,8 @@ import com.weeklycommit.reconcile.dto.ScopeChangeTimelineResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class ScopeChangeService {
+
+	private static final Logger log = LoggerFactory.getLogger(ScopeChangeService.class);
 
 	/** King-related change threshold that triggers a manager exception. */
 	private static final ChessPiece KING = ChessPiece.KING;
@@ -50,15 +56,17 @@ public class ScopeChangeService {
 	private final ScopeChangeEventRepository eventRepo;
 	private final LockSnapshotHeaderRepository lockSnapshotRepo;
 	private final ObjectMapper objectMapper;
+	private final NotificationService notificationService;
 
 	public ScopeChangeService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			ScopeChangeEventRepository eventRepo, LockSnapshotHeaderRepository lockSnapshotRepo,
-			ObjectMapper objectMapper) {
+			ObjectMapper objectMapper, NotificationService notificationService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.eventRepo = eventRepo;
 		this.lockSnapshotRepo = lockSnapshotRepo;
 		this.objectMapper = objectMapper;
+		this.notificationService = notificationService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -96,6 +104,11 @@ public class ScopeChangeService {
 		event.setPreviousValue(null);
 		event.setNewValue(toJson(commitToMap(saved)));
 		eventRepo.save(event);
+
+		if (saved.getChessPiece() == KING) {
+			notifyManagerOfKingScopeChange(plan,
+					"A King-level commit was added post-lock on plan for week " + plan.getWeekStartDate() + ".");
+		}
 
 		return getChangeTimeline(planId);
 	}
@@ -156,10 +169,16 @@ public class ScopeChangeService {
 			commit.setEstimatePoints(changes.estimatePoints());
 		}
 
+		boolean kingChangeDetected = false;
 		if (changes.chessPiece() != null && changes.chessPiece() != commit.getChessPiece()) {
-			recordFieldChange(commit, ScopeChangeCategory.CHESS_PIECE_CHANGED, actorUserId, reason,
-					str(commit.getChessPiece()), str(changes.chessPiece()));
+			ChessPiece previousPiece = commit.getChessPiece();
+			recordFieldChange(commit, ScopeChangeCategory.CHESS_PIECE_CHANGED, actorUserId, reason, str(previousPiece),
+					str(changes.chessPiece()));
 			commit.setChessPiece(changes.chessPiece());
+			// King involved in the change?
+			if (KING == previousPiece || KING == changes.chessPiece()) {
+				kingChangeDetected = true;
+			}
 		}
 
 		if (changes.rcdoNodeId() != null && !changes.rcdoNodeId().equals(commit.getRcdoNodeId())) {
@@ -175,6 +194,15 @@ public class ScopeChangeService {
 		}
 
 		commitRepo.save(commit);
+
+		// Notify team manager when King is involved in a post-lock scope change
+		if (kingChangeDetected) {
+			WeeklyPlan plan = planRepo.findById(planId).orElse(null);
+			if (plan != null) {
+				notifyManagerOfKingScopeChange(plan,
+						"A King-level commit was modified post-lock on plan for week " + plan.getWeekStartDate() + ".");
+			}
+		}
 
 		return getChangeTimeline(commit.getPlanId());
 	}
@@ -253,6 +281,17 @@ public class ScopeChangeService {
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	private void notifyManagerOfKingScopeChange(WeeklyPlan plan, String body) {
+		try {
+			notificationService.findManagerForTeam(plan.getTeamId())
+					.ifPresent(managerId -> notificationService.createNotification(managerId,
+							NotificationEvent.MANAGER_EXCEPTION_DIGEST, "King-level commit changed post-lock", body,
+							plan.getId(), "PLAN"));
+		} catch (Exception ex) {
+			log.warn("Failed to send King-change manager notification for plan {}: {}", plan.getId(), ex.getMessage());
+		}
+	}
 
 	private WeeklyPlan requireLockedPlan(UUID planId) {
 		WeeklyPlan plan = planRepo.findById(planId)
