@@ -3,6 +3,7 @@ package com.weeklycommit.rcdo.controller;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.RcdoValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
+import com.weeklycommit.team.exception.AccessDeniedException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,6 +29,11 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(ResourceNotFoundException.class)
 	public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody(ex.getMessage()));
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorBody(ex.getMessage()));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

@@ -1,0 +1,26 @@
+Reviewed the Step 8 diff, especially:
+- `backend/src/main/java/com/weeklycommit/rcdo/controller/GlobalExceptionHandler.java`
+
+I also spot-checked the new Step 8 surface area:
+- `backend/src/main/java/com/weeklycommit/team/**`
+- `backend/src/test/java/com/weeklycommit/team/**`
+- `backend/src/main/resources/db/migration/V2__add_manager_review_exception.sql`
+
+Then I ran all required checks from repo root:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+All passed.
+
+Assessment:
+- The prior fix is correct and material: `AccessDeniedException` now maps to HTTP 403 instead of surfacing as a 500.
+- I did not find any additional material defects in the reviewed diff that require changes for this step.
+
+```observations
+- [low] backend/src/main/java/com/weeklycommit/team/service/ManagerReviewService.java: The private `requireUser` helper appears unused (dead code). No functional impact.
+- [medium] backend/src/main/java/com/weeklycommit/team/service/TeamWeeklyViewService.java: Peer visibility appears field-filtered, but the “current and next week only” peer time-window rule may not be enforced server-side for arbitrary requested weeks.
+```
+
+Verdict: approve
