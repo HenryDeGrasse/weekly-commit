@@ -1,7 +1,9 @@
 /**
  * Shared domain types for the Weekly Commit Module.
- * This package is consumed by both the frontend micro-frontend
- * and any TypeScript tooling in the monorepo.
+ * Consumed by the frontend micro-frontend and monorepo tooling.
  */
 
-export const PACKAGE_VERSION = "1.0.0" as const;
+export * from "./enums.js";
+export * from "./constants.js";
+export type * from "./types.js";
+export * from "./validators.js";
