@@ -1,0 +1,43 @@
+All four required checks (lint, typecheck, unit, build) pass. Let me provide a summary of everything implemented.
+
+## Summary
+
+### What I implemented
+
+**New API types** (`frontend/src/api/teamTypes.ts`):
+- TypeScript interfaces mirroring all backend DTOs: `TeamWeekViewResponse`, `MemberWeekView`, `MemberComplianceSummary`, `RcdoRollupEntry`, `ChessDistributionEntry`, `UncommittedTicketSummary`, `ExceptionResponse`, `CommentResponse`, plus request payload types.
+
+**New Team API** (`frontend/src/api/teamApi.ts`):
+- `getTeamWeekView()` → `GET /api/teams/{id}/week/{weekStart}`
+- `getExceptionQueue()` → `GET /api/teams/{id}/week/{weekStart}/exceptions`
+- `resolveException()` → `PUT /api/exceptions/{id}/resolve`
+- `addComment()` → `POST /api/comments`
+- `quickAssignTicket()` → `PUT /api/tickets/{id}`
+
+**New Team hooks** (`frontend/src/api/teamHooks.ts`):
+- `useTeamApi()`, `useTeamWeekView()`, `useExceptionQueue()`
+
+**New section components** in `frontend/src/components/teamweek/`:
+- `OverviewSection.tsx` — compliance cards (lock/reconcile), points summary (planned/achieved/delta), open exceptions with severity breakdown
+- `ByPersonSection.tsx` — sortable table with expandable rows, chess piece summary icons, risk flags, carry-forward streak badges, click-through to plan detail
+- `ByRcdoSection.tsx` — tree table showing Rally Cry → DO → Outcome hierarchy, aggregated points/commits bubbling up, coverage gap highlighting for nodes with zero commits
+- `ChessDistributionSection.tsx` — stacked bar + table with King/Queen "critical work" highlighting and percentage breakdown
+- `UncommittedWorkSection.tsx` — two sub-lists (assigned/unlinked vs unassigned) with quick-assign input for unassigned tickets, no double-counting guarantee
+- `ExceptionQueueSection.tsx` — filterable exception list sorted by severity (HIGH→MEDIUM→LOW), resolve dialog with required note, comment dialog for plan-level comments
+
+**Updated route** (`frontend/src/routes/TeamWeek.tsx`):
+- Full replacement of the stub — team/week selector, 6-tab layout (Overview, By Person, By RCDO, Chess, Uncommitted, Exceptions), exception count badge on tab, all sections wired to live data
+
+**Test file** (`frontend/src/__tests__/TeamWeekPage.test.tsx`):
+- 72 tests covering all specified requirements: compliance aggregates, by-person rendering, RCDO rollup grouping, chess distribution accuracy, uncommitted work without double-counting, exception severity sorting, resolve/comment actions
+
+**Minor fix** (`frontend/src/__tests__/Router.test.tsx`):
+- Updated the "Team Week with teamId" assertion from the removed stub text to the new `team-week-selector` testId
+
+```observations
+- [medium] frontend/src/components/teamweek/ByRcdoSection.tsx: The ByRcdoSection only shows `totalPoints` (planned) per RCDO node since the backend's `RcdoRollupEntry` doesn't include achieved points. A future enhancement could add achieved point rollup to the backend DTO.
+- [low] frontend/src/routes/TeamWeek.tsx: The team selector for managers with multiple teams (per PRD §10 "Team selector for managers with multiple teams") is not implemented — the current implementation uses the route param or host bridge's currentTeam. A future step could add a dropdown to switch between manageable teams.
+- [low] frontend/src/components/teamweek/ByPersonSection.tsx: The "major post-lock changes indicator" column described in the step spec is not shown because the team week view doesn't provide scope-change count per member. Could be added in a future step when the backend includes that data.
+```
+
+Verdict: changes_made

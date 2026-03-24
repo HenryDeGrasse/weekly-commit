@@ -38,7 +38,8 @@ describe("Router", () => {
   it("renders Team Week page with teamId at /team/:teamId", async () => {
     renderAtPath("/team/team-xyz");
     expect(await screen.findByTestId("page-team-week")).toBeInTheDocument();
-    expect(await screen.findByText("Team ID: team-xyz")).toBeInTheDocument();
+    // Page shows week selector with navigation controls
+    expect(await screen.findByTestId("team-week-selector")).toBeInTheDocument();
   });
 
   it("renders Tickets page at /tickets", async () => {

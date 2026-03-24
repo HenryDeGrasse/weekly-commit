@@ -1,0 +1,15 @@
+.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/cost.json
+.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/observations.jsonl
+.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/sessions/continuous/relay-a/2026-03-24T04-23-35-130Z_4c4202d2-9023-459a-b908-dfaede19919d.jsonl
+.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/sessions/continuous/relay-b/2026-03-24T04-35-30-972Z_471484d6-96e0-4a6b-86fc-b9b081fa294f.jsonl
+.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/state.json
+frontend/src/__tests__/Router.test.tsx
+frontend/src/api/hooks.ts
+frontend/src/routes/TeamWeek.tsx
+.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/13
+frontend/src/__tests__/QueryHooks.test.tsx
+frontend/src/__tests__/TeamWeekPage.test.tsx
+frontend/src/api/teamApi.ts
+frontend/src/api/teamHooks.ts
+frontend/src/api/teamTypes.ts
+frontend/src/components/teamweek
