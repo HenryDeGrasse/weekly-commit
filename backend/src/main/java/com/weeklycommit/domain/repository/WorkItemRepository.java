@@ -19,4 +19,8 @@ public interface WorkItemRepository extends JpaRepository<WorkItem, UUID> {
 	List<WorkItem> findByTeamIdAndTargetWeekStartDate(UUID teamId, LocalDate targetWeekStartDate);
 
 	List<WorkItem> findByTeamIdAndStatus(UUID teamId, TicketStatus status);
+
+	List<WorkItem> findByTeamId(UUID teamId);
+
+	long countByTeamId(UUID teamId);
 }

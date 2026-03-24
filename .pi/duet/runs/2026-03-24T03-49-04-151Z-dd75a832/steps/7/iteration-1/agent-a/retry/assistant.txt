@@ -1,0 +1,49 @@
+Here is a complete summary of what was implemented in this step:
+
+---
+
+## What was implemented
+
+### CarryForwardService (`carryforward/service/`)
+- **`carryForward(sourceCommitId, targetWeekStart, reason, reasonText, actorUserId)`**: Copies title, description, chess piece, RCDO, estimate and success criteria into a new commit in the target week's plan. Sets `carryForwardSourceId` and increments `carryForwardStreak` (source + 1). New commit placed at bottom priority order. Lazily creates the target plan if missing. If target plan is LOCKED, records a `COMMIT_ADDED` scope-change event (prefixed `CARRY_FORWARD:reason`).
+- **`getCarryForwardLineage(commitId)`**: Traverses ancestors (upward via `carryForwardSourceId`) and descendants (downward via `CarryForwardLinkRepository`) and returns the full chain ordered oldest-first.
+
+### TicketService (`ticket/service/TicketService`)
+- Full CRUD: create (with auto-generated `T-N` key), read, update (partial), delete.
+- **Status workflow**: enforced via a static transition map — BACKLOG → READY/IN_PROGRESS/CANCELED, READY → IN_PROGRESS/BACKLOG/CANCELED, IN_PROGRESS → DONE/BLOCKED/READY/CANCELED, BLOCKED → IN_PROGRESS/CANCELED, DONE/CANCELED are terminals.
+- Every status change appends a `WorkItemStatusHistory` entry (with `fromStatus`, `toStatus`, `changedByUserId`).
+- Idempotent: same-status transition returns immediately without recording history.
+
+### LinkTicketService (`ticket/service/LinkTicketService`)
+- Links a work item to a commit on a DRAFT plan.
+- **Duplicate prevention**: checks for other active (non-CANCELED) commits by the same owner linked to the same ticket in the same week.
+- **RCDO defaulting**: if commit has no RCDO and ticket has one, the commit inherits it. If both differ, returns a warning message without blocking.
+
+### REST Endpoints
+- `POST /api/plans/{planId}/commits/{commitId}/carry-forward` — carry forward a commit
+- `GET /api/commits/{commitId}/lineage` — carry-forward lineage
+- `GET /api/tickets?teamId=…` — list tickets by team
+- `POST /api/tickets` — create ticket
+- `GET /api/tickets/{id}` — get ticket
+- `PUT /api/tickets/{id}` — update ticket
+- `DELETE /api/tickets/{id}` — delete ticket
+- `PUT /api/tickets/{id}/status` — transition status
+- `GET /api/tickets/{id}/history` — status history
+- `PUT /api/plans/{planId}/commits/{commitId}/link-ticket` — link ticket to commit
+
+### Updated Repositories
+- `WorkItemStatusHistoryRepository`: added `findByWorkItemIdOrderByCreatedAtAsc`
+- `WorkItemRepository`: added `findByTeamId`, `countByTeamId`
+- `WeeklyCommitRepository`: added `findActiveCommitsForTicketByOwnerExcluding` JPQL query
+
+### Unit Tests (36 total)
+- `CarryForwardServiceTest` (11 tests): provenance creation, streak incrementing, lazy plan creation, carry-forward into locked plan, lineage traversal (2-generation chain), error cases
+- `TicketServiceTest` (16 tests): create with auto-key, invalid estimates, all valid and invalid status transitions, history recording, idempotent same-status, delete
+- `LinkTicketServiceTest` (9 tests): happy path, RCDO defaulting (3 cases: no RCDO, same RCDO, mismatch warning), duplicate-link prevention, state guard (locked plan), error cases
+
+Verdict: changes_made
+
+```observations
+- [low] backend/src/main/java/com/weeklycommit/ticket/service/TicketService.java: The auto-key generator (T-N) uses `countByTeamId` which races under concurrent creates — two concurrent creates for the same team could generate duplicate keys. The DB unique constraint on `(team_id, key)` will catch this at the DB level and surface as a DataIntegrityViolationException, but the caller receives a 500 rather than a meaningful 409. A retry or DB sequence could solve this in a future step.
+- [low] backend/src/main/java/com/weeklycommit/carryforward/service/CarryForwardService.java: The `recordCarryForwardScopeChangeEvent` method hand-crafts a minimal JSON payload rather than using ObjectMapper, which is slightly fragile (e.g., special chars in commit title). Using ObjectMapper (already used in ScopeChangeService) would be more robust. Not a bug since the title is user-supplied text unlikely to contain raw JSON metacharacters in practice.
+```
