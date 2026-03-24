@@ -8,16 +8,30 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weeklycommit.domain.entity.WeeklyCommit;
+import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.entity.WorkItem;
 import com.weeklycommit.domain.entity.WorkItemStatusHistory;
+import com.weeklycommit.domain.enums.ChessPiece;
+import com.weeklycommit.domain.enums.CommitOutcome;
+import com.weeklycommit.domain.enums.PlanState;
+import com.weeklycommit.domain.enums.TicketPriority;
 import com.weeklycommit.domain.enums.TicketStatus;
+import com.weeklycommit.domain.repository.WeeklyCommitRepository;
+import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.domain.repository.WorkItemRepository;
 import com.weeklycommit.domain.repository.WorkItemStatusHistoryRepository;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
+import com.weeklycommit.ticket.dto.CreateTicketFromCommitRequest;
 import com.weeklycommit.ticket.dto.CreateTicketRequest;
-import com.weeklycommit.ticket.dto.TicketResponse;
+import com.weeklycommit.ticket.dto.PagedTicketResponse;
+import com.weeklycommit.ticket.dto.TicketDetailResponse;
+import com.weeklycommit.ticket.dto.TicketListParams;
 import com.weeklycommit.ticket.dto.TicketStatusHistoryResponse;
+import com.weeklycommit.ticket.dto.UpdateTicketRequest;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +42,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class TicketServiceTest {
@@ -38,6 +56,12 @@ class TicketServiceTest {
 	@Mock
 	private WorkItemStatusHistoryRepository historyRepo;
 
+	@Mock
+	private WeeklyCommitRepository commitRepo;
+
+	@Mock
+	private WeeklyPlanRepository planRepo;
+
 	@InjectMocks
 	private TicketService service;
 
@@ -45,19 +69,22 @@ class TicketServiceTest {
 	private final UUID teamId = UUID.randomUUID();
 	private final UUID reporterId = UUID.randomUUID();
 	private final UUID actorId = UUID.randomUUID();
+	private final UUID commitId = UUID.randomUUID();
+	private final UUID planId = UUID.randomUUID();
+	private WorkItem persistedTicket;
 
-	// -------------------------------------------------------------------------
-	// Test helpers
-	// -------------------------------------------------------------------------
-
-	private WorkItem ticket(TicketStatus status) {
+	private WorkItem ticket(TicketStatus status, TicketPriority priority) {
 		WorkItem w = new WorkItem();
 		w.setId(ticketId);
 		w.setTeamId(teamId);
 		w.setKey("T-1");
 		w.setTitle("Sample ticket");
+		w.setDescription("Details");
 		w.setStatus(status);
+		w.setPriority(priority);
 		w.setReporterUserId(reporterId);
+		w.setEstimatePoints(3);
+		w.setTargetWeekStartDate(LocalDate.of(2026, 3, 23));
 		return w;
 	}
 
@@ -71,13 +98,39 @@ class TicketServiceTest {
 		return h;
 	}
 
+	private WeeklyCommit linkedCommit() {
+		WeeklyCommit c = new WeeklyCommit();
+		c.setId(commitId);
+		c.setPlanId(planId);
+		c.setOwnerUserId(reporterId);
+		c.setTitle("Linked commit");
+		c.setChessPiece(ChessPiece.ROOK);
+		c.setEstimatePoints(5);
+		c.setOutcome(CommitOutcome.ACHIEVED);
+		return c;
+	}
+
+	private WeeklyPlan plan() {
+		WeeklyPlan plan = new WeeklyPlan();
+		plan.setId(planId);
+		plan.setOwnerUserId(reporterId);
+		plan.setTeamId(teamId);
+		plan.setWeekStartDate(LocalDate.of(2026, 3, 23));
+		plan.setState(PlanState.DRAFT);
+		plan.setLockDeadline(Instant.now());
+		plan.setReconcileDeadline(Instant.now());
+		return plan;
+	}
+
 	@BeforeEach
-	void stubSave() {
+	void stubSaves() {
+		persistedTicket = ticket(TicketStatus.TODO, TicketPriority.MEDIUM);
 		lenient().when(workItemRepo.save(any(WorkItem.class))).thenAnswer(inv -> {
 			WorkItem w = inv.getArgument(0);
 			if (w.getId() == null) {
-				w.setId(UUID.randomUUID());
+				w.setId(ticketId);
 			}
+			persistedTicket = w;
 			return w;
 		});
 		lenient().when(historyRepo.save(any(WorkItemStatusHistory.class))).thenAnswer(inv -> {
@@ -87,186 +140,177 @@ class TicketServiceTest {
 			}
 			return h;
 		});
+		lenient().when(workItemRepo.findById(ticketId)).thenAnswer(inv -> Optional.ofNullable(persistedTicket));
+		lenient().when(historyRepo.findByWorkItemIdOrderByCreatedAtAsc(ticketId)).thenReturn(List.of());
+		lenient().when(commitRepo.findByWorkItemId(ticketId)).thenReturn(List.of());
 	}
 
-	// =========================================================================
-	// createTicket
-	// =========================================================================
-
 	@Test
-	void createTicket_setsBacklogStatusAndGeneratesKey() {
+	void createTicket_defaultsToTodoAndPersistsPriority() {
 		when(workItemRepo.countByTeamId(teamId)).thenReturn(0L);
+		CreateTicketRequest req = new CreateTicketRequest(teamId, "New task", null, null, TicketPriority.HIGH, null,
+				reporterId, 3, null, null);
 
-		CreateTicketRequest req = new CreateTicketRequest(teamId, "New task", null, null, reporterId, 3, null, null);
-		TicketResponse resp = service.createTicket(req);
+		TicketDetailResponse resp = service.createTicket(req);
 
-		assertThat(resp.status()).isEqualTo(TicketStatus.BACKLOG);
+		assertThat(resp.status()).isEqualTo(TicketStatus.TODO);
+		assertThat(resp.priority()).isEqualTo(TicketPriority.HIGH);
 
 		ArgumentCaptor<WorkItem> captor = ArgumentCaptor.forClass(WorkItem.class);
 		verify(workItemRepo).save(captor.capture());
-		WorkItem saved = captor.getValue();
-		assertThat(saved.getKey()).isEqualTo("T-1"); // count=0 → T-1
-		assertThat(saved.getEstimatePoints()).isEqualTo(3);
+		assertThat(captor.getValue().getKey()).isEqualTo("T-1");
+		assertThat(captor.getValue().getPriority()).isEqualTo(TicketPriority.HIGH);
 	}
 
 	@Test
 	void createTicket_invalidEstimatePoints_throwsValidation() {
-		CreateTicketRequest req = new CreateTicketRequest(teamId, "Bad estimate", null, null, reporterId, 7, null,
-				null);
+		CreateTicketRequest req = new CreateTicketRequest(teamId, "Bad estimate", null, null, TicketPriority.MEDIUM,
+				null, reporterId, 7, null, null);
 
 		assertThatThrownBy(() -> service.createTicket(req)).isInstanceOf(PlanValidationException.class)
 				.hasMessageContaining("Estimate points");
 	}
 
-	// =========================================================================
-	// updateStatus — valid transitions
-	// =========================================================================
-
 	@Test
-	void updateStatus_backlogToReady_succeeds() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.BACKLOG)));
+	void updateTicket_updatesPriorityAndStatusTransition() {
+		WorkItem existing = ticket(TicketStatus.TODO, TicketPriority.MEDIUM);
+		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(existing));
+		UpdateTicketRequest req = new UpdateTicketRequest("Updated", "Desc", TicketStatus.IN_PROGRESS,
+				TicketPriority.CRITICAL, null, null, null, null, null);
 
-		TicketResponse resp = service.updateStatus(ticketId, TicketStatus.READY, actorId);
-
-		assertThat(resp.status()).isEqualTo(TicketStatus.READY);
-	}
-
-	@Test
-	void updateStatus_readyToInProgress_succeeds() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.READY)));
-
-		TicketResponse resp = service.updateStatus(ticketId, TicketStatus.IN_PROGRESS, actorId);
+		TicketDetailResponse resp = service.updateTicket(ticketId, req, actorId);
 
 		assertThat(resp.status()).isEqualTo(TicketStatus.IN_PROGRESS);
+		assertThat(resp.priority()).isEqualTo(TicketPriority.CRITICAL);
+		verify(historyRepo).save(any(WorkItemStatusHistory.class));
 	}
 
 	@Test
-	void updateStatus_inProgressToBlocked_succeeds() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.IN_PROGRESS)));
+	void updateStatus_validTransition_recordsHistory() {
+		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.TODO, TicketPriority.MEDIUM)));
 
-		TicketResponse resp = service.updateStatus(ticketId, TicketStatus.BLOCKED, actorId);
-
-		assertThat(resp.status()).isEqualTo(TicketStatus.BLOCKED);
-	}
-
-	@Test
-	void updateStatus_inProgressToDone_succeeds() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.IN_PROGRESS)));
-
-		TicketResponse resp = service.updateStatus(ticketId, TicketStatus.DONE, actorId);
-
-		assertThat(resp.status()).isEqualTo(TicketStatus.DONE);
-	}
-
-	@Test
-	void updateStatus_blockedToInProgress_succeeds() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.BLOCKED)));
-
-		TicketResponse resp = service.updateStatus(ticketId, TicketStatus.IN_PROGRESS, actorId);
+		TicketDetailResponse resp = service.updateStatus(ticketId, TicketStatus.IN_PROGRESS, actorId);
 
 		assertThat(resp.status()).isEqualTo(TicketStatus.IN_PROGRESS);
-	}
-
-	// =========================================================================
-	// updateStatus — invalid transitions
-	// =========================================================================
-
-	@Test
-	void updateStatus_doneToAnyStatus_throwsValidation() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.DONE)));
-
-		assertThatThrownBy(() -> service.updateStatus(ticketId, TicketStatus.BACKLOG, actorId))
-				.isInstanceOf(PlanValidationException.class).hasMessageContaining("Illegal ticket status transition")
-				.hasMessageContaining("DONE");
+		ArgumentCaptor<WorkItemStatusHistory> captor = ArgumentCaptor.forClass(WorkItemStatusHistory.class);
+		verify(historyRepo).save(captor.capture());
+		assertThat(captor.getValue().getFromStatus()).isEqualTo("TODO");
+		assertThat(captor.getValue().getToStatus()).isEqualTo("IN_PROGRESS");
 	}
 
 	@Test
-	void updateStatus_canceledToAnyStatus_throwsValidation() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.CANCELED)));
+	void updateStatus_invalidTransition_throwsValidation() {
+		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.DONE, TicketPriority.MEDIUM)));
 
-		assertThatThrownBy(() -> service.updateStatus(ticketId, TicketStatus.BACKLOG, actorId))
-				.isInstanceOf(PlanValidationException.class).hasMessageContaining("Illegal ticket status transition")
-				.hasMessageContaining("CANCELED");
-	}
-
-	@Test
-	void updateStatus_backlogToBlocked_throwsValidation() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.BACKLOG)));
-
-		assertThatThrownBy(() -> service.updateStatus(ticketId, TicketStatus.BLOCKED, actorId))
+		assertThatThrownBy(() -> service.updateStatus(ticketId, TicketStatus.TODO, actorId))
 				.isInstanceOf(PlanValidationException.class).hasMessageContaining("Illegal ticket status transition");
 	}
 
 	@Test
-	void updateStatus_sameStatus_returnsIdempotently() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.IN_PROGRESS)));
+	void updateStatus_sameStatus_isIdempotent() {
+		when(workItemRepo.findById(ticketId))
+				.thenReturn(Optional.of(ticket(TicketStatus.IN_PROGRESS, TicketPriority.MEDIUM)));
 
-		TicketResponse resp = service.updateStatus(ticketId, TicketStatus.IN_PROGRESS, actorId);
+		TicketDetailResponse resp = service.updateStatus(ticketId, TicketStatus.IN_PROGRESS, actorId);
 
 		assertThat(resp.status()).isEqualTo(TicketStatus.IN_PROGRESS);
-		// No history entry should be saved for a no-op transition
 		verify(historyRepo, times(0)).save(any());
 	}
 
-	// =========================================================================
-	// updateStatus — status history recording
-	// =========================================================================
-
 	@Test
-	void updateStatus_recordsHistoryWithFromAndToStatus() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.BACKLOG)));
+	void getTicketDetail_populatesStatusHistoryAndLinkedCommits() {
+		WorkItem existing = ticket(TicketStatus.IN_PROGRESS, TicketPriority.HIGH);
+		WeeklyCommit commit = linkedCommit();
+		WeeklyPlan plan = plan();
+		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(existing));
+		when(historyRepo.findByWorkItemIdOrderByCreatedAtAsc(ticketId))
+				.thenReturn(List.of(historyEntry("TODO", "IN_PROGRESS")));
+		when(commitRepo.findByWorkItemId(ticketId)).thenReturn(List.of(commit));
+		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
 
-		service.updateStatus(ticketId, TicketStatus.READY, actorId);
+		TicketDetailResponse detail = service.getTicketDetail(ticketId);
 
-		ArgumentCaptor<WorkItemStatusHistory> captor = ArgumentCaptor.forClass(WorkItemStatusHistory.class);
-		verify(historyRepo).save(captor.capture());
-		WorkItemStatusHistory h = captor.getValue();
-		assertThat(h.getFromStatus()).isEqualTo("BACKLOG");
-		assertThat(h.getToStatus()).isEqualTo("READY");
-		assertThat(h.getChangedByUserId()).isEqualTo(actorId);
-		assertThat(h.getWorkItemId()).isEqualTo(ticketId);
+		assertThat(detail.statusHistory()).hasSize(1);
+		assertThat(detail.statusHistory().get(0).ticketId()).isEqualTo(ticketId);
+		assertThat(detail.linkedCommits()).hasSize(1);
+		assertThat(detail.linkedCommits().get(0).commitId()).isEqualTo(commitId);
+		assertThat(detail.linkedCommits().get(0).weekStartDate()).isEqualTo(plan.getWeekStartDate());
 	}
 
 	@Test
-	void getStatusHistory_returnsOrderedEntries() {
-		WorkItemStatusHistory h1 = historyEntry("BACKLOG", "READY");
-		WorkItemStatusHistory h2 = historyEntry("READY", "IN_PROGRESS");
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(ticket(TicketStatus.IN_PROGRESS)));
-		when(historyRepo.findByWorkItemIdOrderByCreatedAtAsc(ticketId)).thenReturn(List.of(h1, h2));
+	void getStatusHistory_mapsLegacyStatusesToTodo() {
+		when(historyRepo.findByWorkItemIdOrderByCreatedAtAsc(ticketId))
+				.thenReturn(List.of(historyEntry("BACKLOG", "READY")));
 
 		List<TicketStatusHistoryResponse> history = service.getStatusHistory(ticketId);
 
-		assertThat(history).hasSize(2);
-		assertThat(history.get(0).fromStatus()).isEqualTo("BACKLOG");
-		assertThat(history.get(0).toStatus()).isEqualTo("READY");
-		assertThat(history.get(1).toStatus()).isEqualTo("IN_PROGRESS");
+		assertThat(history).hasSize(1);
+		assertThat(history.get(0).fromStatus()).isEqualTo(TicketStatus.TODO);
+		assertThat(history.get(0).toStatus()).isEqualTo(TicketStatus.TODO);
 	}
 
 	@Test
-	void getStatusHistory_ticketNotFound_throwsNotFound() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.empty());
+	void listTickets_returnsPagedResponseWithRequestedPage() {
+		WorkItem first = ticket(TicketStatus.TODO, TicketPriority.MEDIUM);
+		WorkItem second = ticket(TicketStatus.IN_PROGRESS, TicketPriority.HIGH);
+		when(workItemRepo.findAll(any(Specification.class), any(Pageable.class)))
+				.thenReturn(new PageImpl<>(List.of(first, second), PageRequest.of(1, 2), 5));
 
-		assertThatThrownBy(() -> service.getStatusHistory(ticketId)).isInstanceOf(ResourceNotFoundException.class);
+		PagedTicketResponse page = service.listTickets(new TicketListParams(TicketStatus.TODO, null, teamId, null, null,
+				TicketPriority.MEDIUM, 2, 2, "priority", "asc"));
+
+		assertThat(page.total()).isEqualTo(5);
+		assertThat(page.page()).isEqualTo(2);
+		assertThat(page.pageSize()).isEqualTo(2);
+		assertThat(page.items()).hasSize(2);
 	}
 
-	// =========================================================================
-	// deleteTicket
-	// =========================================================================
+	@Test
+	void listTicketSummaries_filtersByOptionalTeam() {
+		when(workItemRepo.findAll(any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+				.thenReturn(List.of(ticket(TicketStatus.TODO, TicketPriority.LOW)));
+
+		assertThat(service.listTicketSummaries(teamId)).hasSize(1);
+	}
+
+	@Test
+	void createTicketFromCommit_copiesFieldsAndAppliesOverrides() {
+		WeeklyCommit commit = linkedCommit();
+		commit.setDescription("Copied description");
+		commit.setRcdoNodeId(UUID.randomUUID());
+		WeeklyPlan plan = plan();
+		when(commitRepo.findById(commitId)).thenReturn(Optional.of(commit));
+		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
+		when(workItemRepo.countByTeamId(teamId)).thenReturn(0L);
+
+		CreateTicketFromCommitRequest req = new CreateTicketFromCommitRequest(commitId, planId, null, null,
+				TicketStatus.BLOCKED, TicketPriority.CRITICAL, UUID.randomUUID(), null, null, null, null, null);
+
+		TicketDetailResponse created = service.createTicketFromCommit(req);
+
+		assertThat(created.title()).isEqualTo("Linked commit");
+		assertThat(created.status()).isEqualTo(TicketStatus.BLOCKED);
+		assertThat(created.priority()).isEqualTo(TicketPriority.CRITICAL);
+		assertThat(created.teamId()).isEqualTo(teamId);
+	}
+
+	@Test
+	void createTicketFromCommit_missingCommit_throwsNotFound() {
+		when(planRepo.findById(planId)).thenReturn(Optional.of(plan()));
+		when(commitRepo.findById(commitId)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> service.createTicketFromCommit(new CreateTicketFromCommitRequest(commitId, planId,
+				null, null, null, null, null, null, null, null, null, null)))
+				.isInstanceOf(ResourceNotFoundException.class).hasMessageContaining("Commit not found");
+	}
 
 	@Test
 	void deleteTicket_callsRepositoryDelete() {
-		WorkItem t = ticket(TicketStatus.BACKLOG);
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(t));
+		WorkItem existing = ticket(TicketStatus.TODO, TicketPriority.MEDIUM);
+		when(workItemRepo.findById(ticketId)).thenReturn(Optional.of(existing));
 
 		service.deleteTicket(ticketId);
 
-		verify(workItemRepo).delete(t);
-	}
-
-	@Test
-	void deleteTicket_notFound_throwsNotFound() {
-		when(workItemRepo.findById(ticketId)).thenReturn(Optional.empty());
-
-		assertThatThrownBy(() -> service.deleteTicket(ticketId)).isInstanceOf(ResourceNotFoundException.class);
+		verify(workItemRepo).delete(existing);
 	}
 }

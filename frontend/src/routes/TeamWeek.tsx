@@ -20,6 +20,8 @@ import { ByRcdoSection } from "../components/teamweek/ByRcdoSection.js";
 import { ChessDistributionSection } from "../components/teamweek/ChessDistributionSection.js";
 import { UncommittedWorkSection } from "../components/teamweek/UncommittedWorkSection.js";
 import { ExceptionQueueSection } from "../components/teamweek/ExceptionQueueSection.js";
+import { TeamHistoryView } from "../components/teamweek/TeamHistoryView.js";
+import { useTeamHistory } from "../api/ticketHooks.js";
 import type { ResolveExceptionPayload, AddCommentPayload } from "../api/teamTypes.js";
 
 // ── Week date helpers ─────────────────────────────────────────────────────────
@@ -50,7 +52,8 @@ type TabId =
   | "by-rcdo"
   | "chess"
   | "uncommitted"
-  | "exceptions";
+  | "exceptions"
+  | "history";
 
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: "overview", label: "Overview" },
@@ -59,6 +62,7 @@ const TABS: Array<{ id: TabId; label: string }> = [
   { id: "chess", label: "Chess" },
   { id: "uncommitted", label: "Uncommitted" },
   { id: "exceptions", label: "Exceptions" },
+  { id: "history", label: "History" },
 ];
 
 // ── TeamWeek Page ─────────────────────────────────────────────────────────────
@@ -93,6 +97,11 @@ export default function TeamWeek() {
   } = useExceptionQueue(teamId, weekStartDate);
 
   const { data: rcdoTree } = useRcdoTree();
+
+  const {
+    data: teamHistory,
+    loading: historyLoading,
+  } = useTeamHistory(teamId);
 
   // ── Action handlers ──────────────────────────────────────────────────
 
@@ -382,6 +391,12 @@ export default function TeamWeek() {
                 actorUserId={userId}
                 onResolve={handleResolveException}
                 onAddComment={handleAddComment}
+              />
+            )}
+            {activeTab === "history" && (
+              <TeamHistoryView
+                entries={teamHistory?.entries ?? []}
+                loading={historyLoading}
               />
             )}
           </div>

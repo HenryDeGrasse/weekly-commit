@@ -1,31 +1,42 @@
 package com.weeklycommit.ticket.service;
 
+import com.weeklycommit.domain.entity.WeeklyCommit;
+import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.entity.WorkItem;
 import com.weeklycommit.domain.entity.WorkItemStatusHistory;
+import com.weeklycommit.domain.enums.TicketPriority;
 import com.weeklycommit.domain.enums.TicketStatus;
+import com.weeklycommit.domain.repository.WeeklyCommitRepository;
+import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.domain.repository.WorkItemRepository;
 import com.weeklycommit.domain.repository.WorkItemStatusHistoryRepository;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
+import com.weeklycommit.ticket.dto.CreateTicketFromCommitRequest;
 import com.weeklycommit.ticket.dto.CreateTicketRequest;
+import com.weeklycommit.ticket.dto.LinkedCommitEntry;
+import com.weeklycommit.ticket.dto.PagedTicketResponse;
+import com.weeklycommit.ticket.dto.TicketDetailResponse;
+import com.weeklycommit.ticket.dto.TicketListParams;
 import com.weeklycommit.ticket.dto.TicketResponse;
 import com.weeklycommit.ticket.dto.TicketStatusHistoryResponse;
+import com.weeklycommit.ticket.dto.TicketSummaryResponse;
 import com.weeklycommit.ticket.dto.UpdateTicketRequest;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * CRUD and status-workflow service for native tickets (work items).
- *
- * <p>
- * Status transitions are enforced via a static transition map. Every status
- * change is appended to {@code work_item_status_history} for duration-in-status
- * reporting.
  */
 @Service
 @Transactional
@@ -37,45 +48,32 @@ public class TicketService {
 	/** Key prefix used when auto-generating ticket keys. */
 	private static final String KEY_PREFIX = "T-";
 
-	/**
-	 * Legal status transitions.
-	 *
-	 * <pre>
-	 * BACKLOG     → READY, IN_PROGRESS, CANCELED
-	 * READY       → IN_PROGRESS, BACKLOG, CANCELED
-	 * IN_PROGRESS → DONE, BLOCKED, READY, CANCELED
-	 * BLOCKED     → IN_PROGRESS, CANCELED
-	 * DONE        → (terminal)
-	 * CANCELED    → (terminal)
-	 * </pre>
-	 */
-	private static final Map<TicketStatus, Set<TicketStatus>> ALLOWED_TRANSITIONS = Map.of(TicketStatus.BACKLOG,
-			EnumSet.of(TicketStatus.READY, TicketStatus.IN_PROGRESS, TicketStatus.CANCELED), TicketStatus.READY,
-			EnumSet.of(TicketStatus.IN_PROGRESS, TicketStatus.BACKLOG, TicketStatus.CANCELED), TicketStatus.IN_PROGRESS,
-			EnumSet.of(TicketStatus.DONE, TicketStatus.BLOCKED, TicketStatus.READY, TicketStatus.CANCELED),
-			TicketStatus.BLOCKED, EnumSet.of(TicketStatus.IN_PROGRESS, TicketStatus.CANCELED), TicketStatus.DONE,
-			EnumSet.noneOf(TicketStatus.class), TicketStatus.CANCELED, EnumSet.noneOf(TicketStatus.class));
+	/** Legal status transitions. */
+	private static final Map<TicketStatus, Set<TicketStatus>> ALLOWED_TRANSITIONS = Map.of(TicketStatus.TODO,
+			EnumSet.of(TicketStatus.IN_PROGRESS, TicketStatus.CANCELED), TicketStatus.IN_PROGRESS,
+			EnumSet.of(TicketStatus.DONE, TicketStatus.BLOCKED, TicketStatus.CANCELED, TicketStatus.TODO),
+			TicketStatus.BLOCKED, EnumSet.of(TicketStatus.IN_PROGRESS, TicketStatus.CANCELED, TicketStatus.TODO),
+			TicketStatus.DONE, EnumSet.noneOf(TicketStatus.class), TicketStatus.CANCELED,
+			EnumSet.of(TicketStatus.TODO));
 
 	private final WorkItemRepository workItemRepo;
 	private final WorkItemStatusHistoryRepository historyRepo;
+	private final WeeklyCommitRepository commitRepo;
+	private final WeeklyPlanRepository planRepo;
 
-	public TicketService(WorkItemRepository workItemRepo, WorkItemStatusHistoryRepository historyRepo) {
+	public TicketService(WorkItemRepository workItemRepo, WorkItemStatusHistoryRepository historyRepo,
+			WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo) {
 		this.workItemRepo = workItemRepo;
 		this.historyRepo = historyRepo;
+		this.commitRepo = commitRepo;
+		this.planRepo = planRepo;
 	}
 
 	// -------------------------------------------------------------------------
 	// Create
 	// -------------------------------------------------------------------------
 
-	/**
-	 * Creates a new ticket with an auto-generated key of the form {@code T-N}.
-	 *
-	 * @param req
-	 *            creation request
-	 * @return saved ticket
-	 */
-	public TicketResponse createTicket(CreateTicketRequest req) {
+	public TicketDetailResponse createTicket(CreateTicketRequest req) {
 		validateEstimatePoints(req.estimatePoints());
 
 		WorkItem item = new WorkItem();
@@ -83,60 +81,92 @@ public class TicketService {
 		item.setKey(generateKey(req.teamId()));
 		item.setTitle(req.title());
 		item.setDescription(req.description());
-		item.setStatus(TicketStatus.BACKLOG);
+		item.setStatus(req.status() != null ? req.status() : TicketStatus.TODO);
+		item.setPriority(req.priority() != null ? req.priority() : TicketPriority.MEDIUM);
 		item.setAssigneeUserId(req.assigneeUserId());
 		item.setReporterUserId(req.reporterUserId());
 		item.setEstimatePoints(req.estimatePoints());
 		item.setRcdoNodeId(req.rcdoNodeId());
 		item.setTargetWeekStartDate(req.targetWeekStartDate());
 
-		return TicketResponse.from(workItemRepo.save(item));
+		WorkItem saved = workItemRepo.save(item);
+		return getTicketDetail(saved.getId());
+	}
+
+	public TicketDetailResponse createTicketFromCommit(CreateTicketFromCommitRequest req) {
+		WeeklyPlan plan = requirePlan(req.planId());
+		WeeklyCommit commit = requireCommit(req.commitId());
+		if (!commit.getPlanId().equals(plan.getId())) {
+			throw new PlanValidationException("Commit " + req.commitId() + " does not belong to plan " + req.planId());
+		}
+
+		WorkItem item = new WorkItem();
+		UUID teamId = req.teamId() != null ? req.teamId() : plan.getTeamId();
+		item.setTeamId(teamId);
+		item.setKey(generateKey(teamId));
+		item.setTitle(req.title() != null && !req.title().isBlank() ? req.title() : commit.getTitle());
+		item.setDescription(req.description() != null ? req.description() : commit.getDescription());
+		item.setStatus(req.status() != null ? req.status() : TicketStatus.TODO);
+		item.setPriority(req.priority() != null ? req.priority() : TicketPriority.MEDIUM);
+		item.setAssigneeUserId(req.assigneeUserId());
+		item.setReporterUserId(req.reporterUserId() != null ? req.reporterUserId() : commit.getOwnerUserId());
+		validateEstimatePoints(req.estimatePoints() != null ? req.estimatePoints() : commit.getEstimatePoints());
+		item.setEstimatePoints(req.estimatePoints() != null ? req.estimatePoints() : commit.getEstimatePoints());
+		item.setRcdoNodeId(req.rcdoNodeId() != null ? req.rcdoNodeId() : commit.getRcdoNodeId());
+		item.setTargetWeekStartDate(
+				req.targetWeekStartDate() != null ? req.targetWeekStartDate() : plan.getWeekStartDate());
+
+		WorkItem saved = workItemRepo.save(item);
+		return getTicketDetail(saved.getId());
 	}
 
 	// -------------------------------------------------------------------------
 	// Read
 	// -------------------------------------------------------------------------
 
-	/**
-	 * Fetches a single ticket by its ID.
-	 *
-	 * @param id
-	 *            ticket identifier
-	 * @return ticket view
-	 * @throws ResourceNotFoundException
-	 *             if not found
-	 */
 	@Transactional(readOnly = true)
-	public TicketResponse getTicket(UUID id) {
-		return TicketResponse.from(requireTicket(id));
+	public TicketDetailResponse getTicketDetail(UUID id) {
+		WorkItem ticket = requireTicket(id);
+		TicketResponse base = TicketResponse.from(ticket);
+
+		List<TicketStatusHistoryResponse> statusHistory = historyRepo.findByWorkItemIdOrderByCreatedAtAsc(id).stream()
+				.map(TicketStatusHistoryResponse::from).toList();
+
+		List<LinkedCommitEntry> linkedCommits = commitRepo.findByWorkItemId(id).stream().map(commit -> {
+			WeeklyPlan plan = planRepo.findById(commit.getPlanId()).orElse(null);
+			if (plan == null) {
+				return null;
+			}
+			return new LinkedCommitEntry(commit.getId(), commit.getPlanId(), commit.getTitle(), commit.getChessPiece(),
+					commit.getEstimatePoints(), plan.getWeekStartDate(), commit.getOutcome());
+		}).filter(java.util.Objects::nonNull).toList();
+
+		return TicketDetailResponse.from(base, statusHistory, linkedCommits);
 	}
 
-	/**
-	 * Lists all tickets for a team.
-	 *
-	 * @param teamId
-	 *            team identifier
-	 * @return list of ticket views
-	 */
 	@Transactional(readOnly = true)
-	public List<TicketResponse> listTicketsByTeam(UUID teamId) {
-		return workItemRepo.findByTeamId(teamId).stream().map(TicketResponse::from).toList();
+	public PagedTicketResponse listTickets(TicketListParams params) {
+		Specification<WorkItem> spec = buildSpecification(params);
+		Pageable pageable = PageRequest.of(params.normalizedPage() - 1, params.normalizedPageSize(),
+				buildSort(params.normalizedSortBy(), params.normalizedSortDir()));
+		Page<WorkItem> page = workItemRepo.findAll(spec, pageable);
+		return new PagedTicketResponse(page.getContent().stream().map(TicketSummaryResponse::from).toList(),
+				page.getTotalElements(), params.normalizedPage(), params.normalizedPageSize());
+	}
+
+	@Transactional(readOnly = true)
+	public List<TicketSummaryResponse> listTicketSummaries(UUID teamId) {
+		Specification<WorkItem> spec = (root, query,
+				cb) -> teamId == null ? cb.conjunction() : cb.equal(root.get("teamId"), teamId);
+		return workItemRepo.findAll(spec, Sort.by(Sort.Direction.DESC, "updatedAt")).stream()
+				.map(TicketSummaryResponse::from).toList();
 	}
 
 	// -------------------------------------------------------------------------
 	// Update
 	// -------------------------------------------------------------------------
 
-	/**
-	 * Partially updates a ticket. {@code null} fields in the request are ignored.
-	 *
-	 * @param id
-	 *            ticket identifier
-	 * @param req
-	 *            partial update
-	 * @return updated ticket view
-	 */
-	public TicketResponse updateTicket(UUID id, UpdateTicketRequest req) {
+	public TicketDetailResponse updateTicket(UUID id, UpdateTicketRequest req, UUID actorUserId) {
 		WorkItem item = requireTicket(id);
 
 		if (req.title() != null && !req.title().isBlank()) {
@@ -145,8 +175,14 @@ public class TicketService {
 		if (req.description() != null) {
 			item.setDescription(req.description());
 		}
+		if (req.priority() != null) {
+			item.setPriority(req.priority());
+		}
 		if (req.assigneeUserId() != null) {
 			item.setAssigneeUserId(req.assigneeUserId());
+		}
+		if (req.teamId() != null) {
+			item.setTeamId(req.teamId());
 		}
 		if (req.estimatePoints() != null) {
 			validateEstimatePoints(req.estimatePoints());
@@ -158,68 +194,32 @@ public class TicketService {
 		if (req.targetWeekStartDate() != null) {
 			item.setTargetWeekStartDate(req.targetWeekStartDate());
 		}
+		if (req.status() != null) {
+			transitionStatus(item, req.status(), actorUserId != null ? actorUserId : item.getReporterUserId());
+		}
 
-		return TicketResponse.from(workItemRepo.save(item));
+		workItemRepo.save(item);
+		return getTicketDetail(item.getId());
 	}
 
 	// -------------------------------------------------------------------------
 	// Update status
 	// -------------------------------------------------------------------------
 
-	/**
-	 * Transitions the ticket to a new status, validating the transition and
-	 * recording history.
-	 *
-	 * @param id
-	 *            ticket identifier
-	 * @param newStatus
-	 *            target status
-	 * @param changedByUserId
-	 *            user performing the transition
-	 * @return updated ticket view
-	 * @throws PlanValidationException
-	 *             if the transition is not allowed
-	 */
-	public TicketResponse updateStatus(UUID id, TicketStatus newStatus, UUID changedByUserId) {
+	public TicketDetailResponse updateStatus(UUID id, TicketStatus newStatus, UUID changedByUserId) {
 		WorkItem item = requireTicket(id);
-		TicketStatus currentStatus = item.getStatus();
-
-		if (currentStatus == newStatus) {
-			return TicketResponse.from(item); // idempotent — no change
-		}
-
-		Set<TicketStatus> allowed = ALLOWED_TRANSITIONS.getOrDefault(currentStatus, EnumSet.noneOf(TicketStatus.class));
-		if (!allowed.contains(newStatus)) {
-			throw new PlanValidationException(
-					"Illegal ticket status transition: " + currentStatus + " → " + newStatus + ". Allowed: " + allowed);
-		}
-
-		// Record history before updating the entity
-		WorkItemStatusHistory history = new WorkItemStatusHistory();
-		history.setWorkItemId(id);
-		history.setFromStatus(currentStatus.name());
-		history.setToStatus(newStatus.name());
-		history.setChangedByUserId(changedByUserId);
-		historyRepo.save(history);
-
-		item.setStatus(newStatus);
-		return TicketResponse.from(workItemRepo.save(item));
+		transitionStatus(item, newStatus, changedByUserId);
+		workItemRepo.save(item);
+		return getTicketDetail(item.getId());
 	}
 
 	// -------------------------------------------------------------------------
 	// Status history
 	// -------------------------------------------------------------------------
 
-	/**
-	 * Returns the full status-change history for a ticket, ordered chronologically.
-	 *
-	 * @param id
-	 *            ticket identifier
-	 * @return ordered list of status history entries
-	 */
 	@Transactional(readOnly = true)
 	public List<TicketStatusHistoryResponse> getStatusHistory(UUID id) {
-		requireTicket(id); // ensure ticket exists
+		requireTicket(id);
 		return historyRepo.findByWorkItemIdOrderByCreatedAtAsc(id).stream().map(TicketStatusHistoryResponse::from)
 				.toList();
 	}
@@ -228,14 +228,6 @@ public class TicketService {
 	// Delete
 	// -------------------------------------------------------------------------
 
-	/**
-	 * Hard-deletes a ticket.
-	 *
-	 * @param id
-	 *            ticket identifier
-	 * @throws ResourceNotFoundException
-	 *             if not found
-	 */
 	public void deleteTicket(UUID id) {
 		WorkItem item = requireTicket(id);
 		workItemRepo.delete(item);
@@ -249,13 +241,74 @@ public class TicketService {
 		return workItemRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + id));
 	}
 
+	private WeeklyCommit requireCommit(UUID id) {
+		return commitRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Commit not found: " + id));
+	}
+
+	private WeeklyPlan requirePlan(UUID id) {
+		return planRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Weekly plan not found: " + id));
+	}
+
+	private void transitionStatus(WorkItem item, TicketStatus newStatus, UUID changedByUserId) {
+		TicketStatus currentStatus = item.getStatus();
+		if (currentStatus == newStatus) {
+			return;
+		}
+
+		Set<TicketStatus> allowed = ALLOWED_TRANSITIONS.getOrDefault(currentStatus, EnumSet.noneOf(TicketStatus.class));
+		if (!allowed.contains(newStatus)) {
+			throw new PlanValidationException(
+					"Illegal ticket status transition: " + currentStatus + " → " + newStatus + ". Allowed: " + allowed);
+		}
+
+		WorkItemStatusHistory history = new WorkItemStatusHistory();
+		history.setWorkItemId(item.getId());
+		history.setFromStatus(currentStatus != null ? currentStatus.name() : null);
+		history.setToStatus(newStatus.name());
+		history.setChangedByUserId(changedByUserId);
+		historyRepo.save(history);
+
+		item.setStatus(newStatus);
+	}
+
 	/**
-	 * Generates a unique key for a ticket within its team. Uses a simple sequential
-	 * counter based on the total number of tickets in the team.
+	 * Generates a unique key for a ticket within its team.
 	 */
 	private String generateKey(UUID teamId) {
 		long count = workItemRepo.countByTeamId(teamId);
 		return KEY_PREFIX + (count + 1);
+	}
+
+	private Specification<WorkItem> buildSpecification(TicketListParams params) {
+		return Specification.where(equalsUuid("assigneeUserId", params.assigneeUserId()))
+				.and(equalsUuid("teamId", params.teamId())).and(equalsUuid("rcdoNodeId", params.rcdoNodeId()))
+				.and(equalsEnum("status", params.status())).and(equalsEnum("priority", params.priority()))
+				.and(equalsValue("targetWeekStartDate", params.targetWeek()));
+	}
+
+	private static <T> Specification<WorkItem> equalsValue(String field, T value) {
+		return (root, query, cb) -> value == null ? cb.conjunction() : cb.equal(root.get(field), value);
+	}
+
+	private static Specification<WorkItem> equalsUuid(String field, UUID value) {
+		return equalsValue(field, value);
+	}
+
+	private static <T extends Enum<T>> Specification<WorkItem> equalsEnum(String field, T value) {
+		return equalsValue(field, value);
+	}
+
+	private Sort buildSort(String sortBy, String sortDir) {
+		Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+		String property = switch (sortBy) {
+			case "key" -> "key";
+			case "title" -> "title";
+			case "status" -> "status";
+			case "priority" -> "priority";
+			case "updatedAt" -> "updatedAt";
+			default -> "updatedAt";
+		};
+		return Sort.by(direction, property);
 	}
 
 	static void validateEstimatePoints(Integer points) {

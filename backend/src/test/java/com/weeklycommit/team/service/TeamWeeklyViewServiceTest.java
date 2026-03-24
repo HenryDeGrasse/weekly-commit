@@ -15,6 +15,7 @@ import com.weeklycommit.domain.entity.WorkItem;
 import com.weeklycommit.domain.enums.ChessPiece;
 import com.weeklycommit.domain.enums.PlanState;
 import com.weeklycommit.domain.enums.TicketStatus;
+import com.weeklycommit.domain.repository.ManagerReviewExceptionRepository;
 import com.weeklycommit.domain.repository.TeamMembershipRepository;
 import com.weeklycommit.domain.repository.TeamRepository;
 import com.weeklycommit.domain.repository.UserAccountRepository;
@@ -54,6 +55,9 @@ class TeamWeeklyViewServiceTest {
 
 	@Mock
 	private WorkItemRepository workItemRepo;
+
+	@Mock
+	private ManagerReviewExceptionRepository exceptionRepo;
 
 	@Mock
 	private AuthorizationService authService;
@@ -458,5 +462,34 @@ class TeamWeeklyViewServiceTest {
 		assertThat(response.memberViews().get(0).planId()).isNull();
 		assertThat(response.memberViews().get(0).planState()).isNull();
 		assertThat(response.complianceSummary().get(0).hasPlan()).isFalse();
+	}
+
+	@Test
+	void getTeamHistory_aggregatesRecentWeeks() {
+		UUID plan1Id = UUID.randomUUID();
+		UUID plan2Id = UUID.randomUUID();
+		when(teamRepo.findById(teamId)).thenReturn(Optional.of(team()));
+		when(membershipRepo.findByTeamId(teamId)).thenReturn(List.of(memberOf(ic1Id), memberOf(ic2Id)));
+		when(planRepo.findByTeamIdOrderByWeekStartDateDesc(teamId)).thenReturn(
+				List.of(plan(plan1Id, ic1Id, PlanState.RECONCILED), plan(plan2Id, ic2Id, PlanState.RECONCILED)));
+		when(planRepo.findByTeamIdAndWeekStartDate(teamId, weekStart)).thenReturn(
+				List.of(plan(plan1Id, ic1Id, PlanState.RECONCILED), plan(plan2Id, ic2Id, PlanState.RECONCILED)));
+		when(commitRepo.findByPlanIdOrderByPriorityOrder(plan1Id))
+				.thenReturn(List.of(commit(plan1Id, ic1Id, ChessPiece.KING, 5, null, null)));
+		WeeklyCommit achieved = commit(plan2Id, ic2Id, ChessPiece.ROOK, 3, null, null);
+		achieved.setOutcome(com.weeklycommit.domain.enums.CommitOutcome.ACHIEVED);
+		achieved.setCarryForwardStreak(1);
+		when(commitRepo.findByPlanIdOrderByPriorityOrder(plan2Id)).thenReturn(List.of(achieved));
+		when(exceptionRepo.countByTeamIdAndWeekStartDate(teamId, weekStart)).thenReturn(2L);
+
+		var history = service.getTeamHistory(teamId, managerId);
+
+		assertThat(history.teamId()).isEqualTo(teamId);
+		assertThat(history.entries()).hasSize(1);
+		assertThat(history.entries().get(0).memberCount()).isEqualTo(2);
+		assertThat(history.entries().get(0).plannedPoints()).isEqualTo(8);
+		assertThat(history.entries().get(0).achievedPoints()).isEqualTo(3);
+		assertThat(history.entries().get(0).exceptionCount()).isEqualTo(2);
+		assertThat(history.entries().get(0).carryForwardRate()).isEqualTo(0.5d);
 	}
 }

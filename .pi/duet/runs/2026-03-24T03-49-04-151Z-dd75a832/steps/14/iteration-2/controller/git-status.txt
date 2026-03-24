@@ -1,0 +1,27 @@
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/cost.json
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/draft-plan.json
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/observations.jsonl
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/plan.json
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/sessions/continuous/relay-a/2026-03-24T04-23-35-130Z_4c4202d2-9023-459a-b908-dfaede19919d.jsonl
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/sessions/continuous/relay-b/2026-03-24T04-35-30-972Z_471484d6-96e0-4a6b-86fc-b9b081fa294f.jsonl
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/state.json
+ M frontend/src/components/myweek/CommitList.tsx
+ M frontend/src/routes/MyWeek.tsx
+ M frontend/src/routes/TeamWeek.tsx
+ M frontend/src/routes/Tickets.tsx
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/operator-notes.md
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/sessions/replan-step-14/
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/14/
+?? frontend/src/__tests__/CarryForwardLineageView.test.tsx
+?? frontend/src/__tests__/FilterBar.test.tsx
+?? frontend/src/__tests__/PlanHistoryView.test.tsx
+?? frontend/src/__tests__/TeamHistoryView.test.tsx
+?? frontend/src/__tests__/TicketsPage.test.tsx
+?? frontend/src/api/ticketApi.ts
+?? frontend/src/api/ticketHooks.ts
+?? frontend/src/api/ticketTypes.ts
+?? frontend/src/components/myweek/CarryForwardLineageView.tsx
+?? frontend/src/components/myweek/PlanHistoryView.tsx
+?? frontend/src/components/shared/
+?? frontend/src/components/teamweek/TeamHistoryView.tsx
+?? frontend/src/components/tickets/

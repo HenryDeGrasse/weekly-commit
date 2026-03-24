@@ -7,10 +7,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface WorkItemRepository extends JpaRepository<WorkItem, UUID> {
+public interface WorkItemRepository extends JpaRepository<WorkItem, UUID>, JpaSpecificationExecutor<WorkItem> {
 
 	Optional<WorkItem> findByTeamIdAndKey(UUID teamId, String key);
 

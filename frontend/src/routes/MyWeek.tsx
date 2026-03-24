@@ -20,6 +20,12 @@
 import { useState, useCallback, useMemo } from "react";
 import { useCurrentPlan, usePlanApi } from "../api/planHooks.js";
 import { useRcdoTree } from "../api/rcdoHooks.js";
+import { usePlanHistory, useCarryForwardLineage, useTicketApi } from "../api/ticketHooks.js";
+import { PlanHistoryView } from "../components/myweek/PlanHistoryView.js";
+import { CarryForwardLineageView } from "../components/myweek/CarryForwardLineageView.js";
+import { TicketForm } from "../components/tickets/TicketForm.js";
+import { useHostBridge } from "../host/HostProvider.js";
+import type { CreateTicketPayload } from "../api/ticketTypes.js";
 import { CommitList } from "../components/myweek/CommitList.js";
 import { CommitForm } from "../components/myweek/CommitForm.js";
 import { CapacityMeter } from "../components/myweek/CapacityMeter.js";
@@ -202,6 +208,9 @@ export default function MyWeek() {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStartDate = getWeekStartDate(weekOffset);
 
+  const bridge = useHostBridge();
+  const currentUserId = bridge.context.authenticatedUser.id;
+
   const planApi = usePlanApi();
   const {
     data: planData,
@@ -211,7 +220,23 @@ export default function MyWeek() {
   } = useCurrentPlan(weekStartDate);
   const { data: rcdoTree } = useRcdoTree();
 
+  // Plan history and carry-forward lineage
+  const [showHistory, setShowHistory] = useState(false);
+  const { data: planHistory, loading: historyLoading } = usePlanHistory(
+    showHistory ? currentUserId : null,
+  );
+  const [lineageCommitId, setLineageCommitId] = useState<string | null>(null);
+  const { data: lineage, loading: lineageLoading } = useCarryForwardLineage(lineageCommitId);
+
   // Form / dialog state
+  const ticketApi = useTicketApi();
+
+  // Create-from-commit state
+  const [ticketFormVisible, setTicketFormVisible] = useState(false);
+  const [ticketFormInitialValues, setTicketFormInitialValues] = useState<
+    Partial<CreateTicketPayload>
+  >({});
+
   type FormMode = "create" | "edit" | null;
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [editingCommit, setEditingCommit] = useState<CommitResponse | null>(null);
@@ -354,6 +379,33 @@ export default function MyWeek() {
       }
     },
     [plan, planApi, refetchPlan],
+  );
+
+  // ── Create ticket from commit ────────────────────────────────────────
+
+  const handleCreateTicketFromCommit = useCallback(
+    (commit: CommitResponse) => {
+      const teamId = bridge.context.currentTeam?.id;
+      setTicketFormInitialValues({
+        title: commit.title,
+        ...(commit.description ? { description: commit.description } : {}),
+        ...(commit.rcdoNodeId ? { rcdoNodeId: commit.rcdoNodeId } : {}),
+        ...(commit.estimatePoints != null ? { estimatePoints: commit.estimatePoints } : {}),
+        reporterUserId: currentUserId,
+        ...(teamId ? { teamId } : {}),
+      });
+      setTicketFormVisible(true);
+    },
+    [currentUserId, bridge],
+  );
+
+  const handleTicketFormSubmit = useCallback(
+    async (payload: CreateTicketPayload) => {
+      await ticketApi.createTicket(payload);
+      setTicketFormVisible(false);
+      setTicketFormInitialValues({});
+    },
+    [ticketApi],
   );
 
   // ── Lock flow ────────────────────────────────────────────────────────
@@ -810,6 +862,8 @@ export default function MyWeek() {
           onEdit={handleOpenEdit}
           onDelete={handleDeleteRequest}
           rcdoLabels={rcdoLabels}
+          onViewLineage={(commitId) => setLineageCommitId(commitId)}
+          onCreateTicket={handleCreateTicketFromCommit}
         />
       )}
 
@@ -886,6 +940,21 @@ export default function MyWeek() {
         />
       )}
 
+      {/* Create ticket from commit — TicketForm modal */}
+      {ticketFormVisible && (
+        <TicketForm
+          mode="create"
+          initialValues={ticketFormInitialValues}
+          currentUserId={currentUserId}
+          {...(bridge.context.currentTeam ? { currentTeamId: bridge.context.currentTeam.id } : {})}
+          onSubmit={handleTicketFormSubmit}
+          onCancel={() => {
+            setTicketFormVisible(false);
+            setTicketFormInitialValues({});
+          }}
+        />
+      )}
+
       {/* Lock confirmation dialog */}
       {showLockConfirm && plan && (
         <LockConfirmDialog
@@ -931,6 +1000,105 @@ export default function MyWeek() {
           onCancel={handleScopeChangeCancel}
           isSubmitting={scopeChangeSaving}
         />
+      )}
+
+      {/* ── Plan History section ─────────────────────────────────────── */}
+      <div
+        style={{
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--border-radius)",
+          padding: "0.75rem 1rem",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "0.5rem",
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700 }}>
+            Plan History
+          </h3>
+          <button
+            type="button"
+            onClick={() => setShowHistory((s) => !s)}
+            data-testid="toggle-plan-history-btn"
+            style={{
+              ...btnSecondary,
+              padding: "0.3rem 0.75rem",
+              fontSize: "0.8rem",
+            }}
+          >
+            {showHistory ? "Hide" : "Show history"}
+          </button>
+        </div>
+
+        {showHistory && (
+          <div style={{ marginTop: "0.875rem" }}>
+            <PlanHistoryView
+              entries={planHistory ?? []}
+              loading={historyLoading}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── Carry-forward lineage (when a commit with CF is selected) ── */}
+      {lineageCommitId && (
+        <div
+          data-testid="cf-lineage-section"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--border-radius)",
+            padding: "0.875rem 1rem",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "0.75rem",
+              flexWrap: "wrap",
+              gap: "0.5rem",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "0.9rem" }}>
+              Carry-forward Lineage
+            </h3>
+            <button
+              type="button"
+              onClick={() => setLineageCommitId(null)}
+              aria-label="Close lineage"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "1rem",
+                color: "var(--color-text-muted)",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          {lineage && (
+            <CarryForwardLineageView lineage={lineage} loading={lineageLoading} />
+          )}
+          {lineageLoading && !lineage && (
+            <div
+              data-testid="cf-lineage-loading"
+              role="status"
+              style={{ color: "var(--color-text-muted)", fontSize: "0.875rem" }}
+            >
+              Loading lineage…
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -60,6 +60,10 @@ interface SortableItemProps {
   readonly onDelete: (commitId: string) => void;
   readonly onMoveUp: (commitId: string) => void;
   readonly onMoveDown: (commitId: string) => void;
+  /** Optional: called when "View lineage" is clicked for a carry-forward commit. */
+  readonly onViewLineage?: (commitId: string) => void;
+  /** Optional: called to create a ticket from a commit. */
+  readonly onCreateTicket?: (commit: CommitResponse) => void;
 }
 
 function SortableItem({
@@ -72,6 +76,8 @@ function SortableItem({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onViewLineage,
+  onCreateTicket,
 }: SortableItemProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -331,6 +337,27 @@ function SortableItem({
                 </button>
               </>
             )}
+            {/* Create ticket action — available in DRAFT and LOCKED */}
+            {onCreateTicket && (
+              <button
+                type="button"
+                onClick={() => onCreateTicket(commit)}
+                aria-label={`Create ticket from commit: ${commit.title}`}
+                data-testid={`create-ticket-from-commit-${commit.id}`}
+                style={{
+                  background: "none",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--border-radius)",
+                  cursor: "pointer",
+                  padding: "2px 8px",
+                  fontSize: "0.75rem",
+                  color: "var(--color-text-muted)",
+                }}
+                title="Create ticket from this commit"
+              >
+                🎫
+              </button>
+            )}
           </div>
         </div>
 
@@ -416,10 +443,38 @@ function SortableItem({
                   borderRadius: "var(--border-radius)",
                   fontSize: "0.8rem",
                   color: "#1e40af",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "0.5rem",
                 }}
               >
-                🔁 Carried forward {commit.carryForwardStreak} time
-                {commit.carryForwardStreak !== 1 ? "s" : ""}
+                <span>
+                  🔁 Carried forward {commit.carryForwardStreak} time
+                  {commit.carryForwardStreak !== 1 ? "s" : ""}
+                </span>
+                {onViewLineage && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewLineage(commit.id);
+                    }}
+                    data-testid={`view-lineage-btn-${commit.id}`}
+                    style={{
+                      background: "none",
+                      border: "1px solid #93c5fd",
+                      borderRadius: "var(--border-radius)",
+                      cursor: "pointer",
+                      fontSize: "0.75rem",
+                      color: "#1e40af",
+                      padding: "1px 7px",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    View lineage
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -441,6 +496,10 @@ export interface CommitListProps {
   readonly onDelete: (commitId: string) => void;
   /** Map of rcdoNodeId → display label (title) for rendered RCDO paths. */
   readonly rcdoLabels?: Record<string, string>;
+  /** Optional: called to view carry-forward lineage for a commit. */
+  readonly onViewLineage?: (commitId: string) => void;
+  /** Optional: called to create a ticket pre-populated from a commit. */
+  readonly onCreateTicket?: (commit: CommitResponse) => void;
 }
 
 export function CommitList({
@@ -450,6 +509,8 @@ export function CommitList({
   onEdit,
   onDelete,
   rcdoLabels = {},
+  onViewLineage,
+  onCreateTicket,
 }: CommitListProps) {
   const isDraft = planState === "DRAFT";
 
@@ -588,6 +649,8 @@ export function CommitList({
                 onDelete={onDelete}
                 onMoveUp={handleMoveUp}
                 onMoveDown={handleMoveDown}
+                {...(onViewLineage ? { onViewLineage } : {})}
+                {...(onCreateTicket ? { onCreateTicket } : {})}
               />
             );
           })}

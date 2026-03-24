@@ -1,0 +1,47 @@
+All 432 frontend tests (up from previous step) and 20 shared tests pass.
+
+---
+
+## Summary
+
+### What I implemented
+
+**API layer (3 new files):**
+- `api/ticketTypes.ts` — Complete ticket domain types: `TicketStatus`, `TicketPriority`, status transition map, `TicketResponse`/`TicketSummaryResponse`/`PagedTicketResponse`, create/update payloads, `WeeklyPlanHistoryEntry`, `CarryForwardLineageResponse`, `TeamHistoryResponse`, `FilterPreset`
+- `api/ticketApi.ts` — API functions: ticket CRUD, create-from-commit, plan history, carry-forward lineage, team history
+- `api/ticketHooks.ts` — React hooks: `useTicketApi`, `useTicketList`, `useTicket`, `usePlanHistory`, `useCarryForwardLineage`, `useTeamHistory`
+
+**New components (6 files):**
+- `components/tickets/TicketListView.tsx` — Sortable table with pagination, status/priority badges, row click selection
+- `components/tickets/TicketForm.tsx` — Create/edit modal with all fields, validation (title required, team required), supports pre-populate for create-from-commit
+- `components/tickets/TicketDetailView.tsx` — Full detail with status transitions (valid next states only), assignee change, status history timeline, linked commits list
+- `components/shared/FilterBar.tsx` — Reusable filter bar with week, user, team, RCDO, chess piece multi-select, plan state multi-select, risk flag multi-select, clear-all, save preset
+- `components/myweek/PlanHistoryView.tsx` — Week-by-week history table (newest first), expandable rows, compliance, points, carry-forward count
+- `components/myweek/CarryForwardLineageView.tsx` — Chain visualization with nodes showing week, outcome, streak, arrow separators
+- `components/teamweek/TeamHistoryView.tsx` — Weekly trend table with week-over-week delta indicators, compliance rate color coding
+
+**Updated routes:**
+- `routes/Tickets.tsx` — Full Tickets page with URL-param-persistent filters, sortable list, detail panel, TicketForm modal
+- `routes/MyWeek.tsx` — Added PlanHistoryView toggle section, CarryForwardLineageView panel, create-from-commit flow via TicketForm
+- `routes/TeamWeek.tsx` — Added "History" tab with TeamHistoryView
+
+**Updated components:**
+- `components/myweek/CommitList.tsx` — Added optional `onViewLineage` prop (shows "View lineage" button for carry-forward commits), optional `onCreateTicket` prop (🎫 button on each commit)
+
+**Tests (5 new test files):**
+- `TicketsPage.test.tsx` — 30+ tests: rendering, filters, sorting, detail panel, status transitions, create form validation, pagination
+- `FilterBar.test.tsx` — Tests for all filter dimensions, toggle pills, clear-all, save/load presets
+- `PlanHistoryView.test.tsx` — Tests for sort order, row data, expand/collapse, onViewPlan callback
+- `CarryForwardLineageView.test.tsx` — Tests for chain rendering, streak badges, outcome display, chain length
+- `TeamHistoryView.test.tsx` — Tests for sort order, data display, compliance color coding
+
+All checks pass: lint (0 errors), typecheck, unit (432/432), build.
+
+Verdict: changes_made
+
+```observations
+- [medium] frontend/src/routes/Tickets.tsx: The create-from-commit flow is accessible from MyWeek only (via CommitList). The Tickets page doesn't yet have a standalone "create from commit" action — the API endpoint `/api/tickets/from-commit` is defined but not directly used from the Tickets page. This is by design (the PRD says it's a commit action), but worth noting.
+- [low] frontend/src/components/tickets/TicketForm.tsx: The RCDO field is a plain text input (node ID). A proper hierarchical RCDO tree picker (like in CommitForm) would improve UX but was not part of this step's requirement.
+- [low] frontend/src/api/ticketApi.ts: The `createTicketFromCommit` endpoint at `POST /api/tickets/from-commit` is defined in the frontend API but has no corresponding backend implementation yet — it will need to be added in a future backend step.
+- [medium] frontend/src/api/ticketApi.ts: `getPlanHistory`, `getCarryForwardLineage`, and `getTeamHistory` endpoints are defined in the frontend but have no corresponding backend controllers yet — they will return 404 until implemented in future steps.
+```

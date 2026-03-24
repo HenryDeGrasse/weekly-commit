@@ -1,0 +1,60 @@
+Reviewed current repo state first, then implemented/fixed only backend work under `backend/src/` per the operator note.
+
+What I changed:
+- Added Flyway migration:
+  - `backend/src/main/resources/db/migration/V3__add_ticket_priority.sql`
+- Added backend ticket contract types/endpoints:
+  - `TicketPriority` enum
+  - `PagedTicketResponse`
+  - `TicketSummaryResponse`
+  - `TicketDetailResponse`
+  - `LinkedCommitEntry`
+  - `CreateTicketFromCommitRequest`
+  - `TicketListParams`
+- Added plan/team/carry-forward supplementary contract types/endpoints:
+  - `WeeklyPlanHistoryEntry`
+  - `PlanHistoryController`
+  - `PlanHistoryService`
+  - `TeamHistoryResponse`
+  - `TeamWeekHistoryEntry`
+  - `GET /api/teams/{id}/history`
+  - `CarryForwardNodeResponse`
+  - `CarryForwardLineageDetailResponse`
+  - `GET /api/commits/{id}/carry-forward-lineage`
+- Updated existing backend contracts/services:
+  - `WorkItem` now has `priority`
+  - ticket create/update/detail/list logic aligned to the new backend contract
+  - paginated/filterable/sortable `/api/tickets`
+  - `/api/tickets/summaries`
+  - `/api/tickets/from-commit`
+  - enriched ticket detail with status history + linked commits
+  - plan history aggregation
+  - team history aggregation
+- Added/updated backend tests for the new behavior.
+
+Files touched include:
+- `backend/src/main/java/com/weeklycommit/ticket/**`
+- `backend/src/main/java/com/weeklycommit/plan/**`
+- `backend/src/main/java/com/weeklycommit/team/**`
+- `backend/src/main/java/com/weeklycommit/carryforward/**`
+- `backend/src/main/java/com/weeklycommit/domain/{entity,enums,repository}/**`
+- `backend/src/test/java/com/weeklycommit/{ticket,plan,team,carryforward}/**`
+
+Checks run:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+Assessment:
+- Required checks pass.
+- The missing backend contract work for Step 14 is now implemented.
+- I did not modify any frontend files.
+
+```observations
+- [low] backend/src/test/java/com/weeklycommit/ticket/controller/TicketControllerTest.java: Uses Spring Boot `@MockBean`, which now emits deprecation warnings during compilation. Not breaking.
+- [low] backend/src/test/java/com/weeklycommit/team/controller/TeamControllerTest.java: Uses Spring Boot `@MockBean`, which now emits deprecation warnings during compilation. Not breaking.
+- [low] backend/src/test/java/com/weeklycommit/carryforward/controller/CarryForwardControllerTest.java: Uses Spring Boot `@MockBean`, which now emits deprecation warnings during compilation. Not breaking.
+```
+
+Verdict: changes_made

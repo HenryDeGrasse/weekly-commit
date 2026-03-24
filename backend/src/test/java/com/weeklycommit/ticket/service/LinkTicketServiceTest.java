@@ -85,7 +85,7 @@ class LinkTicketServiceTest {
 		w.setTeamId(UUID.randomUUID());
 		w.setKey("T-1");
 		w.setTitle("Sample ticket");
-		w.setStatus(TicketStatus.READY);
+		w.setStatus(TicketStatus.TODO);
 		w.setReporterUserId(UUID.randomUUID());
 		w.setRcdoNodeId(rcdoNodeId);
 		return w;

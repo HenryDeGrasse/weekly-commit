@@ -1,5 +1,6 @@
 package com.weeklycommit.domain.entity;
 
+import com.weeklycommit.domain.enums.TicketPriority;
 import com.weeklycommit.domain.enums.TicketStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,7 +45,12 @@ public class WorkItem {
 	@NotNull
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
-	private TicketStatus status = TicketStatus.BACKLOG;
+	private TicketStatus status = TicketStatus.TODO;
+
+	@NotNull
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private TicketPriority priority = TicketPriority.MEDIUM;
 
 	@Column(name = "assignee_user_id")
 	private UUID assigneeUserId;
@@ -116,6 +122,14 @@ public class WorkItem {
 
 	public void setStatus(TicketStatus status) {
 		this.status = status;
+	}
+
+	public TicketPriority getPriority() {
+		return priority;
+	}
+
+	public void setPriority(TicketPriority priority) {
+		this.priority = priority;
 	}
 
 	public UUID getAssigneeUserId() {

@@ -1,5 +1,6 @@
 package com.weeklycommit.carryforward.controller;
 
+import com.weeklycommit.carryforward.dto.CarryForwardLineageDetailResponse;
 import com.weeklycommit.carryforward.dto.CarryForwardLineageResponse;
 import com.weeklycommit.carryforward.dto.CarryForwardRequest;
 import com.weeklycommit.carryforward.dto.CarryForwardResponse;
@@ -21,8 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
  * <ul>
  * <li>{@code POST /api/plans/{id}/commits/{commitId}/carry-forward} — carry a
  * commit forward into a target week</li>
- * <li>{@code GET /api/commits/{id}/lineage} — retrieve the full carry-forward
+ * <li>{@code GET /api/commits/{id}/lineage} — retrieve the legacy carry-forward
  * ancestry chain</li>
+ * <li>{@code GET /api/commits/{id}/carry-forward-lineage} — retrieve the
+ * frontend-aligned carry-forward chain</li>
  * </ul>
  */
 @RestController
@@ -69,5 +72,10 @@ public class CarryForwardController {
 	@GetMapping("/api/commits/{commitId}/lineage")
 	public ResponseEntity<CarryForwardLineageResponse> getLineage(@PathVariable UUID commitId) {
 		return ResponseEntity.ok(carryForwardService.getCarryForwardLineage(commitId));
+	}
+
+	@GetMapping("/api/commits/{commitId}/carry-forward-lineage")
+	public ResponseEntity<CarryForwardLineageDetailResponse> getLineageDetail(@PathVariable UUID commitId) {
+		return ResponseEntity.ok(carryForwardService.getCarryForwardLineageDetail(commitId));
 	}
 }

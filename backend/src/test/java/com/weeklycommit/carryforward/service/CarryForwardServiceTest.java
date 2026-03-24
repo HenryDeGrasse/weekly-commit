@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weeklycommit.carryforward.dto.CarryForwardLineageDetailResponse;
 import com.weeklycommit.carryforward.dto.CarryForwardLineageResponse;
 import com.weeklycommit.carryforward.dto.CarryForwardResponse;
 import com.weeklycommit.domain.entity.CarryForwardLink;
@@ -392,6 +393,65 @@ class CarryForwardServiceTest {
 		assertThat(result.chain().get(0).targetCommitId()).isEqualTo(parentId);
 		assertThat(result.chain().get(1).sourceCommitId()).isEqualTo(parentId);
 		assertThat(result.chain().get(1).targetCommitId()).isEqualTo(childId);
+	}
+
+	@Test
+	void getCarryForwardLineageDetail_returnsFrontendAlignedChain() {
+		UUID rootId = UUID.randomUUID();
+		UUID currentId = UUID.randomUUID();
+		UUID childId = UUID.randomUUID();
+
+		WeeklyCommit root = sourceCommit();
+		root.setId(rootId);
+		root.setPlanId(UUID.randomUUID());
+		root.setCarryForwardSourceId(null);
+		root.setCarryForwardStreak(0);
+
+		WeeklyCommit current = sourceCommit();
+		current.setId(currentId);
+		current.setPlanId(UUID.randomUUID());
+		current.setCarryForwardSourceId(rootId);
+		current.setCarryForwardStreak(1);
+
+		WeeklyCommit child = sourceCommit();
+		child.setId(childId);
+		child.setPlanId(UUID.randomUUID());
+		child.setCarryForwardSourceId(currentId);
+		child.setCarryForwardStreak(2);
+
+		WeeklyPlan rootPlan = draftTargetPlan();
+		rootPlan.setId(root.getPlanId());
+		rootPlan.setWeekStartDate(LocalDate.of(2025, 6, 2));
+		WeeklyPlan currentPlan = draftTargetPlan();
+		currentPlan.setId(current.getPlanId());
+		currentPlan.setWeekStartDate(LocalDate.of(2025, 6, 9));
+		WeeklyPlan childPlan = draftTargetPlan();
+		childPlan.setId(child.getPlanId());
+		childPlan.setWeekStartDate(LocalDate.of(2025, 6, 16));
+
+		CarryForwardLink rootToCurrent = savedLink(currentId);
+		rootToCurrent.setSourceCommitId(rootId);
+		rootToCurrent.setTargetCommitId(currentId);
+		CarryForwardLink currentToChild = savedLink(childId);
+		currentToChild.setSourceCommitId(currentId);
+		currentToChild.setTargetCommitId(childId);
+
+		when(commitRepo.findById(rootId)).thenReturn(Optional.of(root));
+		when(commitRepo.findById(currentId)).thenReturn(Optional.of(current));
+		when(commitRepo.findById(childId)).thenReturn(Optional.of(child));
+		when(planRepo.findById(root.getPlanId())).thenReturn(Optional.of(rootPlan));
+		when(planRepo.findById(current.getPlanId())).thenReturn(Optional.of(currentPlan));
+		when(planRepo.findById(child.getPlanId())).thenReturn(Optional.of(childPlan));
+		when(linkRepo.findBySourceCommitId(currentId)).thenReturn(List.of(currentToChild));
+		when(linkRepo.findBySourceCommitId(childId)).thenReturn(List.of());
+
+		CarryForwardLineageDetailResponse detail = service.getCarryForwardLineageDetail(currentId);
+
+		assertThat(detail.currentCommitId()).isEqualTo(currentId);
+		assertThat(detail.chain()).hasSize(3);
+		assertThat(detail.chain().get(0).commitId()).isEqualTo(rootId);
+		assertThat(detail.chain().get(1).commitId()).isEqualTo(currentId);
+		assertThat(detail.chain().get(2).commitId()).isEqualTo(childId);
 	}
 
 	@Test

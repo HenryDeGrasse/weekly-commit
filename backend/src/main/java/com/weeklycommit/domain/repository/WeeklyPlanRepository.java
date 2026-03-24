@@ -17,6 +17,8 @@ public interface WeeklyPlanRepository extends JpaRepository<WeeklyPlan, UUID> {
 
 	List<WeeklyPlan> findByTeamIdAndWeekStartDate(UUID teamId, LocalDate weekStartDate);
 
+	List<WeeklyPlan> findByTeamIdOrderByWeekStartDateDesc(UUID teamId);
+
 	List<WeeklyPlan> findByOwnerUserIdOrderByWeekStartDateDesc(UUID ownerUserId);
 
 	List<WeeklyPlan> findByState(PlanState state);

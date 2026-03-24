@@ -1,7 +1,9 @@
 package com.weeklycommit.carryforward.service;
 
+import com.weeklycommit.carryforward.dto.CarryForwardLineageDetailResponse;
 import com.weeklycommit.carryforward.dto.CarryForwardLinkResponse;
 import com.weeklycommit.carryforward.dto.CarryForwardLineageResponse;
+import com.weeklycommit.carryforward.dto.CarryForwardNodeResponse;
 import com.weeklycommit.carryforward.dto.CarryForwardResponse;
 import com.weeklycommit.domain.entity.CarryForwardLink;
 import com.weeklycommit.domain.entity.ScopeChangeEvent;
@@ -140,7 +142,6 @@ public class CarryForwardService {
 	public CarryForwardLineageResponse getCarryForwardLineage(UUID commitId) {
 		requireCommit(commitId);
 
-		// Walk ancestors (upward)
 		List<CarryForwardLink> ancestors = new LinkedList<>();
 		UUID cursor = commitId;
 		while (true) {
@@ -149,12 +150,11 @@ public class CarryForwardService {
 				break;
 			}
 			Optional<CarryForwardLink> link = linkRepo.findByTargetCommitId(cursor);
-			link.ifPresent(l -> ancestors.add(0, l)); // prepend — oldest first
+			link.ifPresent(l -> ancestors.add(0, l));
 			cursor = c.getCarryForwardSourceId();
 		}
 		UUID rootCommitId = cursor;
 
-		// Walk descendants (downward) starting from commitId
 		List<CarryForwardLink> descendants = new ArrayList<>();
 		cursor = commitId;
 		while (true) {
@@ -162,7 +162,6 @@ public class CarryForwardService {
 			if (links.isEmpty()) {
 				break;
 			}
-			// Take the first descendant (one-to-one chain is the normal case)
 			CarryForwardLink next = links.get(0);
 			descendants.add(next);
 			cursor = next.getTargetCommitId();
@@ -176,6 +175,36 @@ public class CarryForwardService {
 		return new CarryForwardLineageResponse(rootCommitId, responses);
 	}
 
+	@Transactional(readOnly = true)
+	public CarryForwardLineageDetailResponse getCarryForwardLineageDetail(UUID commitId) {
+		requireCommit(commitId);
+
+		LinkedList<UUID> commitIds = new LinkedList<>();
+		UUID cursor = commitId;
+		while (true) {
+			WeeklyCommit commit = requireCommit(cursor);
+			commitIds.addFirst(commit.getId());
+			if (commit.getCarryForwardSourceId() == null) {
+				break;
+			}
+			cursor = commit.getCarryForwardSourceId();
+		}
+
+		cursor = commitId;
+		while (true) {
+			List<CarryForwardLink> links = linkRepo.findBySourceCommitId(cursor);
+			if (links.isEmpty()) {
+				break;
+			}
+			CarryForwardLink next = links.get(0);
+			commitIds.addLast(next.getTargetCommitId());
+			cursor = next.getTargetCommitId();
+		}
+
+		List<CarryForwardNodeResponse> chain = commitIds.stream().map(this::toCarryForwardNode).toList();
+		return new CarryForwardLineageDetailResponse(commitId, chain);
+	}
+
 	// -------------------------------------------------------------------------
 	// Private helpers
 	// -------------------------------------------------------------------------
@@ -183,6 +212,14 @@ public class CarryForwardService {
 	private WeeklyCommit requireCommit(UUID commitId) {
 		return commitRepo.findById(commitId)
 				.orElseThrow(() -> new ResourceNotFoundException("Commit not found: " + commitId));
+	}
+
+	private CarryForwardNodeResponse toCarryForwardNode(UUID commitId) {
+		WeeklyCommit commit = requireCommit(commitId);
+		WeeklyPlan plan = planRepo.findById(commit.getPlanId())
+				.orElseThrow(() -> new ResourceNotFoundException("Weekly plan not found: " + commit.getPlanId()));
+		return new CarryForwardNodeResponse(commit.getId(), commit.getPlanId(), plan.getWeekStartDate(),
+				commit.getTitle(), commit.getOutcome(), commit.getCarryForwardStreak());
 	}
 
 	private void validateCommitBelongsToPlan(UUID planId, WeeklyCommit commit) {

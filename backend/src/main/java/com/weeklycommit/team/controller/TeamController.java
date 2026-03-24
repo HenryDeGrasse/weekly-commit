@@ -6,6 +6,7 @@ import com.weeklycommit.team.dto.CommentResponse;
 import com.weeklycommit.team.dto.ExceptionResponse;
 import com.weeklycommit.team.dto.ResolveExceptionRequest;
 import com.weeklycommit.team.dto.SetCapacityOverrideRequest;
+import com.weeklycommit.team.dto.TeamHistoryResponse;
 import com.weeklycommit.team.dto.TeamWeekViewResponse;
 import com.weeklycommit.team.service.ManagerReviewService;
 import com.weeklycommit.team.service.TeamWeeklyViewService;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <li>{@code GET /api/teams/{id}/week/{weekStart}} — team weekly view</li>
  * <li>{@code GET /api/teams/{id}/week/{weekStart}/exceptions} — exception
  * queue</li>
+ * <li>{@code GET /api/teams/{id}/history} — team trend history</li>
  * <li>{@code POST /api/comments} — add manager comment</li>
  * <li>{@code PUT  /api/capacity-overrides} — set capacity override</li>
  * <li>{@code PUT /api/exceptions/{id}/resolve} — resolve exception</li>
@@ -61,6 +63,17 @@ public class TeamController {
 			@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
 			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID callerId) {
 		return ResponseEntity.ok(teamViewService.getTeamWeekView(id, weekStart, callerId));
+	}
+
+	// -------------------------------------------------------------------------
+	// Team history
+	// -------------------------------------------------------------------------
+
+	/** Returns recent week-over-week team trends. */
+	@GetMapping("/api/teams/{id}/history")
+	public ResponseEntity<TeamHistoryResponse> getTeamHistory(@PathVariable UUID id,
+			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID callerId) {
+		return ResponseEntity.ok(teamViewService.getTeamHistory(id, callerId));
 	}
 
 	// -------------------------------------------------------------------------

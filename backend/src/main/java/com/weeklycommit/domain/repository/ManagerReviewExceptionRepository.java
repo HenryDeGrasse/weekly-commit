@@ -17,6 +17,8 @@ public interface ManagerReviewExceptionRepository extends JpaRepository<ManagerR
 
 	List<ManagerReviewException> findByTeamIdAndWeekStartDate(UUID teamId, LocalDate weekStartDate);
 
+	long countByTeamIdAndWeekStartDate(UUID teamId, LocalDate weekStartDate);
+
 	/**
 	 * Used for idempotent exception detection: find an existing unresolved
 	 * exception for a specific plan + type combination.
