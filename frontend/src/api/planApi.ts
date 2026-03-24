@@ -1,0 +1,89 @@
+/**
+ * Plan and Commit API call functions built on top of the generic ApiClient.
+ * Each function maps to one backend endpoint in PlanController.
+ */
+
+import type { ApiClient } from "./client.js";
+import type {
+  PlanWithCommitsResponse,
+  CreateCommitPayload,
+  UpdateCommitPayload,
+  CommitResponse,
+} from "./planTypes.js";
+
+export function createPlanApi(client: ApiClient, actorUserId: string) {
+  const actorHeader = { "X-Actor-User-Id": actorUserId };
+
+  return {
+    /**
+     * POST /api/plans — get-or-create the plan for a user + optional week.
+     * If weekStartDate is omitted, the backend uses the current Monday.
+     */
+    getOrCreatePlan: (
+      userId: string,
+      weekStartDate?: string,
+    ): Promise<PlanWithCommitsResponse> =>
+      client.post("/plans", {
+        userId,
+        ...(weekStartDate ? { weekStartDate } : {}),
+      }),
+
+    /** GET /api/plans/{id} — plan detail with commits in priority order. */
+    getPlan: (planId: string): Promise<PlanWithCommitsResponse> =>
+      client.get(`/plans/${encodeURIComponent(planId)}`),
+
+    /** POST /api/plans/{planId}/commits — create a commit on a DRAFT plan. */
+    createCommit: (
+      planId: string,
+      payload: CreateCommitPayload,
+    ): Promise<CommitResponse> =>
+      client.post(
+        `/plans/${encodeURIComponent(planId)}/commits`,
+        payload,
+        { headers: actorHeader },
+      ),
+
+    /** PUT /api/plans/{planId}/commits/{commitId} — update mutable commit fields. */
+    updateCommit: (
+      planId: string,
+      commitId: string,
+      payload: UpdateCommitPayload,
+    ): Promise<CommitResponse> =>
+      client.put(
+        `/plans/${encodeURIComponent(planId)}/commits/${encodeURIComponent(commitId)}`,
+        payload,
+        { headers: actorHeader },
+      ),
+
+    /** DELETE /api/plans/{planId}/commits/{commitId} — delete a commit. */
+    deleteCommit: (planId: string, commitId: string): Promise<void> =>
+      client.delete(
+        `/plans/${encodeURIComponent(planId)}/commits/${encodeURIComponent(commitId)}`,
+        { headers: actorHeader },
+      ),
+
+    /**
+     * PUT /api/plans/{planId}/commits/reorder — reorder commits by supplying
+     * all commit IDs in the desired priority order.
+     */
+    reorderCommits: (
+      planId: string,
+      commitIds: string[],
+    ): Promise<PlanWithCommitsResponse> =>
+      client.put(
+        `/plans/${encodeURIComponent(planId)}/commits/reorder`,
+        { commitIds },
+        { headers: actorHeader },
+      ),
+
+    /** POST /api/plans/{id}/lock — manually lock a DRAFT plan. */
+    lockPlan: (planId: string): Promise<unknown> =>
+      client.post(
+        `/plans/${encodeURIComponent(planId)}/lock`,
+        {},
+        { headers: actorHeader },
+      ),
+  };
+}
+
+export type PlanApi = ReturnType<typeof createPlanApi>;

@@ -1,0 +1,46 @@
+Reviewed the Step 11 frontend diff in:
+- `frontend/src/routes/MyWeek.tsx`
+- `frontend/src/api/{planTypes.ts,planApi.ts,planHooks.ts}`
+- `frontend/src/components/myweek/{CommitList.tsx,CommitForm.tsx,CapacityMeter.tsx,SoftWarningsPanel.tsx}`
+- `frontend/src/__tests__/{MyWeekPage.test.tsx,CommitForm.test.tsx,CommitList.test.tsx,CapacityMeter.test.tsx}`
+
+Ran all required checks:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+All pass.
+
+I found and fixed two material defects:
+
+1. **My Week was rendering only the RCDO node title, not the full path**
+   - Requirement says the commit list should show the RCDO path.
+   - `MyWeek.tsx` was building `rcdoLabels` as `id -> title` only.
+   - Fixed to build full breadcrumb-style paths, e.g.:
+     - `Grow Revenue > Enterprise Sales > Close 10 Deals`
+
+2. **CommitForm did not enforce RCDO linkage rules in the UI**
+   - The picker allowed selecting invalid RCDO targets like:
+     - Rally Cries
+     - Defining Objectives that still have active Outcome children
+   - That violated the step requirement that the selector enforce linkage rules client-side.
+   - Fixed by blocking invalid selections, keeping the picker open, and showing a validation message.
+   - Added tests for:
+     - valid Outcome selection
+     - blocking Rally Cry selection
+     - blocking invalid DO selection
+
+Files changed:
+- `frontend/src/routes/MyWeek.tsx`
+- `frontend/src/components/myweek/CommitForm.tsx`
+- `frontend/src/__tests__/MyWeekPage.test.tsx`
+- `frontend/src/__tests__/CommitForm.test.tsx`
+
+```observations
+- [low] frontend/src/components/Header.tsx: React Refresh lint warns because `getWeekMonday` is exported from a component file. Not breaking.
+- [low] frontend/src/host/HostProvider.tsx: React Refresh lint warns due to non-component exports in the same file. Not breaking.
+- [low] frontend/src/host/MockHostProvider.tsx: React Refresh lint warns due to non-component exports in the same file. Not breaking.
+```
+
+Verdict: changes_made

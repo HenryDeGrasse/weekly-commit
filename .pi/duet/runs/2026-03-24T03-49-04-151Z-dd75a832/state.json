@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-24T07:12:20.266Z",
+  "updatedAt": "2026-03-24T07:35:30.550Z",
   "runId": "2026-03-24T03-49-04-151Z-dd75a832",
   "handoffMode": "none",
   "postPlanMode": "review",
@@ -72,8 +72,8 @@
   "planSourcePath": "docs/prd.md",
   "round": 3,
   "activeSummary": {
-    "stepId": "step-10",
-    "stepTitle": "RCDO management UI",
+    "stepId": "step-11",
+    "stepTitle": "My Week page with commit list and capacity meter",
     "gateResults": [
       {
         "id": "lint",
@@ -323,6 +323,6 @@
       }
     ]
   },
-  "stepIndex": 10,
+  "stepIndex": 11,
   "resumeAction": "run"
 }

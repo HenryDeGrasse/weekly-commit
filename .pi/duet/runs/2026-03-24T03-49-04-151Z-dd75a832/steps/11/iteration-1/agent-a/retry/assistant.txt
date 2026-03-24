@@ -1,0 +1,31 @@
+All checks pass. Here's a summary of what was implemented:
+
+## What was built
+
+### API Layer
+- **`planTypes.ts`**: TypeScript types mirroring the Java backend DTOs (`PlanResponse`, `CommitResponse`, `PlanWithCommitsResponse`, `CreateCommitPayload`, `UpdateCommitPayload`)
+- **`planApi.ts`**: API functions for all plan/commit operations (get-or-create plan, create/update/delete commit, reorder, lock)
+- **`planHooks.ts`**: React hooks (`usePlanApi`, `useCurrentPlan`) following the same pattern as `rcdoHooks.ts`
+
+### Components (`/components/myweek/`)
+- **`CapacityMeter.tsx`**: Visual bar/gauge with green/yellow/red color coding, per-chess-piece breakdown, manager override badge
+- **`SoftWarningsPanel.tsx`**: Warns when >8 active commits or >40% pawn points (UI-only, not lock blockers)
+- **`CommitForm.tsx`**: Full modal form with all required fields — title (required), description, chess piece radio with icons/descriptions and limit enforcement (Max 1 King, Max 2 Queens), estimate points segmented control (1/2/3/5/8), RCDO hierarchical picker using `RcdoTreeView`, success criteria (required for King/Queen), linked ticket; carry-forward provenance banner
+- **`CommitList.tsx`**: Ordered list with DnD reorder (`@dnd-kit/sortable`), move-up/down keyboard buttons (WCAG 2.1 AA), inline expand with description/success criteria/provenance, edit/delete actions (DRAFT-only)
+
+### Page
+- **`MyWeek.tsx`**: Full implementation with week selector (prev/next/today), plan state badge (DRAFT/LOCKED/RECONCILING/RECONCILED), compliance indicator, lock button (DRAFT only), reconcile hint (LOCKED/RECONCILING), capacity meter, soft warnings, commit list, CommitForm modal, delete confirm dialog
+
+### Tests (204 total, all passing)
+- **`CommitList.test.tsx`** (29 tests): Priority order rendering, keyboard reorder, inline expand, state-based button visibility
+- **`CommitForm.test.tsx`** (31 tests): Required field validation, chess piece limit enforcement, estimate points, RCDO picker, carry-forward banner, submission
+- **`CapacityMeter.test.tsx`** (16 tests): Totals display, color coding, breakdown by piece, override badge
+- **`MyWeekPage.test.tsx`** (27 tests): Week navigation, plan state badge, lock button, soft warnings at thresholds, capacity meter
+
+Verdict: changes_made
+
+```observations
+- [low] frontend/src/components/myweek/CommitList.tsx: The useEffect for syncing localCommits uses `incomingIdsKey` (sorted commit IDs) as dependency. After a server refetch following a reorder (same IDs, new priorityOrder values), the effect won't fire, so localCommits will preserve the optimistically reordered state. This is intentional but means if the server returns a different order than the optimistic one, the UI will be stale until the ID set changes.
+- [low] frontend/src/components/myweek/CommitForm.tsx: The linked ticket field accepts a free-text workItemId. In a future step (step 14, Tickets UI), this should be upgraded to a search/select picker backed by GET /api/tickets?teamId=...
+- [low] frontend/src/routes/MyWeek.tsx: The `buildRcdoLabels()` helper is called unconditionally on every render. Since it traverses the RCDO tree, it could be memoized with `useMemo` for performance with large trees (acceptable for v1).
+```
