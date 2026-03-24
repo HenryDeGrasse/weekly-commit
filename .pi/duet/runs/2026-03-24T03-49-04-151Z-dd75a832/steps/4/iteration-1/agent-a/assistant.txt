@@ -1,0 +1,39 @@
+All four checks pass. Here's a complete summary:
+
+## What was implemented
+
+### New files — `backend/src/main/java/com/weeklycommit/plan/`
+
+**Exceptions:**
+- `exception/PlanValidationException` — domain rule violations for the plan/commit module (→ HTTP 400)
+
+**DTOs (Java records):**
+- `dto/CreatePlanRequest` — `@NotNull userId` + optional `weekStartDate` (defaults to current Monday)
+- `dto/PlanResponse` — flat plan header with `from(WeeklyPlan)` factory
+- `dto/CommitResponse` — full commit fields with `from(WeeklyCommit)` factory
+- `dto/PlanWithCommitsResponse` — plan + priority-ordered commits + total points
+- `dto/CreateCommitRequest` — `@NotBlank title`, `@NotNull chessPiece`, optional fields
+- `dto/UpdateCommitRequest` — all-nullable partial update
+- `dto/ReorderCommitsRequest` — `@NotNull @NotEmpty List<UUID> commitIds`
+
+**Service layer:**
+- `service/WeeklyPlanService` — `getOrCreatePlan` (idempotent, snapshots homeTeamId + capacity from user), `getMyCurrentWeekPlan`, `listPlansForUser`, `getPlanWithCommits`, `currentWeekStart()` (returns current week's Monday UTC)
+- `service/CommitService` — create/update/delete/reorder with: DRAFT state enforcement, chess-piece limit validation (1 King, 2 Queen), Fibonacci estimate point validation {1,2,3,5,8}, success-criteria required for KING/QUEEN, RCDO linkage delegation to `RcdoLinkageValidator`, RCDO default-from-ticket on create, sequential priority renumbering after delete
+
+**REST controller:**
+- `controller/PlanController` — 7 endpoints matching the step spec: `GET /api/plans`, `POST /api/plans`, `GET /api/plans/{id}`, `POST /api/plans/{id}/commits`, `PUT /api/plans/{id}/commits/{commitId}`, `DELETE /api/plans/{id}/commits/{commitId}` (204), `PUT /api/plans/{id}/commits/reorder`
+
+### Updated files
+- `rcdo/controller/GlobalExceptionHandler` — added `@ExceptionHandler(PlanValidationException.class)` for cross-module 400 handling
+
+### Tests (39 new test cases, all passing)
+- `WeeklyPlanServiceTest` (7) — existing-plan-returned, new-plan-created, capacity-snapshot, user-not-found, no-home-team, list-plans, currentWeekStart-is-Monday
+- `CommitServiceTest` (22) — plan state, King/Queen limits, second-Queen allowed, third-Queen blocked, estimate points, success-criteria enforcement per piece, RCDO validation delegation, update with partial patch, chess-piece revalidation on update, delete with renumbering, reorder validation
+- `PlanControllerTest` (10) — list, get-or-create, 404s, create commit, validation errors (400), delete (204), reorder, empty-list-rejected
+
+```observations
+- [low] backend/src/main/java/com/weeklycommit/plan/controller/PlanController.java: Uses `java.time.LocalDate` import inline inside the method body. Could be hoisted to top-level import for style consistency, but passes Spotless/compile fine.
+- [low] backend/src/test/: `@MockBean` deprecated warning present on PlanControllerTest (same as existing RcdoControllerTest). Not breaking; migrate to `@MockitoBean` in a future cleanup step.
+```
+
+Verdict: changes_made

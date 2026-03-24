@@ -1,5 +1,6 @@
 package com.weeklycommit.rcdo.controller;
 
+import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.RcdoValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
 import java.util.LinkedHashMap;
@@ -16,6 +17,11 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(RcdoValidationException.class)
 	public ResponseEntity<Map<String, Object>> handleRcdoValidation(RcdoValidationException ex) {
+		return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
+	}
+
+	@ExceptionHandler(PlanValidationException.class)
+	public ResponseEntity<Map<String, Object>> handlePlanValidation(PlanValidationException ex) {
 		return ResponseEntity.badRequest().body(errorBody(ex.getMessage()));
 	}
 

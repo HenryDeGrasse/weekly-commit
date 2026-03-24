@@ -1,0 +1,33 @@
+Reviewed the Step 4 diff in:
+- `backend/src/main/java/com/weeklycommit/plan/**`
+- `backend/src/main/java/com/weeklycommit/rcdo/controller/GlobalExceptionHandler.java`
+- `backend/src/test/java/com/weeklycommit/plan/**`
+
+I verified the required behavior and ran:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+All pass.
+
+I found two material defects and fixed them:
+
+1. Commit ownership on create was wrong  
+   - `CommitService.createCommit(...)` was assigning `ownerUserId` from the request actor header (or a zero UUID), instead of the weekly plan owner.
+   - Fixed to always set the commit owner to `plan.getOwnerUserId()`.
+
+2. Update/delete endpoints did not enforce that the commit belonged to the `{planId}` in the route  
+   - `PUT /api/plans/{id}/commits/{commitId}` and `DELETE /api/plans/{id}/commits/{commitId}` ignored the path `planId`, so a commit from another plan could be modified/deleted through the wrong plan route.
+   - Fixed by passing `planId` into the service methods and validating the commit belongs to that plan.
+
+Files changed:
+- `backend/src/main/java/com/weeklycommit/plan/controller/PlanController.java`
+- `backend/src/main/java/com/weeklycommit/plan/service/CommitService.java`
+- `backend/src/test/java/com/weeklycommit/plan/service/CommitServiceTest.java`
+
+```observations
+- [low] backend/src/test/java/com/weeklycommit/plan/controller/PlanControllerTest.java: Uses deprecated `@MockBean`, which currently only emits warnings. Future steps may want to migrate to the replacement API.
+```
+
+Verdict: changes_made

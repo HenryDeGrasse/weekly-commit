@@ -1,0 +1,38 @@
+[
+  {
+    "checkId": "lint",
+    "cmd": "npm run lint",
+    "exitCode": 0,
+    "passed": true,
+    "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/4/iteration-3/controller/outputs/lint.stdout.txt",
+    "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/4/iteration-3/controller/outputs/lint.stderr.txt",
+    "truncatedPreview": "> weekly-commit-monorepo@1.0.0 lint\n> npm run lint -w frontend && npm run lint -w @weekly-commit/shared && cd backend && ./gradlew spotlessCheck\n\n\n> frontend@1.0.0 lint\n> eslint src\n\n\n> @weekly-commit/shared@1.0.0 lint\n> eslint src\n\n> Task :spotlessInternalRegisterDependencies UP-TO-DATE\n> Task :spotlessJava UP-TO-DATE\n> Task :spotlessJavaCheck UP-TO-DATE\n> Task :spotlessCheck UP-TO-DATE\n\nBUILD SUCCESSFUL in 276ms\n3 actionable tasks: 3 up-to-date\nConsider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.1/userguide/configuration_cache_enabling.html"
+  },
+  {
+    "checkId": "typecheck",
+    "cmd": "npm run typecheck",
+    "exitCode": 0,
+    "passed": true,
+    "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/4/iteration-3/controller/outputs/typecheck.stdout.txt",
+    "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/4/iteration-3/controller/outputs/typecheck.stderr.txt",
+    "truncatedPreview": "> weekly-commit-monorepo@1.0.0 typecheck\n> npm run typecheck -w frontend && npm run typecheck -w @weekly-commit/shared\n\n\n> frontend@1.0.0 typecheck\n> tsc --noEmit\n\n\n> @weekly-commit/shared@1.0.0 typecheck\n> tsc --noEmit"
+  },
+  {
+    "checkId": "unit",
+    "cmd": "npm test",
+    "exitCode": 0,
+    "passed": true,
+    "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/4/iteration-3/controller/outputs/unit.stdout.txt",
+    "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/4/iteration-3/controller/outputs/unit.stderr.txt",
+    "truncatedPreview": "> weekly-commit-monorepo@1.0.0 test\n> npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test\n\n\n> frontend@1.0.0 test\n> vitest --run\n\n\n RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend\n\n ✓ src/App.test.tsx (1 test) 1ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:18:33\n   Duration  137ms (transform 15ms, setup 0ms, collect 14ms, tests 1ms, environment 0ms, prepare 31ms)\n\n\n> @weekly-commit/shared@1.0.0 test\n> vitest --run\n\n\n RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/packages/shared\n\n ✓ src/index.test.ts (5 tests) 1ms\n ✓ src/validators.test.ts (15 tests) 2ms\n\n Test Files  2 passed (2)\n      Tests  20 passed (20)\n   Start at  00:18:34\n   Duration  150ms (transform 31ms, setup 0ms, collect 39ms, tests 3ms, environment 0ms, prepare 64ms)\n\n> Task :compileJava UP-TO-DATE\n> Task :processResources UP-TO-DATE\n> Task :classes UP-TO-DATE\n> Task :compileTestJava UP-TO-DATE\n> Task :processTestResources UP-TO-DATE\n> Task :testClasses UP-TO-DATE\n> Task :test UP-TO-DATE\n\nBUILD SUCCESSFUL in 312ms\n5 actionable tasks: 5 up-to-date\nConsider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.1/userguide/configuration_cache_enabling.html"
+  },
+  {
+    "checkId": "build",
+    "cmd": "npm run build",
+    "exitCode": 0,
+    "passed": true,
+    "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/4/iteration-3/controller/outputs/build.stdout.txt",
+    "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/4/iteration-3/controller/outputs/build.stderr.txt",
+    "truncatedPreview": "> weekly-commit-monorepo@1.0.0 build\n> npm run build -w @weekly-commit/shared && npm run build -w frontend && cd backend && ./gradlew build -x test\n\n\n> @weekly-commit/shared@1.0.0 build\n> tsc -p tsconfig.build.json\n\n\n> frontend@1.0.0 build\n> vite build\n\nvite v5.4.21 building for production...\ntransforming...\n✓ 30 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                  0.33 kB │ gzip:  0.24 kB\ndist/assets/index-CCPzkKFe.js  142.69 kB │ gzip: 45.85 kB\n✓ built in 211ms\n> Task :compileJava UP-TO-DATE\n> Task :processResources UP-TO-DATE\n> Task :classes UP-TO-DATE\n> Task :resolveMainClassName UP-TO-DATE\n> Task :bootJar UP-TO-DATE\n> Task :jar UP-TO-DATE\n> Task :assemble UP-TO-DATE\n> Task :spotlessInternalRegisterDependencies UP-TO-DATE\n> Task :spotlessJava UP-TO-DATE\n> Task :spotlessJavaCheck UP-TO-DATE\n> Task :spotlessCheck UP-TO-DATE\n> Task :check\n> Task :build\n\nBUILD SUCCESSFUL in 336ms\n8 actionable tasks: 8 up-to-date\nConsider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.1/userguide/configuration_cache_enabling.html"
+  }
+]

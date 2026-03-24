@@ -1,0 +1,116 @@
+package com.weeklycommit.plan.service;
+
+import com.weeklycommit.domain.entity.UserAccount;
+import com.weeklycommit.domain.entity.WeeklyCommit;
+import com.weeklycommit.domain.entity.WeeklyPlan;
+import com.weeklycommit.domain.enums.PlanState;
+import com.weeklycommit.domain.repository.UserAccountRepository;
+import com.weeklycommit.domain.repository.WeeklyCommitRepository;
+import com.weeklycommit.domain.repository.WeeklyPlanRepository;
+import com.weeklycommit.plan.dto.CommitResponse;
+import com.weeklycommit.plan.dto.PlanResponse;
+import com.weeklycommit.plan.dto.PlanWithCommitsResponse;
+import com.weeklycommit.plan.exception.PlanValidationException;
+import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalAdjusters;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional
+public class WeeklyPlanService {
+
+	private final WeeklyPlanRepository planRepo;
+	private final UserAccountRepository userRepo;
+	private final WeeklyCommitRepository commitRepo;
+
+	public WeeklyPlanService(WeeklyPlanRepository planRepo, UserAccountRepository userRepo,
+			WeeklyCommitRepository commitRepo) {
+		this.planRepo = planRepo;
+		this.userRepo = userRepo;
+		this.commitRepo = commitRepo;
+	}
+
+	// -------------------------------------------------------------------------
+	// Public API
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns the existing DRAFT plan for the given user+week, or lazily creates
+	 * one. Enforces the one-plan-per-user-per-week invariant via the unique
+	 * constraint in the database; the in-memory check here is an early guard.
+	 */
+	public WeeklyPlan getOrCreatePlan(UUID userId, LocalDate weekStartDate) {
+		return planRepo.findByOwnerUserIdAndWeekStartDate(userId, weekStartDate)
+				.orElseGet(() -> createDraftPlan(userId, weekStartDate));
+	}
+
+	/**
+	 * Convenience: resolve the current week's Monday and delegate to getOrCreate.
+	 */
+	public WeeklyPlan getMyCurrentWeekPlan(UUID userId) {
+		return getOrCreatePlan(userId, currentWeekStart());
+	}
+
+	/** Returns the plan with its commits ordered by priority. */
+	@Transactional(readOnly = true)
+	public PlanWithCommitsResponse getPlanWithCommits(UUID planId) {
+		WeeklyPlan plan = findById(planId);
+		return toResponse(plan);
+	}
+
+	/** Lists all plans for a user in descending week order. */
+	@Transactional(readOnly = true)
+	public List<PlanResponse> listPlansForUser(UUID userId) {
+		return planRepo.findByOwnerUserIdOrderByWeekStartDateDesc(userId).stream().map(PlanResponse::from).toList();
+	}
+
+	/** Calculates the Monday of the current ISO week (UTC). */
+	public static LocalDate currentWeekStart() {
+		return LocalDate.now(ZoneOffset.UTC).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+	}
+
+	// -------------------------------------------------------------------------
+	// Internal helpers
+	// -------------------------------------------------------------------------
+
+	private WeeklyPlan createDraftPlan(UUID userId, LocalDate weekStartDate) {
+		UserAccount user = userRepo.findById(userId)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+		if (user.getHomeTeamId() == null) {
+			throw new PlanValidationException("User " + userId + " has no home team; cannot create a weekly plan");
+		}
+
+		WeeklyPlan plan = new WeeklyPlan();
+		plan.setOwnerUserId(userId);
+		plan.setTeamId(user.getHomeTeamId());
+		plan.setWeekStartDate(weekStartDate);
+		plan.setState(PlanState.DRAFT);
+		plan.setCapacityBudgetPoints(user.getWeeklyCapacityPoints());
+
+		// Default cadence: lock by Monday noon, reconcile due next Monday 10:00 UTC
+		plan.setLockDeadline(weekStartDate.atTime(12, 0).toInstant(ZoneOffset.UTC));
+		plan.setReconcileDeadline(weekStartDate.plusDays(7).atTime(10, 0).toInstant(ZoneOffset.UTC));
+
+		return planRepo.save(plan);
+	}
+
+	WeeklyPlan findById(UUID planId) {
+		return planRepo.findById(planId)
+				.orElseThrow(() -> new ResourceNotFoundException("Weekly plan not found: " + planId));
+	}
+
+	PlanWithCommitsResponse toResponse(WeeklyPlan plan) {
+		List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());
+		int totalPoints = commits.stream().mapToInt(c -> c.getEstimatePoints() != null ? c.getEstimatePoints() : 0)
+				.sum();
+		return new PlanWithCommitsResponse(PlanResponse.from(plan), commits.stream().map(CommitResponse::from).toList(),
+				totalPoints);
+	}
+}

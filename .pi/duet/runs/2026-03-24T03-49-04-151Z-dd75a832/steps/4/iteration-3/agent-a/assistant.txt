@@ -1,0 +1,7 @@
+All four checks pass cleanly. No defects to fix.
+
+```observations
+- [low] backend/src/test/java/com/weeklycommit/plan/controller/PlanControllerTest.java: Uses deprecated `@MockBean`. Emits compile warnings but does not break anything. Migrate to `@MockitoBean` when convenient.
+```
+
+Verdict: approve
