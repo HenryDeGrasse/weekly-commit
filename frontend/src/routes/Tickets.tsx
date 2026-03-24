@@ -385,11 +385,11 @@ export default function Tickets() {
 
   const handleStatusTransition = useCallback(
     async (ticketId: string, newStatus: TicketStatus) => {
-      await ticketApi.updateTicket(ticketId, { status: newStatus });
+      await ticketApi.transitionStatus(ticketId, newStatus, currentUserId);
       refetchDetail();
       refetchTickets();
     },
-    [ticketApi, refetchDetail, refetchTickets],
+    [ticketApi, refetchDetail, refetchTickets, currentUserId],
   );
 
   // ── Assignment change ────────────────────────────────────────────────────

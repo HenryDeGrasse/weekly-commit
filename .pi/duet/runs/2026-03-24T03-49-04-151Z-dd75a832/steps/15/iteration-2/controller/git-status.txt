@@ -1,0 +1,9 @@
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/cost.json
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/observations.jsonl
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/sessions/continuous/relay-a/2026-03-24T04-23-35-130Z_4c4202d2-9023-459a-b908-dfaede19919d.jsonl
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/sessions/continuous/relay-b/2026-03-24T04-35-30-972Z_471484d6-96e0-4a6b-86fc-b9b081fa294f.jsonl
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/state.json
+ M frontend/src/__tests__/TicketsPage.test.tsx
+ M frontend/src/api/ticketApi.ts
+ M frontend/src/routes/Tickets.tsx
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/15/

@@ -111,6 +111,7 @@ const mockTicketApi = {
   updateTicket: vi.fn(),
   deleteTicket: vi.fn(),
   createTicketFromCommit: vi.fn(),
+  transitionStatus: vi.fn(),
   getPlanHistory: vi.fn(),
   getCarryForwardLineage: vi.fn(),
   getTeamHistory: vi.fn(),
@@ -148,6 +149,7 @@ beforeEach(() => {
   });
   mockTicketApi.createTicket.mockReset();
   mockTicketApi.updateTicket.mockReset();
+  mockTicketApi.transitionStatus.mockReset();
 });
 
 function renderPage(search = "") {
@@ -371,8 +373,8 @@ describe("TicketDetailView — status transitions", () => {
     expect(screen.queryByTestId("status-transition-buttons")).not.toBeInTheDocument();
   });
 
-  it("clicking a transition button calls updateTicket", async () => {
-    mockTicketApi.updateTicket.mockResolvedValue(
+  it("clicking a transition button calls transitionStatus", async () => {
+    mockTicketApi.transitionStatus.mockResolvedValue(
       makeTicketDetail("t-1", { status: "IN_PROGRESS" }),
     );
     vi.mocked(useTicket).mockReturnValue({
@@ -387,9 +389,11 @@ describe("TicketDetailView — status transitions", () => {
       fireEvent.click(screen.getByTestId("transition-btn-in_progress"));
     });
     await waitFor(() =>
-      expect(mockTicketApi.updateTicket).toHaveBeenCalledWith("t-1", {
-        status: "IN_PROGRESS",
-      }),
+      expect(mockTicketApi.transitionStatus).toHaveBeenCalledWith(
+        "t-1",
+        "IN_PROGRESS",
+        expect.any(String),
+      ),
     );
   });
 });

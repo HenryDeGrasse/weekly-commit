@@ -11,6 +11,7 @@ import type {
   CreateTicketPayload,
   UpdateTicketPayload,
   TicketListParams,
+  TicketStatus,
   WeeklyPlanHistoryEntry,
   CarryForwardLineageResponse,
   TeamHistoryResponse,
@@ -63,6 +64,21 @@ export function createTicketApi(client: ApiClient, actorUserId: string) {
       client.delete(`/tickets/${encodeURIComponent(ticketId)}`, {
         headers: actorHeader,
       }),
+
+    /**
+     * PUT /api/tickets/{id}/status — dedicated status transition endpoint.
+     * Records who made the change for the audit history.
+     */
+    transitionStatus: (
+      ticketId: string,
+      newStatus: TicketStatus,
+      changedByUserId: string,
+    ): Promise<TicketResponse> =>
+      client.put(
+        `/tickets/${encodeURIComponent(ticketId)}/status`,
+        { status: newStatus, changedByUserId },
+        { headers: actorHeader },
+      ),
 
     /**
      * POST /api/tickets/from-commit — create a ticket pre-populated from a commit.

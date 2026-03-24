@@ -1,0 +1,31 @@
+All checks pass: typecheck, lint, unit tests, and build.
+
+## Summary
+
+**What I reviewed:**
+
+1. **Backend contracts from step 14** — `TicketStatus.java` has `TODO, IN_PROGRESS, BLOCKED, DONE, CANCELED` (5 values, no BACKLOG/READY). `V3__add_ticket_priority.sql` explicitly constrains status to these 5 values. The step description assumed BACKLOG/READY would be in the backend, but step 14 used TODO instead.
+
+2. **Type alignment** — All backend DTOs (`TicketDetailResponse`, `TicketSummaryResponse`, `LinkedCommitEntry`, `TicketStatusHistoryResponse`, `WeeklyPlanHistoryEntry`, `TeamHistoryResponse`, `CarryForwardLineageDetailResponse`) already match the frontend types in `ticketTypes.ts`. No type mismatches.
+
+3. **Status transition API** — Material bug: `Tickets.tsx` called `updateTicket(id, { status })` instead of the dedicated `PUT /api/tickets/{id}/status` endpoint that requires `changedByUserId` for the audit trail.
+
+4. **View wiring** — `PlanHistoryView`, `CarryForwardLineageView`, and `TeamHistoryView` are already imported and wired into `MyWeek.tsx` and `TeamWeek.tsx` respectively.
+
+**What I changed:**
+
+1. **`ticketApi.ts`**: Added `TicketStatus` to imports; added `transitionStatus(ticketId, newStatus, changedByUserId)` method that calls `PUT /api/tickets/{id}/status`.
+
+2. **`Tickets.tsx`**: Updated `handleStatusTransition` to call `ticketApi.transitionStatus(ticketId, newStatus, currentUserId)` instead of `ticketApi.updateTicket(ticketId, { status })`.
+
+3. **`TicketsPage.test.tsx`**: Added `transitionStatus: vi.fn()` to `mockTicketApi`; reset it in `beforeEach`; updated the status transition test to verify `transitionStatus` is called with `(ticketId, "IN_PROGRESS", expect.any(String))`.
+
+**Changes NOT made** (step description conflicts with actual backend from step 14): Adding BACKLOG/READY enum values, changing default status from TODO to BACKLOG, adding BACKLOG/READY to status badge styles — all would break alignment with the real backend that uses TODO.
+
+Verdict: changes_made
+
+```observations
+- [medium] frontend/src/api/ticketTypes.ts: The `TicketResponse` interface is named differently from the backend's `TicketDetailResponse`. While functionally equivalent, this naming inconsistency could confuse future developers. A type alias `type TicketDetailResponse = TicketResponse` could help bridge the gap.
+- [low] frontend/src/__tests__/TicketsPage.test.tsx: The filter status test "shows clear-all button when a filter is active" uses `status: 'TODO'` which is correct given the current backend, but if backend ever adds BACKLOG/READY, this test would need updating.
+- [low] backend/src/main/java/com/weeklycommit/ticket/dto/TicketStatusHistoryResponse.java: The `mapStatus` method handles "BACKLOG" and "READY" → TODO conversion, suggesting these values may once have existed. This dead code could be cleaned up since V3 migration removes those values.
+```
