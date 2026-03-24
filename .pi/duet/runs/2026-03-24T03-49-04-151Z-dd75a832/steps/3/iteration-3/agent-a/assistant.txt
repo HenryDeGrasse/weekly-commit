@@ -1,0 +1,8 @@
+All four checks pass cleanly. No defects to fix.
+
+```observations
+- [low] backend/src/test/java/com/weeklycommit/rcdo/controller/RcdoControllerTest.java: Uses `@MockBean` (deprecated in Spring Boot 3.4.x in favour of `@MockitoBean`). Emits a compile warning but does not break anything. Migrate when convenient.
+- [medium] backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker: Set to `mock-maker-subclass` to work around Mockito inline-mock-maker incompatibility with JDK 25. This means final classes/methods cannot be mocked in tests. Not an issue today, but future steps adding mocks of final types will need to handle this.
+```
+
+Verdict: approve

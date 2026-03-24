@@ -15,6 +15,8 @@ public interface RcdoNodeRepository extends JpaRepository<RcdoNode, UUID> {
 
 	List<RcdoNode> findByParentId(UUID parentId);
 
+	List<RcdoNode> findByParentIdAndStatus(UUID parentId, RcdoNodeStatus status);
+
 	List<RcdoNode> findByNodeTypeAndStatus(RcdoNodeType nodeType, RcdoNodeStatus status);
 
 	List<RcdoNode> findByOwnerTeamId(UUID ownerTeamId);

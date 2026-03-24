@@ -1,0 +1,44 @@
+All 4 checks pass. Here is a complete summary:
+
+## What was implemented
+
+### New files created — `backend/src/main/java/com/weeklycommit/rcdo/`
+
+**Exceptions:**
+- `exception/RcdoValidationException` — thrown on domain rule violations (→ HTTP 400)
+- `exception/ResourceNotFoundException` — thrown when a node ID is not found (→ HTTP 404)
+
+**DTOs (Java records):**
+- `dto/CreateRcdoNodeRequest` — `@NotNull nodeType`, optional `parentId`, `@NotBlank title`, description/ownerTeam/ownerUser
+- `dto/UpdateRcdoNodeRequest` — all-nullable partial update fields
+- `dto/MoveRcdoNodeRequest` — `@NotNull newParentId`
+- `dto/RcdoNodeResponse` — flat response with `from(RcdoNode)` factory
+- `dto/RcdoNodeWithPathResponse` — node + ordered ancestor list `[root → parent]`
+- `dto/RcdoTreeNodeResponse` — recursive nested tree
+
+**Service layer:**
+- `service/RcdoService` — create, read, update, activate, archive, move; strict hierarchy enforcement; `RcdoChangeLog` written on every mutation
+- `service/RcdoLinkageValidator` — `validateCommitLinkage(UUID)` enforcing "Outcome when active Outcomes exist, DO when none do, never Rally Cry"
+
+**REST controller + exception handler:**
+- `controller/RcdoController` — 7 endpoints (`POST /nodes`, `GET /nodes`, `GET /nodes/{id}`, `PUT /nodes/{id}`, `POST /nodes/{id}/activate`, `POST /nodes/{id}/archive`, `POST /nodes/{id}/move`, `GET /tree`)
+- `controller/GlobalExceptionHandler` — maps `RcdoValidationException`→400, `ResourceNotFoundException`→404, `MethodArgumentNotValidException`→400
+
+### Repository updates
+- `RcdoNodeRepository` — added `findByParentIdAndStatus`
+- `RcdoChangeLogRepository` — added import + `findByRcdoNodeIdOrderByCreatedAtAsc`
+
+### Tests (39 new test cases, all passing)
+- `RcdoServiceTest` (20 tests) — hierarchy enforcement, status transitions, archival rules, move, update, change log creation
+- `RcdoLinkageValidatorTest` (9 tests) — all linkage permutations
+- `RcdoControllerTest` (10 tests) — happy path + validation/not-found error responses
+
+### Infrastructure fixes
+- `src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` = `mock-maker-subclass` to work around Mockito's inline bytecode generator incompatibility with JDK 25
+
+```observations
+- [medium] backend/src/test/: Mockito's inline mock maker (InlineBytecodeGenerator) is incompatible with JDK 25. Switched to subclass mock maker via the extensions file. This means final classes/methods cannot be mocked in tests — not an issue for our service classes but worth noting for future steps.
+- [low] backend/src/main/java/com/weeklycommit/rcdo/service/RcdoService.java: listNodes() calls nodeRepo.findAll() and streams in-memory. This is correct but not efficient for large datasets. A future step should switch to JpaSpecificationExecutor for filtered queries.
+```
+
+Verdict: changes_made
