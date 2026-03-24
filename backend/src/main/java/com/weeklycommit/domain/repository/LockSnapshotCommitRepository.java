@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LockSnapshotCommitRepository extends JpaRepository<LockSnapshotCommit, UUID> {
+
+	java.util.List<LockSnapshotCommit> findBySnapshotId(UUID snapshotId);
 }

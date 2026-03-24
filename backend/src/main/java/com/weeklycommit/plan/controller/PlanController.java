@@ -2,6 +2,9 @@ package com.weeklycommit.plan.controller;
 
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
+import com.weeklycommit.lock.dto.LockResponse;
+import com.weeklycommit.lock.dto.LockSnapshotHeaderResponse;
+import com.weeklycommit.lock.service.LockService;
 import com.weeklycommit.plan.dto.CommitResponse;
 import com.weeklycommit.plan.dto.CreateCommitRequest;
 import com.weeklycommit.plan.dto.CreatePlanRequest;
@@ -33,10 +36,12 @@ public class PlanController {
 
 	private final WeeklyPlanService planService;
 	private final CommitService commitService;
+	private final LockService lockService;
 
-	public PlanController(WeeklyPlanService planService, CommitService commitService) {
+	public PlanController(WeeklyPlanService planService, CommitService commitService, LockService lockService) {
 		this.planService = planService;
 		this.commitService = commitService;
+		this.lockService = lockService;
 	}
 
 	/** List all plans for a user in descending week order. */
@@ -97,5 +102,29 @@ public class PlanController {
 			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID actorUserId) {
 		commitService.reorderCommits(planId, request.commitIds(), actorUserId);
 		return ResponseEntity.ok(planService.getPlanWithCommits(planId));
+	}
+
+	// -------------------------------------------------------------------------
+	// Lock lifecycle
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Attempt to manually lock a DRAFT plan. Returns 200 + locked plan on success,
+	 * or 422 + error list if validation fails.
+	 */
+	@PostMapping("/{id}/lock")
+	public ResponseEntity<LockResponse> lockPlan(@PathVariable UUID id,
+			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID actorUserId) {
+		LockResponse result = lockService.lockPlan(id, actorUserId);
+		if (!result.success()) {
+			return ResponseEntity.unprocessableEntity().body(result);
+		}
+		return ResponseEntity.ok(result);
+	}
+
+	/** Retrieve the immutable baseline snapshot for a locked plan. */
+	@GetMapping("/{id}/lock-snapshot")
+	public ResponseEntity<LockSnapshotHeaderResponse> getLockSnapshot(@PathVariable UUID id) {
+		return ResponseEntity.ok(lockService.getLockSnapshot(id));
 	}
 }

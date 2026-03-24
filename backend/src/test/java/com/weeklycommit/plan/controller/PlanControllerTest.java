@@ -22,6 +22,7 @@ import com.weeklycommit.plan.dto.PlanResponse;
 import com.weeklycommit.plan.dto.PlanWithCommitsResponse;
 import com.weeklycommit.plan.dto.ReorderCommitsRequest;
 import com.weeklycommit.plan.exception.PlanValidationException;
+import com.weeklycommit.lock.service.LockService;
 import com.weeklycommit.plan.service.CommitService;
 import com.weeklycommit.plan.service.WeeklyPlanService;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
@@ -47,6 +48,9 @@ class PlanControllerTest {
 
 	@MockBean
 	private CommitService commitService;
+
+	@MockBean
+	private LockService lockService;
 
 	@Autowired
 	private ObjectMapper objectMapper;

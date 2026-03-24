@@ -2,6 +2,7 @@ package com.weeklycommit.domain.repository;
 
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.PlanState;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,9 @@ public interface WeeklyPlanRepository extends JpaRepository<WeeklyPlan, UUID> {
 	List<WeeklyPlan> findByOwnerUserIdOrderByWeekStartDateDesc(UUID ownerUserId);
 
 	List<WeeklyPlan> findByState(PlanState state);
+
+	/** Used by the auto-lock job to find expired DRAFT plans. */
+	List<WeeklyPlan> findByStateAndLockDeadlineBefore(PlanState state, Instant deadline);
 
 	boolean existsByOwnerUserIdAndWeekStartDate(UUID ownerUserId, LocalDate weekStartDate);
 }

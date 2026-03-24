@@ -1,0 +1,38 @@
+Reviewed the Step 5 diff in:
+- `backend/src/main/java/com/weeklycommit/lock/**`
+- `backend/src/main/java/com/weeklycommit/plan/controller/PlanController.java`
+- `backend/src/main/java/com/weeklycommit/domain/repository/WeeklyPlanRepository.java`
+- `backend/src/main/java/com/weeklycommit/domain/repository/LockSnapshotCommitRepository.java`
+- `backend/src/main/java/com/weeklycommit/Application.java`
+- `backend/src/test/java/com/weeklycommit/lock/**`
+
+I also ran:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+All pass.
+
+I found two material defects and fixed them:
+
+1. Lock hard-validation did not reject invalid estimate values  
+   - The lock flow only checked that `estimatePoints` was present, not that it was one of `{1,2,3,5,8}`.
+   - I added estimate whitelist validation in `LockService.validateForLock(...)` and a unit test.
+
+2. Baseline snapshot header payload was incomplete  
+   - `GET /api/plans/{id}/lock-snapshot` returns the header payload, but that payload only contained a commit summary, not the full commit data and RCDO path required by the step.
+   - I updated the snapshot payload builder so the header stores full commit details, including `description`, `successCriteria`, `rcdoNodeId`, `workItemId`, and denormalized `rcdoPath`.
+   - I added a unit test verifying the stored header payload contains full commit details and the RCDO path.
+
+Files changed:
+- `backend/src/main/java/com/weeklycommit/lock/service/LockService.java`
+- `backend/src/test/java/com/weeklycommit/lock/service/LockServiceTest.java`
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/lock/service/LockService.java: Auto-lock idempotency is implemented for repeat calls, but the step also called for optimistic locking or compare-and-swap to protect concurrent runners. I did not see explicit concurrency protection beyond state checks.
+- [low] backend/src/test/java/com/weeklycommit/plan/controller/PlanControllerTest.java: Uses deprecated `@MockBean`, which currently only emits warnings.
+- [low] backend/src/test/java/com/weeklycommit/lock/controller/LockControllerTest.java: Uses deprecated `@MockBean`, which currently only emits warnings.
+```
+
+Verdict: changes_made
