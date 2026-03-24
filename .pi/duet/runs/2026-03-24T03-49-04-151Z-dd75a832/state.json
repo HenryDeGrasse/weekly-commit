@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "phase": "planning",
+  "updatedAt": "2026-03-24T03:49:09.020Z",
+  "runId": "2026-03-24T03-49-04-151Z-dd75a832",
+  "handoffMode": "none",
+  "postPlanMode": "review",
+  "activeConfig": {
+    "sideA": {
+      "label": "Claude Opus 4.6",
+      "model": "anthropic/claude-opus-4-6",
+      "thinking": "xhigh"
+    },
+    "sideB": {
+      "label": "GPT-5.4",
+      "model": "openai-codex/gpt-5.4",
+      "thinking": "xhigh"
+    },
+    "planner": {
+      "label": "Claude Opus 4.6",
+      "model": "anthropic/claude-opus-4-6",
+      "thinking": "xhigh"
+    },
+    "critic": {
+      "label": "GPT-5.4",
+      "model": "openai-codex/gpt-5.4",
+      "thinking": "xhigh"
+    },
+    "implementer": {
+      "label": "Claude Sonnet 4.6",
+      "model": "anthropic/claude-sonnet-4-6",
+      "thinking": "high"
+    },
+    "reviewer": {
+      "label": "GPT-5.4",
+      "model": "openai-codex/gpt-5.4",
+      "thinking": "high"
+    },
+    "executionMode": "relay",
+    "startImplementer": "A",
+    "maxPlanRounds": 10,
+    "maxExecutionRounds": 10,
+    "alternateByStep": true,
+    "checks": {
+      "lint": {
+        "cmd": "npm run lint",
+        "timeoutSec": 300
+      },
+      "typecheck": {
+        "cmd": "npm run typecheck",
+        "timeoutSec": 300
+      },
+      "unit": {
+        "cmd": "npm test",
+        "timeoutSec": 600
+      },
+      "build": {
+        "cmd": "npm run build",
+        "timeoutSec": 600
+      }
+    },
+    "repo": {
+      "requireGit": true,
+      "requireCleanStart": false,
+      "enforceCleanAfterStep": false,
+      "captureDiffCheck": true,
+      "commitPerStep": true
+    },
+    "persistSessionAcrossSteps": true
+  },
+  "goal": "Import plan from docs/prd.md",
+  "planSourcePath": "docs/prd.md",
+  "round": 0,
+  "resumeAction": "planning",
+  "activeSummary": {
+    "stepTitle": "prd.md",
+    "implementer": "A",
+    "reviewer": "B",
+    "roleLabels": {
+      "sideA": "Planner",
+      "sideB": "Critic"
+    }
+  }
+}
