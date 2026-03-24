@@ -9,6 +9,12 @@ import type {
   CreateCommitPayload,
   UpdateCommitPayload,
   CommitResponse,
+  LockResponse,
+  ScopeChangePayload,
+  ScopeChangeTimelineResponse,
+  ReconciliationViewResponse,
+  SetOutcomePayload,
+  CarryForwardPayload,
 } from "./planTypes.js";
 
 export function createPlanApi(client: ApiClient, actorUserId: string) {
@@ -76,11 +82,84 @@ export function createPlanApi(client: ApiClient, actorUserId: string) {
         { headers: actorHeader },
       ),
 
-    /** POST /api/plans/{id}/lock — manually lock a DRAFT plan. */
-    lockPlan: (planId: string): Promise<unknown> =>
+    /**
+     * POST /api/plans/{id}/lock — manually lock a DRAFT plan.
+     * Returns LockResponse: success=true with locked plan, or success=false
+     * with validation errors that block the lock.
+     */
+    lockPlan: (planId: string): Promise<LockResponse> =>
       client.post(
         `/plans/${encodeURIComponent(planId)}/lock`,
         {},
+        { headers: actorHeader },
+      ),
+
+    // ── Post-lock scope changes ──────────────────────────────────────────────
+
+    /**
+     * POST /api/plans/{id}/scope-changes — apply a post-lock scope change.
+     * Action = ADD | REMOVE | EDIT, each with required fields in the payload.
+     */
+    applyScopeChange: (
+      planId: string,
+      payload: ScopeChangePayload,
+    ): Promise<ScopeChangeTimelineResponse> =>
+      client.post(
+        `/plans/${encodeURIComponent(planId)}/scope-changes`,
+        payload,
+        { headers: actorHeader },
+      ),
+
+    /** GET /api/plans/{id}/scope-changes — chronological scope-change timeline. */
+    getScopeChangeTimeline: (
+      planId: string,
+    ): Promise<ScopeChangeTimelineResponse> =>
+      client.get(`/plans/${encodeURIComponent(planId)}/scope-changes`),
+
+    // ── Reconciliation ───────────────────────────────────────────────────────
+
+    /** GET /api/plans/{id}/reconcile — reconciliation view (RECONCILING or RECONCILED). */
+    getReconciliationView: (
+      planId: string,
+    ): Promise<ReconciliationViewResponse> =>
+      client.get(`/plans/${encodeURIComponent(planId)}/reconcile`),
+
+    /** PUT /api/plans/{id}/commits/{commitId}/outcome — set outcome for a commit. */
+    setCommitOutcome: (
+      planId: string,
+      commitId: string,
+      payload: SetOutcomePayload,
+    ): Promise<CommitResponse> =>
+      client.put(
+        `/plans/${encodeURIComponent(planId)}/commits/${encodeURIComponent(commitId)}/outcome`,
+        payload,
+        { headers: actorHeader },
+      ),
+
+    /** POST /api/plans/{id}/reconcile/submit — submit (finalise) reconciliation. */
+    submitReconciliation: (
+      planId: string,
+    ): Promise<ReconciliationViewResponse> =>
+      client.post(
+        `/plans/${encodeURIComponent(planId)}/reconcile/submit`,
+        {},
+        { headers: actorHeader },
+      ),
+
+    // ── Carry forward ────────────────────────────────────────────────────────
+
+    /**
+     * POST /api/plans/{planId}/commits/{commitId}/carry-forward
+     * Creates a copy of the commit in the target week plan.
+     */
+    carryForward: (
+      planId: string,
+      commitId: string,
+      payload: CarryForwardPayload,
+    ): Promise<unknown> =>
+      client.post(
+        `/plans/${encodeURIComponent(planId)}/commits/${encodeURIComponent(commitId)}/carry-forward`,
+        payload,
         { headers: actorHeader },
       ),
   };

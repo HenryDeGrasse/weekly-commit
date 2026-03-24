@@ -99,3 +99,114 @@ export interface UpdateCommitPayload {
   readonly estimatePoints?: EstimatePoints;
   readonly successCriteria?: string;
 }
+
+// ── Lock types ────────────────────────────────────────────────────────────────
+
+/** A single hard-validation failure returned by POST /api/plans/{id}/lock. */
+export interface LockValidationError {
+  readonly field: string;
+  readonly message: string;
+}
+
+/**
+ * Response from POST /api/plans/{id}/lock.
+ * success=false → errors contains the hard validation failures.
+ */
+export interface LockResponse {
+  readonly success: boolean;
+  readonly plan: PlanWithCommitsResponse | null;
+  readonly errors: LockValidationError[];
+}
+
+// ── Scope-change types ────────────────────────────────────────────────────────
+
+export type ScopeChangeCategory =
+  | "COMMIT_ADDED"
+  | "COMMIT_REMOVED"
+  | "ESTIMATE_CHANGED"
+  | "CHESS_PIECE_CHANGED"
+  | "RCDO_CHANGED"
+  | "PRIORITY_CHANGED";
+
+export type ScopeChangeAction = "ADD" | "REMOVE" | "EDIT";
+
+/** Single scope-change event — mirrors ScopeChangeEventResponse Java record. */
+export interface ScopeChangeEventResponse {
+  readonly id: string;
+  readonly planId: string;
+  readonly commitId: string | null;
+  readonly category: ScopeChangeCategory;
+  readonly changedByUserId: string | null;
+  readonly reason: string;
+  readonly previousValue: string | null;
+  readonly newValue: string | null;
+  readonly createdAt: string;
+}
+
+/** Timeline response — mirrors ScopeChangeTimelineResponse Java record. */
+export interface ScopeChangeTimelineResponse {
+  readonly events: ScopeChangeEventResponse[];
+  readonly managerExceptions: unknown[];
+}
+
+/** Request body for POST /api/plans/{id}/scope-changes. */
+export interface ScopeChangePayload {
+  readonly action: ScopeChangeAction;
+  readonly reason: string;
+  readonly commitId?: string;
+  readonly commitData?: CreateCommitPayload;
+  readonly changes?: UpdateCommitPayload;
+}
+
+// ── Reconciliation types ──────────────────────────────────────────────────────
+
+/** Per-commit reconciliation view — mirrors ReconcileCommitView Java record. */
+export interface ReconcileCommitView {
+  readonly commitId: string;
+  readonly currentTitle: string;
+  readonly currentChessPiece: ChessPiece;
+  readonly currentEstimatePoints: number | null;
+  readonly currentOutcome: CommitOutcome | null;
+  readonly currentOutcomeNotes: string | null;
+  /** Baseline snapshot values (null for post-lock-added commits). */
+  readonly baselineSnapshot: Record<string, unknown> | null;
+  readonly scopeChanges: ScopeChangeEventResponse[];
+  readonly linkedTicketStatus: string | null;
+  readonly addedPostLock: boolean;
+  readonly removedPostLock: boolean;
+}
+
+/** Full reconciliation view response — mirrors ReconciliationViewResponse. */
+export interface ReconciliationViewResponse {
+  readonly plan: PlanResponse;
+  readonly commits: ReconcileCommitView[];
+  readonly baselineTotalPoints: number;
+  readonly currentTotalPoints: number;
+  readonly commitCount: number;
+  readonly outcomesSetCount: number;
+}
+
+/** Request body for PUT /api/plans/{id}/commits/{commitId}/outcome. */
+export interface SetOutcomePayload {
+  readonly outcome: CommitOutcome;
+  readonly notes?: string | undefined;
+}
+
+// ── Carry-forward types ───────────────────────────────────────────────────────
+
+export type CarryForwardReason =
+  | "BLOCKED_BY_DEPENDENCY"
+  | "SCOPE_EXPANDED"
+  | "REPRIORITIZED"
+  | "RESOURCE_UNAVAILABLE"
+  | "TECHNICAL_OBSTACLE"
+  | "EXTERNAL_DELAY"
+  | "UNDERESTIMATED"
+  | "STILL_IN_PROGRESS";
+
+/** Request body for POST /api/plans/{planId}/commits/{commitId}/carry-forward. */
+export interface CarryForwardPayload {
+  readonly targetWeekStart: string;
+  readonly reason: CarryForwardReason;
+  readonly reasonText?: string | undefined;
+}

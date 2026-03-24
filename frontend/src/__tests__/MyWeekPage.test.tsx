@@ -80,8 +80,19 @@ function makeCommit(
 }
 
 const twoCommits: CommitResponse[] = [
-  makeCommit("c-1", 1, { title: "Alpha", chessPiece: "KING", estimatePoints: 3 }),
-  makeCommit("c-2", 2, { title: "Bravo", chessPiece: "PAWN", estimatePoints: 2 }),
+  makeCommit("c-1", 1, {
+    title: "Alpha",
+    chessPiece: "KING",
+    estimatePoints: 3,
+    rcdoNodeId: "rcdo-3",
+    successCriteria: "Launch the critical initiative",
+  }),
+  makeCommit("c-2", 2, {
+    title: "Bravo",
+    chessPiece: "PAWN",
+    estimatePoints: 2,
+    rcdoNodeId: "rcdo-3",
+  }),
 ];
 
 /** Nine commits — triggers >8 soft warning */
@@ -130,6 +141,12 @@ const mockPlanApi = {
   deleteCommit: vi.fn(),
   reorderCommits: vi.fn(),
   lockPlan: vi.fn(),
+  applyScopeChange: vi.fn(),
+  getScopeChangeTimeline: vi.fn(),
+  getReconciliationView: vi.fn(),
+  setCommitOutcome: vi.fn(),
+  submitReconciliation: vi.fn(),
+  carryForward: vi.fn(),
 };
 
 function makePlanState(
@@ -295,10 +312,45 @@ describe("MyWeekPage — lock button", () => {
     expect(screen.getByTestId("reconcile-hint")).toBeInTheDocument();
   });
 
-  it("calls lockPlan when lock button is clicked", async () => {
-    mockPlanApi.lockPlan.mockResolvedValue({ success: true });
+  it("opens pre-lock validation panel when lock button is clicked", async () => {
     renderPage();
     fireEvent.click(screen.getByTestId("lock-plan-btn"));
+    expect(screen.getByTestId("pre-lock-validation-section")).toBeInTheDocument();
+  });
+
+  it("blocks continue when pre-lock hard errors are present", () => {
+    vi.mocked(useCurrentPlan).mockReturnValue(
+      makePlanState(DRAFT_PLAN, [
+        makeCommit("c-1", 1, { title: "Alpha", chessPiece: "KING" }),
+      ]),
+    );
+
+    renderPage();
+    fireEvent.click(screen.getByTestId("lock-plan-btn"));
+
+    expect(screen.getByTestId("pre-lock-hard-errors")).toBeInTheDocument();
+    expect(screen.queryByTestId("pre-lock-continue-btn")).not.toBeInTheDocument();
+  });
+
+  it("calls lockPlan after confirming through lock flow", async () => {
+    mockPlanApi.lockPlan.mockResolvedValue({
+      success: true,
+      plan: { plan: DRAFT_PLAN, commits: [], totalPoints: 0 },
+      errors: [],
+    });
+    renderPage();
+    // Step 1: click lock button → validation panel opens
+    fireEvent.click(screen.getByTestId("lock-plan-btn"));
+    expect(screen.getByTestId("pre-lock-validation-section")).toBeInTheDocument();
+    // Step 2: continue is available because the fixture already satisfies lock requirements
+    await waitFor(() =>
+      expect(screen.getByTestId("pre-lock-continue-btn")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId("pre-lock-continue-btn"));
+    // Step 3: lock confirm dialog
+    expect(screen.getByTestId("lock-confirm-dialog")).toBeInTheDocument();
+    // Step 4: confirm lock
+    fireEvent.click(screen.getByTestId("lock-confirm-btn"));
     await waitFor(() => expect(mockPlanApi.lockPlan).toHaveBeenCalledWith("plan-1"));
   });
 });

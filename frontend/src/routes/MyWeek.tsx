@@ -6,8 +6,13 @@
  *   - Auto-selects current week plan (creates one if missing).
  *   - Week selector to navigate between weeks.
  *   - Plan state badge (DRAFT / LOCKED / RECONCILING / RECONCILED).
+ *   - Pre-lock validation panel (hard errors + soft warnings).
+ *   - Lock confirmation dialog.
+ *   - Auto-lock system banner.
  *   - Lock action button (DRAFT state only).
  *   - Commit list with drag-and-drop reorder.
+ *   - Post-lock scope change dialog (LOCKED state).
+ *   - Scope change timeline (LOCKED state).
  *   - Capacity meter (points vs budget).
  *   - Soft-warnings panel.
  *   - CommitForm modal for adding / editing commits.
@@ -19,7 +24,19 @@ import { CommitList } from "../components/myweek/CommitList.js";
 import { CommitForm } from "../components/myweek/CommitForm.js";
 import { CapacityMeter } from "../components/myweek/CapacityMeter.js";
 import { SoftWarningsPanel } from "../components/myweek/SoftWarningsPanel.js";
-import type { CommitResponse, PlanState } from "../api/planTypes.js";
+import { PreLockValidationPanel } from "../components/lock/PreLockValidationPanel.js";
+import { LockConfirmDialog } from "../components/lock/LockConfirmDialog.js";
+import { ScopeChangeDialog } from "../components/lock/ScopeChangeDialog.js";
+import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
+import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js";
+import type {
+  CommitResponse,
+  PlanState,
+  LockValidationError,
+  ScopeChangeEventResponse,
+  UpdateCommitPayload,
+  CreateCommitPayload,
+} from "../api/planTypes.js";
 
 // ── Week date helpers ─────────────────────────────────────────────────────────
 
@@ -204,23 +221,58 @@ export default function MyWeek() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [lockLoading, setLockLoading] = useState(false);
 
+  // Lock flow state
+  const [showPreLockValidation, setShowPreLockValidation] = useState(false);
+  const [lockValidationErrors, setLockValidationErrors] = useState<LockValidationError[]>([]);
+  const [showLockConfirm, setShowLockConfirm] = useState(false);
+
+  // Scope change dialog state (post-lock edits)
+  type ScopeChangeMode = "add" | "edit" | "remove" | null;
+  const [scopeChangeMode, setScopeChangeMode] = useState<ScopeChangeMode>(null);
+  const [scopeChangeTargetCommit, setScopeChangeTargetCommit] = useState<CommitResponse | null>(null);
+  const [pendingEditPayload, setPendingEditPayload] = useState<UpdateCommitPayload | null>(null);
+  const [pendingCreatePayload, setPendingCreatePayload] = useState<CreateCommitPayload | null>(null);
+  const [scopeChangeSaving, setScopeChangeSaving] = useState(false);
+
+  // Scope change timeline
+  const [scopeChangeEvents, setScopeChangeEvents] = useState<ScopeChangeEventResponse[]>([]);
+  const [showTimeline, setShowTimeline] = useState(false);
+
   const plan = planData?.plan;
   const commits = useMemo(() => planData?.commits ?? [], [planData]);
+  const effectivePreLockErrors = useMemo(
+    () => getEffectivePreLockErrors(commits, lockValidationErrors),
+    [commits, lockValidationErrors],
+  );
   const isDraft = plan?.state === "DRAFT";
+  const isLocked = plan?.state === "LOCKED";
 
   // ── Action handlers ──────────────────────────────────────────────────
 
   const handleOpenCreate = useCallback(() => {
-    setFormMode("create");
-    setEditingCommit(null);
+    if (isLocked) {
+      // Post-lock: open scope change dialog for ADD
+      setScopeChangeMode("add");
+      setScopeChangeTargetCommit(null);
+      setPendingCreatePayload(null);
+    } else {
+      setFormMode("create");
+      setEditingCommit(null);
+    }
     setActionError(null);
-  }, []);
+  }, [isLocked]);
 
   const handleOpenEdit = useCallback((commit: CommitResponse) => {
-    setFormMode("edit");
-    setEditingCommit(commit);
+    if (isLocked) {
+      // Will be triggered after CommitForm submits: show scope change dialog
+      setFormMode("edit");
+      setEditingCommit(commit);
+    } else {
+      setFormMode("edit");
+      setEditingCommit(commit);
+    }
     setActionError(null);
-  }, []);
+  }, [isLocked]);
 
   const handleFormCancel = useCallback(() => {
     setFormMode(null);
@@ -228,32 +280,56 @@ export default function MyWeek() {
   }, []);
 
   const handleCreateCommit = useCallback(
-    async (payload: Parameters<typeof planApi.createCommit>[1]) => {
+    async (payload: CreateCommitPayload) => {
       if (!plan) return;
+      if (isLocked) {
+        // Post-lock: show scope change dialog with reason capture
+        setPendingCreatePayload(payload);
+        setScopeChangeMode("add");
+        setScopeChangeTargetCommit(null);
+        setFormMode(null);
+        return;
+      }
       // Let the error propagate; CommitForm catches it and shows the message.
       await planApi.createCommit(plan.id, payload);
       refetchPlan();
       setFormMode(null);
     },
-    [plan, planApi, refetchPlan],
+    [plan, isLocked, planApi, refetchPlan],
   );
 
   const handleUpdateCommit = useCallback(
-    async (payload: Parameters<typeof planApi.updateCommit>[2]) => {
+    async (payload: UpdateCommitPayload) => {
       if (!plan || !editingCommit) return;
+      if (isLocked) {
+        // Post-lock: show scope change dialog
+        setPendingEditPayload(payload);
+        setScopeChangeMode("edit");
+        setScopeChangeTargetCommit(editingCommit);
+        setFormMode(null);
+        setEditingCommit(null);
+        return;
+      }
       // Let the error propagate; CommitForm catches it and shows the message.
       await planApi.updateCommit(plan.id, editingCommit.id, payload);
       refetchPlan();
       setFormMode(null);
       setEditingCommit(null);
     },
-    [plan, editingCommit, planApi, refetchPlan],
+    [plan, editingCommit, isLocked, planApi, refetchPlan],
   );
 
   const handleDeleteRequest = useCallback((commitId: string) => {
     const commit = commits.find((c) => c.id === commitId);
-    if (commit) setDeleteTarget(commit);
-  }, [commits]);
+    if (!commit) return;
+    if (isLocked) {
+      // Post-lock: show scope change REMOVE dialog
+      setScopeChangeMode("remove");
+      setScopeChangeTargetCommit(commit);
+    } else {
+      setDeleteTarget(commit);
+    }
+  }, [commits, isLocked]);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!plan || !deleteTarget) return;
@@ -280,19 +356,115 @@ export default function MyWeek() {
     [plan, planApi, refetchPlan],
   );
 
+  // ── Lock flow ────────────────────────────────────────────────────────
+
+  const handleLockButtonClick = useCallback(() => {
+    setShowPreLockValidation(true);
+    setLockValidationErrors([]);
+    setShowLockConfirm(false);
+  }, []);
+
+  const handlePreLockContinue = useCallback(() => {
+    setShowLockConfirm(true);
+  }, []);
+
   const handleLock = useCallback(async () => {
     if (!plan) return;
     setLockLoading(true);
     setActionError(null);
     try {
-      await planApi.lockPlan(plan.id);
+      const response = await planApi.lockPlan(plan.id);
+      if (!response.success) {
+        // Hard validation failed — show errors in validation panel
+        setLockValidationErrors(response.errors ?? []);
+        setShowLockConfirm(false);
+        return;
+      }
+      setShowPreLockValidation(false);
+      setShowLockConfirm(false);
+      setLockValidationErrors([]);
       refetchPlan();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Lock failed");
+      setShowLockConfirm(false);
     } finally {
       setLockLoading(false);
     }
   }, [plan, planApi, refetchPlan]);
+
+  // ── Scope change handlers (post-lock) ────────────────────────────────
+
+  const handleScopeChangeConfirm = useCallback(
+    async (reason: string) => {
+      if (!plan) return;
+      setScopeChangeSaving(true);
+      setActionError(null);
+      try {
+        if (scopeChangeMode === "add" && pendingCreatePayload) {
+          const result = await planApi.applyScopeChange(plan.id, {
+            action: "ADD",
+            reason,
+            commitData: pendingCreatePayload,
+          });
+          setScopeChangeEvents(result.events);
+        } else if (scopeChangeMode === "remove" && scopeChangeTargetCommit) {
+          const result = await planApi.applyScopeChange(plan.id, {
+            action: "REMOVE",
+            reason,
+            commitId: scopeChangeTargetCommit.id,
+          });
+          setScopeChangeEvents(result.events);
+        } else if (scopeChangeMode === "edit" && scopeChangeTargetCommit && pendingEditPayload) {
+          const result = await planApi.applyScopeChange(plan.id, {
+            action: "EDIT",
+            reason,
+            commitId: scopeChangeTargetCommit.id,
+            changes: pendingEditPayload,
+          });
+          setScopeChangeEvents(result.events);
+        }
+        refetchPlan();
+      } catch (err) {
+        setActionError(
+          err instanceof Error ? err.message : "Scope change failed",
+        );
+      } finally {
+        setScopeChangeSaving(false);
+        setScopeChangeMode(null);
+        setScopeChangeTargetCommit(null);
+        setPendingEditPayload(null);
+        setPendingCreatePayload(null);
+      }
+    },
+    [
+      plan,
+      scopeChangeMode,
+      pendingCreatePayload,
+      pendingEditPayload,
+      scopeChangeTargetCommit,
+      planApi,
+      refetchPlan,
+    ],
+  );
+
+  const handleScopeChangeCancel = useCallback(() => {
+    setScopeChangeMode(null);
+    setScopeChangeTargetCommit(null);
+    setPendingEditPayload(null);
+    setPendingCreatePayload(null);
+  }, []);
+
+  // Load scope change timeline when plan becomes LOCKED
+  const handleLoadTimeline = useCallback(async () => {
+    if (!plan) return;
+    try {
+      const result = await planApi.getScopeChangeTimeline(plan.id);
+      setScopeChangeEvents(result.events);
+      setShowTimeline(true);
+    } catch {
+      // non-critical
+    }
+  }, [plan, planApi]);
 
   // ── RCDO label map ───────────────────────────────────────────────────
 
@@ -367,7 +539,7 @@ export default function MyWeek() {
       >
         <h2 style={{ margin: 0, fontSize: "1.25rem" }}>My Week</h2>
 
-        {/* Add commit button */}
+        {/* Add commit button — shown in header only for DRAFT state */}
         {isDraft && (
           <button
             style={btnPrimary}
@@ -494,11 +666,22 @@ export default function MyWeek() {
             {isDraft && (
               <button
                 style={btnPrimary}
-                onClick={handleLock}
+                onClick={handleLockButtonClick}
                 disabled={lockLoading}
                 data-testid="lock-plan-btn"
               >
                 {lockLoading ? "Locking…" : "🔒 Lock Plan"}
+              </button>
+            )}
+
+            {/* Post-lock Add Commit button — LOCKED state */}
+            {isLocked && (
+              <button
+                style={btnPrimary}
+                onClick={handleOpenCreate}
+                data-testid="post-lock-add-commit-btn"
+              >
+                + Add Commit
               </button>
             )}
 
@@ -513,7 +696,7 @@ export default function MyWeek() {
               >
                 Go to{" "}
                 <a
-                  href="/weekly/reconcile"
+                  href={`/weekly/reconcile/${plan.id}`}
                   style={{ color: "var(--color-primary)" }}
                 >
                   Reconcile
@@ -522,6 +705,87 @@ export default function MyWeek() {
               </span>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Auto-lock system banner */}
+      {plan?.systemLockedWithErrors && (
+        <div
+          data-testid="auto-lock-banner"
+          role="alert"
+          style={{
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            borderRadius: "var(--border-radius)",
+            padding: "0.75rem 1rem",
+            fontSize: "0.875rem",
+            color: "#92400e",
+          }}
+        >
+          <strong>⚠ System-locked with errors</strong> — this plan was
+          automatically locked at the deadline. Some validation issues were
+          present at lock time. Please review and reconcile.
+        </div>
+      )}
+
+      {/* Pre-lock validation panel */}
+      {isDraft && showPreLockValidation && (
+        <div
+          data-testid="pre-lock-validation-section"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--border-radius)",
+            padding: "1rem",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "0.75rem",
+              flexWrap: "wrap",
+              gap: "0.5rem",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "0.95rem" }}>
+              Pre-lock Validation
+            </h3>
+            <button
+              type="button"
+              onClick={() => setShowPreLockValidation(false)}
+              style={{
+                ...btnSecondary,
+                padding: "0.25rem 0.625rem",
+                fontSize: "0.8rem",
+              }}
+            >
+              ✕ Cancel
+            </button>
+          </div>
+          <PreLockValidationPanel
+            errors={lockValidationErrors}
+            commits={commits}
+          />
+          {/* Only allow continuing if no hard errors */}
+          {effectivePreLockErrors.length === 0 && (
+            <div
+              style={{
+                marginTop: "0.875rem",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                style={btnPrimary}
+                onClick={handlePreLockContinue}
+                data-testid="pre-lock-continue-btn"
+              >
+                Continue to Lock →
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -549,8 +813,38 @@ export default function MyWeek() {
         />
       )}
 
-      {/* CommitForm modal */}
-      {formMode === "create" && plan && (
+      {/* Scope change timeline (LOCKED state) */}
+      {isLocked && scopeChangeEvents.length > 0 && (
+        <section aria-labelledby="scope-timeline-heading">
+          <h3
+            id="scope-timeline-heading"
+            style={{ margin: "0 0 0.625rem", fontSize: "0.95rem" }}
+          >
+            Post-lock Changes
+          </h3>
+          <ScopeChangeTimeline events={scopeChangeEvents} />
+        </section>
+      )}
+
+      {/* Load timeline toggle */}
+      {isLocked && !showTimeline && (
+        <button
+          type="button"
+          onClick={() => void handleLoadTimeline()}
+          data-testid="load-scope-timeline-btn"
+          style={{
+            ...btnSecondary,
+            fontSize: "0.8rem",
+            padding: "0.375rem 0.75rem",
+            alignSelf: "flex-start",
+          }}
+        >
+          View scope-change history
+        </button>
+      )}
+
+      {/* CommitForm modal — DRAFT mode */}
+      {formMode === "create" && plan && !isLocked && (
         <CommitForm
           mode="create"
           rcdoTree={rcdoTree ?? []}
@@ -570,12 +864,72 @@ export default function MyWeek() {
         />
       )}
 
-      {/* Delete confirm dialog */}
-      {deleteTarget && (
+      {/* CommitForm modal — LOCKED mode (add) */}
+      {scopeChangeMode === "add" && !pendingCreatePayload && plan && (
+        <CommitForm
+          mode="create"
+          rcdoTree={rcdoTree ?? []}
+          existingCommits={commits}
+          onSubmit={async (payload) => {
+            setPendingCreatePayload(payload);
+          }}
+          onCancel={handleScopeChangeCancel}
+        />
+      )}
+
+      {/* Delete confirm dialog — DRAFT only */}
+      {deleteTarget && !isLocked && (
         <DeleteConfirmDialog
           title={deleteTarget.title}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* Lock confirmation dialog */}
+      {showLockConfirm && plan && (
+        <LockConfirmDialog
+          commits={commits}
+          capacityBudgetPoints={plan.capacityBudgetPoints}
+          weekLabel={formatWeekLabel(weekStartDate)}
+          onConfirm={() => void handleLock()}
+          onCancel={() => setShowLockConfirm(false)}
+          isLocking={lockLoading}
+        />
+      )}
+
+      {/* Scope change dialog — ADD (after CommitForm submitted) */}
+      {scopeChangeMode === "add" && pendingCreatePayload && (
+        <ScopeChangeDialog
+          action="ADD"
+          commit={null}
+          newCommitTitle={pendingCreatePayload.title}
+          onConfirm={(reason) => void handleScopeChangeConfirm(reason)}
+          onCancel={handleScopeChangeCancel}
+          isSubmitting={scopeChangeSaving}
+        />
+      )}
+
+      {/* Scope change dialog — EDIT */}
+      {scopeChangeMode === "edit" && scopeChangeTargetCommit && pendingEditPayload && (
+        <ScopeChangeDialog
+          action="EDIT"
+          commit={scopeChangeTargetCommit}
+          proposedChanges={pendingEditPayload as Partial<CommitResponse>}
+          onConfirm={(reason) => void handleScopeChangeConfirm(reason)}
+          onCancel={handleScopeChangeCancel}
+          isSubmitting={scopeChangeSaving}
+        />
+      )}
+
+      {/* Scope change dialog — REMOVE */}
+      {scopeChangeMode === "remove" && scopeChangeTargetCommit && (
+        <ScopeChangeDialog
+          action="REMOVE"
+          commit={scopeChangeTargetCommit}
+          onConfirm={(reason) => void handleScopeChangeConfirm(reason)}
+          onCancel={handleScopeChangeCancel}
+          isSubmitting={scopeChangeSaving}
         />
       )}
     </div>

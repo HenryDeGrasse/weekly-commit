@@ -1,0 +1,43 @@
+{
+  "stepId": "step-12",
+  "round": 3,
+  "gates": [
+    {
+      "checkId": "lint",
+      "cmd": "npm run lint",
+      "exitCode": 0,
+      "passed": true,
+      "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/12/iteration-3/controller/outputs/lint.stdout.txt",
+      "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/12/iteration-3/controller/outputs/lint.stderr.txt",
+      "truncatedPreview": "> weekly-commit-monorepo@1.0.0 lint\n> npm run lint -w frontend && npm run lint -w @weekly-commit/shared && cd backend && ./gradlew spotlessCheck\n\n\n> frontend@1.0.0 lint\n> eslint src\n\n\n/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/Header.tsx\n  75:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components\n\n/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx\n  24:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components\n  32:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components\n\n/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx\n  12:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components\n  31:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components\n  82:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components\n\n✖ 6 problems (0 errors, 6 warnings)\n\n\n> @weekly-commit/shared@1.0.0 lint\n> eslint src\n\n> Task :spotlessInternalRegisterDependencies UP-TO-DATE\n> Task :spotlessJava UP-TO-DATE\n> Task :spotlessJavaCheck UP-TO-DATE\n> Task :spotlessCheck UP-TO-DATE\n\nBUILD SUCCESSFUL in 269ms\n3 actionable tasks: 3 up-to-date\nConsider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.1/userguide/configuration_cache_enabling.html"
+    },
+    {
+      "checkId": "typecheck",
+      "cmd": "npm run typecheck",
+      "exitCode": 0,
+      "passed": true,
+      "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/12/iteration-3/controller/outputs/typecheck.stdout.txt",
+      "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/12/iteration-3/controller/outputs/typecheck.stderr.txt",
+      "truncatedPreview": "> weekly-commit-monorepo@1.0.0 typecheck\n> npm run typecheck -w frontend && npm run typecheck -w @weekly-commit/shared\n\n\n> frontend@1.0.0 typecheck\n> tsc --noEmit\n\n\n> @weekly-commit/shared@1.0.0 typecheck\n> tsc --noEmit"
+    },
+    {
+      "checkId": "unit",
+      "cmd": "npm test",
+      "exitCode": 0,
+      "passed": true,
+      "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/12/iteration-3/controller/outputs/unit.stdout.txt",
+      "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/12/iteration-3/controller/outputs/unit.stderr.txt",
+      "truncatedPreview": "> weekly-commit-monorepo@1.0.0 test\n> npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test\n\n\n> frontend@1.0.0 test\n> vitest --run\n\n\n RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend\n\n ✓ src/__tests__/ApiClient.test.ts (8 tests) 7ms\n ✓ src/__tests__/HostProvider.test.tsx (4 tests) 21ms\n ✓ src/__tests__/PreLockValidation.test.tsx (9 tests) 71ms\n ✓ src/__tests__/LockConfirmDialog.test.tsx (8 tests) 90ms\n ✓ src/__tests__/CapacityMeter.test.tsx (16 tests) 122ms\n ✓ src/__tests__/ScopeChangeDialog.test.tsx (12 tests) 201ms\n ✓ src/App.test.tsx (1 test) 128ms\n ✓ src/__tests__/AppShell.test.tsx (9 tests) 168ms\n ✓ src/__tests__/Router.test.tsx (9 tests) 272ms\n ✓ src/__tests__/RcdoNodeForm.test.tsx (23 tests) 332ms\n ✓ src/__tests__/RcdoTreeView.test.tsx (20 tests) 349ms\n ✓ src/__tests__/CommitList.test.tsx (29 tests) 371ms\n ✓ src/__tests__/ReconcilePage.test.tsx (25 tests) 468ms\n ✓ src/__tests__/RcdoPage.test.tsx (27 tests) 498ms\n ✓ src/__tests__/CommitForm.test.tsx (33 tests) 597ms\n ✓ src/__tests__/MyWeekPage.test.tsx (30 tests) 530ms\n\n Test Files  16 passed (16)\n      Tests  263 passed (263)\n   Start at  02:59:07\n   Duration  1.42s (transform 1.36s, setup 1.04s, collect 2.70s, tests 4.23s, environment 6.68s, prepare 1.07s)\n\n\n> @weekly-commit/shared@1.0.0 test\n> vitest --run\n\n\n RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/packages/shared\n\n ✓ src/index.test.ts (5 tests) 1ms\n ✓ src/validators.test.ts (15 tests) 2ms\n\n Test Files  2 passed (2)\n      Tests  20 passed (20)\n   Start at  02:59:09\n   Duration  155ms (transform 31ms, setup 0ms, collect 38ms, tests 3ms, environment 0ms, prepare 79ms)\n\n> Task :compileJava UP-TO-DATE\n> Task :processResources UP-TO-DATE\n> Task :classes UP-TO-DATE\n> Task :compileTestJava UP-TO-DATE\n> Task :processTestResources UP-TO-DATE\n> Task :testClasses UP-TO-DATE\n> Task :test UP-TO-DATE\n\nBUILD SUCCESSFUL in 361ms\n5 actionable tasks: 5 up-to-date\n...[truncated]"
+    },
+    {
+      "checkId": "build",
+      "cmd": "npm run build",
+      "exitCode": 0,
+      "passed": true,
+      "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/12/iteration-3/controller/outputs/build.stdout.txt",
+      "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/12/iteration-3/controller/outputs/build.stderr.txt",
+      "truncatedPreview": "> weekly-commit-monorepo@1.0.0 build\n> npm run build -w @weekly-commit/shared && npm run build -w frontend && cd backend && ./gradlew build -x test\n\n\n> @weekly-commit/shared@1.0.0 build\n> tsc -p tsconfig.build.json\n\n\n> frontend@1.0.0 build\n> vite build\n\nvite v5.4.21 building for production...\ntransforming...\n✓ 82 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                                                 0.84 kB │ gzip:   0.38 kB\ndist/assets/__federation_shared_react-BCcI129A.js               0.05 kB │ gzip:   0.07 kB\ndist/assets/__federation_shared_react-dom-BN8Au471.js           0.05 kB │ gzip:   0.07 kB\ndist/assets/Tickets-B6qrZB0j.js                                 0.44 kB │ gzip:   0.27 kB\ndist/assets/HostProvider-CXcsEPQN.js                            0.73 kB │ gzip:   0.36 kB\ndist/assets/TeamWeek-DaBGpNJT.js                                0.74 kB │ gzip:   0.41 kB\ndist/assets/jsx-runtime-CyoIsdjr.js                             1.20 kB │ gzip:   0.64 kB\ndist/assets/remoteEntry.js                                      3.38 kB │ gzip:   1.21 kB\ndist/assets/hooks--LoLo4zg.js                                   3.60 kB │ gzip:   1.21 kB\ndist/assets/index-DBJBOspw.js                                   3.92 kB │ gzip:   1.63 kB\ndist/assets/index-Dm_EQZZA.js                                   7.86 kB │ gzip:   2.91 kB\ndist/assets/RcdoTreeView-2JtDkPw_.js                           11.12 kB │ gzip:   3.18 kB\ndist/assets/__federation_expose_Routes-D7Hrx4LD.js             11.42 kB │ gzip:   3.18 kB\ndist/assets/ScopeChangeTimeline-C3itCqqT.js                    11.46 kB │ gzip:   2.78 kB\ndist/assets/__federation_fn_import-V3PcEd2o.js                 14.29 kB │ gzip:   3.14 kB\ndist/assets/Rcdos-DKKgJVlN.js                                  45.89 kB │ gzip:   7.77 kB\ndist/assets/Reconcile-YZjjj1hm.js                              62.75 kB │ gzip:   9.82 kB\ndist/assets/index-COvqqES_.js                                 138.52 kB │ gzip:  44.26 kB\nd\n...[truncated]"
+    }
+  ],
+  "verdict": "approve"
+}
