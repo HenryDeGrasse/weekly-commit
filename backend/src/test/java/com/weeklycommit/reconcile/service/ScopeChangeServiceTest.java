@@ -25,6 +25,7 @@ import com.weeklycommit.domain.repository.ScopeChangeEventRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.notification.service.NotificationService;
+import com.weeklycommit.report.service.ReadModelRefreshService;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.reconcile.dto.AddCommitData;
 import com.weeklycommit.reconcile.dto.EditCommitChanges;
@@ -61,6 +62,9 @@ class ScopeChangeServiceTest {
 
 	@Mock
 	private NotificationService notificationService;
+
+	@Mock
+	private ReadModelRefreshService readModelRefreshService;
 
 	@Spy
 	private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())

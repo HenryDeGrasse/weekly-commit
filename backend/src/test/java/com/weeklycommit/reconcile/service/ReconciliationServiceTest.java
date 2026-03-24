@@ -29,6 +29,7 @@ import com.weeklycommit.domain.repository.ScopeChangeEventRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.domain.repository.WorkItemRepository;
+import com.weeklycommit.report.service.ReadModelRefreshService;
 import com.weeklycommit.plan.dto.CommitResponse;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import java.time.Instant;
@@ -71,6 +72,9 @@ class ReconciliationServiceTest {
 
 	@Mock
 	private ReconcileSnapshotCommitRepository reconcileCommitRepo;
+
+	@Mock
+	private ReadModelRefreshService readModelRefreshService;
 
 	@Spy
 	private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())

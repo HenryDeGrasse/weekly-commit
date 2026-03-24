@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AiFeedbackRepository extends JpaRepository<AiFeedback, UUID> {
+
+	long countByAccepted(boolean accepted);
 }

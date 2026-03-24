@@ -1,0 +1,35 @@
+Reviewed the Step 18 backend diff, especially:
+- `backend/src/main/resources/db/migration/V6__add_derived_read_models.sql`
+- `backend/src/main/java/com/weeklycommit/report/**`
+- event-driven refresh hooks in:
+  - `backend/src/main/java/com/weeklycommit/lock/service/LockService.java`
+  - `backend/src/main/java/com/weeklycommit/reconcile/service/ReconciliationService.java`
+  - `backend/src/main/java/com/weeklycommit/reconcile/service/ScopeChangeService.java`
+  - `backend/src/main/java/com/weeklycommit/carryforward/service/CarryForwardService.java`
+- related tests in `backend/src/test/java/com/weeklycommit/report/**`
+
+What I changed:
+- Fixed `ComplianceFact.autoLocked` derivation:
+  - `ReadModelRefreshService` now derives auto-lock status from `LockSnapshotHeader.lockedBySystem` instead of incorrectly using `systemLockedWithErrors`.
+- Fixed stale `rcdo_week_rollup` data after RCDO re-link scope changes:
+  - `ReadModelRefreshService.refreshRcdoWeekRollup(...)` now refreshes both current and previously linked RCDO nodes using `RCDO_CHANGED` scope-change history, preventing old node rollups from retaining removed effort.
+- Added/updated backend tests for both defects:
+  - `backend/src/test/java/com/weeklycommit/report/service/ReadModelRefreshServiceTest.java`
+
+Checks run:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+Assessment:
+- I found and fixed material correctness issues in the derived read-model refresh logic.
+- All required checks pass after the fixes.
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/report/service/ReportingService.java: `/api/reports/carry-forward` currently reports rates/counts from `user_week_fact`, but does not expose explicit streak breakdowns from `carry_forward_fact`. If consumers need streak detail, the API shape will need to expand.
+- [medium] backend/src/main/java/com/weeklycommit/report/service/ReadModelRefreshService.java: `refreshRcdoWeekRollup(...)` still rescans all commits for each affected RCDO node, which is correct but may become expensive with large historical datasets.
+- [low] backend/src/test/java/com/weeklycommit/report/controller/: No controller-level tests exist for `ReportController`; current coverage is service-level.
+```
+
+Verdict: changes_made

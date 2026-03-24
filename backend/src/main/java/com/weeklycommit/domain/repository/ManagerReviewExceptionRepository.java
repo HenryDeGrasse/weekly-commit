@@ -32,4 +32,7 @@ public interface ManagerReviewExceptionRepository extends JpaRepository<ManagerR
 	 */
 	Optional<ManagerReviewException> findByUserIdAndWeekStartDateAndExceptionTypeAndResolved(UUID userId,
 			LocalDate weekStartDate, ExceptionType exceptionType, boolean resolved);
+
+	/** Used for exception-aging report: all unresolved exceptions for a team. */
+	List<ManagerReviewException> findByTeamIdAndResolved(UUID teamId, boolean resolved);
 }

@@ -24,6 +24,7 @@ import com.weeklycommit.plan.dto.CommitResponse;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.plan.service.WeeklyPlanService;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
+import com.weeklycommit.report.service.ReadModelRefreshService;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -59,16 +60,19 @@ public class CarryForwardService {
 	private final CarryForwardLinkRepository linkRepo;
 	private final ScopeChangeEventRepository scopeChangeEventRepo;
 	private final NotificationService notificationService;
+	private final ReadModelRefreshService readModelRefreshService;
 
 	public CarryForwardService(WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo,
 			UserAccountRepository userRepo, CarryForwardLinkRepository linkRepo,
-			ScopeChangeEventRepository scopeChangeEventRepo, NotificationService notificationService) {
+			ScopeChangeEventRepository scopeChangeEventRepo, NotificationService notificationService,
+			ReadModelRefreshService readModelRefreshService) {
 		this.commitRepo = commitRepo;
 		this.planRepo = planRepo;
 		this.userRepo = userRepo;
 		this.linkRepo = linkRepo;
 		this.scopeChangeEventRepo = scopeChangeEventRepo;
 		this.notificationService = notificationService;
+		this.readModelRefreshService = readModelRefreshService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -141,6 +145,9 @@ public class CarryForwardService {
 				log.warn("Failed to send carry-forward reminder for commit {}: {}", saved.getId(), ex.getMessage());
 			}
 		}
+
+		// Refresh derived read models for the target plan (fire-and-forget)
+		triggerReadModelRefresh(targetPlan.getId());
 
 		return new CarryForwardResponse(CommitResponse.from(saved), CarryForwardLinkResponse.from(savedLink),
 				postLockAdded);
@@ -327,5 +334,13 @@ public class CarryForwardService {
 			return "null";
 		}
 		return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+	}
+
+	private void triggerReadModelRefresh(UUID planId) {
+		try {
+			readModelRefreshService.refreshForPlan(planId);
+		} catch (Exception ex) {
+			log.warn("Failed to refresh read models for plan {}: {}", planId, ex.getMessage());
+		}
 	}
 }

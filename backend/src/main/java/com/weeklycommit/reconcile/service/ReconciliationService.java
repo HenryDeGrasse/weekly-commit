@@ -30,6 +30,7 @@ import com.weeklycommit.plan.dto.PlanResponse;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
 import com.weeklycommit.reconcile.dto.ReconcileCommitView;
+import com.weeklycommit.report.service.ReadModelRefreshService;
 import com.weeklycommit.reconcile.dto.ReconciliationViewResponse;
 import com.weeklycommit.reconcile.dto.ScopeChangeEventResponse;
 import java.time.Instant;
@@ -81,13 +82,14 @@ public class ReconciliationService {
 	private final ReconcileSnapshotCommitRepository reconcileCommitRepo;
 	private final ObjectMapper objectMapper;
 	private final NotificationService notificationService;
+	private final ReadModelRefreshService readModelRefreshService;
 
 	public ReconciliationService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			WorkItemRepository workItemRepo, ScopeChangeEventRepository eventRepo,
 			LockSnapshotHeaderRepository lockHeaderRepo, LockSnapshotCommitRepository lockCommitRepo,
 			ReconcileSnapshotHeaderRepository reconcileHeaderRepo,
 			ReconcileSnapshotCommitRepository reconcileCommitRepo, ObjectMapper objectMapper,
-			NotificationService notificationService) {
+			NotificationService notificationService, ReadModelRefreshService readModelRefreshService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.workItemRepo = workItemRepo;
@@ -98,6 +100,7 @@ public class ReconciliationService {
 		this.reconcileCommitRepo = reconcileCommitRepo;
 		this.objectMapper = objectMapper;
 		this.notificationService = notificationService;
+		this.readModelRefreshService = readModelRefreshService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -307,6 +310,8 @@ public class ReconciliationService {
 		plan.setCompliant(plan.isCompliant() && allAchieved);
 		planRepo.save(plan);
 
+		triggerReadModelRefresh(planId);
+
 		return getReconciliationView(planId);
 	}
 
@@ -415,6 +420,14 @@ public class ReconciliationService {
 			return objectMapper.writeValueAsString(o);
 		} catch (JsonProcessingException e) {
 			throw new IllegalStateException("JSON serialisation failed", e);
+		}
+	}
+
+	private void triggerReadModelRefresh(UUID planId) {
+		try {
+			readModelRefreshService.refreshForPlan(planId);
+		} catch (Exception ex) {
+			log.warn("Failed to refresh read models for plan {}: {}", planId, ex.getMessage());
 		}
 	}
 }

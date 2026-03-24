@@ -27,6 +27,7 @@ import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
+import com.weeklycommit.report.service.ReadModelRefreshService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -57,6 +58,9 @@ class CarryForwardServiceTest {
 
 	@Mock
 	private ScopeChangeEventRepository scopeChangeEventRepo;
+
+	@Mock
+	private ReadModelRefreshService readModelRefreshService;
 
 	@InjectMocks
 	private CarryForwardService service;

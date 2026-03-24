@@ -24,6 +24,7 @@ import com.weeklycommit.reconcile.dto.EditCommitChanges;
 import com.weeklycommit.reconcile.dto.ManagerException;
 import com.weeklycommit.reconcile.dto.ScopeChangeEventResponse;
 import com.weeklycommit.reconcile.dto.ScopeChangeTimelineResponse;
+import com.weeklycommit.report.service.ReadModelRefreshService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -58,15 +59,19 @@ public class ScopeChangeService {
 	private final ObjectMapper objectMapper;
 	private final NotificationService notificationService;
 
+	private final ReadModelRefreshService readModelRefreshService;
+
 	public ScopeChangeService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			ScopeChangeEventRepository eventRepo, LockSnapshotHeaderRepository lockSnapshotRepo,
-			ObjectMapper objectMapper, NotificationService notificationService) {
+			ObjectMapper objectMapper, NotificationService notificationService,
+			ReadModelRefreshService readModelRefreshService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.eventRepo = eventRepo;
 		this.lockSnapshotRepo = lockSnapshotRepo;
 		this.objectMapper = objectMapper;
 		this.notificationService = notificationService;
+		this.readModelRefreshService = readModelRefreshService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -110,6 +115,7 @@ public class ScopeChangeService {
 					"A King-level commit was added post-lock on plan for week " + plan.getWeekStartDate() + ".");
 		}
 
+		triggerReadModelRefresh(planId);
 		return getChangeTimeline(planId);
 	}
 
@@ -140,6 +146,7 @@ public class ScopeChangeService {
 		event.setNewValue(toJson(java.util.Map.of("outcome", CommitOutcome.CANCELED.name())));
 		eventRepo.save(event);
 
+		triggerReadModelRefresh(commit.getPlanId());
 		return getChangeTimeline(commit.getPlanId());
 	}
 
@@ -204,6 +211,7 @@ public class ScopeChangeService {
 			}
 		}
 
+		triggerReadModelRefresh(commit.getPlanId());
 		return getChangeTimeline(commit.getPlanId());
 	}
 
@@ -384,5 +392,13 @@ public class ScopeChangeService {
 
 	private static String str(Object o) {
 		return o != null ? o.toString() : null;
+	}
+
+	private void triggerReadModelRefresh(UUID planId) {
+		try {
+			readModelRefreshService.refreshForPlan(planId);
+		} catch (Exception ex) {
+			log.warn("Failed to refresh read models for plan {}: {}", planId, ex.getMessage());
+		}
 	}
 }

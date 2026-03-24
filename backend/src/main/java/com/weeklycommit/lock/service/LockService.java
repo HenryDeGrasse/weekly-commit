@@ -25,6 +25,7 @@ import com.weeklycommit.plan.dto.PlanResponse;
 import com.weeklycommit.plan.dto.PlanWithCommitsResponse;
 import com.weeklycommit.plan.exception.PlanValidationException;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
+import com.weeklycommit.report.service.ReadModelRefreshService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -54,11 +55,12 @@ public class LockService {
 	private final ObjectMapper objectMapper;
 	private final NotificationService notificationService;
 	private final RiskDetectionService riskDetectionService;
+	private final ReadModelRefreshService readModelRefreshService;
 
 	public LockService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			LockSnapshotHeaderRepository headerRepo, LockSnapshotCommitRepository commitSnapshotRepo,
 			RcdoNodeRepository rcdoNodeRepo, ObjectMapper objectMapper, NotificationService notificationService,
-			RiskDetectionService riskDetectionService) {
+			RiskDetectionService riskDetectionService, ReadModelRefreshService readModelRefreshService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.headerRepo = headerRepo;
@@ -67,6 +69,7 @@ public class LockService {
 		this.objectMapper = objectMapper;
 		this.notificationService = notificationService;
 		this.riskDetectionService = riskDetectionService;
+		this.readModelRefreshService = readModelRefreshService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -113,6 +116,7 @@ public class LockService {
 
 		captureSnapshot(plan, false, List.of());
 		triggerRiskDetection(plan.getId());
+		triggerReadModelRefresh(plan.getId());
 
 		return LockResponse.success(buildPlanResponse(plan));
 	}
@@ -145,6 +149,7 @@ public class LockService {
 
 		captureSnapshot(plan, true, errors);
 		triggerRiskDetection(plan.getId());
+		triggerReadModelRefresh(plan.getId());
 
 		// Notification hooks — fire-and-forget: failures must not roll back the lock
 		try {
@@ -246,6 +251,14 @@ public class LockService {
 			riskDetectionService.detectAndStoreRiskSignalsById(planId);
 		} catch (Exception ex) {
 			log.warn("Failed to compute risk signals for plan {}: {}", planId, ex.getMessage());
+		}
+	}
+
+	private void triggerReadModelRefresh(UUID planId) {
+		try {
+			readModelRefreshService.refreshForPlan(planId);
+		} catch (Exception ex) {
+			log.warn("Failed to refresh read models for plan {}: {}", planId, ex.getMessage());
 		}
 	}
 

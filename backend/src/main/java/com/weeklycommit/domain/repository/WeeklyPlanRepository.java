@@ -33,4 +33,10 @@ public interface WeeklyPlanRepository extends JpaRepository<WeeklyPlan, UUID> {
 	List<WeeklyPlan> findByStateAndReconcileDeadlineBefore(PlanState state, Instant deadline);
 
 	boolean existsByOwnerUserIdAndWeekStartDate(UUID ownerUserId, LocalDate weekStartDate);
+
+	/**
+	 * Used by the scheduled read-model refresh to find all plans for the current
+	 * week.
+	 */
+	List<WeeklyPlan> findByWeekStartDate(LocalDate weekStartDate);
 }

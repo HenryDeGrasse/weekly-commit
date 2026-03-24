@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.weeklycommit.ai.service.RiskDetectionService;
+import com.weeklycommit.report.service.ReadModelRefreshService;
 import com.weeklycommit.domain.entity.LockSnapshotCommit;
 import com.weeklycommit.domain.entity.LockSnapshotHeader;
 import com.weeklycommit.domain.entity.RcdoNode;
@@ -63,6 +64,9 @@ class LockServiceTest {
 
 	@Mock
 	private RiskDetectionService riskDetectionService;
+
+	@Mock
+	private ReadModelRefreshService readModelRefreshService;
 
 	@Spy
 	private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
