@@ -1,0 +1,48 @@
+All checks pass. Let me provide a summary of what was implemented:
+
+## Summary
+
+### What was implemented
+
+**packages/shared/src/host.ts** — New file defining all host bridge TypeScript interfaces:
+- `AuthenticatedUser`, `TeamContext`, `HostEnvironment`, `FeatureFlags`
+- `HostContext` — primary bridge contract with auth token, user, team, manager chain, env, feature flags
+- `DesignTokens` — CSS custom property token contract
+- `NotificationBridge`, `TelemetryCallback`, `NavigationBridge`
+
+**frontend/src/host/HostProvider.tsx** — React context wrapping `HostBridge`, with `useHostBridge()` and `useHostContext()` hooks. Throws descriptively if used outside provider.
+
+**frontend/src/host/MockHostProvider.tsx** — Drop-in mock for standalone dev/tests, pre-populated with sensible default values.
+
+**frontend/src/api/client.ts** — Typed fetch-based API client factory: auth token injection, error normalization to `ApiRequestError`, timeout via AbortController, all HTTP methods.
+
+**frontend/src/api/hooks.ts** — `useQuery<T>` hook with loading/error/data state and `refetch()`.
+
+**frontend/src/routes/** — Five lazy-loadable route placeholders: `MyWeek`, `Reconcile` (with `:planId` param), `TeamWeek` (with `:teamId` param), `Tickets`, `Rcdos`.
+
+**frontend/src/components/Navigation.tsx** — Sidebar `<nav>` with 5 `NavLink`s, active-class styling.
+
+**frontend/src/components/Header.tsx** — Banner with user display name, week-date picker (snapped to Monday), notification bell.
+
+**frontend/src/components/AppShell.tsx** — Desktop-first CSS grid layout; applies design tokens as CSS custom properties.
+
+**frontend/src/Routes.tsx** — Module Federation exposed entry: wraps routes in `HostProvider` + `AppShell` + `Suspense`, handles index redirect to `my-week`.
+
+**frontend/src/App.tsx** — Standalone dev entry using `mockHostBridge` + `BrowserRouter`.
+
+**frontend/vite.config.ts** — Added `@originjs/vite-plugin-federation` exposing `./Routes`, shared `react`/`react-dom`/`react-router-dom`; test env switched to `jsdom`.
+
+**frontend/tsconfig.json** — Added `"types": ["vitest/globals"]` for test globals.
+
+**Tests (31 total, all passing):**
+- `HostProvider.test.tsx` — context renders with mock data, throws outside provider, provides feature flags
+- `Router.test.tsx` — all 5 routes render by path, params threaded, navigation sidebar present, index redirects
+- `ApiClient.test.ts` — auth header, JSON body, error status codes, 204 no content, network failure, method routing
+- `AppShell.test.tsx` — shell container, nav with 5 links, correct hrefs, header, main, notification bell, week selector
+
+```observations
+- [low] frontend/src/host/MockHostProvider.tsx: The `mockNavigation.navigateTo` and other mock methods use `console.info/debug/error` directly — in test runs these produce console output. Tests don't silence them. Could add a `vi.spyOn(console, ...)` in test setup if noisy output becomes a problem.
+- [low] frontend/src/components/Header.tsx: `getWeekMonday` adjusts for Sunday (returns prior Monday) but does not account for timezone offset — `new Date(isoDateString)` treats ISO-only strings as UTC, so users in UTC-heavy timezones may see off-by-one. Worth revisiting when the date picker is exercised against real data.
+```
+
+Verdict: changes_made

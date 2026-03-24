@@ -1,8 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
 import App from "./App.js";
 
 describe("App", () => {
-  it("is a function component", () => {
-    expect(typeof App).toBe("function");
+  beforeEach(() => {
+    window.history.replaceState({}, "", "/weekly/my-week");
+  });
+
+  it("renders standalone app under the /weekly base path", async () => {
+    render(<App />);
+    expect(await screen.findByTestId("page-my-week")).toBeInTheDocument();
   });
 });

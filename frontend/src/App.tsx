@@ -1,10 +1,15 @@
-function App() {
+/**
+ * Standalone app entry for local development.
+ * Wraps WeeklyCommitRoutes with a BrowserRouter and the mock host bridge.
+ */
+import { BrowserRouter } from "react-router-dom";
+import WeeklyCommitRoutes from "./Routes.js";
+import { mockHostBridge } from "./host/MockHostProvider.js";
+
+export default function App() {
   return (
-    <div>
-      <h1>Weekly Commit Module</h1>
-      <p>Scaffold placeholder — implementation coming soon.</p>
-    </div>
+    <BrowserRouter basename="/weekly">
+      <WeeklyCommitRoutes bridge={mockHostBridge} />
+    </BrowserRouter>
   );
 }
-
-export default App;

@@ -1,0 +1,48 @@
+
+> weekly-commit-monorepo@1.0.0 test
+> npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test
+
+
+> frontend@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend
+
+ ✓ src/__tests__/ApiClient.test.ts (8 tests) 5ms
+ ✓ src/__tests__/HostProvider.test.tsx (4 tests) 19ms
+ ✓ src/App.test.tsx (1 test) 36ms
+ ✓ src/__tests__/AppShell.test.tsx (9 tests) 105ms
+ ✓ src/__tests__/Router.test.tsx (9 tests) 122ms
+
+ Test Files  5 passed (5)
+      Tests  31 passed (31)
+   Start at  01:51:49
+   Duration  644ms (transform 119ms, setup 174ms, collect 312ms, tests 287ms, environment 1.37s, prepare 208ms)
+
+
+> @weekly-commit/shared@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/packages/shared
+
+ ✓ src/index.test.ts (5 tests) 1ms
+ ✓ src/validators.test.ts (15 tests) 2ms
+
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  01:51:49
+   Duration  151ms (transform 38ms, setup 0ms, collect 44ms, tests 3ms, environment 0ms, prepare 71ms)
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources UP-TO-DATE
+> Task :testClasses UP-TO-DATE
+> Task :test UP-TO-DATE
+
+BUILD SUCCESSFUL in 325ms
+5 actionable tasks: 5 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.1/userguide/configuration_cache_enabling.html

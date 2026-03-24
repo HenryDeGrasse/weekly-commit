@@ -1,0 +1,33 @@
+Reviewed the Step 9 frontend diff, especially:
+- `frontend/src/App.tsx`
+- `frontend/src/Routes.tsx`
+- `frontend/src/components/**`
+- `frontend/src/host/**`
+- `frontend/src/api/**`
+- `packages/shared/src/host.ts`
+- frontend tests under `frontend/src/__tests__`
+
+I also ran:
+- `npm run lint`
+- `npm run typecheck`
+- `npm run unit`
+- `npm run build`
+
+All pass.
+
+I found one material defect and fixed it:
+- The standalone app used `BrowserRouter` without the `/weekly` base path, while the navigation links point to `/weekly/...`.
+- This meant standalone navigation would not match the configured routes correctly.
+- I fixed it by setting `basename="/weekly"` in `frontend/src/App.tsx` and replaced the trivial app test with a real render test that verifies the standalone app works under `/weekly/my-week`.
+
+Files changed:
+- `frontend/src/App.tsx`
+- `frontend/src/App.test.tsx`
+
+```observations
+- [low] frontend/src/components/Header.tsx: `getWeekMonday` is exported from a component file, which triggers the React Refresh lint warning. It is not breaking, but moving it to a utility module would remove the warning.
+- [low] frontend/src/host/HostProvider.tsx: Non-component exports in the same file trigger React Refresh lint warnings. Not breaking.
+- [low] frontend/src/host/MockHostProvider.tsx: Non-component exports in the same file trigger React Refresh lint warnings. Not breaking.
+```
+
+Verdict: changes_made
