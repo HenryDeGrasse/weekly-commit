@@ -1,0 +1,15 @@
+I reviewed `.pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/draft-plan.json` against `docs/prd.md` and the current repo shape. The repo is effectively greenfield right now (`docs/` + `.pi/`), so a scaffold-first plan is appropriate.
+
+Overall, this is a workable path:
+
+- The architecture matches the PRD: TypeScript/React micro-frontend remote + Java 21 modular-monolith backend + PostgreSQL/Flyway.
+- The ordering is reasonable: scaffold → schema/domain → lifecycle APIs → tickets/manager/RBAC → frontend surfaces → notifications/AI/reporting/config/polish.
+- The plan covers the major v1 requirements from the PRD, including immutable lock/reconcile snapshots, explicit post-lock change events, carry-forward lineage, manager views, AI degradation, and derived read models.
+
+Non-blocking suggestions:
+- Make the root npm check naming explicit for the harness (`unit` vs `test`) so the configured checks map cleanly.
+- Clarify the persistence model for manager exceptions/resolution a bit earlier, since later steps use `exceptionId`, resolution, and aging.
+- Clarify the backend source of truth for auth/manager-chain/home-team data early (host claims vs local directory tables), since RBAC/privacy depends on it.
+- Consider introducing the read-model/event-refresh seam a bit earlier to reduce rework on Team Week, though this is not a blocker.
+
+Verdict: approve

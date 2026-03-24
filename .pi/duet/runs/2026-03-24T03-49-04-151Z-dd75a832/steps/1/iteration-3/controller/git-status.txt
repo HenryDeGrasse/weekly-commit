@@ -1,0 +1,18 @@
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/lock.json
+ M .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/state.json
+?? .gitignore
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/cost.json
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/draft-plan.json
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/gap-analysis/
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/interventions.jsonl
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/observations.jsonl
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/plan.json
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/planning/
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/sessions/
+?? .pi/duet/runs/2026-03-24T03-49-04-151Z-dd75a832/steps/
+?? backend/
+?? docs/assignment.md
+?? frontend/
+?? package-lock.json
+?? package.json
+?? packages/

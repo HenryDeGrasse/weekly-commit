@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: weekly-commit
+  datasource:
+    url: jdbc:postgresql://localhost:5432/weekly_commit
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+server:
+  port: 8080

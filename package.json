@@ -1,0 +1,16 @@
+{
+  "name": "weekly-commit-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "packages/shared"
+  ],
+  "scripts": {
+    "lint": "npm run lint -w frontend && npm run lint -w @weekly-commit/shared && cd backend && ./gradlew spotlessCheck",
+    "typecheck": "npm run typecheck -w frontend && npm run typecheck -w @weekly-commit/shared",
+    "test": "npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test",
+    "unit": "npm run test",
+    "build": "npm run build -w @weekly-commit/shared && npm run build -w frontend && cd backend && ./gradlew build -x test"
+  }
+}
