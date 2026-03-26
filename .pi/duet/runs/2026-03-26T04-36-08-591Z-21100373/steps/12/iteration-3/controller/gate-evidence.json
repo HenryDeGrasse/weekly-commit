@@ -1,0 +1,20 @@
+[
+  {
+    "checkId": "typecheck",
+    "cmd": "npm run typecheck",
+    "exitCode": 0,
+    "passed": true,
+    "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/steps/12/iteration-3/controller/outputs/typecheck.stdout.txt",
+    "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/steps/12/iteration-3/controller/outputs/typecheck.stderr.txt",
+    "truncatedPreview": "> weekly-commit-monorepo@1.0.0 typecheck\n> npm run typecheck -w frontend && npm run typecheck -w @weekly-commit/shared\n\n\n> frontend@1.0.0 typecheck\n> tsc --noEmit\n\n\n> @weekly-commit/shared@1.0.0 typecheck\n> tsc --noEmit\n\n\n/Users/henrydegrasse/.bash_profile: line 5: /Users/henrydegrasse/.cargo/env: No such file or directory"
+  },
+  {
+    "checkId": "unit",
+    "cmd": "npm test",
+    "exitCode": 0,
+    "passed": true,
+    "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/steps/12/iteration-3/controller/outputs/unit.stdout.txt",
+    "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/steps/12/iteration-3/controller/outputs/unit.stderr.txt",
+    "truncatedPreview": "> weekly-commit-monorepo@1.0.0 test\n> npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test\n\n\n> frontend@1.0.0 test\n> vitest --run\n\n\n RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend\n\n ✓ src/__tests__/CapacityMeter.test.tsx (16 tests) 88ms\n ✓ src/__tests__/PreLockValidation.test.tsx (9 tests) 39ms\n ✓ src/__tests__/FilterBar.test.tsx (22 tests) 105ms\n ✓ src/__tests__/SemanticSearchInput.test.tsx (17 tests) 92ms\n ✓ src/__tests__/InsightPanel.test.tsx (20 tests) 74ms\n ✓ src/__tests__/ScopeChangeDialog.test.tsx (12 tests) 142ms\n ✓ src/__tests__/QueryAnswerCard.test.tsx (19 tests) 155ms\n ✓ src/__tests__/CommitList.test.tsx (29 tests) 364ms\n ✓ src/__tests__/RcdoNodeForm.test.tsx (23 tests) 427ms\n ✓ src/__tests__/RcdoTreeView.test.tsx (20 tests) 396ms\n ✓ src/__tests__/ReconcilePage.test.tsx (25 tests) 450ms\n ✓ src/__tests__/RcdoPage.test.tsx (27 tests) 614ms\n ✓ src/__tests__/TicketsPage.test.tsx (30 tests) 604ms\n ✓ src/__tests__/CommitForm.test.tsx (33 tests) 697ms\n ✓ src/__tests__/ApiClient.test.ts (8 tests) 6ms\n ✓ src/__tests__/CarryForwardLineageView.test.tsx (13 tests) 55ms\n ✓ src/__tests__/LockConfirmDialog.test.tsx (8 tests) 78ms\n ✓ src/__tests__/PlanHistoryView.test.tsx (16 tests) 138ms\n ✓ src/__tests__/Flows.test.tsx (41 tests) 898ms\n ✓ src/__tests__/TeamHistoryView.test.tsx (13 tests) 249ms\n ✓ src/__tests__/MyWeekPage.test.tsx (41 tests) 984ms\n ✓ src/__tests__/MoveNodeDialog.test.tsx (8 tests) 257ms\n ✓ src/__tests__/ui/Toast.test.tsx (9 tests) 71ms\n ✓ src/__tests__/Header.test.tsx (13 tests) 251ms\n ✓ src/__tests__/TeamWeekPage.test.tsx (74 tests) 1070ms\n ✓ src/__tests__/ui/Input.test.tsx (15 tests) 173ms\n ✓ src/__tests__/ui/Button.test.tsx (17 tests) 182ms\n ✓ src/__tests__/ui/Card.test.tsx (10 tests) 111ms\n ✓ src/__tests__/ui/Dialog.test.tsx (9 tests) 127ms\n ✓ src/__tests__/Navigation.test.tsx (9 tests) 184ms\n ✓ src/__tests__/ui/Badge.test.tsx (13 tests) 38ms\n ✓ src/__tests__/H\n...[truncated]"
+  }
+]

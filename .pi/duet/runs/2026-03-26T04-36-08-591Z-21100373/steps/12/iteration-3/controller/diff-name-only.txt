@@ -1,0 +1,7 @@
+.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/cost.json
+.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/sessions/continuous/relay-a/2026-03-26T04-47-46-137Z_72092699-d416-4051-8917-7a32e149dfa5.jsonl
+.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/sessions/continuous/relay-b/2026-03-26T04-50-32-011Z_fdc3c196-6781-4ba1-b5c1-408f645f83c1.jsonl
+.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/state.json
+.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/steps/12
+frontend/src/__tests__/InsightPanel.test.tsx
+frontend/src/components/ai/InsightPanel.tsx

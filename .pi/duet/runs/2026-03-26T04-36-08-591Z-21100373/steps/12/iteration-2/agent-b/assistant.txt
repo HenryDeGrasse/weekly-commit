@@ -1,0 +1,32 @@
+Reviewed the Step 12 diff in:
+
+- `frontend/src/components/ai/InsightPanel.tsx`
+- `frontend/src/__tests__/InsightPanel.test.tsx`
+
+What I verified:
+- team mode uses `useTeamInsights(teamId, weekStart)`
+- personal mode uses `usePlanInsights(planId)`
+- severity badges render with color variants
+- loading, empty, error, and unavailable states are present
+- `AiFeedbackButtons` render per insight card
+
+Material defect found:
+- The component rendered `sourceEntityIds` as plain text chips, not clickable links, but the step explicitly requires source entity links to be clickable.
+
+What I changed:
+- Updated `frontend/src/components/ai/InsightPanel.tsx`
+  - source entity IDs now render as clickable `<a>` links
+  - team-mode links point to the team page scope (`/team/{teamId}#sourceId`)
+  - personal-mode links point to the personal scope (`/my-week#sourceId`)
+- Updated `frontend/src/__tests__/InsightPanel.test.tsx`
+  - added coverage verifying source entity IDs render as clickable links
+
+Checks run:
+- `cd frontend && npm run typecheck` ✅
+- `cd frontend && npm run test -- --run InsightPanel` ✅
+
+Assessment:
+- Step 12 now meets the stated requirements
+- No other material defects found in this diff
+
+Verdict: changes_made
