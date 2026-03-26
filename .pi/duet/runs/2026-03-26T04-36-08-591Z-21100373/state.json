@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-26T05:39:41.380Z",
+  "updatedAt": "2026-03-26T05:43:50.600Z",
   "runId": "2026-03-26T04-36-08-591Z-21100373",
   "handoffMode": "none",
   "postPlanMode": "autorun",
@@ -190,12 +190,12 @@
       }
     ]
   },
-  "stepIndex": 7,
-  "round": 3,
+  "stepIndex": 8,
+  "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-7",
-    "stepTitle": "Create InsightGenerationService.java + InsightGenerationServiceTest.java",
+    "stepId": "step-8",
+    "stepTitle": "Add RAG DTOs and new AiController endpoints",
     "gateResults": [
       {
         "id": "build",

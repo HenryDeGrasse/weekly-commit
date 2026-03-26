@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.weeklycommit.ai.dto.RiskSignalResponse;
 import com.weeklycommit.ai.dto.RiskSignalResponse.PlanRiskSignals;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
+import com.weeklycommit.ai.rag.SemanticQueryService;
 import com.weeklycommit.ai.service.AiSuggestionService;
 import com.weeklycommit.ai.service.CommitDraftAssistService;
 import com.weeklycommit.ai.service.CommitLintService;
@@ -17,6 +18,7 @@ import com.weeklycommit.ai.service.ManagerAiSummaryService;
 import com.weeklycommit.ai.service.RcdoSuggestService;
 import com.weeklycommit.ai.service.ReconcileAssistService;
 import com.weeklycommit.ai.service.RiskDetectionService;
+import com.weeklycommit.domain.repository.AiSuggestionRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -55,6 +57,12 @@ class AiControllerTest {
 
 	@MockBean
 	private AiProviderRegistry providerRegistry;
+
+	@MockBean
+	private SemanticQueryService semanticQueryService;
+
+	@MockBean
+	private AiSuggestionRepository suggestionRepo;
 
 	@Test
 	void getRiskSignals_requiresActorHeader() throws Exception {

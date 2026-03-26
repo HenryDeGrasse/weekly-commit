@@ -1,28 +1,43 @@
 package com.weeklycommit.ai.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.dto.AiFeedbackRequest;
 import com.weeklycommit.ai.dto.CommitDraftAssistRequest;
 import com.weeklycommit.ai.dto.CommitDraftAssistResponse;
 import com.weeklycommit.ai.dto.CommitLintRequest;
 import com.weeklycommit.ai.dto.CommitLintResponse;
+import com.weeklycommit.ai.dto.InsightCardDto;
+import com.weeklycommit.ai.dto.InsightListResponse;
 import com.weeklycommit.ai.dto.ManagerAiSummaryResponse;
+import com.weeklycommit.ai.dto.RagQueryRequest;
+import com.weeklycommit.ai.dto.RagQueryResponse;
+import com.weeklycommit.ai.dto.RagSourceDto;
 import com.weeklycommit.ai.dto.RcdoSuggestRequest;
 import com.weeklycommit.ai.dto.RcdoSuggestResponse;
 import com.weeklycommit.ai.dto.ReconcileAssistRequest;
 import com.weeklycommit.ai.dto.ReconcileAssistResponse;
 import com.weeklycommit.ai.dto.RiskSignalResponse.PlanRiskSignals;
+import com.weeklycommit.ai.provider.AiContext;
 import com.weeklycommit.ai.provider.AiProvider;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
+import com.weeklycommit.ai.rag.SemanticQueryService;
+import com.weeklycommit.ai.service.AiSuggestionService;
 import com.weeklycommit.ai.service.CommitDraftAssistService;
 import com.weeklycommit.ai.service.CommitLintService;
 import com.weeklycommit.ai.service.ManagerAiSummaryService;
 import com.weeklycommit.ai.service.RcdoSuggestService;
 import com.weeklycommit.ai.service.RiskDetectionService;
 import com.weeklycommit.ai.service.ReconcileAssistService;
-import com.weeklycommit.ai.service.AiSuggestionService;
+import com.weeklycommit.domain.entity.AiSuggestion;
+import com.weeklycommit.domain.repository.AiSuggestionRepository;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +50,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST endpoints for AI-powered commit assistance, linting, RCDO suggestions,
- * risk detection, reconciliation assistance, and manager summaries.
+ * risk detection, reconciliation assistance, manager summaries, RAG queries,
+ * and proactive insight retrieval.
  *
  * <p>
  * All endpoints degrade gracefully: when AI is disabled or unavailable the
@@ -45,6 +61,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AiController {
 
+	private static final Logger log = LoggerFactory.getLogger(AiController.class);
+
 	private final CommitDraftAssistService draftAssistService;
 	private final CommitLintService lintService;
 	private final RcdoSuggestService rcdoSuggestService;
@@ -53,11 +71,16 @@ public class AiController {
 	private final ManagerAiSummaryService managerSummaryService;
 	private final AiSuggestionService suggestionService;
 	private final AiProviderRegistry providerRegistry;
+	private final SemanticQueryService semanticQueryService;
+	private final AiSuggestionRepository suggestionRepo;
+	private final ObjectMapper objectMapper;
 
 	public AiController(CommitDraftAssistService draftAssistService, CommitLintService lintService,
 			RcdoSuggestService rcdoSuggestService, RiskDetectionService riskDetectionService,
 			ReconcileAssistService reconcileAssistService, ManagerAiSummaryService managerSummaryService,
-			AiSuggestionService suggestionService, AiProviderRegistry providerRegistry) {
+			AiSuggestionService suggestionService, AiProviderRegistry providerRegistry,
+			SemanticQueryService semanticQueryService, AiSuggestionRepository suggestionRepo,
+			ObjectMapper objectMapper) {
 		this.draftAssistService = draftAssistService;
 		this.lintService = lintService;
 		this.rcdoSuggestService = rcdoSuggestService;
@@ -66,6 +89,9 @@ public class AiController {
 		this.managerSummaryService = managerSummaryService;
 		this.suggestionService = suggestionService;
 		this.providerRegistry = providerRegistry;
+		this.semanticQueryService = semanticQueryService;
+		this.suggestionRepo = suggestionRepo;
+		this.objectMapper = objectMapper;
 	}
 
 	// -------------------------------------------------------------------------
@@ -154,6 +180,86 @@ public class AiController {
 	}
 
 	// -------------------------------------------------------------------------
+	// Capability 7: RAG query
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Executes a semantic (RAG) query against the team's indexed planning history.
+	 * Returns an AI-generated answer with source citations.
+	 *
+	 * <p>
+	 * Degrades gracefully: returns {@code {aiAvailable: false}} when Pinecone or
+	 * the LLM is unavailable.
+	 */
+	@PostMapping("/api/ai/query")
+	public ResponseEntity<RagQueryResponse> ragQuery(@Valid @RequestBody RagQueryRequest request) {
+		try {
+			SemanticQueryService.RagQueryResult result = semanticQueryService.query(request.question(),
+					request.teamId(), request.userId());
+			if (!result.available()) {
+				return ResponseEntity.ok(RagQueryResponse.unavailable());
+			}
+			List<RagSourceDto> sources = result.sources().stream()
+					.map(s -> new RagSourceDto(s.entityType(), s.entityId(), s.weekStartDate(), s.snippet())).toList();
+			return ResponseEntity.ok(
+					new RagQueryResponse(true, result.answer(), sources, result.confidence(), result.suggestionId()));
+		} catch (Exception ex) {
+			log.warn("RAG query failed: {}", ex.getMessage());
+			return ResponseEntity.ok(RagQueryResponse.unavailable());
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Capability 8: Team AI insights
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns persisted TEAM_INSIGHT rows for the given team and week.
+	 *
+	 * <p>
+	 * Insights are generated by the scheduled job in
+	 * {@link com.weeklycommit.ai.rag.InsightGenerationService}. This endpoint reads
+	 * them back from the {@code ai_suggestion} table.
+	 */
+	@GetMapping("/api/teams/{id}/week/{weekStart}/ai-insights")
+	public ResponseEntity<InsightListResponse> getTeamInsights(@PathVariable UUID id,
+			@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart) {
+		try {
+			List<AiSuggestion> rows = suggestionRepo.findByTeamIdAndWeekStartDateAndSuggestionType(id, weekStart,
+					AiContext.TYPE_TEAM_INSIGHT);
+			List<InsightCardDto> insights = parseInsightCards(rows);
+			return ResponseEntity.ok(new InsightListResponse(true, insights));
+		} catch (Exception ex) {
+			log.warn("Failed to retrieve team insights for team={}, week={}: {}", id, weekStart, ex.getMessage());
+			return ResponseEntity.ok(InsightListResponse.unavailable());
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Capability 9: Personal (plan) AI insights
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns persisted PERSONAL_INSIGHT rows for the given plan.
+	 *
+	 * <p>
+	 * Insights are generated on plan lock (via
+	 * {@link com.weeklycommit.ai.rag.InsightGenerationService#generatePersonalInsightsAsync})
+	 * and by the daily sweep.
+	 */
+	@GetMapping("/api/plans/{id}/ai-insights")
+	public ResponseEntity<InsightListResponse> getPlanInsights(@PathVariable UUID id) {
+		try {
+			List<AiSuggestion> rows = suggestionRepo.findByPlanIdAndSuggestionType(id, AiContext.TYPE_PERSONAL_INSIGHT);
+			List<InsightCardDto> insights = parseInsightCards(rows);
+			return ResponseEntity.ok(new InsightListResponse(true, insights));
+		} catch (Exception ex) {
+			log.warn("Failed to retrieve personal insights for plan={}: {}", id, ex.getMessage());
+			return ResponseEntity.ok(InsightListResponse.unavailable());
+		}
+	}
+
+	// -------------------------------------------------------------------------
 	// AI Status
 	// -------------------------------------------------------------------------
 
@@ -183,5 +289,39 @@ public class AiController {
 	public ResponseEntity<Void> recordFeedback(@Valid @RequestBody AiFeedbackRequest request) {
 		suggestionService.recordFeedback(request);
 		return ResponseEntity.status(HttpStatus.CREATED).build();
+	}
+
+	// -------------------------------------------------------------------------
+	// Private helpers
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Parses each {@link AiSuggestion}'s {@code suggestionPayload} JSON into an
+	 * {@link InsightCardDto}. Rows whose payload cannot be parsed are silently
+	 * skipped.
+	 */
+	private List<InsightCardDto> parseInsightCards(List<AiSuggestion> rows) {
+		List<InsightCardDto> result = new ArrayList<>(rows.size());
+		for (AiSuggestion row : rows) {
+			try {
+				JsonNode root = objectMapper.readTree(row.getSuggestionPayload());
+				String insightText = root.path("insightText").asText(row.getRationale());
+				String severity = root.path("severity").asText("LOW");
+				String actionSuggestion = root.path("actionSuggestion").asText("");
+				List<String> sourceEntityIds = new ArrayList<>();
+				JsonNode idsNode = root.path("sourceEntityIds");
+				if (idsNode.isArray()) {
+					for (JsonNode n : idsNode) {
+						sourceEntityIds.add(n.asText());
+					}
+				}
+				String createdAt = row.getCreatedAt() != null ? row.getCreatedAt().toString() : "";
+				result.add(new InsightCardDto(row.getId(), insightText, severity, sourceEntityIds, actionSuggestion,
+						createdAt));
+			} catch (Exception ex) {
+				log.debug("Skipping unparseable insight payload for suggestion {}: {}", row.getId(), ex.getMessage());
+			}
+		}
+		return result;
 	}
 }

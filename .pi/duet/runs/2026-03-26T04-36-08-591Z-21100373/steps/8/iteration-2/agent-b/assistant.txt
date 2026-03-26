@@ -1,0 +1,29 @@
+Reviewed the Step 8 diff in:
+
+- `backend/src/main/java/com/weeklycommit/ai/controller/AiController.java`
+- `backend/src/main/java/com/weeklycommit/ai/dto/RagQueryRequest.java`
+- `backend/src/main/java/com/weeklycommit/ai/dto/RagQueryResponse.java`
+- `backend/src/main/java/com/weeklycommit/ai/dto/RagSourceDto.java`
+- `backend/src/main/java/com/weeklycommit/ai/dto/InsightCardDto.java`
+- `backend/src/main/java/com/weeklycommit/ai/dto/InsightListResponse.java`
+- `backend/src/test/java/com/weeklycommit/ai/controller/AiControllerTest.java`
+
+What I verified:
+- all required RAG/insight DTOs exist with the expected fields
+- `RagQueryRequest.question` is `@NotBlank`
+- `AiController` injects `SemanticQueryService`, `AiSuggestionRepository`, and `ObjectMapper`
+- new endpoints are present:
+  - `POST /api/ai/query`
+  - `GET /api/teams/{id}/week/{weekStart}/ai-insights`
+  - `GET /api/plans/{id}/ai-insights`
+- controller methods use try/catch graceful degradation and return unavailable responses on exceptions
+- insight payload parsing maps to `InsightCardDto`
+- `AiControllerTest` was updated so the web slice still boots with the new constructor dependencies
+- `cd backend && ./gradlew test build` passes ✅
+
+Assessment:
+- Step 8 requirements are met
+- No material defects found
+- No changes needed
+
+Verdict: approve
