@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-26T05:28:36.808Z",
+  "updatedAt": "2026-03-26T05:39:41.380Z",
   "runId": "2026-03-26T04-36-08-591Z-21100373",
   "handoffMode": "none",
   "postPlanMode": "autorun",
@@ -190,12 +190,12 @@
       }
     ]
   },
-  "stepIndex": 6,
+  "stepIndex": 7,
   "round": 3,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-6",
-    "stepTitle": "Create SemanticQueryService.java + SemanticQueryServiceTest.java",
+    "stepId": "step-7",
+    "stepTitle": "Create InsightGenerationService.java + InsightGenerationServiceTest.java",
     "gateResults": [
       {
         "id": "build",

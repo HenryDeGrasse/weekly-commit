@@ -223,6 +223,8 @@ public class OpenRouterAiProvider implements AiProvider {
 			case AiContext.TYPE_TEAM_SUMMARY -> "team-summary.txt";
 			case AiContext.TYPE_RAG_INTENT -> "rag-intent.txt";
 			case AiContext.TYPE_RAG_QUERY -> "rag-query.txt";
+			case AiContext.TYPE_TEAM_INSIGHT -> "team-insight.txt";
+			case AiContext.TYPE_PERSONAL_INSIGHT -> "personal-insight.txt";
 			default -> "generic.txt";
 		};
 		try {

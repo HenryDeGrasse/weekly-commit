@@ -51,4 +51,10 @@ public record AiContext(
 
 	/** Suggestion type constant — RAG answer generation. */
 	public static final String TYPE_RAG_QUERY = "RAG_QUERY";
+
+	/** Suggestion type constant — proactive team-level insight. */
+	public static final String TYPE_TEAM_INSIGHT = "TEAM_INSIGHT";
+
+	/** Suggestion type constant — proactive personal/plan-level insight. */
+	public static final String TYPE_PERSONAL_INSIGHT = "PERSONAL_INSIGHT";
 }

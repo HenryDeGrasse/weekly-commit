@@ -1,0 +1,24 @@
+11 tests, 0 failures. Here's a summary:
+
+## Summary
+
+### Files created/modified
+
+**`InsightGenerationService.java`** — Converted from interface to a concrete Spring `@Service`. Key behaviors:
+- Constructor injects all 12 dependencies including `AiSuggestionRepository` (for idempotency check)
+- `@Scheduled(cron = "0 0 8 * * *") generateDailyInsights()` — iterates all teams, calls `generateTeamInsights` + personal insights for LOCKED plans (with idempotency check via `findByPlanIdAndSuggestionType`)
+- `generateTeamInsights(teamId, weekStartDate)` — gathers current-week plans, retrieves historical context from Pinecone, calls LLM with `TYPE_TEAM_INSIGHT`, stores each insight row with `teamId + weekStartDate`
+- `generatePersonalInsights(planId)` — loads plan + commits + scope changes + carry-forwards, retrieves user's historical context, calls LLM with `TYPE_PERSONAL_INSIGHT`, stores each insight row with `planId + userId + teamId + weekStartDate`
+- `@Async generatePersonalInsightsAsync(planId)` — thin async wrapper (called from `LockService`)
+
+**`AiContext.java`** — Added `TYPE_TEAM_INSIGHT = "TEAM_INSIGHT"` and `TYPE_PERSONAL_INSIGHT = "PERSONAL_INSIGHT"`
+
+**`StubAiProvider.java`** — Added canned responses for both new types (each returns a 1-insight array)
+
+**`OpenRouterAiProvider.java`** — Added routing for `team-insight.txt` and `personal-insight.txt`
+
+**`team-insight.txt`** / **`personal-insight.txt`** — System prompts for team-level and personal insight generation
+
+**`InsightGenerationServiceTest.java`** — 11 unit tests covering: availability guards, team insight stores one row per insight, teamId/weekStartDate captured correctly, LLM unavailable stores nothing, personal insights store planId/userId/teamId/weekStartDate, plan not found graceful skip, daily sweep idempotency (skips when insights exist), daily sweep generates personal insights when none exist, async wrapper doesn't throw
+
+Verdict: changes_made

@@ -134,6 +134,36 @@ public class StubAiProvider implements AiProvider {
 						""";
 				rationale = "Answer generated from retrieved context chunks.";
 			}
+			case AiContext.TYPE_TEAM_INSIGHT -> {
+				payload = """
+						{
+						  "insights": [
+						    {
+						      "insightText": "The team shows consistent carry-forward patterns suggesting recurring capacity pressure.",
+						      "severity": "MEDIUM",
+						      "sourceEntityIds": [],
+						      "actionSuggestion": "Review team capacity and consider reducing weekly commitment scope."
+						    }
+						  ]
+						}
+						""";
+				rationale = "Team insight generated from historical planning patterns.";
+			}
+			case AiContext.TYPE_PERSONAL_INSIGHT -> {
+				payload = """
+						{
+						  "insights": [
+						    {
+						      "insightText": "You consistently achieve your high-priority commits. Consider raising the bar on estimates.",
+						      "severity": "LOW",
+						      "sourceEntityIds": [],
+						      "actionSuggestion": "Incrementally increase estimate points on KING/QUEEN commits."
+						    }
+						  ]
+						}
+						""";
+				rationale = "Personal insight generated from recent plan history.";
+			}
 			default -> {
 				payload = "{}";
 				rationale = "Unknown suggestion type.";
