@@ -34,6 +34,18 @@ vi.mock("../api/rcdoHooks.js", () => ({
   useRcdoApi: vi.fn(),
 }));
 
+vi.mock("../api/ragHooks.js", () => ({
+  useTeamInsights: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
+  usePlanInsights: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
+  useSemanticQuery: vi.fn(() => ({ mutate: vi.fn(), data: undefined, loading: false, error: null })),
+  useRagApi: vi.fn(),
+}));
+
+vi.mock("../api/aiHooks.js", () => ({
+  useAiApi: vi.fn(() => ({ recordFeedback: vi.fn() })),
+  useAiStatus: vi.fn(() => ({ data: { available: false }, loading: false, error: null })),
+}));
+
 vi.mock("../api/ticketHooks.js", () => ({
   usePlanHistory: vi.fn(() => ({ data: null, loading: false })),
   useCarryForwardLineage: vi.fn(() => ({ data: null, loading: false })),

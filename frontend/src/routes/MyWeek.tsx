@@ -25,6 +25,7 @@ import { LockConfirmDialog } from "../components/lock/LockConfirmDialog.js";
 import { ScopeChangeDialog } from "../components/lock/ScopeChangeDialog.js";
 import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
 import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js";
+import { InsightPanel } from "../components/ai/InsightPanel.js";
 import type {
   CommitResponse, PlanState, LockValidationError,
   ScopeChangeEventResponse, UpdateCommitPayload, CreateCommitPayload,
@@ -129,6 +130,8 @@ export default function MyWeek() {
   const [scopeChangeSaving, setScopeChangeSaving] = useState(false);
   const [scopeChangeEvents, setScopeChangeEvents] = useState<ScopeChangeEventResponse[]>([]);
   const [showTimeline, setShowTimeline] = useState(false);
+
+  const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
 
   const plan = planData?.plan;
   const commits = useMemo(() => planData?.commits ?? [], [planData]);
@@ -333,6 +336,11 @@ export default function MyWeek() {
             </div>
           </CardHeader>
         </Card>
+      )}
+
+      {/* Personal AI insights */}
+      {aiAssistanceEnabled && plan && (
+        <InsightPanel mode="personal" planId={plan.id} />
       )}
 
       {/* Auto-lock system banner */}

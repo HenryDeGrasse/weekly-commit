@@ -19,6 +19,8 @@ import { ExceptionQueueSection } from "../components/teamweek/ExceptionQueueSect
 import { TeamHistoryView } from "../components/teamweek/TeamHistoryView.js";
 import { useTeamHistory } from "../api/ticketHooks.js";
 import type { ResolveExceptionPayload, AddCommentPayload } from "../api/teamTypes.js";
+import { InsightPanel } from "../components/ai/InsightPanel.js";
+import { SemanticSearchInput } from "../components/ai/SemanticSearchInput.js";
 
 function getWeekStartDate(offsetWeeks = 0): string {
   const now = new Date();
@@ -51,9 +53,12 @@ export default function TeamWeek() {
   const teamId = routeTeamId ?? bridge.context.currentTeam?.id ?? null;
   const userId = bridge.context.authenticatedUser.id;
 
+  const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
+
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStartDate = getWeekStartDate(weekOffset);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [insightsExpanded, setInsightsExpanded] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { data: teamWeekData, loading: teamLoading, error: teamError, refetch: refetchTeamWeek } = useTeamWeekView(teamId, weekStartDate);
@@ -87,6 +92,9 @@ export default function TeamWeek() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="m-0 text-xl font-bold">Team Week</h2>
         {teamWeekData && <span className="text-sm text-muted font-semibold">{teamWeekData.teamName}</span>}
+        {aiAssistanceEnabled && teamId && (
+          <SemanticSearchInput teamId={teamId} userId={userId} className="w-full mt-2 sm:w-auto sm:mt-0" />
+        )}
       </div>
 
       {/* Week selector */}
@@ -122,6 +130,25 @@ export default function TeamWeek() {
 
       {teamWeekData && (
         <>
+          {/* AI insights (collapsible) */}
+          {aiAssistanceEnabled && teamId && (
+            <div data-testid="team-insights-section">
+              <button
+                type="button"
+                onClick={() => setInsightsExpanded((e) => !e)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors mb-2"
+                data-testid="team-insights-toggle"
+                aria-expanded={insightsExpanded}
+              >
+                <span>{insightsExpanded ? "▾" : "▸"}</span>
+                AI Insights
+              </button>
+              {insightsExpanded && (
+                <InsightPanel mode="team" teamId={teamId} weekStart={weekStartDate} />
+              )}
+            </div>
+          )}
+
           {/* Tab navigation */}
           <nav aria-label="Team week sections" className="flex gap-0 border-b-2 border-border flex-wrap">
             {TABS.map((tab) => (

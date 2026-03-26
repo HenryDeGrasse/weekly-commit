@@ -1,0 +1,10 @@
+ M .pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/cost.json
+ M .pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/observations.jsonl
+ M .pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/sessions/continuous/relay-a/2026-03-26T04-47-46-137Z_72092699-d416-4051-8917-7a32e149dfa5.jsonl
+ M .pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/sessions/continuous/relay-b/2026-03-26T04-50-32-011Z_fdc3c196-6781-4ba1-b5c1-408f645f83c1.jsonl
+ M .pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/state.json
+ M frontend/src/__tests__/MyWeekPage.test.tsx
+ M frontend/src/__tests__/TeamWeekPage.test.tsx
+ M frontend/src/routes/MyWeek.tsx
+ M frontend/src/routes/TeamWeek.tsx
+?? .pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/steps/13/

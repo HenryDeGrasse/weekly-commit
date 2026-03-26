@@ -1,0 +1,23 @@
+All 662 tests pass, typecheck is clean. Here's what was done:
+
+## Summary
+
+### `frontend/src/routes/MyWeek.tsx`
+- Added import for `InsightPanel`
+- Extracted `aiAssistanceEnabled` from `bridge.context.featureFlags`
+- Added `<InsightPanel mode="personal" planId={plan.id} />` after the plan header Card, guarded by `aiAssistanceEnabled && plan`
+
+### `frontend/src/routes/TeamWeek.tsx`
+- Added imports for `InsightPanel` and `SemanticSearchInput`
+- Added `insightsExpanded` useState (defaults to `false` = collapsed)
+- Extracted `aiAssistanceEnabled` from `bridge.context.featureFlags`
+- Added `<SemanticSearchInput teamId={teamId} userId={userId} />` in the page header area, guarded by `aiAssistanceEnabled && teamId`
+- Added a collapsible `InsightPanel mode="team"` section above the tab navigation (with a toggle button, `data-testid="team-insights-toggle"` and `data-testid="team-insights-section"`), guarded by `aiAssistanceEnabled && teamId`
+
+### `frontend/src/__tests__/MyWeekPage.test.tsx`
+- Added `vi.mock("../api/ragHooks.js", ...)` and `vi.mock("../api/aiHooks.js", ...)` so `InsightPanel` and `SemanticSearchInput`'s hooks don't unmocked-crash the existing tests
+
+### `frontend/src/__tests__/TeamWeekPage.test.tsx`
+- Same mocks added to handle the new `InsightPanel` and `SemanticSearchInput` components
+
+Verdict: changes_made
