@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-26T04:51:10.703Z",
+  "updatedAt": "2026-03-26T04:56:03.185Z",
   "runId": "2026-03-26T04-36-08-591Z-21100373",
   "handoffMode": "none",
   "postPlanMode": "autorun",
@@ -190,12 +190,12 @@
       }
     ]
   },
-  "stepIndex": 1,
-  "round": 2,
+  "stepIndex": 2,
+  "round": 3,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-1",
-    "stepTitle": "Add @EnableAsync and pinecone config to application.yml + test application.yml",
+    "stepId": "step-2",
+    "stepTitle": "Create EmbeddingService.java + EmbeddingServiceTest.java",
     "gateResults": [
       {
         "id": "build",

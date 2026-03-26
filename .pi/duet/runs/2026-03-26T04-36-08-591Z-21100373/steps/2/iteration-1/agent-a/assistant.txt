@@ -1,0 +1,22 @@
+Everything looks correct. Here's a summary of what was done:
+
+## Summary
+
+### Files created
+
+**`EmbeddingService.java`** (`backend/src/main/java/com/weeklycommit/ai/rag/EmbeddingService.java`):
+- Spring `@Service` with two constructors: the Spring-managed one injects `@Value` config and creates its own `HttpClient`; a package-private one accepts an injected `HttpClient` for test isolation
+- `isAvailable()` returns `false` when API key is blank
+- `embed(String text)` POSTs to `{baseUrl}/embeddings` with `{"model":"...","input":["text"]}` body, parses `data[0].embedding` as `float[]`
+- All errors are caught, logged, and return empty `float[0]` (graceful degradation)
+- Follows exactly the same `java.net.http.HttpClient` pattern as `OpenRouterAiProvider`
+
+**`EmbeddingServiceTest.java`** (`backend/src/test/java/com/weeklycommit/ai/rag/EmbeddingServiceTest.java`):
+- 19 tests, all passing; uses `@ExtendWith(MockitoExtension.class)` + `@Mock HttpClient` + `@Mock HttpResponse<String>` — no Spring context
+- Tests cover: `isAvailable` variants, blank-key short-circuit, null/blank text short-circuit, 1536-dim happy path, vector value correctness, request URL/Authorization/Content-Type headers, POST method, HTTP 4xx/5xx errors, network exception, malformed JSON, missing `data`/`embedding` fields, and single-call verification
+
+### Post-creation fixes
+- Ran `./gradlew spotlessApply` to reformat a long Javadoc line in the test file (Eclipse JDT formatter line-wrapping)
+- Full `./gradlew build` passes cleanly ✅
+
+Verdict: changes_made
