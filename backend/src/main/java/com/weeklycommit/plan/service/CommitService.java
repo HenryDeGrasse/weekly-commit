@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,10 @@ public class CommitService {
 	private final WorkItemRepository workItemRepo;
 	private final RcdoLinkageValidator rcdoLinkageValidator;
 	private final AuditLogService auditLogService;
+
+	/** Optional — injected when the RAG module is active; null-safe throughout. */
+	@Autowired(required = false)
+	private com.weeklycommit.ai.rag.SemanticIndexService semanticIndexService;
 
 	public CommitService(WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo,
 			WorkItemRepository workItemRepo, RcdoLinkageValidator rcdoLinkageValidator,
@@ -88,6 +93,9 @@ public class CommitService {
 		WeeklyCommit saved = commitRepo.save(commit);
 		auditLogService.record(AuditLogService.COMMIT_CREATED, actorUserId, "IC", AuditLogService.TARGET_COMMIT,
 				saved.getId(), null, Map.of("planId", planId.toString(), "title", req.title()));
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_COMMIT, saved.getId());
+		}
 		return saved;
 	}
 
@@ -146,6 +154,9 @@ public class CommitService {
 		WeeklyCommit saved = commitRepo.save(commit);
 		auditLogService.record(AuditLogService.COMMIT_UPDATED, actorUserId, "IC", AuditLogService.TARGET_COMMIT,
 				saved.getId(), beforePayload, auditPayload(saved));
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_COMMIT, saved.getId());
+		}
 		return saved;
 	}
 

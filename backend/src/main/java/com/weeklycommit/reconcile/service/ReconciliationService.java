@@ -46,6 +46,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,6 +86,10 @@ public class ReconciliationService {
 	private final NotificationService notificationService;
 	private final ReadModelRefreshService readModelRefreshService;
 	private final AuditLogService auditLogService;
+
+	/** Optional — injected when the RAG module is active; null-safe throughout. */
+	@Autowired(required = false)
+	private com.weeklycommit.ai.rag.SemanticIndexService semanticIndexService;
 
 	public ReconciliationService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			WorkItemRepository workItemRepo, ScopeChangeEventRepository eventRepo,
@@ -329,6 +334,10 @@ public class ReconciliationService {
 		planRepo.save(plan);
 
 		triggerReadModelRefresh(planId);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_PLAN_SUMMARY,
+					plan.getId());
+		}
 
 		auditLogService.record(AuditLogService.RECONCILE_SUBMITTED, plan.getOwnerUserId(), "IC",
 				AuditLogService.TARGET_PLAN, planId, null, Map.of("state", "RECONCILED", "allAchieved", allAchieved));

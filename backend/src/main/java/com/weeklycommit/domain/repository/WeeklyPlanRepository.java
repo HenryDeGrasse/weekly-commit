@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -39,4 +41,8 @@ public interface WeeklyPlanRepository extends JpaRepository<WeeklyPlan, UUID> {
 	 * week.
 	 */
 	List<WeeklyPlan> findByWeekStartDate(LocalDate weekStartDate);
+
+	/** Used by the daily RAG sweep to find recently updated plans. */
+	@Query("SELECT p FROM WeeklyPlan p WHERE p.updatedAt > :since")
+	List<WeeklyPlan> findUpdatedSince(@Param("since") Instant since);
 }

@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +62,10 @@ public class CarryForwardService {
 	private final ScopeChangeEventRepository scopeChangeEventRepo;
 	private final NotificationService notificationService;
 	private final ReadModelRefreshService readModelRefreshService;
+
+	/** Optional — injected when the RAG module is active; null-safe throughout. */
+	@Autowired(required = false)
+	private com.weeklycommit.ai.rag.SemanticIndexService semanticIndexService;
 
 	public CarryForwardService(WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo,
 			UserAccountRepository userRepo, CarryForwardLinkRepository linkRepo,
@@ -132,6 +137,10 @@ public class CarryForwardService {
 		link.setReason(reason);
 		link.setReasonNotes(reasonText);
 		CarryForwardLink savedLink = linkRepo.save(link);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_CARRY_FORWARD,
+					savedLink.getId());
+		}
 
 		// Send REPEATED_CARRY_FORWARD_REMINDER if streak reaches the threshold
 		if (saved.getCarryForwardStreak() >= CARRY_FORWARD_REMINDER_THRESHOLD) {

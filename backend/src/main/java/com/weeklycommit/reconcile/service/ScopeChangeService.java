@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +61,10 @@ public class ScopeChangeService {
 	private final NotificationService notificationService;
 
 	private final ReadModelRefreshService readModelRefreshService;
+
+	/** Optional — injected when the RAG module is active; null-safe throughout. */
+	@Autowired(required = false)
+	private com.weeklycommit.ai.rag.SemanticIndexService semanticIndexService;
 
 	public ScopeChangeService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			ScopeChangeEventRepository eventRepo, LockSnapshotHeaderRepository lockSnapshotRepo,
@@ -108,7 +113,11 @@ public class ScopeChangeService {
 		ScopeChangeEvent event = newEvent(planId, saved.getId(), ScopeChangeCategory.COMMIT_ADDED, actorUserId, reason);
 		event.setPreviousValue(null);
 		event.setNewValue(toJson(commitToMap(saved)));
-		eventRepo.save(event);
+		ScopeChangeEvent savedEvent = eventRepo.save(event);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_SCOPE_CHANGE,
+					savedEvent.getId());
+		}
 
 		if (saved.getChessPiece() == KING) {
 			notifyManagerOfKingScopeChange(plan,
@@ -144,7 +153,11 @@ public class ScopeChangeService {
 				reason);
 		event.setPreviousValue(toJson(java.util.Map.of("outcome", "null")));
 		event.setNewValue(toJson(java.util.Map.of("outcome", CommitOutcome.CANCELED.name())));
-		eventRepo.save(event);
+		ScopeChangeEvent savedRemoveEvent = eventRepo.save(event);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_SCOPE_CHANGE,
+					savedRemoveEvent.getId());
+		}
 
 		triggerReadModelRefresh(commit.getPlanId());
 		return getChangeTimeline(commit.getPlanId());
@@ -345,7 +358,11 @@ public class ScopeChangeService {
 		ScopeChangeEvent e = newEvent(commit.getPlanId(), commit.getId(), category, actorUserId, reason);
 		e.setPreviousValue(previousValue);
 		e.setNewValue(newValue);
-		eventRepo.save(e);
+		ScopeChangeEvent saved = eventRepo.save(e);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_SCOPE_CHANGE,
+					saved.getId());
+		}
 	}
 
 	private int parseBaselinePoints(LockSnapshotHeader header) {

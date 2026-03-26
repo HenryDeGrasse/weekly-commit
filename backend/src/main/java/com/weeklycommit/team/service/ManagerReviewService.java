@@ -41,6 +41,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +80,10 @@ public class ManagerReviewService {
 	private final TeamMembershipRepository membershipRepo;
 	private final AuthorizationService authService;
 	private final ObjectMapper objectMapper;
+
+	/** Optional — injected when the RAG module is active; null-safe throughout. */
+	@Autowired(required = false)
+	private com.weeklycommit.ai.rag.SemanticIndexService semanticIndexService;
 
 	public ManagerReviewService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			ScopeChangeEventRepository scopeChangeRepo, LockSnapshotHeaderRepository lockHeaderRepo,
@@ -189,6 +194,10 @@ public class ManagerReviewService {
 		comment.setAuthorUserId(managerId);
 		comment.setContent(text);
 		ManagerComment saved = commentRepo.save(comment);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_MANAGER_COMMENT,
+					saved.getId());
+		}
 
 		return CommentResponse.from(saved);
 	}

@@ -135,7 +135,7 @@ public class ChunkBuilder {
 		Map<String, String> meta = new LinkedHashMap<>();
 		meta.put("entityType", "manager_comment");
 		meta.put("entityId", str(comment.getId()));
-		meta.put("planId", str(comment.getPlanId()));
+		meta.put("planId", str(plan.getId()));
 		meta.put("userId", str(comment.getAuthorUserId()));
 		meta.put("weekStartDate", weekDate);
 

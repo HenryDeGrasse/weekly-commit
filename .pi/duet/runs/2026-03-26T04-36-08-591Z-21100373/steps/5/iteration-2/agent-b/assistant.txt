@@ -1,0 +1,42 @@
+Reviewed the Step 5 diff in:
+
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticIndexService.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/InsightGenerationService.java`
+- `backend/src/main/java/com/weeklycommit/domain/repository/WeeklyPlanRepository.java`
+- `backend/src/main/java/com/weeklycommit/plan/service/CommitService.java`
+- `backend/src/main/java/com/weeklycommit/reconcile/service/ScopeChangeService.java`
+- `backend/src/main/java/com/weeklycommit/carryforward/service/CarryForwardService.java`
+- `backend/src/main/java/com/weeklycommit/team/service/ManagerReviewService.java`
+- `backend/src/main/java/com/weeklycommit/ticket/service/TicketService.java`
+- `backend/src/main/java/com/weeklycommit/lock/service/LockService.java`
+- `backend/src/main/java/com/weeklycommit/reconcile/service/ReconciliationService.java`
+
+What I verified:
+- `SemanticIndexService` exists, is a Spring `@Service`, uses async + scheduled indexing, and guards on Pinecone availability
+- required hooks were added across the write-path services
+- `WeeklyPlanRepository.findUpdatedSince(...)` exists
+- `LockService` includes the optional `InsightGenerationService` hook
+- `cd backend && ./gradlew test build` passes ✅
+
+Material defects found and fixed:
+1. **Commit-target manager comments were never indexed**
+   - `SemanticIndexService.indexManagerComment(...)` only handled comments with `planId`, but `ManagerReviewService.addComment(...)` also creates comment records targeting commits (`commitId` only).
+   - Fixed by resolving the plan via the comment’s commit when needed.
+   - Also fixed namespace resolution for `deleteEntity("manager_comment", ...)` to use the same logic.
+
+2. **Ticket status changes were not re-indexed**
+   - `TicketService.updateStatus(...)` updates `WorkItem.status`, and `ChunkBuilder.buildWorkItemChunk(...)` includes status in the indexed text.
+   - Without reindexing, ticket vectors become stale after status transitions.
+   - Added the missing indexing hook after `updateStatus(...)`.
+
+3. **Manager comment chunk metadata planId could be blank for commit comments**
+   - Updated `ChunkBuilder.buildManagerCommentChunk(...)` to use the provided `WeeklyPlan` for `planId` metadata.
+
+Checks run:
+- `cd backend && ./gradlew test build` ✅
+
+Assessment:
+- Step 5 is now correct and complete for the implemented scope
+- No further material issues found in this diff
+
+Verdict: changes_made

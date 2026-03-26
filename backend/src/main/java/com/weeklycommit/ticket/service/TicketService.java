@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -69,6 +70,10 @@ public class TicketService {
 	private final WeeklyPlanRepository planRepo;
 	private final NotificationService notificationService;
 
+	/** Optional — injected when the RAG module is active; null-safe throughout. */
+	@Autowired(required = false)
+	private com.weeklycommit.ai.rag.SemanticIndexService semanticIndexService;
+
 	public TicketService(WorkItemRepository workItemRepo, WorkItemStatusHistoryRepository historyRepo,
 			WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo, NotificationService notificationService) {
 		this.workItemRepo = workItemRepo;
@@ -99,6 +104,9 @@ public class TicketService {
 		item.setTargetWeekStartDate(req.targetWeekStartDate());
 
 		WorkItem saved = workItemRepo.save(item);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_TICKET, saved.getId());
+		}
 		return getTicketDetail(saved.getId());
 	}
 
@@ -126,6 +134,9 @@ public class TicketService {
 				req.targetWeekStartDate() != null ? req.targetWeekStartDate() : plan.getWeekStartDate());
 
 		WorkItem saved = workItemRepo.save(item);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_TICKET, saved.getId());
+		}
 		return getTicketDetail(saved.getId());
 	}
 
@@ -208,6 +219,9 @@ public class TicketService {
 		}
 
 		workItemRepo.save(item);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_TICKET, item.getId());
+		}
 		return getTicketDetail(item.getId());
 	}
 
@@ -219,6 +233,9 @@ public class TicketService {
 		WorkItem item = requireTicket(id);
 		transitionStatus(item, newStatus, changedByUserId);
 		workItemRepo.save(item);
+		if (semanticIndexService != null) {
+			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_TICKET, item.getId());
+		}
 
 		// Notify commit owner(s) when a ticket linked to a King or Queen commit is
 		// blocked
