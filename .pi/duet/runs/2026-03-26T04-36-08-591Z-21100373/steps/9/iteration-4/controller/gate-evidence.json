@@ -1,0 +1,11 @@
+[
+  {
+    "checkId": "typecheck",
+    "cmd": "npm run typecheck",
+    "exitCode": 0,
+    "passed": true,
+    "stdoutPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/steps/9/iteration-4/controller/outputs/typecheck.stdout.txt",
+    "stderrPath": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/.pi/duet/runs/2026-03-26T04-36-08-591Z-21100373/steps/9/iteration-4/controller/outputs/typecheck.stderr.txt",
+    "truncatedPreview": "> weekly-commit-monorepo@1.0.0 typecheck\n> npm run typecheck -w frontend && npm run typecheck -w @weekly-commit/shared\n\n\n> frontend@1.0.0 typecheck\n> tsc --noEmit\n\n\n> @weekly-commit/shared@1.0.0 typecheck\n> tsc --noEmit\n\n\n/Users/henrydegrasse/.bash_profile: line 5: /Users/henrydegrasse/.cargo/env: No such file or directory"
+  }
+]

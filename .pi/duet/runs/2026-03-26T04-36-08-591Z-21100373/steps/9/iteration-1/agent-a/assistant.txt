@@ -1,0 +1,33 @@
+No output for `api/rag` — my files are clean. The `typecheck` exits with code 1 due to the 5 pre-existing errors in test files only.
+
+Here's a summary of what was implemented:
+
+## Summary
+
+### `frontend/src/api/ragApi.ts` (new file)
+
+Follows the exact `aiApi.ts` factory pattern:
+- **Types**: `RagQueryRequest`, `RagSource`, `RagQueryResponse`, `InsightCard`, `InsightListResponse`
+- **Factory** `createRagApi(client, actorUserId)` returns three methods:
+  - `submitQuery(req)` → `POST /ai/query`
+  - `getTeamInsights(teamId, weekStart)` → `GET /teams/{id}/week/{weekStart}/ai-insights`
+  - `getPlanInsights(planId)` → `GET /plans/{id}/ai-insights`
+- Exports `RagApi` type alias
+
+### `frontend/src/api/ragHooks.ts` (new file)
+
+Follows the exact `aiHooks.ts` hook pattern:
+- **`useRagApi()`** — stable `RagApi` instance via `useMemo`, bound to current user auth
+- **`useTeamInsights(teamId, weekStart)`** — `useQuery` with `enabled: teamId != null`, key `team-insights-{teamId}-{weekStart}`
+- **`usePlanInsights(planId)`** — `useQuery` with `enabled: planId != null`, key `plan-insights-{planId}`
+- **`useSemanticQuery()`** — custom mutation hook returning `{ mutate, data, loading, error }` with `useCallback` for stable `mutate` identity
+
+### Key fix
+
+Used conditional spread `...(teamId !== undefined && { teamId })` to handle `exactOptionalPropertyTypes: true` — passing `string | undefined` directly to an optional `string?` field is a type error under this strict mode.
+
+```observations
+- [medium] frontend/src/__tests__/Flows.test.tsx, MyWeekPage.test.tsx, ReconcilePage.test.tsx: 5 pre-existing TypeScript errors — mock objects missing `openReconciliation` and `refetch/error` fields from `QueryState`. These cause `typecheck` to exit non-zero even though my new files are clean.
+```
+
+Verdict: changes_made

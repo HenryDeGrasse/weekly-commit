@@ -1,0 +1,38 @@
+Reviewed the Step 9 diff in:
+
+- `frontend/src/api/ragApi.ts`
+- `frontend/src/api/ragHooks.ts`
+
+What I verified:
+- `ragApi.ts` follows the existing `aiApi.ts` factory pattern
+- exported types match the step requirements:
+  - `RagQueryRequest`
+  - `RagQueryResponse`
+  - `RagSource`
+  - `InsightCard`
+  - `InsightListResponse`
+- API methods are correct:
+  - `submitQuery(req)` → `POST /ai/query`
+  - `getTeamInsights(teamId, weekStart)` → `GET /teams/{id}/week/{weekStart}/ai-insights`
+  - `getPlanInsights(planId)` → `GET /plans/{id}/ai-insights`
+- `ragHooks.ts` follows the existing hook pattern:
+  - `useRagApi()`
+  - `useTeamInsights(teamId, weekStart)`
+  - `usePlanInsights(planId)`
+  - `useSemanticQuery()` with `{ mutate, data, loading, error }`
+- the optional-property handling in `useSemanticQuery()` is correct for strict TS / `exactOptionalPropertyTypes`
+
+Checks run:
+- `cd frontend && npm run typecheck`
+
+Assessment:
+- No material defects found in the new RAG API client/hooks
+- Global `typecheck` still fails, but only due to pre-existing unrelated test typing issues outside this step
+
+```observations
+- [medium] frontend/src/__tests__/Flows.test.tsx: Pre-existing TypeScript errors — mock API object missing `openReconciliation`, and one `CommitResponse` no longer matches `MemberCommitView`
+- [medium] frontend/src/__tests__/MyWeekPage.test.tsx: Pre-existing TypeScript errors — mock API object missing `openReconciliation`; mocked `QueryState` missing `error` and `refetch`
+- [medium] frontend/src/__tests__/ReconcilePage.test.tsx: Pre-existing TypeScript error — mock API object missing `openReconciliation`
+```
+
+Verdict: approve

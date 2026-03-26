@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-26T05:43:50.600Z",
+  "updatedAt": "2026-03-26T05:50:29.154Z",
   "runId": "2026-03-26T04-36-08-591Z-21100373",
   "handoffMode": "none",
   "postPlanMode": "autorun",
@@ -190,19 +190,15 @@
       }
     ]
   },
-  "stepIndex": 8,
-  "round": 2,
+  "stepIndex": 9,
+  "round": 4,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-8",
-    "stepTitle": "Add RAG DTOs and new AiController endpoints",
+    "stepId": "step-9",
+    "stepTitle": "Create frontend API client and hooks for RAG endpoints",
     "gateResults": [
       {
-        "id": "build",
-        "passed": true
-      },
-      {
-        "id": "unit",
+        "id": "typecheck",
         "passed": true
       },
       {

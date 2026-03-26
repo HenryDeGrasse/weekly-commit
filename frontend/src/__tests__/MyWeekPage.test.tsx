@@ -153,6 +153,7 @@ const mockPlanApi = {
   getReconciliationView: vi.fn(),
   setCommitOutcome: vi.fn(),
   submitReconciliation: vi.fn(),
+  openReconciliation: vi.fn(),
   carryForward: vi.fn(),
 };
 
@@ -544,6 +545,8 @@ describe("MyWeekPage — plan history", () => {
     vi.mocked(usePlanHistory).mockReturnValue({
       data: [],
       loading: false,
+      error: null,
+      refetch: vi.fn(),
     } as ReturnType<typeof usePlanHistory>);
     renderPage();
     fireEvent.click(screen.getByTestId("toggle-plan-history-btn"));

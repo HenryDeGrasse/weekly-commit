@@ -1,0 +1,19 @@
+Reviewed the strict-fix diff in:
+
+- `frontend/src/__tests__/Flows.test.tsx`
+- `frontend/src/__tests__/MyWeekPage.test.tsx`
+- `frontend/src/__tests__/ReconcilePage.test.tsx`
+
+What I verified:
+- `MemberCommitView` typing issue in `Flows.test.tsx` is fixed
+- missing `openReconciliation` mocks are present
+- mocked `QueryState` in `MyWeekPage.test.tsx` now includes `error` and `refetch`
+
+Checks run:
+- `cd frontend && npm run typecheck` ✅
+
+Assessment:
+- The concrete typecheck failures are fixed
+- No additional changes needed
+
+Verdict: approve

@@ -19,7 +19,11 @@ import type {
   CreateCommitPayload,
 } from "../api/planTypes.js";
 import type { RcdoTreeNode } from "../api/rcdoTypes.js";
-import type { MemberWeekView, TeamWeekViewResponse } from "../api/teamTypes.js";
+import type {
+  MemberCommitView,
+  MemberWeekView,
+  TeamWeekViewResponse,
+} from "../api/teamTypes.js";
 
 // ── shared mocks ──────────────────────────────────────────────────────────────
 
@@ -160,7 +164,18 @@ const memberView: MemberWeekView = {
   planState: "DRAFT",
   capacityBudgetPoints: 10,
   totalCommittedPoints: 3,
-  commits: [makeCommit({ chessPiece: "PAWN", estimatePoints: 3 })],
+  commits: [
+    {
+      id: "c-1",
+      title: "Test commit",
+      chessPiece: "PAWN",
+      estimatePoints: 3,
+      priorityOrder: 1,
+      rcdoNodeId: null,
+      carryForwardStreak: 0,
+      outcome: null,
+    } satisfies MemberCommitView,
+  ],
 };
 
 const teamWeekData: TeamWeekViewResponse = {
@@ -189,6 +204,7 @@ const mockPlanApi = {
   getReconciliationView: vi.fn(),
   setCommitOutcome: vi.fn(),
   submitReconciliation: vi.fn(),
+  openReconciliation: vi.fn(),
   carryForward: vi.fn(),
 };
 

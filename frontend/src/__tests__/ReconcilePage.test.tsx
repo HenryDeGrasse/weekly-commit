@@ -122,6 +122,7 @@ const mockPlanApi = {
   updateCommit: vi.fn(),
   deleteCommit: vi.fn(),
   reorderCommits: vi.fn(),
+  openReconciliation: vi.fn(),
   applyScopeChange: vi.fn(),
 };
 
