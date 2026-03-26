@@ -13,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
@@ -44,10 +45,12 @@ public class ScopeChangeEvent {
 	@Column(nullable = false)
 	private String reason;
 
-	@Column(name = "previous_value")
+	@ColumnTransformer(write = "?::jsonb")
+	@Column(name = "previous_value", columnDefinition = "jsonb")
 	private String previousValue;
 
-	@Column(name = "new_value")
+	@ColumnTransformer(write = "?::jsonb")
+	@Column(name = "new_value", columnDefinition = "jsonb")
 	private String newValue;
 
 	@CreationTimestamp

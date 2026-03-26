@@ -11,6 +11,8 @@ import com.weeklycommit.ai.dto.RcdoSuggestResponse;
 import com.weeklycommit.ai.dto.ReconcileAssistRequest;
 import com.weeklycommit.ai.dto.ReconcileAssistResponse;
 import com.weeklycommit.ai.dto.RiskSignalResponse.PlanRiskSignals;
+import com.weeklycommit.ai.provider.AiProvider;
+import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.ai.service.CommitDraftAssistService;
 import com.weeklycommit.ai.service.CommitLintService;
 import com.weeklycommit.ai.service.ManagerAiSummaryService;
@@ -50,11 +52,12 @@ public class AiController {
 	private final ReconcileAssistService reconcileAssistService;
 	private final ManagerAiSummaryService managerSummaryService;
 	private final AiSuggestionService suggestionService;
+	private final AiProviderRegistry providerRegistry;
 
 	public AiController(CommitDraftAssistService draftAssistService, CommitLintService lintService,
 			RcdoSuggestService rcdoSuggestService, RiskDetectionService riskDetectionService,
 			ReconcileAssistService reconcileAssistService, ManagerAiSummaryService managerSummaryService,
-			AiSuggestionService suggestionService) {
+			AiSuggestionService suggestionService, AiProviderRegistry providerRegistry) {
 		this.draftAssistService = draftAssistService;
 		this.lintService = lintService;
 		this.rcdoSuggestService = rcdoSuggestService;
@@ -62,6 +65,7 @@ public class AiController {
 		this.reconcileAssistService = reconcileAssistService;
 		this.managerSummaryService = managerSummaryService;
 		this.suggestionService = suggestionService;
+		this.providerRegistry = providerRegistry;
 	}
 
 	// -------------------------------------------------------------------------
@@ -147,6 +151,25 @@ public class AiController {
 			@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
 			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID callerId) {
 		return ResponseEntity.ok(managerSummaryService.getSummary(id, weekStart, callerId));
+	}
+
+	// -------------------------------------------------------------------------
+	// AI Status
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns the current AI provider status: enabled, provider name/version,
+	 * availability. Useful for ops dashboards and frontend feature checks.
+	 */
+	@GetMapping("/api/ai/status")
+	public ResponseEntity<java.util.Map<String, Object>> getAiStatus() {
+		java.util.Optional<AiProvider> active = providerRegistry.getActiveProvider();
+		java.util.Map<String, Object> status = new java.util.LinkedHashMap<>();
+		status.put("aiEnabled", providerRegistry.isAiEnabled());
+		status.put("providerName", active.map(AiProvider::getName).orElse("none"));
+		status.put("providerVersion", active.map(AiProvider::getVersion).orElse("none"));
+		status.put("available", active.map(AiProvider::isAvailable).orElse(false));
+		return ResponseEntity.ok(status);
 	}
 
 	// -------------------------------------------------------------------------

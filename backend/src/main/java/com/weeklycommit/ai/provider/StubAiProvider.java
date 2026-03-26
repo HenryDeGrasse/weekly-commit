@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
  * reports itself as available.
  */
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "ai.provider", havingValue = "stub")
 public class StubAiProvider implements AiProvider {
 
 	private static final Logger log = LoggerFactory.getLogger(StubAiProvider.class);

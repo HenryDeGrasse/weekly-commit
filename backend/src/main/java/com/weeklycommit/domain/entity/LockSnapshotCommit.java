@@ -1,5 +1,6 @@
 package com.weeklycommit.domain.entity;
 
+import org.hibernate.annotations.ColumnTransformer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -28,7 +29,8 @@ public class LockSnapshotCommit {
 	private UUID commitId;
 
 	@NotBlank
-	@Column(name = "snapshot_data", nullable = false, columnDefinition = "text")
+	@ColumnTransformer(write = "?::jsonb")
+	@Column(name = "snapshot_data", nullable = false, columnDefinition = "jsonb")
 	private String snapshotData;
 
 	public UUID getId() {

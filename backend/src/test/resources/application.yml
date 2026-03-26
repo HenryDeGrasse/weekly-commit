@@ -11,3 +11,19 @@ spring:
     open-in-view: false
   flyway:
     enabled: false
+
+ai:
+  enabled: true
+  provider: stub
+  openrouter:
+    api-key: ""
+    model: test-model
+    max-tokens: 256
+    base-url: http://localhost:0
+  pinecone:
+    api-key: ""
+    index-name: weekly-commit-test
+    environment: us-east-1
+  embedding:
+    model: openai/text-embedding-3-small
+    dimensions: 1536

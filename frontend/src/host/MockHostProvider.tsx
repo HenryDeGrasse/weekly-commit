@@ -30,17 +30,17 @@ export const defaultDesignTokens: DesignTokens = {
 /** Mock host context used during standalone dev and unit tests. */
 export const mockHostContext: HostContext = {
   authenticatedUser: {
-    id: "user-dev-1",
+    id: "00000000-0000-0000-0000-000000000001",
     email: "dev@example.com",
     displayName: "Dev User",
   },
   currentTeam: {
-    id: "team-dev-1",
+    id: "00000000-0000-0000-0000-000000000010",
     name: "Engineering",
   },
   managerChain: [
     {
-      id: "user-manager-1",
+      id: "00000000-0000-0000-0000-000000000002",
       email: "manager@example.com",
       displayName: "Manager One",
     },

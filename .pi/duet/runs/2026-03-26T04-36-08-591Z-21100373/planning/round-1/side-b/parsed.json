@@ -1,0 +1,7 @@
+{
+  "verdict": "changes_requested",
+  "blockingIssues": [
+    "The plan does not define how `TEAM_INSIGHT` rows will persist team/week identity, so `GET /api/teams/{id}/week/{weekStart}/ai-insights` cannot reliably fetch the correct records from `ai_suggestion` as written.",
+    "The plan defines `generatePersonalInsights(planId)` and a personal-insights read endpoint, but no scheduler/hook/on-demand path actually generates those `PERSONAL_INSIGHT` suggestions."
+  ]
+}

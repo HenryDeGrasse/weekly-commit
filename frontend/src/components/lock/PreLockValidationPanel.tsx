@@ -1,14 +1,11 @@
 /**
  * PreLockValidationPanel — shows hard errors and soft warnings before locking.
- *
- * Hard errors block the lock (e.g. missing required fields, piece limits).
- * Soft warnings are informational (AI lint placeholder, capacity).
  */
+import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { AiLintPanel } from "../ai/AiLintPanel.js";
+import { useHostBridge } from "../../host/HostProvider.js";
 import type { LockValidationError, CommitResponse } from "../../api/planTypes.js";
-import {
-  derivePreLockSoftWarnings,
-  getEffectivePreLockErrors,
-} from "./lockValidation.js";
+import { derivePreLockSoftWarnings, getEffectivePreLockErrors } from "./lockValidation.js";
 
 export interface PreLockValidationPanelProps {
   readonly errors: LockValidationError[];
@@ -16,27 +13,17 @@ export interface PreLockValidationPanelProps {
   readonly isLoading?: boolean;
 }
 
-export function PreLockValidationPanel({
-  errors,
-  commits,
-  isLoading = false,
-}: PreLockValidationPanelProps) {
+export function PreLockValidationPanel({ errors, commits, isLoading = false }: PreLockValidationPanelProps) {
+  const bridge = useHostBridge();
+  const userId = bridge.context.authenticatedUser.id;
   const effectiveErrors = getEffectivePreLockErrors(commits, errors);
   const softWarnings = derivePreLockSoftWarnings(commits);
+  // Get planId from first commit (all commits share the same planId)
+  const planId = commits.length > 0 && commits[0] ? commits[0].planId : null;
 
   if (isLoading) {
     return (
-      <div
-        data-testid="pre-lock-validation-loading"
-        style={{
-          padding: "0.75rem",
-          background: "#f9fafb",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--border-radius)",
-          fontSize: "0.875rem",
-          color: "var(--color-text-muted)",
-        }}
-      >
+      <div data-testid="pre-lock-validation-loading" className="rounded-default border border-border bg-background p-3 text-sm text-muted">
         Validating…
       </div>
     );
@@ -46,69 +33,25 @@ export function PreLockValidationPanel({
   const hasWarnings = softWarnings.length > 0;
 
   return (
-    <div
-      data-testid="pre-lock-validation-panel"
-      style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-    >
-      {/* All-clear banner (shown only when no errors and no warnings) */}
+    <div data-testid="pre-lock-validation-panel" className="flex flex-col gap-3">
+      {/* All-clear */}
       {!hasErrors && !hasWarnings && (
-        <div
-          data-testid="pre-lock-validation-ok"
-          style={{
-            padding: "0.75rem",
-            background: "#f0fdf4",
-            border: "1px solid #86efac",
-            borderRadius: "var(--border-radius)",
-            fontSize: "0.875rem",
-            color: "#15803d",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
-        >
-          ✅ All validation checks passed. Your plan is ready to lock.
+        <div data-testid="pre-lock-validation-ok" className="flex items-center gap-2 rounded-default border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          All validation checks passed. Your plan is ready to lock.
         </div>
       )}
 
-      {/* Hard errors section */}
+      {/* Hard errors */}
       {hasErrors && (
-        <div
-          data-testid="pre-lock-hard-errors"
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: "var(--border-radius)",
-            padding: "0.75rem",
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 0.5rem",
-              fontWeight: 700,
-              fontSize: "0.875rem",
-              color: "#991b1b",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.375rem",
-            }}
-          >
-            🚫 Hard Errors — must be resolved before locking
+        <div data-testid="pre-lock-hard-errors" className="rounded-default border border-red-200 bg-red-50 p-3">
+          <p className="m-0 mb-2 flex items-center gap-1.5 text-sm font-bold text-red-800">
+            <XCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            Hard Errors — must be resolved before locking
           </p>
-          <ul
-            style={{
-              margin: 0,
-              padding: "0 0 0 1.25rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.25rem",
-            }}
-          >
+          <ul className="m-0 pl-5 flex flex-col gap-1">
             {effectiveErrors.map((err, i) => (
-              <li
-                key={`${err.field}-${i}`}
-                data-testid={`hard-error-item`}
-                style={{ fontSize: "0.8rem", color: "#7f1d1d" }}
-              >
+              <li key={`${err.field}-${i}`} data-testid="hard-error-item" className="text-xs text-red-900">
                 <strong>{err.field}:</strong> {err.message}
               </li>
             ))}
@@ -116,67 +59,30 @@ export function PreLockValidationPanel({
         </div>
       )}
 
-      {/* Soft warnings section */}
+      {/* Soft warnings */}
       {hasWarnings && (
-        <div
-          data-testid="pre-lock-soft-warnings"
-          style={{
-            background: "#fffbeb",
-            border: "1px solid #fde68a",
-            borderRadius: "var(--border-radius)",
-            padding: "0.75rem",
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 0.5rem",
-              fontWeight: 700,
-              fontSize: "0.875rem",
-              color: "#92400e",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.375rem",
-            }}
-          >
-            ⚠ Soft Warnings — informational, will not block lock
+        <div data-testid="pre-lock-soft-warnings" className="rounded-default border border-amber-200 bg-amber-50 p-3">
+          <p className="m-0 mb-2 flex items-center gap-1.5 text-sm font-bold text-amber-800">
+            <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            Soft Warnings — informational, will not block lock
           </p>
-          <ul
-            style={{
-              margin: 0,
-              padding: "0 0 0 1.25rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.25rem",
-            }}
-          >
+          <ul className="m-0 pl-5 flex flex-col gap-1">
             {softWarnings.map((warn, i) => (
-              <li
-                key={i}
-                data-testid={`soft-warning-item`}
-                style={{ fontSize: "0.8rem", color: "#78350f" }}
-              >
-                {warn}
-              </li>
+              <li key={i} data-testid="soft-warning-item" className="text-xs text-amber-900">{warn}</li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* AI lint placeholder — always shown */}
-      <div
-        data-testid="pre-lock-ai-lint-placeholder"
-        style={{
-          background: "#f8fafc",
-          border: "1px dashed var(--color-border)",
-          borderRadius: "var(--border-radius)",
-          padding: "0.625rem 0.75rem",
-          fontSize: "0.8rem",
-          color: "var(--color-text-muted)",
-          fontStyle: "italic",
-        }}
-      >
-        🤖 AI commit quality hints will appear here (coming soon)
-      </div>
+      {/* AI lint — real integration replacing the placeholder */}
+      {planId && (
+        <AiLintPanel planId={planId} userId={userId} />
+      )}
+      {!planId && (
+        <div data-testid="pre-lock-ai-lint-placeholder" className="flex items-center gap-2 rounded-default border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs text-muted italic">
+          AI commit quality hints will appear once commits are added
+        </div>
+      )}
     </div>
   );
 }

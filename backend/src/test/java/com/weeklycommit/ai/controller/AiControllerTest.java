@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.weeklycommit.ai.dto.RiskSignalResponse;
 import com.weeklycommit.ai.dto.RiskSignalResponse.PlanRiskSignals;
+import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.ai.service.AiSuggestionService;
 import com.weeklycommit.ai.service.CommitDraftAssistService;
 import com.weeklycommit.ai.service.CommitLintService;
@@ -51,6 +52,9 @@ class AiControllerTest {
 
 	@MockBean
 	private AiSuggestionService suggestionService;
+
+	@MockBean
+	private AiProviderRegistry providerRegistry;
 
 	@Test
 	void getRiskSignals_requiresActorHeader() throws Exception {

@@ -1,5 +1,6 @@
 package com.weeklycommit.domain.entity;
 
+import org.hibernate.annotations.ColumnTransformer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -43,6 +44,7 @@ public class RcdoWeekRollup {
 	private int commitCount;
 
 	/** JSON string — map of teamId → points. */
+	@ColumnTransformer(write = "?::jsonb")
 	@Column(name = "team_contribution_breakdown", columnDefinition = "jsonb")
 	private String teamContributionBreakdown;
 

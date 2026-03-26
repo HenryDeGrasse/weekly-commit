@@ -85,6 +85,17 @@ public class ReconcileController {
 	// GET /api/plans/{id}/reconcile — reconciliation view
 	// -------------------------------------------------------------------------
 
+	/**
+	 * Transitions a LOCKED plan to RECONCILING (idempotent). Allows users to open
+	 * reconciliation manually without the scheduler.
+	 */
+	@PostMapping("/{id}/reconcile/open")
+	public ResponseEntity<ReconciliationViewResponse> openReconciliation(@PathVariable UUID id,
+			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID actorUserId) {
+		reconciliationService.openReconciliation(id);
+		return ResponseEntity.ok(reconciliationService.getReconciliationView(id));
+	}
+
 	/** Returns the full reconciliation view (baseline vs current). */
 	@GetMapping("/{id}/reconcile")
 	public ResponseEntity<ReconciliationViewResponse> getReconciliationView(@PathVariable UUID id) {

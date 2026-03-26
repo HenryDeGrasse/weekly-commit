@@ -1,11 +1,7 @@
 /**
  * ByRcdoSection — tree/grouped view of planned points by RCDO branch.
- *
- * Shows Rally Cry → Defining Objective → Outcome with:
- *   - Planned points and commit count per branch
- *   - Coverage gap highlighting for RCDO nodes with no commits
- *   - Planned vs achieved bar per branch (when outcome data is available)
  */
+import { cn } from "../../lib/utils.js";
 import type { RcdoRollupEntry, MemberWeekView } from "../../api/teamTypes.js";
 import type { RcdoTreeNode } from "../../api/rcdoTypes.js";
 
@@ -15,181 +11,79 @@ export interface ByRcdoSectionProps {
   readonly memberViews: MemberWeekView[];
 }
 
-interface RollupMap {
-  [rcdoNodeId: string]: RcdoRollupEntry;
-}
+interface RollupMap { [rcdoNodeId: string]: RcdoRollupEntry; }
+interface PointsMap { [rcdoNodeId: string]: number; }
 
-interface PointsMap {
-  [rcdoNodeId: string]: number;
-}
+const TYPE_BADGE: Record<string, string> = {
+  RALLY_CRY: "bg-violet-100 text-violet-700",
+  DEFINING_OBJECTIVE: "bg-blue-100 text-blue-700",
+  OUTCOME: "bg-emerald-100 text-emerald-700",
+};
+const TYPE_ABBR: Record<string, string> = { RALLY_CRY: "RC", DEFINING_OBJECTIVE: "DO", OUTCOME: "OUT" };
 
-interface RcdoRowProps {
-  readonly node: RcdoTreeNode;
-  readonly rollupMap: RollupMap;
-  readonly achievedPointsMap: PointsMap;
-  readonly depth: number;
-}
+const thCls = "px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-wider border-b border-border";
 
-function RcdoRow({ node, rollupMap, achievedPointsMap, depth }: RcdoRowProps) {
-  const entry = rollupMap[node.id];
-  const hasCoverage = entry !== undefined && entry.commitCount > 0;
-
-  // Aggregate rollup across this subtree for totals at higher levels
-  function subtreePoints(n: RcdoTreeNode): number {
-    const own = rollupMap[n.id]?.totalPoints ?? 0;
-    return own + n.children.reduce((sum, child) => sum + subtreePoints(child), 0);
-  }
-
-  function subtreeCommits(n: RcdoTreeNode): number {
-    const own = rollupMap[n.id]?.commitCount ?? 0;
-    return own + n.children.reduce((sum, child) => sum + subtreeCommits(child), 0);
-  }
-
-  function subtreeAchievedPoints(n: RcdoTreeNode): number {
-    const own = achievedPointsMap[n.id] ?? 0;
-    return own + n.children.reduce((sum, child) => sum + subtreeAchievedPoints(child), 0);
-  }
+function RcdoRow({ node, rollupMap, achievedPointsMap, depth }: { node: RcdoTreeNode; rollupMap: RollupMap; achievedPointsMap: PointsMap; depth: number }) {
+  function subtreePoints(n: RcdoTreeNode): number { return (rollupMap[n.id]?.totalPoints ?? 0) + n.children.reduce((s, c) => s + subtreePoints(c), 0); }
+  function subtreeCommits(n: RcdoTreeNode): number { return (rollupMap[n.id]?.commitCount ?? 0) + n.children.reduce((s, c) => s + subtreeCommits(c), 0); }
+  function subtreeAchieved(n: RcdoTreeNode): number { return (achievedPointsMap[n.id] ?? 0) + n.children.reduce((s, c) => s + subtreeAchieved(c), 0); }
 
   const totalPoints = subtreePoints(node);
   const totalCommits = subtreeCommits(node);
-  const achievedPoints = subtreeAchievedPoints(node);
+  const achievedPoints = subtreeAchieved(node);
   const achievedPct = totalPoints > 0 ? Math.min((achievedPoints / totalPoints) * 100, 100) : 0;
-
-  const TYPE_COLORS = {
-    RALLY_CRY: { bg: "#ede9fe", color: "#5b21b6" },
-    DEFINING_OBJECTIVE: { bg: "#dbeafe", color: "#1e40af" },
-    OUTCOME: { bg: "#f0fdf4", color: "#166534" },
-  };
-  const typeStyle = TYPE_COLORS[node.nodeType] ?? { bg: "#f3f4f6", color: "#374151" };
+  const hasCoverage = (rollupMap[node.id]?.commitCount ?? 0) > 0;
 
   return (
     <>
-      <tr
-        data-testid={`rcdo-row-${node.id}`}
-        style={{
-          borderBottom: "1px solid var(--color-border)",
-          opacity: node.status === "ARCHIVED" ? 0.5 : 1,
-        }}
-      >
-        <td style={{ padding: "0.5rem 0.75rem", paddingLeft: `${0.75 + depth * 1.25}rem` }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span
-              style={{
-                fontSize: "0.65rem",
-                fontWeight: 700,
-                padding: "1px 6px",
-                borderRadius: "999px",
-                background: typeStyle.bg,
-                color: typeStyle.color,
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-                flexShrink: 0,
-              }}
-            >
-              {node.nodeType === "RALLY_CRY" ? "RC" : node.nodeType === "DEFINING_OBJECTIVE" ? "DO" : "OUT"}
+      <tr data-testid={`rcdo-row-${node.id}`} className={cn("border-b border-border", node.status === "ARCHIVED" && "opacity-50")}>
+        <td className="px-3 py-2" style={{ paddingLeft: `${0.75 + depth * 1.25}rem` }}>
+          <div className="flex items-center gap-2">
+            <span className={cn("text-[0.6rem] font-bold px-1.5 py-px rounded-full uppercase tracking-wider shrink-0", TYPE_BADGE[node.nodeType] ?? "bg-slate-100 text-slate-600")}>
+              {TYPE_ABBR[node.nodeType] ?? node.nodeType}
             </span>
-            <span
-              style={{
-                fontWeight: depth === 0 ? 700 : depth === 1 ? 600 : 400,
-                fontSize: "0.875rem",
-                color: !hasCoverage && totalCommits === 0 ? "var(--color-text-muted)" : "var(--color-text)",
-              }}
-            >
+            <span className={cn("text-sm", depth === 0 ? "font-bold" : depth === 1 ? "font-semibold" : "font-normal", !hasCoverage && totalCommits === 0 && "text-muted")}>
               {node.title}
             </span>
             {!hasCoverage && totalCommits === 0 && node.status === "ACTIVE" && (
-              <span
-                data-testid={`coverage-gap-${node.id}`}
-                title="No commits targeting this RCDO"
-                style={{
-                  fontSize: "0.65rem",
-                  padding: "1px 6px",
-                  borderRadius: "999px",
-                  background: "#fee2e2",
-                  color: "#991b1b",
-                  fontWeight: 600,
-                }}
-              >
-                No coverage
-              </span>
+              <span data-testid={`coverage-gap-${node.id}`} className="text-[0.6rem] px-1.5 py-px rounded-full bg-red-100 text-red-700 font-semibold">No coverage</span>
             )}
           </div>
         </td>
-        <td style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontSize: "0.8rem" }} data-testid={`rcdo-commits-${node.id}`}>
-          {totalCommits > 0 ? totalCommits : <span style={{ color: "var(--color-text-muted)" }}>0</span>}
+        <td className="px-3 py-2 text-right text-sm" data-testid={`rcdo-commits-${node.id}`}>
+          {totalCommits > 0 ? totalCommits : <span className="text-muted">0</span>}
         </td>
-        <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
-          <span data-testid={`rcdo-points-${node.id}`} style={{ fontWeight: 600, fontSize: "0.875rem" }}>
-            {totalPoints > 0 ? totalPoints : <span style={{ color: "var(--color-text-muted)" }}>0</span>}
-          </span>
+        <td className="px-3 py-2 text-right font-semibold text-sm" data-testid={`rcdo-points-${node.id}`}>
+          {totalPoints > 0 ? totalPoints : <span className="text-muted font-normal">0</span>}
         </td>
-        <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
-          <span data-testid={`rcdo-achieved-${node.id}`} style={{ fontWeight: 600, fontSize: "0.875rem", color: achievedPoints > 0 ? "var(--color-success)" : "var(--color-text-muted)" }}>
+        <td className="px-3 py-2 text-right" data-testid={`rcdo-achieved-${node.id}`}>
+          <span className={cn("font-semibold text-sm", achievedPoints > 0 ? "text-success" : "text-muted")}>
             {achievedPoints > 0 ? achievedPoints : 0}
           </span>
         </td>
-        <td style={{ padding: "0.5rem 0.75rem", minWidth: "140px" }}>
-          <div
-            data-testid={`rcdo-progress-${node.id}`}
-            aria-label={`${node.title} planned versus achieved`}
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <div
-              style={{
-                height: "8px",
-                borderRadius: "999px",
-                background: "#e5e7eb",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: `${achievedPct}%`,
-                  height: "100%",
-                  background: achievedPoints > 0 ? "var(--color-success)" : "#cbd5e1",
-                  transition: "width 0.2s ease",
-                }}
-              />
+        <td className="px-3 py-2 min-w-[140px]">
+          <div data-testid={`rcdo-progress-${node.id}`} aria-label={`${node.title} planned versus achieved`} className="flex flex-col gap-1">
+            <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+              <div className={cn("h-full transition-[width] duration-200", achievedPoints > 0 ? "bg-success" : "bg-slate-300")} style={{ width: `${achievedPct}%` }} />
             </div>
-            <span style={{ fontSize: "0.7rem", color: "var(--color-text-muted)", textAlign: "right" }}>
-              {totalPoints > 0 ? `${Math.round(achievedPct)}%` : "—"}
-            </span>
+            <span className="text-[0.65rem] text-muted text-right">{totalPoints > 0 ? `${Math.round(achievedPct)}%` : "—"}</span>
           </div>
         </td>
       </tr>
-      {node.children.map((child) => (
-        <RcdoRow
-          key={child.id}
-          node={child}
-          rollupMap={rollupMap}
-          achievedPointsMap={achievedPointsMap}
-          depth={depth + 1}
-        />
-      ))}
+      {node.children.map((child) => <RcdoRow key={child.id} node={child} rollupMap={rollupMap} achievedPointsMap={achievedPointsMap} depth={depth + 1} />)}
     </>
   );
 }
 
-export function ByRcdoSection({
-  rcdoRollup,
-  rcdoTree,
-  memberViews,
-}: ByRcdoSectionProps) {
+export function ByRcdoSection({ rcdoRollup, rcdoTree, memberViews }: ByRcdoSectionProps) {
   const rollupMap: RollupMap = {};
-  for (const entry of rcdoRollup) {
-    rollupMap[entry.rcdoNodeId] = entry;
-  }
+  for (const entry of rcdoRollup) rollupMap[entry.rcdoNodeId] = entry;
 
   const achievedPointsMap: PointsMap = {};
   for (const member of memberViews) {
     for (const commit of member.commits) {
-      if (
-        commit.rcdoNodeId &&
-        commit.outcome === "ACHIEVED" &&
-        commit.estimatePoints != null
-      ) {
-        achievedPointsMap[commit.rcdoNodeId] =
-          (achievedPointsMap[commit.rcdoNodeId] ?? 0) + commit.estimatePoints;
+      if (commit.rcdoNodeId && commit.outcome === "ACHIEVED" && commit.estimatePoints != null) {
+        achievedPointsMap[commit.rcdoNodeId] = (achievedPointsMap[commit.rcdoNodeId] ?? 0) + commit.estimatePoints;
       }
     }
   }
@@ -197,63 +91,28 @@ export function ByRcdoSection({
   if (rcdoTree.length === 0) {
     return (
       <section aria-labelledby="by-rcdo-heading" data-testid="by-rcdo-section">
-        <h3 id="by-rcdo-heading" style={{ margin: "0 0 0.75rem", fontSize: "0.95rem", fontWeight: 700 }}>
-          By RCDO
-        </h3>
-        <p style={{ color: "var(--color-text-muted)", fontSize: "0.875rem" }}>
-          No RCDO hierarchy configured.
-        </p>
+        <h3 id="by-rcdo-heading" className="m-0 mb-3 text-sm font-bold">By RCDO</h3>
+        <p className="text-sm text-muted">No RCDO hierarchy configured.</p>
       </section>
     );
   }
 
   return (
     <section aria-labelledby="by-rcdo-heading" data-testid="by-rcdo-section">
-      <h3 id="by-rcdo-heading" style={{ margin: "0 0 0.75rem", fontSize: "0.95rem", fontWeight: 700 }}>
-        By RCDO
-      </h3>
-      <div
-        style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--border-radius)",
-          overflow: "hidden",
-        }}
-      >
-        <table
-          data-testid="by-rcdo-table"
-          style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}
-          aria-label="RCDO rollup"
-        >
+      <h3 id="by-rcdo-heading" className="m-0 mb-3 text-sm font-bold">By RCDO</h3>
+      <div className="rounded-default border border-border bg-surface overflow-hidden">
+        <table data-testid="by-rcdo-table" className="w-full border-collapse text-sm" aria-label="RCDO rollup">
           <thead>
-            <tr style={{ background: "var(--color-background)", borderBottom: "1px solid var(--color-border)" }}>
-              <th style={{ padding: "0.5rem 0.75rem", textAlign: "left", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                RCDO Node
-              </th>
-              <th style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Commits
-              </th>
-              <th style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Pts Planned
-              </th>
-              <th style={{ padding: "0.5rem 0.75rem", textAlign: "right", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Pts Achieved
-              </th>
-              <th style={{ padding: "0.5rem 0.75rem", textAlign: "left", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Planned vs Achieved
-              </th>
+            <tr className="bg-background border-b border-border">
+              <th className={cn(thCls, "text-left")}>RCDO Node</th>
+              <th className={cn(thCls, "text-right")}>Commits</th>
+              <th className={cn(thCls, "text-right")}>Pts Planned</th>
+              <th className={cn(thCls, "text-right")}>Pts Achieved</th>
+              <th className={cn(thCls, "text-left")}>Planned vs Achieved</th>
             </tr>
           </thead>
           <tbody>
-            {rcdoTree.map((root) => (
-              <RcdoRow
-                key={root.id}
-                node={root}
-                rollupMap={rollupMap}
-                achievedPointsMap={achievedPointsMap}
-                depth={0}
-              />
-            ))}
+            {rcdoTree.map((root) => <RcdoRow key={root.id} node={root} rollupMap={rollupMap} achievedPointsMap={achievedPointsMap} depth={0} />)}
           </tbody>
         </table>
       </div>

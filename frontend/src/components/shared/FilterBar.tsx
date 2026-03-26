@@ -1,233 +1,78 @@
 /**
  * FilterBar — reusable cross-page filter bar.
- *
- * Filter dimensions:
- *   - week (date input, ISO Monday)
- *   - user (text search/select)
- *   - team (text select)
- *   - RCDO (hierarchical picker — text input for v1)
- *   - chess piece (multi-select)
- *   - plan state (multi-select)
- *   - risk flag (multi-select)
- *
- * Filters are applied via URL query params for shareability.
- * Clear all / save filter preset buttons.
- *
- * Usage: pass `params` (from useSearchParams()) and `onChange` callback.
- * The component does NOT manage its own URL state — the parent page does.
  */
 import { useState, useCallback, type ChangeEvent } from "react";
+import { X, Bookmark } from "lucide-react";
+import { Button } from "../ui/Button.js";
+import { cn } from "../../lib/utils.js";
 import type { ChessPiece, PlanState } from "../../api/planTypes.js";
 import type { FilterPreset } from "../../api/ticketTypes.js";
 
 export type RiskFlag = "CARRY_FORWARD" | "AUTO_LOCKED" | "EXCEPTION" | "OVER_BUDGET";
 
 export interface FilterValues {
-  week?: string | undefined;
-  userId?: string | undefined;
-  teamId?: string | undefined;
-  rcdoNodeId?: string | undefined;
-  chessPieces?: ChessPiece[] | undefined;
-  planStates?: PlanState[] | undefined;
-  riskFlags?: RiskFlag[] | undefined;
+  week?: string;
+  userId?: string;
+  teamId?: string;
+  rcdoNodeId?: string;
+  chessPieces?: ChessPiece[];
+  planStates?: PlanState[];
+  riskFlags?: RiskFlag[];
 }
 
 export interface FilterBarProps {
-  /** Current filter values. */
   readonly values: FilterValues;
-  /** Called whenever a filter dimension changes. */
   readonly onChange: (next: FilterValues) => void;
-  /** Optional list of teams to show in team select. */
   readonly teams?: Array<{ id: string; name: string }>;
-  /** Optional list of saved presets. */
   readonly savedPresets?: FilterPreset[];
-  /** Called when user saves a new preset. */
   readonly onSavePreset?: (name: string, values: FilterValues) => void;
-  /** Called when user loads a saved preset. */
   readonly onLoadPreset?: (preset: FilterPreset) => void;
 }
 
-const CHESS_PIECES: ChessPiece[] = [
-  "KING",
-  "QUEEN",
-  "ROOK",
-  "BISHOP",
-  "KNIGHT",
-  "PAWN",
-];
-const CHESS_PIECE_ICONS: Record<ChessPiece, string> = {
-  KING: "♔",
-  QUEEN: "♕",
-  ROOK: "♖",
-  BISHOP: "♗",
-  KNIGHT: "♘",
-  PAWN: "♙",
-};
-
+const CHESS_PIECES: ChessPiece[] = ["KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN"];
+const CHESS_PIECE_ICONS: Record<ChessPiece, string> = { KING: "♔", QUEEN: "♕", ROOK: "♖", BISHOP: "♗", KNIGHT: "♘", PAWN: "♙" };
 const PLAN_STATES: PlanState[] = ["DRAFT", "LOCKED", "RECONCILING", "RECONCILED"];
-
-const RISK_FLAGS: RiskFlag[] = [
-  "CARRY_FORWARD",
-  "AUTO_LOCKED",
-  "EXCEPTION",
-  "OVER_BUDGET",
-];
-const RISK_FLAG_LABELS: Record<RiskFlag, string> = {
-  CARRY_FORWARD: "Carry-forward",
-  AUTO_LOCKED: "Auto-locked",
-  EXCEPTION: "Exception",
-  OVER_BUDGET: "Over budget",
-};
+const RISK_FLAGS: RiskFlag[] = ["CARRY_FORWARD", "AUTO_LOCKED", "EXCEPTION", "OVER_BUDGET"];
+const RISK_FLAG_LABELS: Record<RiskFlag, string> = { CARRY_FORWARD: "Carry-forward", AUTO_LOCKED: "Auto-locked", EXCEPTION: "Exception", OVER_BUDGET: "Over budget" };
 
 function toggleArrayItem<T>(arr: T[] | undefined, item: T): T[] {
   const current = arr ?? [];
-  return current.includes(item)
-    ? current.filter((x) => x !== item)
-    : [...current, item];
+  return current.includes(item) ? current.filter((x) => x !== item) : [...current, item];
 }
 
-/** Small pill-style multi-select button. */
-function TogglePill<T extends string>({
-  value,
-  label,
-  active,
-  onToggle,
-}: {
-  readonly value: T;
-  readonly label: string;
-  readonly active: boolean;
-  readonly onToggle: (v: T) => void;
-}) {
+function TogglePill<T extends string>({ value, label, active, onToggle }: { value: T; label: string; active: boolean; onToggle: (v: T) => void }) {
   return (
     <button
       type="button"
       onClick={() => onToggle(value)}
       data-testid={`filter-pill-${value.toLowerCase()}`}
       aria-pressed={active}
-      style={{
-        padding: "3px 10px",
-        borderRadius: "999px",
-        fontSize: "0.75rem",
-        fontWeight: 600,
-        border: active
-          ? "1.5px solid var(--color-primary)"
-          : "1px solid var(--color-border)",
-        background: active ? "var(--color-primary)" : "var(--color-surface)",
-        color: active ? "#fff" : "var(--color-text)",
-        cursor: "pointer",
-        fontFamily: "inherit",
-        transition: "background 0.15s, color 0.15s",
-      }}
+      className={cn(
+        "px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors",
+        active ? "border-primary bg-primary text-white" : "border-border bg-surface text-foreground hover:bg-muted/10",
+      )}
     >
       {label}
     </button>
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  padding: "0.35rem 0.6rem",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--border-radius)",
-  background: "var(--color-surface)",
-  color: "var(--color-text)",
-  fontFamily: "inherit",
-  fontSize: "0.8rem",
-};
+const inputCls = "h-8 rounded-default border border-border bg-surface px-2.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary";
+const labelCls = "text-[0.65rem] font-bold uppercase tracking-wider text-muted mb-1 block";
 
-const labelStyle: React.CSSProperties = {
-  fontSize: "0.7rem",
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "0.04em",
-  color: "var(--color-text-muted)",
-  marginBottom: "0.25rem",
-  display: "block",
-};
-
-export function FilterBar({
-  values,
-  onChange,
-  teams = [],
-  savedPresets = [],
-  onSavePreset,
-  onLoadPreset,
-}: FilterBarProps) {
+export function FilterBar({ values, onChange, teams = [], savedPresets = [], onSavePreset, onLoadPreset }: FilterBarProps) {
   const [savePresetName, setSavePresetName] = useState("");
   const [showSaveInput, setShowSaveInput] = useState(false);
 
-  const handleWeekChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const v = e.target.value;
-      const next: FilterValues = { ...values };
-      next.week = v || undefined;
-      onChange(next);
-    },
-    [values, onChange],
-  );
+  const handleWeekChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    onChange({ ...values, ...(v ? { week: v } : {}) });
+  }, [values, onChange]);
 
-  const handleUserChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const v = e.target.value;
-      const next: FilterValues = { ...values };
-      next.userId = v || undefined;
-      onChange(next);
-    },
-    [values, onChange],
-  );
+  const handleClearAll = useCallback(() => onChange({}), [onChange]);
 
-  const handleTeamChange = useCallback(
-    (e: ChangeEvent<HTMLSelectElement>) => {
-      const v = e.target.value;
-      const next: FilterValues = { ...values };
-      next.teamId = v || undefined;
-      onChange(next);
-    },
-    [values, onChange],
-  );
-
-  const handleRcdoChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const v = e.target.value;
-      const next: FilterValues = { ...values };
-      next.rcdoNodeId = v || undefined;
-      onChange(next);
-    },
-    [values, onChange],
-  );
-
-  const handleChessToggle = useCallback(
-    (piece: ChessPiece) => {
-      onChange({
-        ...values,
-        chessPieces: toggleArrayItem(values.chessPieces, piece),
-      });
-    },
-    [values, onChange],
-  );
-
-  const handlePlanStateToggle = useCallback(
-    (state: PlanState) => {
-      onChange({
-        ...values,
-        planStates: toggleArrayItem(values.planStates, state),
-      });
-    },
-    [values, onChange],
-  );
-
-  const handleRiskFlagToggle = useCallback(
-    (flag: RiskFlag) => {
-      onChange({
-        ...values,
-        riskFlags: toggleArrayItem(values.riskFlags, flag),
-      });
-    },
-    [values, onChange],
-  );
-
-  const handleClearAll = useCallback(() => {
-    onChange({});
-  }, [onChange]);
+  const hasAnyFilter = values.week !== undefined || values.userId !== undefined || values.teamId !== undefined || values.rcdoNodeId !== undefined
+    || (values.chessPieces?.length ?? 0) > 0 || (values.planStates?.length ?? 0) > 0 || (values.riskFlags?.length ?? 0) > 0;
 
   const handleSavePreset = useCallback(() => {
     if (!savePresetName.trim()) return;
@@ -236,222 +81,89 @@ export function FilterBar({
     setShowSaveInput(false);
   }, [savePresetName, values, onSavePreset]);
 
-  const hasAnyFilter =
-    values.week !== undefined ||
-    values.userId !== undefined ||
-    values.teamId !== undefined ||
-    values.rcdoNodeId !== undefined ||
-    (values.chessPieces?.length ?? 0) > 0 ||
-    (values.planStates?.length ?? 0) > 0 ||
-    (values.riskFlags?.length ?? 0) > 0;
-
   return (
-    <div
-      data-testid="filter-bar"
-      style={{
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
-        borderRadius: "var(--border-radius)",
-        padding: "0.875rem 1rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.75rem",
-      }}
-    >
-      {/* Row 1: date/text filters */}
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end" }}>
-        {/* Week */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <label htmlFor="fb-week" style={labelStyle}>
-            Week
-          </label>
-          <input
-            id="fb-week"
-            type="date"
-            value={values.week ?? ""}
-            onChange={handleWeekChange}
-            data-testid="filter-week"
-            style={inputStyle}
-          />
+    <div data-testid="filter-bar" className="rounded-default border border-border bg-surface p-4 flex flex-col gap-3">
+      {/* Row 1: text/date inputs */}
+      <div className="flex gap-3 flex-wrap items-end">
+        <div className="flex flex-col">
+          <label htmlFor="fb-week" className={labelCls}>Week</label>
+          <input id="fb-week" type="date" value={values.week ?? ""} onChange={handleWeekChange} data-testid="filter-week" className={inputCls} />
         </div>
-
-        {/* User */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <label htmlFor="fb-user" style={labelStyle}>
-            User
-          </label>
-          <input
-            id="fb-user"
-            type="text"
-            placeholder="User ID or name…"
-            value={values.userId ?? ""}
-            onChange={handleUserChange}
-            data-testid="filter-user"
-            style={{ ...inputStyle, minWidth: "140px" }}
-          />
+        <div className="flex flex-col">
+          <label htmlFor="fb-user" className={labelCls}>User</label>
+          <input id="fb-user" type="text" placeholder="User ID or name…" value={values.userId ?? ""} onChange={(e) => { const v = e.target.value; onChange({ ...values, ...(v ? { userId: v } : {}) }); }} data-testid="filter-user" className={cn(inputCls, "min-w-[140px]")} />
         </div>
-
-        {/* Team */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <label htmlFor="fb-team" style={labelStyle}>
-            Team
-          </label>
+        <div className="flex flex-col">
+          <label htmlFor="fb-team" className={labelCls}>Team</label>
           {teams.length > 0 ? (
-            <select
-              id="fb-team"
-              value={values.teamId ?? ""}
-              onChange={handleTeamChange}
-              data-testid="filter-team"
-              style={inputStyle}
-            >
+            <select id="fb-team" value={values.teamId ?? ""} onChange={(e) => { const v = e.target.value; onChange({ ...values, ...(v ? { teamId: v } : {}) }); }} data-testid="filter-team" className={inputCls}>
               <option value="">All teams</option>
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           ) : (
-            <input
-              id="fb-team"
-              type="text"
-              placeholder="Team ID…"
-              value={values.teamId ?? ""}
-              onChange={(e) => {
-                const next: FilterValues = { ...values };
-                next.teamId = e.target.value || undefined;
-                onChange(next);
-              }}
-              data-testid="filter-team"
-              style={{ ...inputStyle, minWidth: "120px" }}
-            />
+            <input id="fb-team" type="text" placeholder="Team ID…" value={values.teamId ?? ""} onChange={(e) => { const v = e.target.value; onChange({ ...values, ...(v ? { teamId: v } : {}) }); }} data-testid="filter-team" className={cn(inputCls, "min-w-[120px]")} />
           )}
         </div>
-
-        {/* RCDO */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <label htmlFor="fb-rcdo" style={labelStyle}>
-            RCDO
-          </label>
-          <input
-            id="fb-rcdo"
-            type="text"
-            placeholder="RCDO node ID…"
-            value={values.rcdoNodeId ?? ""}
-            onChange={handleRcdoChange}
-            data-testid="filter-rcdo"
-            style={{ ...inputStyle, minWidth: "140px" }}
-          />
+        <div className="flex flex-col">
+          <label htmlFor="fb-rcdo" className={labelCls}>RCDO</label>
+          <input id="fb-rcdo" type="text" placeholder="RCDO node ID…" value={values.rcdoNodeId ?? ""} onChange={(e) => { const v = e.target.value; onChange({ ...values, ...(v ? { rcdoNodeId: v } : {}) }); }} data-testid="filter-rcdo" className={cn(inputCls, "min-w-[140px]")} />
         </div>
       </div>
 
-      {/* Row 2: chess piece multi-select */}
+      {/* Row 2: chess piece */}
       <div>
-        <span style={labelStyle}>Chess Piece</span>
-        <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+        <span className={labelCls}>Chess Piece</span>
+        <div className="flex gap-1.5 flex-wrap">
           {CHESS_PIECES.map((piece) => (
-            <TogglePill
-              key={piece}
-              value={piece}
-              label={`${CHESS_PIECE_ICONS[piece]} ${piece}`}
-              active={(values.chessPieces ?? []).includes(piece)}
-              onToggle={handleChessToggle}
-            />
+            <TogglePill key={piece} value={piece} label={`${CHESS_PIECE_ICONS[piece]} ${piece}`} active={(values.chessPieces ?? []).includes(piece)} onToggle={(p) => onChange({ ...values, chessPieces: toggleArrayItem(values.chessPieces, p) })} />
           ))}
         </div>
       </div>
 
-      {/* Row 3: plan state multi-select */}
+      {/* Row 3: plan state */}
       <div>
-        <span style={labelStyle}>Plan State</span>
-        <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+        <span className={labelCls}>Plan State</span>
+        <div className="flex gap-1.5 flex-wrap">
           {PLAN_STATES.map((state) => (
-            <TogglePill
-              key={state}
-              value={state}
-              label={state}
-              active={(values.planStates ?? []).includes(state)}
-              onToggle={handlePlanStateToggle}
-            />
+            <TogglePill key={state} value={state} label={state} active={(values.planStates ?? []).includes(state)} onToggle={(s) => onChange({ ...values, planStates: toggleArrayItem(values.planStates, s) })} />
           ))}
         </div>
       </div>
 
-      {/* Row 4: risk flags multi-select */}
+      {/* Row 4: risk flags */}
       <div>
-        <span style={labelStyle}>Risk Flag</span>
-        <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+        <span className={labelCls}>Risk Flag</span>
+        <div className="flex gap-1.5 flex-wrap">
           {RISK_FLAGS.map((flag) => (
-            <TogglePill
-              key={flag}
-              value={flag}
-              label={RISK_FLAG_LABELS[flag]}
-              active={(values.riskFlags ?? []).includes(flag)}
-              onToggle={handleRiskFlagToggle}
-            />
+            <TogglePill key={flag} value={flag} label={RISK_FLAG_LABELS[flag]} active={(values.riskFlags ?? []).includes(flag)} onToggle={(f) => onChange({ ...values, riskFlags: toggleArrayItem(values.riskFlags, f) })} />
           ))}
         </div>
       </div>
 
       {/* Row 5: actions */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "center",
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
           {hasAnyFilter && (
-            <button
-              type="button"
-              onClick={handleClearAll}
-              data-testid="filter-clear-all"
-              style={{
-                padding: "0.3rem 0.75rem",
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--border-radius)",
-                background: "var(--color-surface)",
-                color: "var(--color-text)",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                fontSize: "0.8rem",
-              }}
-            >
-              ✕ Clear all
-            </button>
+            <Button variant="secondary" size="sm" onClick={handleClearAll} data-testid="filter-clear-all">
+              <X className="h-3 w-3" />Clear all
+            </Button>
           )}
-
-          {/* Saved presets dropdown */}
           {savedPresets.length > 0 && (
             <select
               aria-label="Load saved filter preset"
               data-testid="filter-preset-select"
-              onChange={(e) => {
-                const preset = savedPresets.find((p) => p.id === e.target.value);
-                if (preset) onLoadPreset?.(preset);
-                e.target.value = "";
-              }}
+              onChange={(e) => { const preset = savedPresets.find((p) => p.id === e.target.value); if (preset) onLoadPreset?.(preset); e.target.value = ""; }}
               defaultValue=""
-              style={inputStyle}
+              className={inputCls}
             >
-              <option value="" disabled>
-                Load preset…
-              </option>
-              {savedPresets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+              <option value="" disabled>Load preset…</option>
+              {savedPresets.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           )}
         </div>
 
-        {/* Save preset */}
         {onSavePreset && (
-          <div style={{ display: "flex", gap: "0.375rem", alignItems: "center" }}>
+          <div className="flex gap-1.5 items-center">
             {showSaveInput ? (
               <>
                 <input
@@ -460,66 +172,17 @@ export function FilterBar({
                   value={savePresetName}
                   onChange={(e) => setSavePresetName(e.target.value)}
                   data-testid="filter-preset-name-input"
-                  style={{ ...inputStyle, minWidth: "120px" }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSavePreset();
-                    if (e.key === "Escape") setShowSaveInput(false);
-                  }}
+                  className={cn(inputCls, "min-w-[120px]")}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSavePreset(); if (e.key === "Escape") setShowSaveInput(false); }}
                   autoFocus
                 />
-                <button
-                  type="button"
-                  onClick={handleSavePreset}
-                  disabled={!savePresetName.trim()}
-                  data-testid="filter-preset-save-confirm"
-                  style={{
-                    padding: "0.3rem 0.75rem",
-                    border: "none",
-                    borderRadius: "var(--border-radius)",
-                    background: "var(--color-primary)",
-                    color: "#fff",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSaveInput(false)}
-                  style={{
-                    padding: "0.3rem 0.75rem",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "var(--border-radius)",
-                    background: "var(--color-surface)",
-                    color: "var(--color-text)",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  Cancel
-                </button>
+                <Button variant="primary" size="sm" onClick={handleSavePreset} disabled={!savePresetName.trim()} data-testid="filter-preset-save-confirm">Save</Button>
+                <Button variant="secondary" size="sm" onClick={() => setShowSaveInput(false)}>Cancel</Button>
               </>
             ) : (
-              <button
-                type="button"
-                onClick={() => setShowSaveInput(true)}
-                data-testid="filter-save-preset-btn"
-                style={{
-                  padding: "0.3rem 0.75rem",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "var(--border-radius)",
-                  background: "var(--color-surface)",
-                  color: "var(--color-text)",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontSize: "0.8rem",
-                }}
-              >
-                ☆ Save preset
-              </button>
+              <Button variant="secondary" size="sm" onClick={() => setShowSaveInput(true)} data-testid="filter-save-preset-btn">
+                <Bookmark className="h-3 w-3" />Save preset
+              </Button>
             )}
           </div>
         )}

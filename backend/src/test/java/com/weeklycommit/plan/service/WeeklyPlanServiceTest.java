@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class WeeklyPlanServiceTest {
@@ -68,6 +69,11 @@ class WeeklyPlanServiceTest {
 
 	@BeforeEach
 	void stubCommonDependencies() {
+		// Wire the self-reference that getOrCreatePlan uses to call
+		// createPlanInNewTransaction through the Spring proxy.
+		// In unit tests there is no proxy, so we point self at the service itself.
+		ReflectionTestUtils.setField(service, "self", service);
+
 		lenient().when(planRepo.save(any(WeeklyPlan.class))).thenAnswer(inv -> {
 			WeeklyPlan p = inv.getArgument(0);
 			if (p.getId() == null) {

@@ -1,0 +1,13 @@
+The revised plan addresses both prior blockers:
+
+- It now adds `team_id` and `week_start_date` to `ai_suggestion`, updates `AiSuggestion`, adds repository queries, and explicitly stores `teamId` + `weekStartDate` on `TEAM_INSIGHT` rows. That makes the team/week insight endpoint queryable in a reliable way.
+- It now defines actual generation paths for `PERSONAL_INSIGHT`: async generation on plan lock plus a daily backfill/idempotency sweep.
+
+I checked the referenced code paths, and this is now a workable implementation path.
+
+Non-blocking suggestions:
+- Add `ReconciliationService.setCommitOutcome()` to the indexing-hook list, since commit chunks include outcome/outcomeNotes and the original requirement explicitly mentions indexing on outcome set.
+- Update `OpenRouterAiProvider.loadPromptTemplate()` for `RAG_INTENT`, `RAG_QUERY`, `TEAM_INSIGHT`, and `PERSONAL_INSIGHT`, otherwise production will fall back to the generic prompt.
+- Consider constructor/test seam injection for `HttpClient` in `EmbeddingService` and `PineconeClient` to make the planned unit tests easier.
+
+Verdict: approve

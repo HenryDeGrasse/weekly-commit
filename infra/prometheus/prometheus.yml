@@ -1,0 +1,16 @@
+# Prometheus scrape configuration for Weekly Commit
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  - job_name: "weekly-commit-backend"
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["backend:8080"]
+        labels:
+          service: weekly-commit
+          environment: development

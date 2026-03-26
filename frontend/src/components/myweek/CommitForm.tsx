@@ -1,57 +1,18 @@
 /**
  * CommitForm — modal/panel for creating and editing weekly commits.
- *
- * Fields:
- *   - title (required)
- *   - description (textarea)
- *   - chess piece (radio with icons, descriptions, and limit enforcement)
- *   - estimate points (segmented control: 1 / 2 / 3 / 5 / 8)
- *   - primary RCDO link (hierarchical picker via RcdoTreeView)
- *   - success criteria (required for KING / QUEEN)
- *   - linked ticket (search/select text field)
- *
- * Carry-forward: shows a provenance banner when the commit has a streak > 0.
  */
 import { useState, type FormEvent } from "react";
+import { X, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { Button } from "../ui/Button.js";
+import { Input } from "../ui/Input.js";
+import { cn } from "../../lib/utils.js";
 import { RcdoTreeView } from "../rcdo/RcdoTreeView.js";
 import type { RcdoTreeNode } from "../../api/rcdoTypes.js";
-import type {
-  ChessPiece,
-  EstimatePoints,
-  CommitResponse,
-  CreateCommitPayload,
-  UpdateCommitPayload,
-} from "../../api/planTypes.js";
+import type { ChessPiece, EstimatePoints, CommitResponse, CreateCommitPayload, UpdateCommitPayload } from "../../api/planTypes.js";
 
-// ── Chess piece metadata ──────────────────────────────────────────────────────
-
-const CHESS_PIECES: ChessPiece[] = [
-  "KING",
-  "QUEEN",
-  "ROOK",
-  "BISHOP",
-  "KNIGHT",
-  "PAWN",
-];
-
-const CHESS_PIECE_ICONS: Record<ChessPiece, string> = {
-  KING: "♔",
-  QUEEN: "♕",
-  ROOK: "♖",
-  BISHOP: "♗",
-  KNIGHT: "♘",
-  PAWN: "♙",
-};
-
-const CHESS_PIECE_LABELS: Record<ChessPiece, string> = {
-  KING: "King",
-  QUEEN: "Queen",
-  ROOK: "Rook",
-  BISHOP: "Bishop",
-  KNIGHT: "Knight",
-  PAWN: "Pawn",
-};
-
+const CHESS_PIECES: ChessPiece[] = ["KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN"];
+const CHESS_PIECE_ICONS: Record<ChessPiece, string> = { KING: "♔", QUEEN: "♕", ROOK: "♖", BISHOP: "♗", KNIGHT: "♘", PAWN: "♙" };
+const CHESS_PIECE_LABELS: Record<ChessPiece, string> = { KING: "King", QUEEN: "Queen", ROOK: "Rook", BISHOP: "Bishop", KNIGHT: "Knight", PAWN: "Pawn" };
 const CHESS_PIECE_DESCRIPTIONS: Record<ChessPiece, string> = {
   KING: "Mission-critical — must be done this week",
   QUEEN: "High priority — strong commitment",
@@ -60,18 +21,11 @@ const CHESS_PIECE_DESCRIPTIONS: Record<ChessPiece, string> = {
   KNIGHT: "Tactical — opportunistic work",
   PAWN: "Nice-to-have — best-effort",
 };
-
 const MAX_KING_PER_WEEK = 1;
 const MAX_QUEEN_PER_WEEK = 2;
 const VALID_POINTS: EstimatePoints[] = [1, 2, 3, 5, 8];
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Find a node in the tree by id, returns null if not found. */
-function findNodeById(
-  nodes: RcdoTreeNode[],
-  id: string,
-): RcdoTreeNode | null {
+function findNodeById(nodes: RcdoTreeNode[], id: string): RcdoTreeNode | null {
   for (const node of nodes) {
     if (node.id === id) return node;
     const found = findNodeById(node.children, id);
@@ -81,67 +35,40 @@ function findNodeById(
 }
 
 function getRcdoSelectionError(node: RcdoTreeNode): string | null {
-  if (node.nodeType === "RALLY_CRY") {
-    return "Select an Outcome, or a Defining Objective with no active Outcomes";
-  }
-  if (
-    node.nodeType === "DEFINING_OBJECTIVE" &&
-    node.children.some(
-      (child) => child.nodeType === "OUTCOME" && child.status === "ACTIVE",
-    )
-  ) {
+  if (node.nodeType === "RALLY_CRY") return "Select an Outcome, or a Defining Objective with no active Outcomes";
+  if (node.nodeType === "DEFINING_OBJECTIVE" && node.children.some((child) => child.nodeType === "OUTCOME" && child.status === "ACTIVE")) {
     return "Select an Outcome, or a Defining Objective with no active Outcomes";
   }
   return null;
 }
 
-// ── Form field types ──────────────────────────────────────────────────────────
-
 interface FormValues {
-  title: string;
-  description: string;
-  chessPiece: ChessPiece | "";
-  estimatePoints: EstimatePoints | "";
-  rcdoNodeId: string;
-  successCriteria: string;
-  workItemId: string;
+  title: string; description: string; chessPiece: ChessPiece | ""; estimatePoints: EstimatePoints | "";
+  rcdoNodeId: string; successCriteria: string; workItemId: string;
 }
-
 type FormErrors = Partial<Record<keyof FormValues, string>>;
-
-// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface CreateModeProps {
   readonly mode: "create";
-  /** RCDO hierarchy for the picker. */
   readonly rcdoTree: RcdoTreeNode[];
-  /** All existing commits in the plan — used for chess-piece limit checks. */
   readonly existingCommits: CommitResponse[];
   readonly onSubmit: (payload: CreateCommitPayload) => Promise<void>;
   readonly onCancel: () => void;
 }
-
 interface EditModeProps {
   readonly mode: "edit";
   readonly commit: CommitResponse;
-  /** RCDO hierarchy for the picker. */
   readonly rcdoTree: RcdoTreeNode[];
-  /** All existing commits in the plan (excluding the one being edited). */
   readonly existingCommits: CommitResponse[];
   readonly onSubmit: (payload: UpdateCommitPayload) => Promise<void>;
   readonly onCancel: () => void;
 }
-
 export type CommitFormProps = CreateModeProps | EditModeProps;
-
-// ── CommitForm ────────────────────────────────────────────────────────────────
 
 export function CommitForm(props: CommitFormProps) {
   const { rcdoTree, existingCommits, onCancel } = props;
   const isCreate = props.mode === "create";
   const editCommit = props.mode === "edit" ? props.commit : null;
-
-  // ── State ──────────────────────────────────────────────────────────────
 
   const [values, setValues] = useState<FormValues>({
     title: editCommit?.title ?? "",
@@ -157,589 +84,194 @@ export function CommitForm(props: CommitFormProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showRcdoPicker, setShowRcdoPicker] = useState(false);
 
-  // ── Chess piece limit helpers ──────────────────────────────────────────
-
-  const otherCommits = editCommit
-    ? existingCommits.filter((c) => c.id !== editCommit.id)
-    : existingCommits;
-
-  const existingKings = otherCommits.filter(
-    (c) => c.chessPiece === "KING",
-  ).length;
-  const existingQueens = otherCommits.filter(
-    (c) => c.chessPiece === "QUEEN",
-  ).length;
+  const otherCommits = editCommit ? existingCommits.filter((c) => c.id !== editCommit.id) : existingCommits;
+  const existingKings = otherCommits.filter((c) => c.chessPiece === "KING").length;
+  const existingQueens = otherCommits.filter((c) => c.chessPiece === "QUEEN").length;
 
   function isChessPieceDisabled(piece: ChessPiece): boolean {
     if (piece === "KING" && existingKings >= MAX_KING_PER_WEEK) return true;
     if (piece === "QUEEN" && existingQueens >= MAX_QUEEN_PER_WEEK) return true;
     return false;
   }
-
   function chessPieceLimitMessage(piece: ChessPiece): string | null {
-    if (piece === "KING" && existingKings >= MAX_KING_PER_WEEK) {
-      return `Max ${MAX_KING_PER_WEEK} King already used`;
-    }
-    if (piece === "QUEEN" && existingQueens >= MAX_QUEEN_PER_WEEK) {
-      return `Max ${MAX_QUEEN_PER_WEEK} Queens already used`;
-    }
+    if (piece === "KING" && existingKings >= MAX_KING_PER_WEEK) return `Max ${MAX_KING_PER_WEEK} King already used`;
+    if (piece === "QUEEN" && existingQueens >= MAX_QUEEN_PER_WEEK) return `Max ${MAX_QUEEN_PER_WEEK} Queens already used`;
     return null;
   }
 
-  // ── Field change handlers ──────────────────────────────────────────────
-
   function handleChange(field: keyof FormValues, value: string) {
     setValues((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   }
-
-  // ── Validation ─────────────────────────────────────────────────────────
 
   function validate(): boolean {
     const next: FormErrors = {};
-
-    if (!values.title.trim()) {
-      next.title = "Title is required";
-    }
-    if (!values.chessPiece) {
-      next.chessPiece = "Chess piece is required";
-    } else if (isChessPieceDisabled(values.chessPiece as ChessPiece)) {
-      next.chessPiece = chessPieceLimitMessage(values.chessPiece as ChessPiece) ?? "Piece limit reached";
-    }
-    if (
-      (values.chessPiece === "KING" || values.chessPiece === "QUEEN") &&
-      !values.successCriteria.trim()
-    ) {
-      next.successCriteria = "Success criteria is required for King / Queen";
-    }
-
+    if (!values.title.trim()) next.title = "Title is required";
+    if (!values.chessPiece) next.chessPiece = "Chess piece is required";
+    else if (isChessPieceDisabled(values.chessPiece as ChessPiece)) next.chessPiece = chessPieceLimitMessage(values.chessPiece as ChessPiece) ?? "Piece limit reached";
+    if ((values.chessPiece === "KING" || values.chessPiece === "QUEEN") && !values.successCriteria.trim()) next.successCriteria = "Success criteria is required for King / Queen";
     if (values.rcdoNodeId) {
       const selectedNode = findNodeById(rcdoTree, values.rcdoNodeId);
-      if (selectedNode) {
-        const rcdoError = getRcdoSelectionError(selectedNode);
-        if (rcdoError) {
-          next.rcdoNodeId = rcdoError;
-        }
-      }
+      if (selectedNode) { const rcdoError = getRcdoSelectionError(selectedNode); if (rcdoError) next.rcdoNodeId = rcdoError; }
     }
-
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-
-    setSubmitting(true);
-    setSubmitError(null);
-
+    setSubmitting(true); setSubmitError(null);
     try {
-      if (isCreate) {
-        const payload: CreateCommitPayload = {
-          title: values.title.trim(),
-          chessPiece: values.chessPiece as ChessPiece,
-          ...(values.description.trim()
-            ? { description: values.description.trim() }
-            : {}),
-          ...(values.rcdoNodeId ? { rcdoNodeId: values.rcdoNodeId } : {}),
-          ...(values.workItemId ? { workItemId: values.workItemId } : {}),
-          ...(values.estimatePoints !== ""
-            ? {
-                estimatePoints: Number(
-                  values.estimatePoints,
-                ) as EstimatePoints,
-              }
-            : {}),
-          ...(values.successCriteria.trim()
-            ? { successCriteria: values.successCriteria.trim() }
-            : {}),
-        };
-        await (props as CreateModeProps).onSubmit(payload);
-      } else {
-        const payload: UpdateCommitPayload = {
-          title: values.title.trim(),
-          chessPiece: values.chessPiece as ChessPiece,
-          ...(values.description.trim()
-            ? { description: values.description.trim() }
-            : {}),
-          ...(values.rcdoNodeId ? { rcdoNodeId: values.rcdoNodeId } : {}),
-          ...(values.workItemId ? { workItemId: values.workItemId } : {}),
-          ...(values.estimatePoints !== ""
-            ? {
-                estimatePoints: Number(
-                  values.estimatePoints,
-                ) as EstimatePoints,
-              }
-            : {}),
-          ...(values.successCriteria.trim()
-            ? { successCriteria: values.successCriteria.trim() }
-            : {}),
-        };
-        await (props as EditModeProps).onSubmit(payload);
-      }
+      const base = {
+        title: values.title.trim(),
+        chessPiece: values.chessPiece as ChessPiece,
+        ...(values.description.trim() ? { description: values.description.trim() } : {}),
+        ...(values.rcdoNodeId ? { rcdoNodeId: values.rcdoNodeId } : {}),
+        ...(values.workItemId ? { workItemId: values.workItemId } : {}),
+        ...(values.estimatePoints !== "" ? { estimatePoints: Number(values.estimatePoints) as EstimatePoints } : {}),
+        ...(values.successCriteria.trim() ? { successCriteria: values.successCriteria.trim() } : {}),
+      };
+      if (isCreate) { await (props as CreateModeProps).onSubmit(base as CreateCommitPayload); }
+      else { await (props as EditModeProps).onSubmit(base as UpdateCommitPayload); }
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "An unexpected error occurred",
-      );
+      setSubmitError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSubmitting(false);
     }
   }
 
-  // ── RCDO picker ────────────────────────────────────────────────────────
+  const selectedRcdoNode = values.rcdoNodeId ? findNodeById(rcdoTree, values.rcdoNodeId) : null;
 
-  const selectedRcdoNode = values.rcdoNodeId
-    ? findNodeById(rcdoTree, values.rcdoNodeId)
-    : null;
-
-  // ── Styles ─────────────────────────────────────────────────────────────
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "0.5rem",
-    border: "1px solid var(--color-border)",
-    borderRadius: "var(--border-radius)",
-    fontSize: "inherit",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-  };
-
-  const errorInputStyle: React.CSSProperties = {
-    ...inputStyle,
-    borderColor: "var(--color-danger)",
-  };
-
-  const fieldStyle: React.CSSProperties = { marginBottom: "1rem" };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    marginBottom: "0.25rem",
-    fontWeight: 600,
-    fontSize: "0.875rem",
-  };
-
-  const errorTextStyle: React.CSSProperties = {
-    color: "var(--color-danger)",
-    fontSize: "0.75rem",
-    marginTop: "0.25rem",
-    display: "block",
-  };
-
-  const requiredMark = (
-    <span aria-hidden="true" style={{ color: "var(--color-danger)" }}>
-      {" *"}
-    </span>
-  );
-
-  // ── Render ─────────────────────────────────────────────────────────────
+  const textareaCls = "w-full rounded-default border border-border bg-surface px-3 py-1.5 text-sm resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary";
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={isCreate ? "New commit" : "Edit commit"}
-      data-testid="commit-form-modal"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.35)",
-      }}
-    >
-      <div
-        style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--border-radius)",
-          padding: "1.5rem",
-          width: "min(600px, 96vw)",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-        }}
-      >
-        {/* Carry-forward provenance banner */}
+    <div role="dialog" aria-modal="true" aria-label={isCreate ? "New commit" : "Edit commit"} data-testid="commit-form-modal"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/35 backdrop-blur-[2px]">
+      <div className="w-full max-w-[600px] rounded-lg border border-border bg-surface p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+
+        {/* Carry-forward banner */}
         {editCommit && editCommit.carryForwardStreak > 0 && (
-          <div
-            data-testid="carry-forward-banner"
-            style={{
-              background: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              borderRadius: "var(--border-radius)",
-              padding: "0.625rem 0.75rem",
-              marginBottom: "1rem",
-              fontSize: "0.85rem",
-              color: "#1e40af",
-            }}
-          >
-            🔁{" "}
-            <strong>Carried forward</strong> — this commit has been carried
-            forward {editCommit.carryForwardStreak} time
-            {editCommit.carryForwardStreak !== 1 ? "s" : ""}.
+          <div data-testid="carry-forward-banner" className="mb-4 rounded-default border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-800">
+            🔁 <strong>Carried forward</strong> — this commit has been carried forward {editCommit.carryForwardStreak} time{editCommit.carryForwardStreak !== 1 ? "s" : ""}.
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          aria-label={isCreate ? "New commit" : "Edit commit"}
-          data-testid="commit-form"
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "1.25rem",
-            }}
-          >
-            <h3 style={{ margin: 0, fontSize: "1.125rem" }}>
-              {isCreate ? "New Commit" : "Edit Commit"}
-            </h3>
-            <button
-              type="button"
-              onClick={onCancel}
-              aria-label="Close"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "1.25rem",
-                color: "var(--color-text-muted)",
-                lineHeight: 1,
-                padding: "0.25rem",
-              }}
-            >
-              ✕
-            </button>
+        <form onSubmit={handleSubmit} noValidate aria-label={isCreate ? "New commit" : "Edit commit"} data-testid="commit-form">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="m-0 text-lg font-semibold">{isCreate ? "New Commit" : "Edit Commit"}</h3>
+            <Button variant="ghost" size="icon" type="button" onClick={onCancel} aria-label="Close" className="h-7 w-7">
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Title */}
-          <div style={fieldStyle}>
-            <label htmlFor="commit-form-title" style={labelStyle}>
-              Title{requiredMark}
-            </label>
-            <input
+          <div className="mb-4">
+            <Input
               id="commit-form-title"
+              label="Title *"
               type="text"
               value={values.title}
               onChange={(e) => handleChange("title", e.target.value)}
               aria-required="true"
-              aria-describedby={
-                errors.title ? "commit-form-title-error" : undefined
-              }
-              style={errors.title ? errorInputStyle : inputStyle}
+              error={errors.title}
               placeholder="What will you commit to this week?"
               data-testid="commit-form-title"
             />
-            {errors.title && (
-              <span
-                id="commit-form-title-error"
-                role="alert"
-                style={errorTextStyle}
-              >
-                {errors.title}
-              </span>
-            )}
           </div>
 
           {/* Description */}
-          <div style={fieldStyle}>
-            <label htmlFor="commit-form-description" style={labelStyle}>
-              Description
-            </label>
-            <textarea
-              id="commit-form-description"
-              value={values.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-              rows={3}
-              style={{ ...inputStyle, resize: "vertical" }}
-              placeholder="Optional: provide additional context"
-              data-testid="commit-form-description"
-            />
+          <div className="mb-4 flex flex-col gap-1.5">
+            <label htmlFor="commit-form-description" className="text-sm font-medium">Description</label>
+            <textarea id="commit-form-description" value={values.description} onChange={(e) => handleChange("description", e.target.value)} rows={3} className={textareaCls} placeholder="Optional: provide additional context" data-testid="commit-form-description" />
           </div>
 
           {/* Chess piece */}
-          <div style={fieldStyle}>
-            <fieldset
-              style={{ border: "none", padding: 0, margin: 0 }}
-              aria-describedby={
-                errors.chessPiece ? "commit-form-piece-error" : undefined
-              }
-            >
-              <legend style={{ ...labelStyle, display: "flex", gap: "0.25rem" }}>
-                Chess Piece{requiredMark}
-              </legend>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-                data-testid="commit-form-chess-piece-group"
-              >
+          <div className="mb-4">
+            <fieldset className="border-0 p-0 m-0" aria-describedby={errors.chessPiece ? "commit-form-piece-error" : undefined}>
+              <legend className="text-sm font-medium mb-2">Chess Piece *</legend>
+              <div className="flex flex-col gap-2" data-testid="commit-form-chess-piece-group">
                 {CHESS_PIECES.map((piece) => {
                   const disabled = isChessPieceDisabled(piece);
                   const limitMsg = chessPieceLimitMessage(piece);
+                  const isSelected = values.chessPiece === piece;
                   return (
-                    <label
-                      key={piece}
-                      data-testid={`chess-piece-option-${piece.toLowerCase()}`}
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "0.625rem",
-                        padding: "0.5rem",
-                        border: `1px solid ${
-                          values.chessPiece === piece
-                            ? "var(--color-primary)"
-                            : "var(--color-border)"
-                        }`,
-                        borderRadius: "var(--border-radius)",
-                        cursor: disabled ? "not-allowed" : "pointer",
-                        background:
-                          values.chessPiece === piece
-                            ? "#eff6ff"
-                            : "transparent",
-                        opacity: disabled ? 0.55 : 1,
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="chessPiece"
-                        value={piece}
-                        checked={values.chessPiece === piece}
-                        onChange={() => {
-                          if (!disabled) handleChange("chessPiece", piece);
-                        }}
-                        disabled={disabled}
-                        style={{ marginTop: "2px", flexShrink: 0 }}
-                      />
-                      <span
-                        aria-hidden="true"
-                        style={{ fontSize: "1.25rem", lineHeight: 1, flexShrink: 0 }}
-                      >
-                        {CHESS_PIECE_ICONS[piece]}
-                      </span>
+                    <label key={piece} data-testid={`chess-piece-option-${piece.toLowerCase()}`}
+                      className={cn(
+                        "flex items-start gap-2.5 p-2 rounded-default border cursor-pointer transition-colors",
+                        isSelected ? "border-primary bg-blue-50" : "border-border hover:border-primary/50",
+                        disabled && "opacity-55 cursor-not-allowed",
+                      )}>
+                      <input type="radio" name="chessPiece" value={piece} checked={isSelected} onChange={() => { if (!disabled) handleChange("chessPiece", piece); }} disabled={disabled} className="mt-0.5 shrink-0" />
+                      <span aria-hidden="true" className="text-xl leading-none shrink-0">{CHESS_PIECE_ICONS[piece]}</span>
                       <span>
-                        <span style={{ fontWeight: 600 }}>
-                          {CHESS_PIECE_LABELS[piece]}
-                        </span>
-                        <span
-                          style={{
-                            display: "block",
-                            fontSize: "0.8rem",
-                            color: "var(--color-text-muted)",
-                          }}
-                        >
-                          {CHESS_PIECE_DESCRIPTIONS[piece]}
-                        </span>
-                        {limitMsg && (
-                          <span
-                            data-testid={`chess-piece-limit-${piece.toLowerCase()}`}
-                            style={{
-                              display: "block",
-                              fontSize: "0.75rem",
-                              color: "var(--color-danger)",
-                              fontWeight: 600,
-                              marginTop: "2px",
-                            }}
-                          >
-                            {limitMsg}
-                          </span>
-                        )}
+                        <span className="font-semibold text-sm">{CHESS_PIECE_LABELS[piece]}</span>
+                        <span className="block text-xs text-muted mt-0.5">{CHESS_PIECE_DESCRIPTIONS[piece]}</span>
+                        {limitMsg && <span data-testid={`chess-piece-limit-${piece.toLowerCase()}`} className="block text-xs text-danger font-semibold mt-0.5">{limitMsg}</span>}
                       </span>
                     </label>
                   );
                 })}
               </div>
-              {errors.chessPiece && (
-                <span
-                  id="commit-form-piece-error"
-                  role="alert"
-                  style={errorTextStyle}
-                >
-                  {errors.chessPiece}
-                </span>
-              )}
+              {errors.chessPiece && <span id="commit-form-piece-error" role="alert" className="block mt-1 text-xs text-danger">{errors.chessPiece}</span>}
             </fieldset>
           </div>
 
           {/* Estimate points */}
-          <div style={fieldStyle}>
-            <p style={{ ...labelStyle, margin: "0 0 0.375rem" }}>
-              Estimate Points
-            </p>
-            <div
-              role="group"
-              aria-label="Estimate points"
-              style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}
-              data-testid="commit-form-estimate-group"
-            >
-              {VALID_POINTS.map((pts) => (
-                <button
-                  key={pts}
-                  type="button"
-                  onClick={() =>
-                    handleChange(
-                      "estimatePoints",
-                      values.estimatePoints === String(pts) ? "" : String(pts),
-                    )
-                  }
-                  data-testid={`estimate-btn-${pts}`}
-                  aria-pressed={values.estimatePoints === String(pts)}
-                  style={{
-                    width: "2.5rem",
-                    height: "2.5rem",
-                    border: `2px solid ${
-                      values.estimatePoints === pts
-                        ? "var(--color-primary)"
-                        : "var(--color-border)"
-                    }`,
-                    borderRadius: "var(--border-radius)",
-                    background:
-                      values.estimatePoints === pts
-                        ? "var(--color-primary)"
-                        : "var(--color-surface)",
-                    color:
-                      values.estimatePoints === pts
-                        ? "#fff"
-                        : "var(--color-text)",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    fontSize: "0.875rem",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {pts}
-                </button>
-              ))}
+          <div className="mb-4">
+            <p className="text-sm font-medium mb-2">Estimate Points</p>
+            <div role="group" aria-label="Estimate points" className="flex gap-1.5 flex-wrap" data-testid="commit-form-estimate-group">
+              {VALID_POINTS.map((pts) => {
+                const isActive = String(values.estimatePoints) === String(pts);
+                return (
+                  <button key={pts} type="button" onClick={() => handleChange("estimatePoints", values.estimatePoints === String(pts) ? "" : String(pts))} data-testid={`estimate-btn-${pts}`} aria-pressed={isActive}
+                    className={cn("h-10 w-10 rounded-default border-2 text-sm font-bold transition-colors", isActive ? "border-primary text-white" : "border-border bg-surface text-foreground hover:border-primary/60")}
+                    style={isActive ? { background: "var(--color-primary)", color: "rgb(255, 255, 255)" } : undefined}>
+                    {pts}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Success criteria — required for King / Queen */}
-          <div style={fieldStyle}>
-            <label htmlFor="commit-form-success-criteria" style={labelStyle}>
-              Success Criteria
-              {(values.chessPiece === "KING" ||
-                values.chessPiece === "QUEEN") && requiredMark}
+          {/* Success criteria */}
+          <div className="mb-4 flex flex-col gap-1.5">
+            <label htmlFor="commit-form-success-criteria" className="text-sm font-medium">
+              Success Criteria{(values.chessPiece === "KING" || values.chessPiece === "QUEEN") && <span className="text-danger"> *</span>}
             </label>
-            <textarea
-              id="commit-form-success-criteria"
-              value={values.successCriteria}
-              onChange={(e) => handleChange("successCriteria", e.target.value)}
-              rows={2}
-              aria-required={
-                values.chessPiece === "KING" || values.chessPiece === "QUEEN"
-              }
-              aria-describedby={
-                errors.successCriteria
-                  ? "commit-form-sc-error"
-                  : undefined
-              }
-              style={{
-                ...(errors.successCriteria ? errorInputStyle : inputStyle),
-                resize: "vertical",
-              }}
-              placeholder="How will you know you succeeded?"
-              data-testid="commit-form-success-criteria"
-            />
-            {errors.successCriteria && (
-              <span
-                id="commit-form-sc-error"
-                role="alert"
-                style={errorTextStyle}
-              >
-                {errors.successCriteria}
-              </span>
-            )}
+            <textarea id="commit-form-success-criteria" value={values.successCriteria} onChange={(e) => handleChange("successCriteria", e.target.value)} rows={2}
+              aria-required={values.chessPiece === "KING" || values.chessPiece === "QUEEN"}
+              className={cn(textareaCls, errors.successCriteria && "border-danger focus-visible:ring-danger/50")}
+              placeholder="How will you know you succeeded?" data-testid="commit-form-success-criteria" />
+            {errors.successCriteria && <span id="commit-form-sc-error" role="alert" className="text-xs text-danger">{errors.successCriteria}</span>}
           </div>
 
           {/* RCDO picker */}
-          <div style={fieldStyle}>
-            <p style={{ ...labelStyle, margin: "0 0 0.375rem" }}>
-              RCDO Link
-            </p>
+          <div className="mb-4">
+            <p className="text-sm font-medium mb-2">RCDO Link</p>
             {selectedRcdoNode && (
-              <div
-                data-testid="rcdo-selected-node"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.375rem 0.625rem",
-                  background: "#f0fdf4",
-                  border: "1px solid #86efac",
-                  borderRadius: "var(--border-radius)",
-                  marginBottom: "0.5rem",
-                  fontSize: "0.875rem",
-                }}
-              >
-                <span style={{ flex: 1 }}>✅ {selectedRcdoNode.title}</span>
-                <button
-                  type="button"
-                  onClick={() => handleChange("rcdoNodeId", "")}
-                  aria-label="Clear RCDO link"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--color-text-muted)",
-                    fontSize: "0.875rem",
-                    padding: 0,
-                  }}
-                >
-                  ✕
-                </button>
+              <div data-testid="rcdo-selected-node" className="flex items-center gap-2 px-3 py-2 rounded-default border border-emerald-200 bg-emerald-50 mb-2 text-sm">
+                <Check className="h-3.5 w-3.5 text-success shrink-0" aria-hidden="true" />
+                <span className="flex-1 text-emerald-800">{selectedRcdoNode.title}</span>
+                <Button variant="ghost" size="icon" type="button" onClick={() => handleChange("rcdoNodeId", "")} aria-label="Clear RCDO link" className="h-6 w-6 text-muted">
+                  <X className="h-3 w-3" />
+                </Button>
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => setShowRcdoPicker((v) => !v)}
-              data-testid="rcdo-picker-toggle"
-              aria-expanded={showRcdoPicker}
-              style={{
-                padding: "0.375rem 0.75rem",
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--border-radius)",
-                background: "var(--color-surface)",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-                fontFamily: "inherit",
-                color: "var(--color-text)",
-              }}
-            >
-              {showRcdoPicker ? "▲ Close RCDO picker" : "▼ Browse RCDO nodes"}
-            </button>
+            <Button variant="secondary" size="sm" type="button" onClick={() => setShowRcdoPicker((v) => !v)} data-testid="rcdo-picker-toggle" aria-expanded={showRcdoPicker}>
+              {showRcdoPicker ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              {showRcdoPicker ? "Close RCDO picker" : "Browse RCDO nodes"}
+            </Button>
             {showRcdoPicker && (
-              <div
-                data-testid="rcdo-picker-panel"
-                style={{
-                  marginTop: "0.5rem",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "var(--border-radius)",
-                  padding: "0.75rem",
-                  maxHeight: "250px",
-                  overflowY: "auto",
-                }}
-              >
+              <div data-testid="rcdo-picker-panel" className="mt-2 rounded-default border border-border p-3 max-h-[250px] overflow-y-auto">
                 <RcdoTreeView
                   nodes={rcdoTree}
                   selectedId={values.rcdoNodeId || null}
                   onSelect={(id) => {
                     const selectedNode = findNodeById(rcdoTree, id);
                     if (!selectedNode) return;
-
                     const rcdoError = getRcdoSelectionError(selectedNode);
-                    if (rcdoError) {
-                      setErrors((prev) => ({ ...prev, rcdoNodeId: rcdoError }));
-                      return;
-                    }
-
+                    if (rcdoError) { setErrors((prev) => ({ ...prev, rcdoNodeId: rcdoError })); return; }
                     handleChange("rcdoNodeId", id);
                     setShowRcdoPicker(false);
                   }}
@@ -748,89 +280,24 @@ export function CommitForm(props: CommitFormProps) {
                 />
               </div>
             )}
-            {errors.rcdoNodeId && (
-              <span role="alert" style={errorTextStyle}>
-                {errors.rcdoNodeId}
-              </span>
-            )}
+            {errors.rcdoNodeId && <span role="alert" className="block mt-1 text-xs text-danger">{errors.rcdoNodeId}</span>}
           </div>
 
           {/* Linked ticket */}
-          <div style={fieldStyle}>
-            <label htmlFor="commit-form-ticket" style={labelStyle}>
-              Linked Ticket
-            </label>
-            <input
-              id="commit-form-ticket"
-              type="text"
-              value={values.workItemId}
-              onChange={(e) => handleChange("workItemId", e.target.value)}
-              style={inputStyle}
-              placeholder="Ticket ID (optional)"
-              data-testid="commit-form-ticket"
-            />
+          <div className="mb-4">
+            <Input id="commit-form-ticket" label="Linked Ticket" type="text" value={values.workItemId} onChange={(e) => handleChange("workItemId", e.target.value)} placeholder="Ticket ID (optional)" data-testid="commit-form-ticket" />
           </div>
 
           {/* API error */}
           {submitError && (
-            <div
-              role="alert"
-              style={{
-                color: "var(--color-danger)",
-                marginBottom: "1rem",
-                fontSize: "0.875rem",
-                padding: "0.5rem",
-                background: "#fef2f2",
-                borderRadius: "var(--border-radius)",
-              }}
-            >
-              {submitError}
-            </div>
+            <div role="alert" className="mb-4 rounded-default border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{submitError}</div>
           )}
 
-          {/* Action buttons */}
-          <div
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              justifyContent: "flex-end",
-              paddingTop: "0.5rem",
-              borderTop: "1px solid var(--color-border)",
-            }}
-          >
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={submitting}
-              style={{
-                padding: "0.5rem 1rem",
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--border-radius)",
-                background: "var(--color-surface)",
-                cursor: "pointer",
-                fontSize: "inherit",
-                fontFamily: "inherit",
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              data-testid="commit-form-submit"
-              style={{
-                padding: "0.5rem 1rem",
-                border: "none",
-                borderRadius: "var(--border-radius)",
-                background: "var(--color-primary)",
-                color: "#fff",
-                cursor: submitting ? "not-allowed" : "pointer",
-                fontSize: "inherit",
-                fontFamily: "inherit",
-              }}
-            >
+          <div className="flex gap-2 justify-end pt-4 border-t border-border">
+            <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>Cancel</Button>
+            <Button type="submit" variant="primary" disabled={submitting} data-testid="commit-form-submit">
               {submitting ? "Saving…" : isCreate ? "Add Commit" : "Save Changes"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

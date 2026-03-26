@@ -1,24 +1,24 @@
 /**
  * CarryForwardDialog — captures carry-forward reason and target week.
- *
- * Shown for NOT_ACHIEVED and PARTIALLY_ACHIEVED commits when the user
- * opts to carry the commit into the next week.
  */
 import { useState, type FormEvent } from "react";
+import { RotateCcw, X } from "lucide-react";
+import { Button } from "../ui/Button.js";
+import { Select } from "../ui/Select.js";
+import { cn } from "../../lib/utils.js";
 import type { CommitResponse, CarryForwardReason } from "../../api/planTypes.js";
 
 const CARRY_FORWARD_REASONS: { value: CarryForwardReason; label: string }[] = [
-  { value: "STILL_IN_PROGRESS", label: "Still in progress — work continues" },
+  { value: "STILL_IN_PROGRESS",     label: "Still in progress — work continues" },
   { value: "BLOCKED_BY_DEPENDENCY", label: "Blocked by a dependency" },
-  { value: "SCOPE_EXPANDED", label: "Scope expanded beyond estimate" },
-  { value: "REPRIORITIZED", label: "Reprioritized — will complete next week" },
-  { value: "RESOURCE_UNAVAILABLE", label: "Resource or person unavailable" },
-  { value: "TECHNICAL_OBSTACLE", label: "Technical obstacle encountered" },
-  { value: "EXTERNAL_DELAY", label: "External delay (vendor, partner, etc.)" },
-  { value: "UNDERESTIMATED", label: "Work was underestimated" },
+  { value: "SCOPE_EXPANDED",        label: "Scope expanded beyond estimate" },
+  { value: "REPRIORITIZED",         label: "Reprioritized — will complete next week" },
+  { value: "RESOURCE_UNAVAILABLE",  label: "Resource or person unavailable" },
+  { value: "TECHNICAL_OBSTACLE",    label: "Technical obstacle encountered" },
+  { value: "EXTERNAL_DELAY",        label: "External delay (vendor, partner, etc.)" },
+  { value: "UNDERESTIMATED",        label: "Work was underestimated" },
 ];
 
-/** Returns the ISO date (yyyy-MM-dd) for the Monday of a given week offset from today. */
 function getWeekStart(offsetWeeks = 0): string {
   const now = new Date();
   const dayOfWeek = now.getDay();
@@ -35,47 +35,30 @@ function formatWeekLabel(isoDate: string): string {
 
 export interface CarryForwardDialogProps {
   readonly commit: CommitResponse;
-  readonly onConfirm: (
-    targetWeekStart: string,
-    reason: CarryForwardReason,
-    reasonText?: string,
-  ) => void;
+  readonly onConfirm: (targetWeekStart: string, reason: CarryForwardReason, reasonText?: string) => void;
   readonly onCancel: () => void;
   readonly isSubmitting?: boolean;
 }
 
-export function CarryForwardDialog({
-  commit,
-  onConfirm,
-  onCancel,
-  isSubmitting = false,
-}: CarryForwardDialogProps) {
-  // Default target to next week
+export function CarryForwardDialog({ commit, onConfirm, onCancel, isSubmitting = false }: CarryForwardDialogProps) {
   const [targetWeekStart, setTargetWeekStart] = useState(getWeekStart(1));
   const [reason, setReason] = useState<CarryForwardReason | "">("");
   const [reasonText, setReasonText] = useState("");
-  const [errors, setErrors] = useState<{ reason?: string | undefined; target?: string | undefined }>({});
+  const [errors, setErrors] = useState<{ reason?: string; target?: string }>({});
+
+  const nextWeekOption = getWeekStart(1);
+  const twoWeeksOption = getWeekStart(2);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const next: typeof errors = {};
     if (!reason) next.reason = "Please select a reason";
     if (!targetWeekStart) next.target = "Target week is required";
-    if (Object.keys(next).length > 0) {
-      setErrors(next);
-      return;
-    }
+    if (Object.keys(next).length > 0) { setErrors(next); return; }
     setErrors({});
     const trimmedText = reasonText.trim();
-    onConfirm(
-      targetWeekStart,
-      reason as CarryForwardReason,
-      trimmedText !== "" ? trimmedText : undefined,
-    );
+    onConfirm(targetWeekStart, reason as CarryForwardReason, trimmedText !== "" ? trimmedText : undefined);
   }
-
-  const nextWeekOption = getWeekStart(1);
-  const twoWeeksOption = getWeekStart(2);
 
   return (
     <div
@@ -83,294 +66,91 @@ export function CarryForwardDialog({
       aria-modal="true"
       aria-labelledby="carry-forward-dialog-title"
       data-testid="carry-forward-dialog"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1300,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.45)",
-      }}
+      className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/45 backdrop-blur-[2px]"
     >
-      <div
-        style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--border-radius)",
-          padding: "1.5rem",
-          width: "min(480px, 96vw)",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-        }}
-      >
+      <div className="w-full max-w-md rounded-lg border border-border bg-surface p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "1rem",
-          }}
-        >
-          <h3
-            id="carry-forward-dialog-title"
-            style={{ margin: 0, fontSize: "1rem", color: "#1e40af" }}
-          >
-            🔁 Carry Forward
+        <div className="flex items-center justify-between mb-4">
+          <h3 id="carry-forward-dialog-title" className="m-0 flex items-center gap-2 text-base font-semibold text-primary">
+            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            Carry Forward
           </h3>
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Close"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "1.125rem",
-              color: "var(--color-text-muted)",
-            }}
-          >
-            ✕
-          </button>
+          <Button variant="ghost" size="icon" onClick={onCancel} aria-label="Close" className="h-7 w-7">
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Commit preview */}
-        <div
-          data-testid="carry-forward-commit-preview"
-          style={{
-            background: "#eff6ff",
-            border: "1px solid #bfdbfe",
-            borderRadius: "var(--border-radius)",
-            padding: "0.625rem 0.75rem",
-            marginBottom: "1rem",
-            fontSize: "0.875rem",
-            color: "#1e40af",
-          }}
-        >
-          <strong>"{commit.title}"</strong> will be copied into the target week
-          as a new commit with carry-forward provenance.
+        <div data-testid="carry-forward-commit-preview" className="mb-4 rounded-default border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-800">
+          <strong>"{commit.title}"</strong> will be copied into the target week as a new commit with carry-forward provenance.
           {commit.carryForwardStreak > 0 && (
-            <span
-              style={{
-                display: "block",
-                fontSize: "0.75rem",
-                marginTop: "0.25rem",
-                color: "#6d28d9",
-              }}
-            >
-              Already carried forward {commit.carryForwardStreak} time
-              {commit.carryForwardStreak !== 1 ? "s" : ""}.
+            <span className="block mt-1 text-xs text-purple-700">
+              Already carried forward {commit.carryForwardStreak} time{commit.carryForwardStreak !== 1 ? "s" : ""}.
             </span>
           )}
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
           {/* Target week */}
-          <div style={{ marginBottom: "1rem" }}>
-            <p
-              style={{
-                margin: "0 0 0.375rem",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-              }}
-            >
-              Target week{" "}
-              <span aria-hidden="true" style={{ color: "var(--color-danger)" }}>
-                *
-              </span>
+          <div className="mb-4">
+            <p className="m-0 mb-1.5 text-sm font-medium">
+              Target week <span aria-hidden="true" className="text-danger">*</span>
             </p>
-            <div
-              role="group"
-              aria-label="Target week options"
-              style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}
-              data-testid="carry-forward-week-options"
-            >
+            <div role="group" aria-label="Target week options" className="flex flex-col gap-1.5" data-testid="carry-forward-week-options">
               {[nextWeekOption, twoWeeksOption].map((weekStart) => (
                 <label
                   key={weekStart}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.5rem 0.625rem",
-                    border: `1px solid ${
-                      targetWeekStart === weekStart
-                        ? "var(--color-primary)"
-                        : "var(--color-border)"
-                    }`,
-                    borderRadius: "var(--border-radius)",
-                    background:
-                      targetWeekStart === weekStart ? "#eff6ff" : "transparent",
-                    cursor: "pointer",
-                    fontSize: "0.875rem",
-                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-default border text-sm cursor-pointer",
+                    targetWeekStart === weekStart ? "border-primary bg-blue-50" : "border-border",
+                  )}
                 >
-                  <input
-                    type="radio"
-                    name="targetWeek"
-                    value={weekStart}
-                    checked={targetWeekStart === weekStart}
-                    onChange={() => setTargetWeekStart(weekStart)}
-                  />
+                  <input type="radio" name="targetWeek" value={weekStart} checked={targetWeekStart === weekStart} onChange={() => setTargetWeekStart(weekStart)} />
                   {formatWeekLabel(weekStart)}
                 </label>
               ))}
             </div>
-            {errors.target && (
-              <span
-                role="alert"
-                style={{
-                  display: "block",
-                  color: "var(--color-danger)",
-                  fontSize: "0.75rem",
-                  marginTop: "0.25rem",
-                }}
-              >
-                {errors.target}
-              </span>
-            )}
+            {errors.target && <p role="alert" className="mt-1 text-xs text-danger">{errors.target}</p>}
           </div>
 
-          {/* Reason select */}
-          <div style={{ marginBottom: "1rem" }}>
-            <label
-              htmlFor="carry-forward-reason"
-              style={{
-                display: "block",
-                marginBottom: "0.375rem",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-              }}
-            >
-              Reason{" "}
-              <span aria-hidden="true" style={{ color: "var(--color-danger)" }}>
-                *
-              </span>
-            </label>
-            <select
+          {/* Reason */}
+          <div className="mb-4">
+            <Select
+              label="Reason *"
               id="carry-forward-reason"
               value={reason}
-              onChange={(e) => {
-                setReason(e.target.value as CarryForwardReason | "");
-                setErrors((prev) => ({ ...prev, reason: undefined }));
-              }}
+              onChange={(e) => { setReason(e.target.value as CarryForwardReason | ""); setErrors((prev) => { const { reason: _r, ...rest } = prev; return rest; }); }}
               aria-required="true"
-              aria-describedby={errors.reason ? "cf-reason-error" : undefined}
               data-testid="carry-forward-reason-select"
-              style={{
-                width: "100%",
-                padding: "0.5rem",
-                border: `1px solid ${errors.reason ? "var(--color-danger)" : "var(--color-border)"}`,
-                borderRadius: "var(--border-radius)",
-                fontSize: "inherit",
-                fontFamily: "inherit",
-                background: "var(--color-surface)",
-                color: reason ? "var(--color-text)" : "var(--color-text-muted)",
-              }}
+              error={errors.reason}
             >
               <option value="">— Select a reason —</option>
-              {CARRY_FORWARD_REASONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-            {errors.reason && (
-              <span
-                id="cf-reason-error"
-                role="alert"
-                style={{
-                  display: "block",
-                  color: "var(--color-danger)",
-                  fontSize: "0.75rem",
-                  marginTop: "0.25rem",
-                }}
-              >
-                {errors.reason}
-              </span>
-            )}
+              {CARRY_FORWARD_REASONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </Select>
           </div>
 
           {/* Optional notes */}
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label
-              htmlFor="carry-forward-notes"
-              style={{
-                display: "block",
-                marginBottom: "0.375rem",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-              }}
-            >
-              Additional notes (optional)
-            </label>
+          <div className="mb-5 flex flex-col gap-1.5">
+            <label htmlFor="carry-forward-notes" className="text-sm font-medium">Additional notes (optional)</label>
             <textarea
               id="carry-forward-notes"
               value={reasonText}
               onChange={(e) => setReasonText(e.target.value)}
               rows={2}
               data-testid="carry-forward-notes"
-              style={{
-                width: "100%",
-                padding: "0.5rem",
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--border-radius)",
-                fontSize: "inherit",
-                fontFamily: "inherit",
-                boxSizing: "border-box",
-                resize: "vertical",
-              }}
+              className="w-full rounded-default border border-border bg-surface px-3 py-1.5 text-sm resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
               placeholder="Any additional context…"
             />
           </div>
 
-          {/* Actions */}
-          <div
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              justifyContent: "flex-end",
-              paddingTop: "0.5rem",
-              borderTop: "1px solid var(--color-border)",
-            }}
-          >
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={isSubmitting}
-              data-testid="carry-forward-cancel"
-              style={{
-                padding: "0.5rem 1rem",
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--border-radius)",
-                background: "var(--color-surface)",
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                fontFamily: "inherit",
-                fontSize: "0.875rem",
-              }}
-            >
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
+            <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting} data-testid="carry-forward-cancel">
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              data-testid="carry-forward-confirm"
-              style={{
-                padding: "0.5rem 1.25rem",
-                border: "none",
-                borderRadius: "var(--border-radius)",
-                background: "#1e40af",
-                color: "#fff",
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                fontFamily: "inherit",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-              }}
-            >
-              {isSubmitting ? "Saving…" : "🔁 Carry Forward"}
-            </button>
+            </Button>
+            <Button type="submit" variant="primary" disabled={isSubmitting} data-testid="carry-forward-confirm">
+              <RotateCcw className="h-3.5 w-3.5" />
+              {isSubmitting ? "Saving…" : "Carry Forward"}
+            </Button>
           </div>
         </form>
       </div>

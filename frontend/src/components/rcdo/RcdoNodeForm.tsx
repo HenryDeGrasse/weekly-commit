@@ -1,45 +1,27 @@
 /**
  * Create and edit form for RCDO nodes.
- * - Create mode: nodeType and optional defaultParentId are pre-set; parent selector
- *   is shown for DOs (must pick a Rally Cry) and Outcomes (must pick a DO).
- * - Edit mode: title/description/owner fields are pre-filled; parent selector hidden.
  */
 import { useState, type FormEvent } from "react";
-import type {
-  RcdoTreeNode,
-  RcdoNodeType,
-  RcdoNodeStatus,
-  CreateRcdoNodePayload,
-  UpdateRcdoNodePayload,
-} from "../../api/rcdoTypes.js";
+import { Button } from "../ui/Button.js";
+import { Input } from "../ui/Input.js";
+import { Select } from "../ui/Select.js";
+import type { RcdoTreeNode, RcdoNodeType, RcdoNodeStatus, CreateRcdoNodePayload, UpdateRcdoNodePayload } from "../../api/rcdoTypes.js";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Flatten tree to find all nodes of a given type (active or draft). */
-function flattenByType(
-  nodes: RcdoTreeNode[],
-  targetType: RcdoNodeType,
-): RcdoTreeNode[] {
+function flattenByType(nodes: RcdoTreeNode[], targetType: RcdoNodeType): RcdoTreeNode[] {
   const result: RcdoTreeNode[] = [];
   function collect(node: RcdoTreeNode) {
-    if (node.nodeType === targetType && node.status !== "ARCHIVED") {
-      result.push(node);
-    }
+    if (node.nodeType === targetType && node.status !== "ARCHIVED") result.push(node);
     node.children.forEach(collect);
   }
   nodes.forEach(collect);
   return result;
 }
 
-/** Returns the parent type required for a given node type, or null for Rally Cries. */
 function requiredParentType(nodeType: RcdoNodeType): RcdoNodeType | null {
   switch (nodeType) {
-    case "RALLY_CRY":
-      return null;
-    case "DEFINING_OBJECTIVE":
-      return "RALLY_CRY";
-    case "OUTCOME":
-      return "DEFINING_OBJECTIVE";
+    case "RALLY_CRY": return null;
+    case "DEFINING_OBJECTIVE": return "RALLY_CRY";
+    case "OUTCOME": return "DEFINING_OBJECTIVE";
   }
 }
 
@@ -49,40 +31,19 @@ const NODE_TYPE_LABELS: Record<RcdoNodeType, string> = {
   OUTCOME: "Outcome",
 };
 
-function mergeDescriptionWithTargetMetric(
-  description: string,
-  targetMetric: string,
-): string | undefined {
+function mergeDescriptionWithTargetMetric(description: string, targetMetric: string): string | undefined {
   const trimmedDescription = description.trim();
   const trimmedTargetMetric = targetMetric.trim();
-
-  if (!trimmedDescription && !trimmedTargetMetric) {
-    return undefined;
-  }
-  if (!trimmedTargetMetric) {
-    return trimmedDescription;
-  }
-  if (!trimmedDescription) {
-    return `Target metric: ${trimmedTargetMetric}`;
-  }
+  if (!trimmedDescription && !trimmedTargetMetric) return undefined;
+  if (!trimmedTargetMetric) return trimmedDescription;
+  if (!trimmedDescription) return `Target metric: ${trimmedTargetMetric}`;
   return `${trimmedDescription}\n\nTarget metric: ${trimmedTargetMetric}`;
 }
 
-// ── Form field shape ──────────────────────────────────────────────────────────
-
 interface FormValues {
-  title: string;
-  description: string;
-  ownerTeamId: string;
-  ownerUserId: string;
-  parentId: string;
-  /** Outcome-only field (UI only; not persisted as a separate column). */
-  targetMetric: string;
+  title: string; description: string; ownerTeamId: string; ownerUserId: string; parentId: string; targetMetric: string;
 }
-
 type FormErrors = Partial<Record<keyof FormValues, string>>;
-
-// ── Props ─────────────────────────────────────────────────────────────────────
 
 interface CreateModeProps {
   readonly mode: "create";
@@ -92,37 +53,27 @@ interface CreateModeProps {
   readonly onSubmit: (payload: CreateRcdoNodePayload) => Promise<void>;
   readonly onCancel: () => void;
 }
-
 interface EditModeProps {
   readonly mode: "edit";
   readonly nodeType: RcdoNodeType;
   readonly status: RcdoNodeStatus;
-  readonly initialValues: {
-    readonly title: string;
-    readonly description?: string;
-    readonly ownerTeamId?: string;
-    readonly ownerUserId?: string;
-  };
+  readonly initialValues: { readonly title: string; readonly description?: string; readonly ownerTeamId?: string; readonly ownerUserId?: string; };
   readonly tree: RcdoTreeNode[];
   readonly onSubmit: (payload: UpdateRcdoNodePayload) => Promise<void>;
   readonly onCancel: () => void;
 }
-
 export type RcdoNodeFormProps = CreateModeProps | EditModeProps;
 
-// ── RcdoNodeForm ──────────────────────────────────────────────────────────────
+const textareaCls = "w-full rounded-default border border-border bg-surface px-3 py-1.5 text-sm resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary";
 
 export function RcdoNodeForm(props: RcdoNodeFormProps) {
   const { nodeType, onCancel } = props;
 
   const [values, setValues] = useState<FormValues>({
     title: props.mode === "edit" ? props.initialValues.title : "",
-    description:
-      props.mode === "edit" ? (props.initialValues.description ?? "") : "",
-    ownerTeamId:
-      props.mode === "edit" ? (props.initialValues.ownerTeamId ?? "") : "",
-    ownerUserId:
-      props.mode === "edit" ? (props.initialValues.ownerUserId ?? "") : "",
+    description: props.mode === "edit" ? (props.initialValues.description ?? "") : "",
+    ownerTeamId: props.mode === "edit" ? (props.initialValues.ownerTeamId ?? "") : "",
+    ownerUserId: props.mode === "edit" ? (props.initialValues.ownerUserId ?? "") : "",
     parentId: props.mode === "create" ? (props.defaultParentId ?? "") : "",
     targetMetric: "",
   });
@@ -135,19 +86,13 @@ export function RcdoNodeForm(props: RcdoNodeFormProps) {
 
   function handleChange(field: keyof FormValues, value: string) {
     setValues((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
   function validate(): boolean {
     const next: FormErrors = {};
-    if (!values.title.trim()) {
-      next.title = "Title is required";
-    }
-    if (props.mode === "create" && parentType && !values.parentId) {
-      next.parentId = `A ${NODE_TYPE_LABELS[parentType]} parent is required`;
-    }
+    if (!values.title.trim()) next.title = "Title is required";
+    if (props.mode === "create" && parentType && !values.parentId) next.parentId = `A ${NODE_TYPE_LABELS[parentType]} parent is required`;
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -155,303 +100,101 @@ export function RcdoNodeForm(props: RcdoNodeFormProps) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-
-    setSubmitting(true);
-    setSubmitError(null);
+    setSubmitting(true); setSubmitError(null);
     try {
-      const mergedDescription = mergeDescriptionWithTargetMetric(
-        values.description,
-        values.targetMetric,
-      );
-
+      const mergedDescription = mergeDescriptionWithTargetMetric(values.description, values.targetMetric);
       if (props.mode === "create") {
-        const payload: CreateRcdoNodePayload = {
+        await props.onSubmit({
           nodeType,
           title: values.title.trim(),
           ...(mergedDescription ? { description: mergedDescription } : {}),
           ...(values.parentId ? { parentId: values.parentId } : {}),
-          ...(values.ownerTeamId.trim()
-            ? { ownerTeamId: values.ownerTeamId.trim() }
-            : {}),
-          ...(values.ownerUserId.trim()
-            ? { ownerUserId: values.ownerUserId.trim() }
-            : {}),
-        };
-        await props.onSubmit(payload);
+          ...(values.ownerTeamId.trim() ? { ownerTeamId: values.ownerTeamId.trim() } : {}),
+          ...(values.ownerUserId.trim() ? { ownerUserId: values.ownerUserId.trim() } : {}),
+        });
       } else {
-        const payload: UpdateRcdoNodePayload = {
+        await props.onSubmit({
           ...(values.title.trim() ? { title: values.title.trim() } : {}),
           ...(mergedDescription ? { description: mergedDescription } : {}),
-          ...(values.ownerTeamId.trim()
-            ? { ownerTeamId: values.ownerTeamId.trim() }
-            : {}),
-          ...(values.ownerUserId.trim()
-            ? { ownerUserId: values.ownerUserId.trim() }
-            : {}),
-        };
-        await props.onSubmit(payload);
+          ...(values.ownerTeamId.trim() ? { ownerTeamId: values.ownerTeamId.trim() } : {}),
+          ...(values.ownerUserId.trim() ? { ownerUserId: values.ownerUserId.trim() } : {}),
+        });
       }
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "An unexpected error occurred",
-      );
+      setSubmitError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSubmitting(false);
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "0.5rem",
-    border: "1px solid var(--color-border)",
-    borderRadius: "var(--border-radius)",
-    fontSize: "inherit",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-  };
-
-  const errorInputStyle: React.CSSProperties = {
-    ...inputStyle,
-    border: "1px solid var(--color-danger)",
-  };
-
-  const fieldStyle: React.CSSProperties = { marginBottom: "1rem" };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    marginBottom: "0.25rem",
-    fontWeight: 600,
-    fontSize: "0.875rem",
-  };
-
-  const errorTextStyle: React.CSSProperties = {
-    color: "var(--color-danger)",
-    fontSize: "0.75rem",
-    marginTop: "0.25rem",
-    display: "block",
-  };
-
   const headingLabel = `${props.mode === "create" ? "Create" : "Edit"} ${NODE_TYPE_LABELS[nodeType]}`;
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      aria-label={headingLabel}
-      data-testid="rcdo-node-form"
-    >
-      <h3 style={{ margin: "0 0 1rem", fontSize: "1.125rem" }}>
-        {headingLabel}
-      </h3>
+    <form onSubmit={handleSubmit} noValidate aria-label={headingLabel} data-testid="rcdo-node-form">
+      <h3 className="m-0 mb-4 text-lg font-semibold">{headingLabel}</h3>
 
-      {/* Read-only status display in edit mode */}
       {props.mode === "edit" && (
-        <div
-          style={{
-            marginBottom: "1rem",
-            fontSize: "0.875rem",
-            color: "var(--color-text-muted)",
-          }}
-        >
-          Status:{" "}
-          <strong style={{ color: "var(--color-text)" }}>{props.status}</strong>
-          <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem" }}>
-            (use Activate / Archive actions to change)
-          </span>
+        <div className="mb-4 text-sm text-muted">
+          Status: <strong className="text-foreground">{props.status}</strong>
+          <span className="ml-2 text-xs">(use Activate / Archive actions to change)</span>
         </div>
       )}
 
-      {/* Parent selector — create mode only, not for Rally Cries */}
+      {/* Parent selector */}
       {props.mode === "create" && parentType && (
-        <div style={fieldStyle}>
-          <label
-            htmlFor="rcdo-form-parent"
-            style={labelStyle}
-          >
-            Parent {NODE_TYPE_LABELS[parentType]}{" "}
-            <span aria-hidden="true" style={{ color: "var(--color-danger)" }}>
-              *
-            </span>
-          </label>
-          <select
+        <div className="mb-4">
+          <Select
             id="rcdo-form-parent"
+            label={`Parent ${NODE_TYPE_LABELS[parentType]} *`}
             value={values.parentId}
             onChange={(e) => handleChange("parentId", e.target.value)}
             aria-required="true"
-            aria-describedby={
-              errors.parentId ? "rcdo-form-parent-error" : undefined
-            }
-            style={errors.parentId ? errorInputStyle : inputStyle}
+            error={errors.parentId}
           >
             <option value="">Select a {NODE_TYPE_LABELS[parentType]}…</option>
-            {validParents.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-          {errors.parentId && (
-            <span id="rcdo-form-parent-error" role="alert" style={errorTextStyle}>
-              {errors.parentId}
-            </span>
-          )}
+            {validParents.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+          </Select>
         </div>
       )}
 
-      {/* Title (required) */}
-      <div style={fieldStyle}>
-        <label htmlFor="rcdo-form-title" style={labelStyle}>
-          Title{" "}
-          <span aria-hidden="true" style={{ color: "var(--color-danger)" }}>
-            *
-          </span>
-        </label>
-        <input
-          id="rcdo-form-title"
-          type="text"
-          value={values.title}
-          onChange={(e) => handleChange("title", e.target.value)}
-          aria-required="true"
-          aria-describedby={
-            errors.title ? "rcdo-form-title-error" : undefined
-          }
-          style={errors.title ? errorInputStyle : inputStyle}
-          placeholder="Enter a clear, concise title"
-        />
-        {errors.title && (
-          <span id="rcdo-form-title-error" role="alert" style={errorTextStyle}>
-            {errors.title}
-          </span>
-        )}
+      {/* Title */}
+      <div className="mb-4">
+        <Input id="rcdo-form-title" label="Title *" type="text" value={values.title} onChange={(e) => handleChange("title", e.target.value)} aria-required="true" error={errors.title} placeholder="Enter a clear, concise title" />
       </div>
 
       {/* Description */}
-      <div style={fieldStyle}>
-        <label htmlFor="rcdo-form-description" style={labelStyle}>
-          Description
-        </label>
-        <textarea
-          id="rcdo-form-description"
-          value={values.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          rows={3}
-          style={{ ...inputStyle, resize: "vertical" }}
-          placeholder="Optional description"
-        />
+      <div className="mb-4 flex flex-col gap-1.5">
+        <label htmlFor="rcdo-form-description" className="text-sm font-medium">Description</label>
+        <textarea id="rcdo-form-description" value={values.description} onChange={(e) => handleChange("description", e.target.value)} rows={3} className={textareaCls} placeholder="Optional description" />
       </div>
 
-      {/* Target Metric — Outcomes only (UI display aid; not a separate backend column) */}
+      {/* Target Metric (Outcomes only) */}
       {nodeType === "OUTCOME" && (
-        <div style={fieldStyle}>
-          <label htmlFor="rcdo-form-target-metric" style={labelStyle}>
-            Target Metric
-          </label>
-          <input
-            id="rcdo-form-target-metric"
-            type="text"
-            value={values.targetMetric}
-            onChange={(e) => handleChange("targetMetric", e.target.value)}
-            style={inputStyle}
-            placeholder="e.g. Increase NPS from 30 to 50"
-          />
-          <span
-            style={{
-              fontSize: "0.75rem",
-              color: "var(--color-text-muted)",
-              marginTop: "0.25rem",
-              display: "block",
-            }}
-          >
-            Displayed as planning context (stored in description when set).
-          </span>
+        <div className="mb-4">
+          <Input id="rcdo-form-target-metric" label="Target Metric" type="text" value={values.targetMetric} onChange={(e) => handleChange("targetMetric", e.target.value)} placeholder="e.g. Increase NPS from 30 to 50" />
+          <p className="mt-1 text-xs text-muted">Displayed as planning context (stored in description when set).</p>
         </div>
       )}
 
-      {/* Owner Team ID */}
-      <div style={fieldStyle}>
-        <label htmlFor="rcdo-form-owner-team" style={labelStyle}>
-          Owner Team
-        </label>
-        <input
-          id="rcdo-form-owner-team"
-          type="text"
-          value={values.ownerTeamId}
-          onChange={(e) => handleChange("ownerTeamId", e.target.value)}
-          style={inputStyle}
-          placeholder="Team ID (optional)"
-        />
+      {/* Owner Team */}
+      <div className="mb-4">
+        <Input id="rcdo-form-owner-team" label="Owner Team" type="text" value={values.ownerTeamId} onChange={(e) => handleChange("ownerTeamId", e.target.value)} placeholder="Team ID (optional)" />
       </div>
 
-      {/* Owner User ID */}
-      <div style={fieldStyle}>
-        <label htmlFor="rcdo-form-owner-user" style={labelStyle}>
-          Owner User
-        </label>
-        <input
-          id="rcdo-form-owner-user"
-          type="text"
-          value={values.ownerUserId}
-          onChange={(e) => handleChange("ownerUserId", e.target.value)}
-          style={inputStyle}
-          placeholder="User ID (optional)"
-        />
+      {/* Owner User */}
+      <div className="mb-4">
+        <Input id="rcdo-form-owner-user" label="Owner User" type="text" value={values.ownerUserId} onChange={(e) => handleChange("ownerUserId", e.target.value)} placeholder="User ID (optional)" />
       </div>
 
-      {/* API error */}
       {submitError && (
-        <div
-          role="alert"
-          style={{
-            color: "var(--color-danger)",
-            marginBottom: "1rem",
-            fontSize: "0.875rem",
-            padding: "0.5rem",
-            background: "#fef2f2",
-            borderRadius: "var(--border-radius)",
-          }}
-        >
-          {submitError}
-        </div>
+        <div role="alert" className="mb-4 rounded-default border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{submitError}</div>
       )}
 
-      {/* Action buttons */}
-      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={submitting}
-          style={{
-            padding: "0.5rem 1rem",
-            border: "1px solid var(--color-border)",
-            borderRadius: "var(--border-radius)",
-            background: "var(--color-surface)",
-            cursor: "pointer",
-            fontSize: "inherit",
-            fontFamily: "inherit",
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{
-            padding: "0.5rem 1rem",
-            border: "none",
-            borderRadius: "var(--border-radius)",
-            background: "var(--color-primary)",
-            color: "#fff",
-            cursor: submitting ? "not-allowed" : "pointer",
-            fontSize: "inherit",
-            fontFamily: "inherit",
-          }}
-        >
-          {submitting
-            ? "Saving…"
-            : props.mode === "create"
-              ? "Create"
-              : "Save changes"}
-        </button>
+      <div className="flex gap-2 justify-end">
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>Cancel</Button>
+        <Button type="submit" variant="primary" disabled={submitting}>
+          {submitting ? "Saving…" : props.mode === "create" ? "Create" : "Save changes"}
+        </Button>
       </div>
     </form>
   );

@@ -118,6 +118,17 @@ export function createPlanApi(client: ApiClient, actorUserId: string) {
 
     // ── Reconciliation ───────────────────────────────────────────────────────
 
+    /**
+     * POST /api/plans/{id}/reconcile/open — transition LOCKED → RECONCILING.
+     * Idempotent; returns the reconciliation view immediately.
+     */
+    openReconciliation: (planId: string): Promise<ReconciliationViewResponse> =>
+      client.post(
+        `/plans/${encodeURIComponent(planId)}/reconcile/open`,
+        {},
+        { headers: actorHeader },
+      ),
+
     /** GET /api/plans/{id}/reconcile — reconciliation view (RECONCILING or RECONCILED). */
     getReconciliationView: (
       planId: string,

@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 
 /** Append-only audit record. Never updated or deleted after creation. */
@@ -40,11 +41,13 @@ public class AuditLog {
 	private UUID entityId;
 
 	/** JSON snapshot of the entity state before the action. */
-	@Column(name = "old_value", updatable = false)
+	@ColumnTransformer(write = "?::jsonb")
+	@Column(name = "old_value", updatable = false, columnDefinition = "jsonb")
 	private String oldValue;
 
 	/** JSON snapshot of the entity state after the action. */
-	@Column(name = "new_value", updatable = false)
+	@ColumnTransformer(write = "?::jsonb")
+	@Column(name = "new_value", updatable = false, columnDefinition = "jsonb")
 	private String newValue;
 
 	@Column(name = "ip_address", updatable = false)

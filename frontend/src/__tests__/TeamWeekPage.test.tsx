@@ -902,7 +902,7 @@ describe("ExceptionQueueSection — exception queue", () => {
     });
     await waitFor(() =>
       expect(mockTeamApi.resolveException).toHaveBeenCalledWith("exc-1", {
-        resolverId: "user-dev-1",
+        resolverId: "00000000-0000-0000-0000-000000000001",
         resolution: "Addressed the issue",
       }),
     );
@@ -965,7 +965,7 @@ describe("ExceptionQueueSection — exception queue", () => {
     });
     await waitFor(() =>
       expect(mockTeamApi.addComment).toHaveBeenCalledWith({
-        managerId: "user-dev-1",
+        managerId: "00000000-0000-0000-0000-000000000001",
         planId: "plan-user-2",
         text: "Manager note here",
       }),

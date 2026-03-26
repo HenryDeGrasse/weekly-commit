@@ -21,7 +21,11 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -33,6 +37,16 @@ public class WeeklyPlanService {
 	private final WeeklyCommitRepository commitRepo;
 	private final ConfigurationService configurationService;
 	private final AuditLogService auditLogService;
+
+	/**
+	 * Self-reference through the Spring proxy so that calls to
+	 * {@link #createPlanInNewTransaction} acquire their own transaction even when
+	 * invoked from within this bean. {@code @Lazy} breaks the circular-dependency
+	 * cycle that would otherwise prevent startup.
+	 */
+	@Autowired
+	@Lazy
+	private WeeklyPlanService self;
 
 	public WeeklyPlanService(WeeklyPlanRepository planRepo, UserAccountRepository userRepo,
 			WeeklyCommitRepository commitRepo, ConfigurationService configurationService,
@@ -49,13 +63,50 @@ public class WeeklyPlanService {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Returns the existing DRAFT plan for the given user+week, or lazily creates
-	 * one. Enforces the one-plan-per-user-per-week invariant via the unique
-	 * constraint in the database; the in-memory check here is an early guard.
+	 * Returns the existing plan for the given user+week, creating one if it does
+	 * not yet exist. Safe under concurrent requests: if two requests race to create
+	 * the same plan simultaneously (e.g. React 18 Strict Mode double-invocation),
+	 * only one INSERT will succeed; the other catches the unique-constraint
+	 * violation and falls back to a fresh SELECT.
+	 *
+	 * <p>
+	 * Runs with {@code NOT_SUPPORTED} propagation so that the find and the create
+	 * each use their own short-lived transactions (via {@link #self}) rather than
+	 * sharing one transaction that would be rolled back on conflict.
 	 */
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	public WeeklyPlan getOrCreatePlan(UUID userId, LocalDate weekStartDate) {
-		return planRepo.findByOwnerUserIdAndWeekStartDate(userId, weekStartDate)
-				.orElseGet(() -> createDraftPlan(userId, weekStartDate));
+		// Fast-path: plan already exists — no write transaction needed.
+		var existing = planRepo.findByOwnerUserIdAndWeekStartDate(userId, weekStartDate);
+		if (existing.isPresent()) {
+			return existing.get();
+		}
+
+		try {
+			// Delegate to a REQUIRES_NEW method (via the Spring proxy) so the
+			// INSERT commits independently before we continue.
+			return self.createPlanInNewTransaction(userId, weekStartDate);
+		} catch (DataIntegrityViolationException ex) {
+			// A concurrent request won the race and already committed the plan.
+			// Do a fresh SELECT — it is now visible in a new read.
+			return planRepo.findByOwnerUserIdAndWeekStartDate(userId, weekStartDate).orElseThrow(
+					() -> new IllegalStateException("Plan not found after duplicate-key violation for user=" + userId
+							+ " week=" + weekStartDate, ex));
+		}
+	}
+
+	/**
+	 * Creates the draft plan in its own brand-new transaction so that the INSERT is
+	 * committed (or rolled back on conflict) before the caller in
+	 * {@link #getOrCreatePlan} sees the result.
+	 *
+	 * <p>
+	 * Must be called through the Spring proxy (i.e. via {@link #self}) for the
+	 * {@code REQUIRES_NEW} propagation to take effect.
+	 */
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public WeeklyPlan createPlanInNewTransaction(UUID userId, LocalDate weekStartDate) {
+		return createDraftPlan(userId, weekStartDate);
 	}
 
 	/**

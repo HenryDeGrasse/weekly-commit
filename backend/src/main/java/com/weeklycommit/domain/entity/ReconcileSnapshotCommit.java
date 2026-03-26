@@ -1,6 +1,7 @@
 package com.weeklycommit.domain.entity;
 
 import com.weeklycommit.domain.enums.CommitOutcome;
+import org.hibernate.annotations.ColumnTransformer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,7 +36,8 @@ public class ReconcileSnapshotCommit {
 	private CommitOutcome outcome;
 
 	@NotBlank
-	@Column(name = "snapshot_data", nullable = false, columnDefinition = "text")
+	@ColumnTransformer(write = "?::jsonb")
+	@Column(name = "snapshot_data", nullable = false, columnDefinition = "jsonb")
 	private String snapshotData;
 
 	public UUID getId() {

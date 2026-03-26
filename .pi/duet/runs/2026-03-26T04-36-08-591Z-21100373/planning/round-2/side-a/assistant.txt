@@ -1,0 +1,19 @@
+The plan is valid JSON and both blocking issues are addressed. Here's a summary of the changes:
+
+### Issue 1: TEAM_INSIGHT rows lack team/week identity
+**Fixed in step-1** by adding:
+- A Flyway migration `V10__add_ai_suggestion_team_week.sql` adding `team_id` and `week_start_date` columns to `ai_suggestion`
+- New fields + getters/setters on the `AiSuggestion` entity
+- An overloaded `AiSuggestionService.storeSuggestion()` accepting `teamId` and `weekStartDate`
+- A new repo method `findByTeamIdAndWeekStartDateAndSuggestionType()`
+
+**Fixed in step-7** by explicitly storing `teamId=teamId` and `weekStartDate=weekStartDate` via the new overload when writing TEAM_INSIGHT rows.
+
+**Fixed in step-8** by querying `findByTeamIdAndWeekStartDateAndSuggestionType(teamId, weekStart, "TEAM_INSIGHT")` in the team insights endpoint.
+
+### Issue 2: No trigger for PERSONAL_INSIGHT generation
+**Fixed in step-5** by adding a hook in `LockService.lockPlan()` that calls `insightGenerationService.generatePersonalInsightsAsync(planId)` after a successful lock (the `@Autowired(required=false)` + null-check pattern keeps tests green until step-7 creates the service).
+
+**Fixed in step-7** by defining two trigger paths:
+1. **On plan lock** — async call from LockService (primary trigger)
+2. **Daily scheduled job** — catches up LOCKED plans that are missing PERSONAL_INSIGHT rows (idempotency check), handling cases where Pinecone/LLM was unavailable at lock time

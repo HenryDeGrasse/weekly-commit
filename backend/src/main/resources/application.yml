@@ -7,10 +7,57 @@ spring:
     password: ${DB_PASSWORD:postgres}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none   # Flyway owns the schema; Hibernate should not re-validate it
     open-in-view: false
   flyway:
     enabled: true
 
 server:
   port: 8080
+
+# ── OpenAPI / Swagger UI ───────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /api-docs               # JSON spec at /api-docs
+  swagger-ui:
+    path: /swagger-ui.html        # UI at /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+# ── Actuator & Observability ───────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# ── Feature Flags ──────────────────────────────────────────────
+app:
+  scheduling:
+    enabled: ${APP_SCHEDULING_ENABLED:true}
+  features:
+    ai-assistance: ${FEATURE_AI_ASSISTANCE:true}
+    notifications: ${FEATURE_NOTIFICATIONS:true}
+
+# ── AI Provider ────────────────────────────────────────────────
+ai:
+  enabled: ${FEATURE_AI_ASSISTANCE:true}
+  provider: ${AI_PROVIDER:openrouter}   # "openrouter" or "stub"
+  openrouter:
+    api-key: ${OPENROUTER_API_KEY:}
+    model: ${OPENROUTER_MODEL:anthropic/claude-sonnet-4-20250514}
+    max-tokens: ${OPENROUTER_MAX_TOKENS:1024}
+    base-url: https://openrouter.ai/api/v1
+  pinecone:
+    api-key: ${PINECONE_API_KEY:}
+    index-name: ${PINECONE_INDEX_NAME:weekly-commit}
+    environment: ${PINECONE_ENVIRONMENT:us-east-1}
+  embedding:
+    model: openai/text-embedding-3-small
+    dimensions: 1536

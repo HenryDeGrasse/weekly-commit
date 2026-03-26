@@ -1,0 +1,231 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Lint ──────────────────────────────────────────────────────
+  lint:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Frontend lint
+        run: npm run lint -w frontend
+
+      - name: Frontend typecheck
+        run: npm run typecheck -w frontend
+
+      - name: Shared typecheck
+        run: npm run typecheck -w @weekly-commit/shared
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Backend spotless check
+        run: cd backend && ./gradlew spotlessCheck
+
+  # ── Frontend Tests ───────────────────────────────────────────
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build shared package
+        run: npm run build -w @weekly-commit/shared
+
+      - name: Run Vitest with coverage
+        run: npx vitest run --coverage --coverage.reporter=text --coverage.reporter=lcov
+        working-directory: frontend
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+
+  # ── Backend Tests ────────────────────────────────────────────
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Run tests
+        run: cd backend && ./gradlew test
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: backend/build/reports/tests/
+
+  # ── Build ────────────────────────────────────────────────────
+  build:
+    name: Build
+    needs: [lint, test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+
+      - name: Build all
+        run: npm run build
+
+  # ── E2E Tests ────────────────────────────────────────────────
+  e2e:
+    name: E2E Tests
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: weekly_commit
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Build shared + frontend
+        run: npm run build -w @weekly-commit/shared && npm run build -w frontend
+
+      - name: Start backend
+        run: |
+          cd backend && ./gradlew bootRun &
+          # Wait for backend to be ready
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/health && break
+            sleep 2
+          done
+
+      - name: Start frontend dev server
+        run: |
+          cd frontend && npx vite preview --port 5173 &
+          sleep 3
+
+      - name: Run E2E tests
+        run: npm run e2e
+
+      - name: Upload traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-traces
+          path: e2e/test-results/
+
+  # ── OpenAPI Contract Verification ────────────────────────────
+  api-contract:
+    name: API Contract Check
+    needs: [test-backend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: weekly_commit
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Start backend and fetch spec
+        run: |
+          cd backend && ./gradlew bootRun &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/api-docs && break
+            sleep 2
+          done
+          curl -sf http://localhost:8080/api-docs > /tmp/openapi.json
+
+      - name: Generate TypeScript types
+        run: npx openapi-typescript /tmp/openapi.json -o /tmp/api-types.ts
+
+      - name: Verify types compile
+        run: npx tsc --noEmit /tmp/api-types.ts --esModuleInterop --moduleResolution node

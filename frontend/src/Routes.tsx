@@ -22,7 +22,7 @@ function RouteFallback() {
     <div
       role="status"
       aria-label="Loading page"
-      style={{ padding: "2rem", textAlign: "center" }}
+      className="py-8 text-center text-sm text-muted"
     >
       Loading…
     </div>

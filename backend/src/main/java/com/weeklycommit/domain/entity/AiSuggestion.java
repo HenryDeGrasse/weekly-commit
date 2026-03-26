@@ -8,7 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
@@ -32,6 +34,12 @@ public class AiSuggestion {
 	@Column(name = "context_hash")
 	private String contextHash;
 
+	@Column(name = "team_id")
+	private UUID teamId;
+
+	@Column(name = "week_start_date")
+	private LocalDate weekStartDate;
+
 	@NotBlank
 	@Column(name = "suggestion_type", nullable = false)
 	private String suggestionType;
@@ -45,7 +53,8 @@ public class AiSuggestion {
 	private String rationale;
 
 	@NotBlank
-	@Column(name = "suggestion_payload", nullable = false, columnDefinition = "text")
+	@ColumnTransformer(write = "?::jsonb")
+	@Column(name = "suggestion_payload", nullable = false, columnDefinition = "jsonb")
 	private String suggestionPayload;
 
 	@NotBlank
@@ -156,6 +165,22 @@ public class AiSuggestion {
 
 	public void setContextHash(String contextHash) {
 		this.contextHash = contextHash;
+	}
+
+	public UUID getTeamId() {
+		return teamId;
+	}
+
+	public void setTeamId(UUID teamId) {
+		this.teamId = teamId;
+	}
+
+	public LocalDate getWeekStartDate() {
+		return weekStartDate;
+	}
+
+	public void setWeekStartDate(LocalDate weekStartDate) {
+		this.weekStartDate = weekStartDate;
 	}
 
 	public Instant getCreatedAt() {

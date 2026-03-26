@@ -1,74 +1,41 @@
 /**
  * PlanHistoryView — week-by-week plan history for the current user.
- *
- * Each row shows: week start, plan state, compliance, commit count,
- * total planned/achieved points, carry-forward count.
- * Clicking a row expands to show full plan detail via linked navigation.
  */
 import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Badge } from "../ui/Badge.js";
+import { Button } from "../ui/Button.js";
 import type { WeeklyPlanHistoryEntry } from "../../api/ticketTypes.js";
 import type { PlanState } from "../../api/planTypes.js";
+import { cn } from "../../lib/utils.js";
 
 export interface PlanHistoryViewProps {
   readonly entries: WeeklyPlanHistoryEntry[];
   readonly loading: boolean;
-  /** Called when user wants to navigate to a historical plan. */
   readonly onViewPlan?: (planId: string, weekStart: string) => void;
 }
 
-const STATE_BADGE_COLORS: Record<
-  PlanState,
-  { background: string; color: string }
-> = {
-  DRAFT: { background: "#fef3c7", color: "#92400e" },
-  LOCKED: { background: "#dbeafe", color: "#1e40af" },
-  RECONCILING: { background: "#fde68a", color: "#78350f" },
-  RECONCILED: { background: "#d1fae5", color: "#065f46" },
+const STATE_VARIANT: Record<PlanState, "draft" | "locked" | "reconciling" | "reconciled"> = {
+  DRAFT: "draft",
+  LOCKED: "locked",
+  RECONCILING: "reconciling",
+  RECONCILED: "reconciled",
 };
-
-function PlanStateBadge({ state }: { readonly state: PlanState }) {
-  const { background, color } = STATE_BADGE_COLORS[state];
-  return (
-    <span
-      style={{
-        padding: "2px 8px",
-        borderRadius: "999px",
-        fontSize: "0.7rem",
-        fontWeight: 700,
-        background,
-        color,
-        display: "inline-block",
-      }}
-    >
-      {state}
-    </span>
-  );
-}
 
 function formatWeekLabel(isoDate: string): string {
   const d = new Date(`${isoDate}T00:00:00`);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function PlanHistoryView({
-  entries,
-  loading,
-  onViewPlan,
-}: PlanHistoryViewProps) {
+const thCls = "px-2.5 py-2 text-left text-[0.7rem] font-bold uppercase tracking-widest text-muted border-b-2 border-border whitespace-nowrap";
+const tdCls = "px-2.5 py-2 text-sm border-b border-border align-middle";
+
+export function PlanHistoryView({ entries, loading, onViewPlan }: PlanHistoryViewProps) {
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
 
   if (loading) {
     return (
-      <div
-        data-testid="plan-history-loading"
-        role="status"
-        aria-label="Loading plan history"
-        style={{ color: "var(--color-text-muted)", fontSize: "0.875rem" }}
-      >
+      <div data-testid="plan-history-loading" role="status" aria-label="Loading plan history" className="text-sm text-muted">
         Loading history…
       </div>
     );
@@ -76,52 +43,29 @@ export function PlanHistoryView({
 
   if (entries.length === 0) {
     return (
-      <div
-        data-testid="plan-history-empty"
-        style={{
-          padding: "1.5rem",
-          textAlign: "center",
-          color: "var(--color-text-muted)",
-          fontSize: "0.9rem",
-        }}
-      >
+      <div data-testid="plan-history-empty" className="py-6 text-center text-sm text-muted">
         No historical plans found.
       </div>
     );
   }
 
-  // Sort chronologically (newest first)
-  const sorted = [...entries].sort(
-    (a, b) =>
-      new Date(b.weekStartDate).getTime() - new Date(a.weekStartDate).getTime(),
-  );
+  const sorted = [...entries].sort((a, b) => new Date(b.weekStartDate).getTime() - new Date(a.weekStartDate).getTime());
 
   return (
-    <section
-      data-testid="plan-history-view"
-      aria-labelledby="plan-history-heading"
-    >
-      <h3
-        id="plan-history-heading"
-        style={{ margin: "0 0 0.75rem", fontSize: "0.95rem", fontWeight: 700 }}
-      >
-        Plan History
-      </h3>
-      <div style={{ overflowX: "auto" }}>
-        <table
-          data-testid="plan-history-table"
-          style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}
-        >
+    <section data-testid="plan-history-view" aria-labelledby="plan-history-heading">
+      <h3 id="plan-history-heading" className="m-0 mb-3 text-sm font-bold">Plan History</h3>
+      <div className="overflow-x-auto">
+        <table data-testid="plan-history-table" className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th style={thStyle}>Week</th>
-              <th style={thStyle}>State</th>
-              <th style={thStyle}>Compliant</th>
-              <th style={thStyle}>Commits</th>
-              <th style={thStyle}>Planned Pts</th>
-              <th style={thStyle}>Achieved Pts</th>
-              <th style={thStyle}>Carry-fwd</th>
-              <th style={thStyle}></th>
+              <th className={thCls}>Week</th>
+              <th className={thCls}>State</th>
+              <th className={thCls}>Compliant</th>
+              <th className={cn(thCls, "text-center")}>Commits</th>
+              <th className={cn(thCls, "text-center")}>Planned Pts</th>
+              <th className={cn(thCls, "text-center")}>Achieved Pts</th>
+              <th className={cn(thCls, "text-center")}>Carry-fwd</th>
+              <th className={thCls}></th>
             </tr>
           </thead>
           <tbody>
@@ -130,142 +74,58 @@ export function PlanHistoryView({
                 <tr
                   key={entry.planId}
                   data-testid={`plan-history-row-${entry.planId}`}
-                  onClick={() =>
-                    setExpandedPlanId(
-                      expandedPlanId === entry.planId ? null : entry.planId,
-                    )
-                  }
-                  style={{
-                    cursor: "pointer",
-                    background:
-                      expandedPlanId === entry.planId
-                        ? "var(--color-background)"
-                        : undefined,
-                  }}
+                  className={cn("cursor-pointer hover:bg-background/60 transition-colors", expandedPlanId === entry.planId && "bg-background")}
+                  onClick={() => setExpandedPlanId(expandedPlanId === entry.planId ? null : entry.planId)}
                 >
-                  <td style={tdStyle}>
-                    <span data-testid={`plan-history-week-${entry.planId}`}>
-                      {formatWeekLabel(entry.weekStartDate)}
-                    </span>
+                  <td className={tdCls}>
+                    <span data-testid={`plan-history-week-${entry.planId}`}>{formatWeekLabel(entry.weekStartDate)}</span>
                   </td>
-                  <td style={tdStyle}>
-                    <PlanStateBadge state={entry.planState} />
+                  <td className={tdCls}>
+                    <Badge variant={STATE_VARIANT[entry.planState]}>{entry.planState}</Badge>
                   </td>
-                  <td style={tdStyle}>
+                  <td className={tdCls}>
                     {entry.compliant ? (
-                      <span
-                        data-testid={`plan-history-compliant-${entry.planId}`}
-                        style={{ color: "var(--color-success)", fontWeight: 700 }}
-                      >
-                        ✓
-                      </span>
+                      <span data-testid={`plan-history-compliant-${entry.planId}`} className="font-bold text-success">✓</span>
                     ) : (
-                      <span
-                        data-testid={`plan-history-noncompliant-${entry.planId}`}
-                        style={{ color: "var(--color-danger)" }}
-                      >
-                        ✗
-                      </span>
+                      <span data-testid={`plan-history-noncompliant-${entry.planId}`} className="text-danger">✗</span>
                     )}
                   </td>
-                  <td
-                    style={{ ...tdStyle, textAlign: "center" }}
-                    data-testid={`plan-history-commits-${entry.planId}`}
-                  >
-                    {entry.commitCount}
-                  </td>
-                  <td
-                    style={{ ...tdStyle, textAlign: "center" }}
-                    data-testid={`plan-history-planned-${entry.planId}`}
-                  >
-                    {entry.plannedPoints}
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: "center" }}>
-                    <span
-                      data-testid={`plan-history-achieved-${entry.planId}`}
-                      style={{
-                        color:
-                          entry.planState === "RECONCILED"
-                            ? "var(--color-success)"
-                            : "var(--color-text-muted)",
-                      }}
-                    >
+                  <td className={cn(tdCls, "text-center")} data-testid={`plan-history-commits-${entry.planId}`}>{entry.commitCount}</td>
+                  <td className={cn(tdCls, "text-center")} data-testid={`plan-history-planned-${entry.planId}`}>{entry.plannedPoints}</td>
+                  <td className={cn(tdCls, "text-center")}>
+                    <span data-testid={`plan-history-achieved-${entry.planId}`} className={entry.planState === "RECONCILED" ? "text-success" : "text-muted"}>
                       {entry.achievedPoints}
                     </span>
                   </td>
-                  <td style={{ ...tdStyle, textAlign: "center" }}>
+                  <td className={cn(tdCls, "text-center")}>
                     {entry.carryForwardCount > 0 ? (
-                      <span
-                        data-testid={`plan-history-cf-${entry.planId}`}
-                        style={{
-                          background: "#fef3c7",
-                          color: "#92400e",
-                          padding: "1px 7px",
-                          borderRadius: "999px",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {entry.carryForwardCount} CF
-                      </span>
+                      <Badge data-testid={`plan-history-cf-${entry.planId}`} variant="draft">{entry.carryForwardCount} CF</Badge>
                     ) : (
-                      <span style={{ color: "var(--color-text-muted)" }}>—</span>
+                      <span className="text-muted">—</span>
                     )}
                   </td>
-                  <td style={{ ...tdStyle, textAlign: "right" }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
-                      {expandedPlanId === entry.planId ? "▲" : "▼"}
-                    </span>
+                  <td className={cn(tdCls, "text-right")}>
+                    {expandedPlanId === entry.planId
+                      ? <ChevronDown className="h-3.5 w-3.5 text-muted inline" />
+                      : <ChevronRight className="h-3.5 w-3.5 text-muted inline" />}
                   </td>
                 </tr>
-
-                {/* Expanded detail row */}
                 {expandedPlanId === entry.planId && (
-                  <tr
-                    key={`${entry.planId}-expanded`}
-                    data-testid={`plan-history-expanded-${entry.planId}`}
-                  >
-                    <td
-                      colSpan={8}
-                      style={{
-                        padding: "0.875rem 1.25rem",
-                        background: "var(--color-background)",
-                        borderBottom: "1px solid var(--color-border)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "1rem",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span style={{ fontSize: "0.85rem" }}>
-                          Week of <strong>{formatWeekLabel(entry.weekStartDate)}</strong>
-                          {" — "}
-                          <strong>{entry.planState}</strong>
+                  <tr key={`${entry.planId}-expanded`} data-testid={`plan-history-expanded-${entry.planId}`}>
+                    <td colSpan={8} className="px-5 py-3 bg-background border-b border-border">
+                      <div className="flex gap-4 items-center flex-wrap">
+                        <span className="text-sm">
+                          Week of <strong>{formatWeekLabel(entry.weekStartDate)}</strong> — <strong>{entry.planState}</strong>
                         </span>
                         {onViewPlan && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewPlan(entry.planId, entry.weekStartDate);
-                            }}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); onViewPlan(entry.planId, entry.weekStartDate); }}
                             data-testid={`plan-history-view-btn-${entry.planId}`}
-                            style={{
-                              padding: "0.3rem 0.75rem",
-                              border: "1px solid var(--color-border)",
-                              borderRadius: "var(--border-radius)",
-                              background: "var(--color-surface)",
-                              cursor: "pointer",
-                              fontFamily: "inherit",
-                              fontSize: "0.8rem",
-                            }}
                           >
                             View Full Plan →
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </td>
@@ -279,22 +139,3 @@ export function PlanHistoryView({
     </section>
   );
 }
-
-const thStyle: React.CSSProperties = {
-  padding: "0.5rem 0.625rem",
-  textAlign: "left",
-  fontSize: "0.75rem",
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "0.04em",
-  color: "var(--color-text-muted)",
-  borderBottom: "2px solid var(--color-border)",
-  whiteSpace: "nowrap",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "0.5rem 0.625rem",
-  fontSize: "0.875rem",
-  borderBottom: "1px solid var(--color-border)",
-  verticalAlign: "middle",
-};

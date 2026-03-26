@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+      Structured logging configuration for Weekly Commit.
+
+      - "default" profile: human-readable console output for local development.
+      - "json" / "production" profile: JSON lines for log aggregation (ELK, Datadog, etc.).
+
+      Activate JSON logging via: SPRING_PROFILES_ACTIVE=json  or  SPRING_PROFILES_ACTIVE=production
+    -->
+
+    <!-- ── Shared properties ─────────────────────────────────────── -->
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="weekly-commit"/>
+
+    <!-- ── Default: human-readable ───────────────────────────────── -->
+    <springProfile name="default,dev">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ── JSON: structured logging for production / staging ──────── -->
+    <springProfile name="json,production,staging">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <includeMdcKeyName>spanId</includeMdcKeyName>
+                <includeMdcKeyName>userId</includeMdcKeyName>
+                <customFields>{"service":"${appName}"}</customFields>
+                <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timestampPattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+        <!-- Reduce noise from frameworks in production -->
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+        <logger name="org.flywaydb" level="INFO"/>
+    </springProfile>
+</configuration>

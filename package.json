@@ -7,10 +7,25 @@
     "packages/shared"
   ],
   "scripts": {
+    "dev": "npm run build -w @weekly-commit/shared && concurrently --kill-others-on-fail -p \"[{name}]\" -n \"backend,frontend\" -c \"blue.bold,green.bold\" \"cd backend && ./gradlew bootRun\" \"npm run dev -w frontend\"",
     "lint": "npm run lint -w frontend && npm run lint -w @weekly-commit/shared && cd backend && ./gradlew spotlessCheck",
     "typecheck": "npm run typecheck -w frontend && npm run typecheck -w @weekly-commit/shared",
     "test": "npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test",
     "unit": "npm run test",
-    "build": "npm run build -w @weekly-commit/shared && npm run build -w frontend && cd backend && ./gradlew build -x test"
+    "build": "npm run build -w @weekly-commit/shared && npm run build -w frontend && cd backend && ./gradlew build -x test",
+    "e2e": "npx playwright test --config=e2e/playwright.config.ts",
+    "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
+    "generate:api-types": "./scripts/generate-api-types.sh",
+    "docker:up": "docker compose up -d",
+    "docker:up:full": "docker compose --profile observability up -d",
+    "docker:down": "docker compose --profile observability down"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "concurrently": "^9.2.1",
+    "jsdom": "^29.0.1"
   }
 }

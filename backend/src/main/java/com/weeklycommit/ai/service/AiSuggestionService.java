@@ -10,6 +10,7 @@ import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
 import java.util.HexFormat;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -65,6 +66,37 @@ public class AiSuggestionService {
 		s.setRationale(result.rationale());
 		s.setSuggestionPayload(result.payload());
 		s.setModelVersion(result.modelVersion());
+		return suggestionRepo.save(s);
+	}
+
+	/**
+	 * Overloaded variant that additionally stamps {@code teamId} and
+	 * {@code weekStartDate} on the persisted record. Intended for TEAM_INSIGHT and
+	 * PERSONAL_INSIGHT rows that need to be queried by team + week.
+	 *
+	 * @param suggestionType
+	 *            type discriminator
+	 * @param userId
+	 *            requesting user
+	 * @param planId
+	 *            associated plan, may be null
+	 * @param commitId
+	 *            associated commit, may be null
+	 * @param contextString
+	 *            the serialised context used to produce the suggestion
+	 * @param result
+	 *            the provider result
+	 * @param teamId
+	 *            team scope, may be null
+	 * @param weekStartDate
+	 *            ISO week start (Monday), may be null
+	 * @return the persisted {@link AiSuggestion}
+	 */
+	public AiSuggestion storeSuggestion(String suggestionType, UUID userId, UUID planId, UUID commitId,
+			String contextString, AiSuggestionResult result, UUID teamId, LocalDate weekStartDate) {
+		AiSuggestion s = storeSuggestion(suggestionType, userId, planId, commitId, contextString, result);
+		s.setTeamId(teamId);
+		s.setWeekStartDate(weekStartDate);
 		return suggestionRepo.save(s);
 	}
 

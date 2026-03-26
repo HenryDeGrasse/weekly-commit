@@ -9,10 +9,17 @@
  *   - AI lint placeholder always rendered
  *   - Loading state
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { MockHostProvider } from "../host/MockHostProvider.js";
 import { PreLockValidationPanel } from "../components/lock/PreLockValidationPanel.js";
 import type { LockValidationError, CommitResponse } from "../api/planTypes.js";
+
+// Mock the AI hooks so they don't make real API calls
+vi.mock("../api/aiHooks.js", () => ({
+  useAiApi: vi.fn(() => ({ commitLint: vi.fn(), getStatus: vi.fn() })),
+  useAiStatus: vi.fn(() => ({ data: { available: false, providerName: "stub" }, loading: false, error: null })),
+}));
 
 function makeCommit(
   id: string,
@@ -42,14 +49,17 @@ const twoCommits: CommitResponse[] = [
   makeCommit("c-2", { chessPiece: "PAWN", estimatePoints: 2, rcdoNodeId: "r2" }),
 ];
 
+function renderPanel(props: { errors: LockValidationError[]; commits: CommitResponse[]; isLoading?: boolean }) {
+  return render(
+    <MockHostProvider>
+      <PreLockValidationPanel {...props} />
+    </MockHostProvider>,
+  );
+}
+
 describe("PreLockValidationPanel", () => {
   it("shows all-clear state when no errors and no warnings", () => {
-    render(
-      <PreLockValidationPanel
-        errors={[]}
-        commits={twoCommits}
-      />,
-    );
+    renderPanel({ errors: [], commits: twoCommits });
     expect(screen.getByTestId("pre-lock-validation-panel")).toBeInTheDocument();
     expect(screen.getByTestId("pre-lock-validation-ok")).toBeInTheDocument();
     expect(screen.queryByTestId("pre-lock-hard-errors")).not.toBeInTheDocument();
@@ -57,13 +67,7 @@ describe("PreLockValidationPanel", () => {
   });
 
   it("shows loading state when isLoading=true", () => {
-    render(
-      <PreLockValidationPanel
-        errors={[]}
-        commits={[]}
-        isLoading
-      />,
-    );
+    renderPanel({ errors: [], commits: [], isLoading: true });
     expect(screen.getByTestId("pre-lock-validation-loading")).toBeInTheDocument();
     expect(screen.queryByTestId("pre-lock-validation-ok")).not.toBeInTheDocument();
   });
@@ -73,7 +77,7 @@ describe("PreLockValidationPanel", () => {
       { field: "commit[c-1].rcdoNodeId", message: "Primary RCDO link is required" },
       { field: "commit[c-2].estimatePoints", message: "Estimate points are required" },
     ];
-    render(<PreLockValidationPanel errors={errors} commits={twoCommits} />);
+    render(<MockHostProvider><PreLockValidationPanel errors={errors} commits={twoCommits} /></MockHostProvider>);
 
     expect(screen.getByTestId("pre-lock-hard-errors")).toBeInTheDocument();
     const errorItems = screen.getAllByTestId("hard-error-item");
@@ -86,7 +90,7 @@ describe("PreLockValidationPanel", () => {
     const errors: LockValidationError[] = [
       { field: "commits", message: "At least one commit is required" },
     ];
-    render(<PreLockValidationPanel errors={errors} commits={[]} />);
+    render(<MockHostProvider><PreLockValidationPanel errors={errors} commits={[]} /></MockHostProvider>);
     expect(screen.queryByTestId("pre-lock-validation-ok")).not.toBeInTheDocument();
   });
 
@@ -94,7 +98,7 @@ describe("PreLockValidationPanel", () => {
     const manyCommits = Array.from({ length: 9 }, (_, i) =>
       makeCommit(`c-${i}`, { rcdoNodeId: `r${i}`, estimatePoints: 1 }),
     );
-    render(<PreLockValidationPanel errors={[]} commits={manyCommits} />);
+    render(<MockHostProvider><PreLockValidationPanel errors={[]} commits={manyCommits} /></MockHostProvider>);
     expect(screen.getByTestId("pre-lock-soft-warnings")).toBeInTheDocument();
     const items = screen.getAllByTestId("soft-warning-item");
     expect(items.some((el) => el.textContent?.includes("9 commits"))).toBe(true);
@@ -110,7 +114,7 @@ describe("PreLockValidationPanel", () => {
       }),
       makeCommit("c-2", { chessPiece: "PAWN", estimatePoints: 8, rcdoNodeId: "r2" }),
     ];
-    render(<PreLockValidationPanel errors={[]} commits={commits} />);
+    render(<MockHostProvider><PreLockValidationPanel errors={[]} commits={commits} /></MockHostProvider>);
     expect(screen.getByTestId("pre-lock-soft-warnings")).toBeInTheDocument();
     const items = screen.getAllByTestId("soft-warning-item");
     expect(items.some((el) => el.textContent?.includes("80%"))).toBe(true);
@@ -120,14 +124,15 @@ describe("PreLockValidationPanel", () => {
     const commits: CommitResponse[] = [
       makeCommit("c-1", { chessPiece: "KING", estimatePoints: 3 }), // no rcdoNodeId
     ];
-    render(<PreLockValidationPanel errors={[]} commits={commits} />);
+    render(<MockHostProvider><PreLockValidationPanel errors={[]} commits={commits} /></MockHostProvider>);
     expect(screen.getByTestId("pre-lock-hard-errors")).toBeInTheDocument();
     expect(screen.getByText(/Primary RCDO link is required at lock time/)).toBeInTheDocument();
   });
 
-  it("always renders the AI lint placeholder", () => {
-    render(<PreLockValidationPanel errors={[]} commits={twoCommits} />);
-    expect(screen.getByTestId("pre-lock-ai-lint-placeholder")).toBeInTheDocument();
+  it("renders the AI lint panel when commits exist", () => {
+    renderPanel({ errors: [], commits: twoCommits });
+    // AI status is mocked as unavailable, so the unavailable state should show
+    expect(screen.getByTestId("ai-lint-unavailable")).toBeInTheDocument();
   });
 
   it("renders both hard errors and soft warnings simultaneously", () => {
@@ -137,7 +142,7 @@ describe("PreLockValidationPanel", () => {
     const commits = Array.from({ length: 9 }, (_, i) =>
       makeCommit(`c-${i}`, { rcdoNodeId: `r${i}`, estimatePoints: 1 }),
     );
-    render(<PreLockValidationPanel errors={errors} commits={commits} />);
+    render(<MockHostProvider><PreLockValidationPanel errors={errors} commits={commits} /></MockHostProvider>);
     expect(screen.getByTestId("pre-lock-hard-errors")).toBeInTheDocument();
     expect(screen.getByTestId("pre-lock-soft-warnings")).toBeInTheDocument();
   });

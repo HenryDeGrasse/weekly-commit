@@ -1,47 +1,17 @@
 /**
  * OutcomeSelector — per-commit outcome radio control.
- *
- * Outcomes: ACHIEVED (green), PARTIALLY_ACHIEVED (yellow),
- *           NOT_ACHIEVED (red), CANCELED (gray).
  */
+import { cn } from "../../lib/utils.js";
 import type { CommitOutcome } from "../../api/planTypes.js";
 
-const OUTCOME_CONFIG: Record<
-  CommitOutcome,
-  { label: string; emoji: string; bg: string; color: string }
-> = {
-  ACHIEVED: {
-    label: "Achieved",
-    emoji: "✅",
-    bg: "#f0fdf4",
-    color: "#15803d",
-  },
-  PARTIALLY_ACHIEVED: {
-    label: "Partially Achieved",
-    emoji: "🟡",
-    bg: "#fffbeb",
-    color: "#92400e",
-  },
-  NOT_ACHIEVED: {
-    label: "Not Achieved",
-    emoji: "❌",
-    bg: "#fef2f2",
-    color: "#991b1b",
-  },
-  CANCELED: {
-    label: "Canceled",
-    emoji: "🚫",
-    bg: "#f3f4f6",
-    color: "#374151",
-  },
+const OUTCOME_CONFIG: Record<CommitOutcome, { label: string; emoji: string; selectedCls: string; selectedBorderCls: string }> = {
+  ACHIEVED:           { label: "Achieved",           emoji: "✅", selectedCls: "bg-emerald-50 text-emerald-800", selectedBorderCls: "border-emerald-600" },
+  PARTIALLY_ACHIEVED: { label: "Partially Achieved", emoji: "🟡", selectedCls: "bg-amber-50 text-amber-800",   selectedBorderCls: "border-amber-500" },
+  NOT_ACHIEVED:       { label: "Not Achieved",       emoji: "❌", selectedCls: "bg-red-50 text-red-800",       selectedBorderCls: "border-red-600" },
+  CANCELED:           { label: "Canceled",           emoji: "🚫", selectedCls: "bg-slate-100 text-slate-700",  selectedBorderCls: "border-slate-400" },
 };
 
-const ALL_OUTCOMES: CommitOutcome[] = [
-  "ACHIEVED",
-  "PARTIALLY_ACHIEVED",
-  "NOT_ACHIEVED",
-  "CANCELED",
-];
+const ALL_OUTCOMES: CommitOutcome[] = ["ACHIEVED", "PARTIALLY_ACHIEVED", "NOT_ACHIEVED", "CANCELED"];
 
 export interface OutcomeSelectorProps {
   readonly commitId: string;
@@ -50,36 +20,11 @@ export interface OutcomeSelectorProps {
   readonly disabled?: boolean;
 }
 
-export function OutcomeSelector({
-  commitId,
-  value,
-  onChange,
-  disabled = false,
-}: OutcomeSelectorProps) {
+export function OutcomeSelector({ commitId, value, onChange, disabled = false }: OutcomeSelectorProps) {
   return (
-    <fieldset
-      style={{ border: "none", padding: 0, margin: 0 }}
-      data-testid={`outcome-selector-${commitId}`}
-    >
-      <legend
-        style={{
-          fontSize: "0.75rem",
-          fontWeight: 600,
-          color: "var(--color-text-muted)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          marginBottom: "0.375rem",
-        }}
-      >
-        Outcome
-      </legend>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.375rem",
-          flexWrap: "wrap",
-        }}
-      >
+    <fieldset className="border-0 p-0 m-0" data-testid={`outcome-selector-${commitId}`}>
+      <legend className="text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">Outcome</legend>
+      <div className="flex gap-1.5 flex-wrap">
         {ALL_OUTCOMES.map((outcome) => {
           const config = OUTCOME_CONFIG[outcome];
           const isSelected = value === outcome;
@@ -87,21 +32,11 @@ export function OutcomeSelector({
             <label
               key={outcome}
               data-testid={`outcome-option-${commitId}-${outcome.toLowerCase()}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.25rem",
-                padding: "4px 10px",
-                borderRadius: "999px",
-                border: `2px solid ${isSelected ? config.color : "var(--color-border)"}`,
-                background: isSelected ? config.bg : "transparent",
-                cursor: disabled ? "not-allowed" : "pointer",
-                opacity: disabled ? 0.6 : 1,
-                fontSize: "0.8rem",
-                fontWeight: isSelected ? 700 : 400,
-                color: isSelected ? config.color : "var(--color-text)",
-                transition: "all 0.1s",
-              }}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-full border-2 text-xs font-medium cursor-pointer transition-all select-none",
+                isSelected ? `${config.selectedCls} ${config.selectedBorderCls} font-semibold` : "border-border text-foreground hover:bg-muted/10",
+                disabled && "cursor-not-allowed opacity-60",
+              )}
             >
               <input
                 type="radio"
@@ -110,7 +45,7 @@ export function OutcomeSelector({
                 checked={isSelected}
                 onChange={() => !disabled && onChange(outcome)}
                 disabled={disabled}
-                style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                className="absolute opacity-0 pointer-events-none"
               />
               <span aria-hidden="true">{config.emoji}</span>
               {config.label}

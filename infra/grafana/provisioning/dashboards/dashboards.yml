@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: "Weekly Commit"
+    orgId: 1
+    folder: "Weekly Commit"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
+      foldersFromFilesStructure: false

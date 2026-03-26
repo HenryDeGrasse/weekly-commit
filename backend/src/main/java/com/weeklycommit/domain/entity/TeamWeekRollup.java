@@ -1,5 +1,6 @@
 package com.weeklycommit.domain.entity;
 
+import org.hibernate.annotations.ColumnTransformer;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -55,6 +56,7 @@ public class TeamWeekRollup {
 	private double avgCarryForwardRate;
 
 	/** JSON string — map of chess-piece name → count. */
+	@ColumnTransformer(write = "?::jsonb")
 	@Column(name = "chess_distribution", columnDefinition = "jsonb")
 	private String chessDistribution;
 

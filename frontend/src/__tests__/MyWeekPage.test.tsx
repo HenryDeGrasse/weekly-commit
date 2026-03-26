@@ -34,8 +34,15 @@ vi.mock("../api/rcdoHooks.js", () => ({
   useRcdoApi: vi.fn(),
 }));
 
+vi.mock("../api/ticketHooks.js", () => ({
+  usePlanHistory: vi.fn(() => ({ data: null, loading: false })),
+  useCarryForwardLineage: vi.fn(() => ({ data: null, loading: false })),
+  useTicketApi: vi.fn(() => ({ createTicket: vi.fn() })),
+}));
+
 import { useCurrentPlan, usePlanApi } from "../api/planHooks.js";
 import { useRcdoTree } from "../api/rcdoHooks.js";
+import { usePlanHistory } from "../api/ticketHooks.js";
 import MyWeek from "../routes/MyWeek.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -456,5 +463,124 @@ describe("MyWeekPage — soft warnings", () => {
     renderPage();
     expect(screen.getByTestId("warning-pawn-heavy")).toBeInTheDocument();
     expect(screen.getByTestId("warning-pawn-heavy")).toHaveTextContent("80%");
+  });
+});
+
+// ── Tests: system-locked banner ───────────────────────────────────────────────
+
+describe("MyWeekPage — system-locked banner", () => {
+  it("shows auto-lock banner when systemLockedWithErrors is true", () => {
+    vi.mocked(useCurrentPlan).mockReturnValue(
+      makePlanState({ ...LOCKED_PLAN, systemLockedWithErrors: true }, twoCommits),
+    );
+    renderPage();
+    expect(screen.getByTestId("auto-lock-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("auto-lock-banner")).toHaveTextContent("System-locked with errors");
+  });
+
+  it("does NOT show auto-lock banner when systemLockedWithErrors is false", () => {
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(LOCKED_PLAN, twoCommits));
+    renderPage();
+    expect(screen.queryByTestId("auto-lock-banner")).not.toBeInTheDocument();
+  });
+});
+
+// ── Tests: post-lock add commit ───────────────────────────────────────────────
+
+describe("MyWeekPage — post-lock add commit", () => {
+  it("shows post-lock Add Commit button in LOCKED state", () => {
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(LOCKED_PLAN, twoCommits));
+    renderPage();
+    expect(screen.getByTestId("post-lock-add-commit-btn")).toBeInTheDocument();
+  });
+
+  it("opens CommitForm when post-lock Add Commit is clicked", () => {
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(LOCKED_PLAN, twoCommits));
+    renderPage();
+    fireEvent.click(screen.getByTestId("post-lock-add-commit-btn"));
+    expect(screen.getByTestId("commit-form-modal")).toBeInTheDocument();
+  });
+});
+
+// ── Tests: delete confirm dialog ──────────────────────────────────────────────
+
+describe("MyWeekPage — delete flow", () => {
+  it("opens delete confirm dialog when delete is clicked on a commit", () => {
+    renderPage();
+    // Expand commit detail to access delete button
+    fireEvent.click(screen.getByTestId("delete-commit-c-1"));
+    expect(screen.getByTestId("delete-confirm-dialog")).toBeInTheDocument();
+  });
+
+  it("calls deleteCommit when delete is confirmed", async () => {
+    mockPlanApi.deleteCommit.mockResolvedValue(undefined);
+    renderPage();
+    fireEvent.click(screen.getByTestId("delete-commit-c-1"));
+    fireEvent.click(screen.getByTestId("delete-confirm-btn"));
+    await waitFor(() =>
+      expect(mockPlanApi.deleteCommit).toHaveBeenCalledWith("plan-1", "c-1"),
+    );
+  });
+
+  it("closes delete dialog when cancel is clicked", () => {
+    renderPage();
+    fireEvent.click(screen.getByTestId("delete-commit-c-1"));
+    expect(screen.getByTestId("delete-confirm-dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByTestId("delete-confirm-dialog")).not.toBeInTheDocument();
+  });
+});
+
+// ── Tests: plan history toggle ────────────────────────────────────────────────
+
+describe("MyWeekPage — plan history", () => {
+  it("shows plan history section with toggle button", () => {
+    renderPage();
+    expect(screen.getByTestId("toggle-plan-history-btn")).toBeInTheDocument();
+    expect(screen.getByTestId("toggle-plan-history-btn")).toHaveTextContent("Show history");
+  });
+
+  it("toggles history visibility on button click", () => {
+    vi.mocked(usePlanHistory).mockReturnValue({
+      data: [],
+      loading: false,
+    } as ReturnType<typeof usePlanHistory>);
+    renderPage();
+    fireEvent.click(screen.getByTestId("toggle-plan-history-btn"));
+    expect(screen.getByTestId("toggle-plan-history-btn")).toHaveTextContent("Hide");
+  });
+});
+
+// ── Tests: lock validation errors from API ────────────────────────────────────
+
+describe("MyWeekPage — lock validation failure", () => {
+  it("shows validation errors when lock API returns success=false", async () => {
+    mockPlanApi.lockPlan.mockResolvedValue({
+      success: false,
+      errors: [{ field: "commits", message: "At least one commit is required" }],
+    });
+    renderPage();
+    // Open lock flow
+    fireEvent.click(screen.getByTestId("lock-plan-btn"));
+    await waitFor(() =>
+      expect(screen.getByTestId("pre-lock-continue-btn")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId("pre-lock-continue-btn"));
+    // Confirm in dialog
+    fireEvent.click(screen.getByTestId("lock-confirm-btn"));
+    // The error should be shown back in the validation panel
+    await waitFor(() =>
+      expect(screen.getByTestId("pre-lock-hard-errors")).toBeInTheDocument(),
+    );
+  });
+});
+
+// ── Tests: scope change timeline ──────────────────────────────────────────────
+
+describe("MyWeekPage — scope change timeline", () => {
+  it("shows load-timeline button in LOCKED state", () => {
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(LOCKED_PLAN, twoCommits));
+    renderPage();
+    expect(screen.getByTestId("load-scope-timeline-btn")).toBeInTheDocument();
   });
 });

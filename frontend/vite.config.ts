@@ -1,10 +1,21 @@
 /// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import federation from "@originjs/vite-plugin-federation";
 
 export default defineConfig({
+  server: {
+    proxy: {
+      // Proxy /api calls to the Spring Boot backend during `vite dev`
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
+    tailwindcss(),
     react(),
     federation({
       name: "weeklyCommit",
