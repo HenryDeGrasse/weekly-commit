@@ -1,0 +1,29 @@
+All 28 tests pass. Here's a summary of what was done:
+
+## Summary
+
+### Files created
+
+**`PineconeClient.java`** (`backend/src/main/java/com/weeklycommit/ai/rag/PineconeClient.java`):
+- Spring `@Service` injecting `@Value` bindings for `ai.pinecone.api-key`, `ai.pinecone.index-name`, `ai.pinecone.environment`, and `ObjectMapper`
+- Two constructors: Spring-managed (creates its own `HttpClient`) and package-private (accepts injected `HttpClient` for tests)
+- `isAvailable()` returns false for blank API key
+- `ensureIndexExists()` — lazy: GETs control-plane `/indexes/{name}`, creates serverless index (1536-dim, dotproduct) on 404, stores resolved `indexHost`
+- `upsert(namespace, vectors)` — POSTs to `{indexHost}/vectors/upsert`
+- `query(namespace, vector, topK, filter)` — POSTs to `{indexHost}/query`, returns `List<PineconeMatch>`
+- `deleteByIds(namespace, ids)` — POSTs to `{indexHost}/vectors/delete`
+- Inner records: `PineconeVector(id, values, metadata)` and `PineconeMatch(id, score, metadata)`
+- All methods catch/log and return gracefully on any error
+- Uses Pinecone `Api-Key` header (not Bearer)
+
+**`PineconeClientTest.java`** (`backend/src/test/java/com/weeklycommit/ai/rag/PineconeClientTest.java`):
+- 28 tests covering: `isAvailable`, blank-key no-ops for all three data methods, upsert request body/URL/headers, query request body/response parsing/error paths, deleteByIds request body/URL, and all `ensureIndexExists` paths (already resolved, blank key, found, 404→create, network error)
+- Uses mock `HttpResponse` objects (not the shared `@Mock` field) for stateful tests to avoid Mockito unnecessary-stubbing violations
+
+### Fixes applied during implementation
+1. Removed `body()` stubs for upsert/deleteByIds tests with HTTP 200 (production code never reads body on success path)
+2. Replaced shared `@Mock HttpResponse` with per-call `Mockito.mock()` instances in the stateful `ensureIndexExists` tests
+3. Removed `notFoundResp.body()` stub (404 path never reads response body)
+4. Ran `spotlessApply` to fix Eclipse JDT formatting on the switch expression
+
+Verdict: changes_made

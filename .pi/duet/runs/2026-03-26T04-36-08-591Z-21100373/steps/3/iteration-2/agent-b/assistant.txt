@@ -1,0 +1,33 @@
+Reviewed the Step 3 diff in:
+
+- `backend/src/main/java/com/weeklycommit/ai/rag/PineconeClient.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/PineconeClientTest.java`
+
+What I verified:
+- Spring `@Service` with injected Pinecone config
+- `HttpClient` + `ObjectMapper` usage
+- `isAvailable()` behavior
+- lazy `ensureIndexExists()`
+- `upsert`, `query`, `deleteByIds` graceful error handling
+- unit coverage and required checks
+
+Material defects found and fixed:
+1. `query()` was calling `/{indexHost}/query` instead of the step-required `/{indexHost}/vectors/query`
+2. `ensureIndexExists()` stores `indexHost` as a URL, but `dataRequest()` always prepended `https://`, which could produce malformed URLs like `https://https://...` on real runtime paths
+
+Changes made:
+- Updated `backend/src/main/java/com/weeklycommit/ai/rag/PineconeClient.java`
+  - changed query endpoint to `/vectors/query`
+  - made `dataRequest()` accept either a raw host or a host URL without double-prefixing the scheme
+- Updated `backend/src/test/java/com/weeklycommit/ai/rag/PineconeClientTest.java`
+  - adjusted endpoint expectation for query
+  - added coverage for resolved hosts that already include `https://`
+
+Checks run:
+- `cd backend && ./gradlew test build` ✅
+
+Assessment:
+- Step 3 is now aligned with the stated requirements
+- No remaining material issues found in this step
+
+Verdict: changes_made
