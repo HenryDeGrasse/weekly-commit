@@ -1,0 +1,23 @@
+All 642 tests across 38 test files pass, and typecheck is clean. Here's a summary:
+
+## Summary
+
+### `frontend/src/components/ai/SemanticSearchInput.tsx` (new file)
+
+- Props: `teamId?: string`, `userId?: string`, optional `className`
+- Contains a text `Input` (with `Search` icon) and a submit `Button`, wrapped in a `<form>`
+- On submit: trims the question, skips if blank, calls `useSemanticQuery().mutate(question, teamId, userId)`
+- **Loading state**: shows `semantic-search-loading` div with pulse animation and "Searching…" text; input and button are disabled
+- **Error state**: shows `semantic-search-error` alert with the error message and a `semantic-search-retry` button that re-triggers the last query
+- **Answer display**: when `data.aiAvailable && data.answer`, renders `QueryAnswerCard` below the input
+- **AI unavailable state**: shows `semantic-search-unavailable` message
+- Uses `Bot` icon for AI branding, `Search` icon on input and button, `RotateCcw` on retry
+- `data-testid` on all key elements as specified
+
+### `frontend/src/__tests__/SemanticSearchInput.test.tsx` (new file)
+
+- 17 tests covering: renders input & submit, disabled state on empty/whitespace, mutation called with correct args (incl. teamId/userId), loading state (indicator shown, input disabled), error state (message shown, retry button), answer display (QueryAnswerCard rendered, AI unavailable message, no card before first query), feedback buttons inside answer card
+- Mocks `ragHooks.js` (`useSemanticQuery`) and `aiHooks.js` (for `AiFeedbackButtons`)
+- Uses `import * as ragHooks` with `vi.mocked(ragHooks.useSemanticQuery).mockReturnValue(...)` pattern for per-test state override (avoids the `await import` in non-async context error)
+
+Verdict: changes_made
