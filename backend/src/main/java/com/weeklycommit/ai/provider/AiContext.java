@@ -45,4 +45,10 @@ public record AiContext(
 
 	/** Suggestion type constant — team manager AI summary. */
 	public static final String TYPE_TEAM_SUMMARY = "TEAM_SUMMARY";
+
+	/** Suggestion type constant — RAG intent classification. */
+	public static final String TYPE_RAG_INTENT = "RAG_INTENT";
+
+	/** Suggestion type constant — RAG answer generation. */
+	public static final String TYPE_RAG_QUERY = "RAG_QUERY";
 }

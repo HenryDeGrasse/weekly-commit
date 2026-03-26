@@ -112,6 +112,28 @@ public class StubAiProvider implements AiProvider {
 						""";
 				rationale = "Generated from team plan data for the requested week.";
 			}
+			case AiContext.TYPE_RAG_INTENT -> {
+				payload = """
+						{
+						  "intent": "status_query",
+						  "userFilter": "team",
+						  "entityTypes": ["commit", "plan_summary"],
+						  "timeRange": null,
+						  "keywords": ["weekly", "commit", "plan"]
+						}
+						""";
+				rationale = "Intent classified as a general status query over commits and plans.";
+			}
+			case AiContext.TYPE_RAG_QUERY -> {
+				payload = """
+						{
+						  "answer": "Based on the retrieved planning data, the team is making steady progress.",
+						  "sources": [],
+						  "confidence": 0.85
+						}
+						""";
+				rationale = "Answer generated from retrieved context chunks.";
+			}
 			default -> {
 				payload = "{}";
 				rationale = "Unknown suggestion type.";

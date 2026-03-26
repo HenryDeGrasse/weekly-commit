@@ -221,6 +221,8 @@ public class OpenRouterAiProvider implements AiProvider {
 			case AiContext.TYPE_RISK_SIGNAL -> "risk-signal.txt";
 			case AiContext.TYPE_RECONCILE_ASSIST -> "reconcile-assist.txt";
 			case AiContext.TYPE_TEAM_SUMMARY -> "team-summary.txt";
+			case AiContext.TYPE_RAG_INTENT -> "rag-intent.txt";
+			case AiContext.TYPE_RAG_QUERY -> "rag-query.txt";
 			default -> "generic.txt";
 		};
 		try {

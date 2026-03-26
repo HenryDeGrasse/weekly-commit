@@ -1,0 +1,43 @@
+Reviewed the Step 6 diff in:
+
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticQueryService.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/SemanticQueryServiceTest.java`
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiContext.java`
+- `backend/src/main/java/com/weeklycommit/ai/provider/StubAiProvider.java`
+- `backend/src/main/resources/prompts/rag-intent.txt`
+- `backend/src/main/resources/prompts/rag-query.txt`
+
+I also checked supporting integration points in:
+- `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticIndexService.java`
+
+Material defects found and fixed:
+1. `OpenRouterAiProvider` did not route `RAG_INTENT` / `RAG_QUERY` to the new prompt templates, so production would fall back to `generic.txt`.
+2. `rag-intent.txt` and the stub intent response were missing the required `userFilter` field from the step contract.
+3. `SemanticQueryService` parsed only part of the intent payload and ignored `userFilter` / `timeRange` when building the Pinecone filter.
+4. The RAG pipeline had no retrieved chunk text available to the answer-generation step; vectors were being stored without chunk text in metadata.
+
+Changes made:
+- Updated `OpenRouterAiProvider.java`
+  - added prompt-template routing for `TYPE_RAG_INTENT` and `TYPE_RAG_QUERY`
+- Updated `rag-intent.txt`
+  - added `userFilter` to the required JSON schema and rules
+- Updated `StubAiProvider.java`
+  - added `userFilter` to canned `RAG_INTENT` output
+- Updated `SemanticQueryService.java`
+  - now parses `intent`, `userFilter`, `entityTypes`, `timeRange`, and `keywords`
+  - now applies `userFilter=self` to `userId`
+  - now applies `timeRange` to `weekStartDate` filter
+- Updated `SemanticQueryServiceTest.java`
+  - added coverage verifying `userId` and date-range filters are sent to Pinecone
+- Updated `SemanticIndexService.java`
+  - stores chunk text in Pinecone metadata so RAG answer generation receives actual retrieved content, not just IDs/metadata tags
+
+Checks run:
+- `cd backend && ./gradlew test build` ✅
+
+Assessment:
+- Step 6 is now aligned with the stated requirements
+- No remaining material issues found in this step after the fixes
+
+Verdict: changes_made

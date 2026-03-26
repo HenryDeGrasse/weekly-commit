@@ -340,6 +340,7 @@ public class SemanticIndexService {
 			return;
 		}
 		Map<String, Object> meta = new HashMap<>(chunk.metadata());
+		meta.put("text", chunk.text());
 		pineconeClient.upsert(namespace, List.of(new PineconeClient.PineconeVector(chunk.id(), embedding, meta)));
 	}
 }
