@@ -1,0 +1,44 @@
+The implementation is complete and correct. Here's a summary of what was done:
+
+---
+
+## What was reviewed and changed
+
+### Files Modified
+
+**1. `frontend/src/components/ai/AiLintPanel.tsx`**
+- Added `autoRun?: boolean` prop (default `false` for backward compatibility)
+- Added `useEffect` that calls `runLint()` on mount and whenever `planId` changes, guarded by `isAvailable` to avoid wasted requests when AI is down
+- When `autoRun=true` and lint hasn't run yet, returns `null` instead of the button (prevents flash of a button that immediately disappears)
+- The manual refresh button inside the results view is unchanged
+
+**2. `frontend/src/components/lock/PreLockValidationPanel.tsx`**
+- Changed `<AiLintPanel planId={planId} userId={userId} />` to `<AiLintPanel planId={planId} userId={userId} autoRun />`
+- Lint now fires the moment the pre-lock panel opens
+
+**3. `frontend/src/routes/MyWeek.tsx`**
+- Added import of `AiLintPanel`
+- Added inline `<AiLintPanel planId={plan.id} userId={currentUserId} autoRun />` in a `<div data-testid="inline-ai-lint-panel">` wrapper, rendered only when `aiAssistanceEnabled && isDraft && plan && commits.length > 0`
+- AI quality feedback is visible while drafting, below SoftWarningsPanel
+
+**4. `frontend/src/__tests__/PreLockValidation.test.tsx`**
+- Updated the existing "renders the AI lint panel" test to explicitly verify no button appears (autoRun behavior)
+- Added `AiLintPanel — autoRun=false (manual mode)` describe block: tests Run button appears when AI available, unavailable state when AI down
+- Added `AiLintPanel — autoRun=true (automatic mode)` describe block: verifies no button shown, verifies `commitLint` called automatically when AI available
+
+**5. `frontend/src/__tests__/MyWeekPage.test.tsx`**
+- Updated doc comment
+- Added `MyWeekPage — inline AI lint panel` describe block with 4 tests: wrapper present in DRAFT, shows feedback without button click, absent in LOCKED, absent when no commits
+
+### Checks
+- **666 → 674 tests pass** (8 new tests added, 0 failures)
+- **Typecheck**: clean (no errors)
+- **Lint**: clean on all changed files (pre-existing errors in unmodified files are unchanged)
+
+```observations
+- [low] frontend/src/api/ragApi.ts: Pre-existing lint error — `_actorUserId` parameter declared but never used (line 46)
+- [low] frontend/src/components/myweek/CommitForm.tsx: Pre-existing lint errors — unused `_` and `__` vars (line 21)
+- [low] frontend/src/components/reconcile/CarryForwardDialog.tsx: Pre-existing lint error — `_r` assigned but never used (line 122)
+```
+
+Verdict: changes_made

@@ -7,7 +7,7 @@ import type { ChessDistributionEntry, ChessPiece } from "../../api/teamTypes.js"
 
 const CHESS_PIECE_ICONS: Record<ChessPiece, string> = { KING: "♔", QUEEN: "♕", ROOK: "♖", BISHOP: "♗", KNIGHT: "♘", PAWN: "♙" };
 const CHESS_PIECE_LABELS: Record<ChessPiece, string> = { KING: "King", QUEEN: "Queen", ROOK: "Rook", BISHOP: "Bishop", KNIGHT: "Knight", PAWN: "Pawn" };
-const PIECE_COLORS: Record<ChessPiece, string> = { KING: "#7c3aed", QUEEN: "#db2777", ROOK: "#2563eb", BISHOP: "#0891b2", KNIGHT: "#059669", PAWN: "#6b7280" };
+const PIECE_COLORS: Record<ChessPiece, string> = { KING: "var(--chess-king)", QUEEN: "var(--chess-queen)", ROOK: "var(--chess-rook)", BISHOP: "var(--chess-bishop)", KNIGHT: "var(--chess-knight)", PAWN: "var(--chess-pawn)" };
 const CRITICAL_PIECES: ReadonlySet<ChessPiece> = new Set<ChessPiece>(["KING", "QUEEN"]);
 
 const thCls = "px-2 py-1.5 text-[0.65rem] font-semibold uppercase text-muted";
@@ -29,7 +29,7 @@ export function ChessDistributionSection({ chessDistribution }: ChessDistributio
       <h3 id="chess-dist-heading" className="m-0 mb-3 text-sm font-bold">Chess Distribution</h3>
       <div className="rounded-default border border-border bg-surface p-4 flex flex-col gap-3.5">
         {criticalPct > 0 && (
-          <div data-testid="critical-work-summary" className={cn("flex gap-2 items-center px-3 py-2 rounded-default text-xs font-semibold", criticalPct >= 50 ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-700")}>
+          <div data-testid="critical-work-summary" className={cn("flex gap-2 items-center px-3 py-2 rounded-default text-xs font-semibold", criticalPct >= 50 ? "bg-neutral-100 text-foreground" : "bg-neutral-50 text-muted")}>
             <span>♔♕ Critical work (King + Queen):</span>
             <span data-testid="critical-work-pct">{criticalPct}% of planned points</span>
           </div>
@@ -63,13 +63,13 @@ export function ChessDistributionSection({ chessDistribution }: ChessDistributio
               const isCritical = CRITICAL_PIECES.has(e.chessPiece);
               return (
                 <tr key={e.chessPiece} data-testid={`chess-row-${e.chessPiece.toLowerCase()}`}
-                  className={cn("border-b border-border", isCritical && e.totalPoints > 0 && "bg-violet-50/50", e.commitCount === 0 && "opacity-40")}>
+                  className={cn("border-b border-border", isCritical && e.totalPoints > 0 && "bg-neutral-50", e.commitCount === 0 && "opacity-40")}>
                   <td className="px-2 py-1.5">
                     <span className="flex items-center gap-1.5">
                       <span className="inline-block h-2.5 w-2.5 rounded-[2px] shrink-0" style={{ background: PIECE_COLORS[e.chessPiece] }} />
                       <span className="text-sm">{CHESS_PIECE_ICONS[e.chessPiece]}</span>
                       <span className={cn(isCritical ? "font-bold" : "font-normal")}>{CHESS_PIECE_LABELS[e.chessPiece]}</span>
-                      {isCritical && e.totalPoints > 0 && <span className="text-[0.55rem] px-1 py-px rounded-full bg-violet-100 text-violet-700 font-bold">CRITICAL</span>}
+                      {isCritical && e.totalPoints > 0 && <span className="text-[0.55rem] px-1 py-px rounded-full bg-foreground text-background font-bold">CRITICAL</span>}
                     </span>
                   </td>
                   <td className="px-2 py-1.5 text-right" data-testid={`chess-commits-${e.chessPiece.toLowerCase()}`}>

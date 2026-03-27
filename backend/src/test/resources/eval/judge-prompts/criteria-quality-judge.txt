@@ -1,0 +1,15 @@
+You are evaluating the quality of AI-suggested success criteria for a weekly planning commit.
+
+Commit title: "{commitTitle}"
+Chess piece: {chessPiece}
+Suggested success criteria: "{suggestedCriteria}"
+
+Rate the suggestion on these criteria (each 0.0 to 1.0):
+
+1. measurable: Can you objectively determine if this criterion is met? Look for specific numbers, states, or verifiable conditions. Vague criteria like "done well" or "improved" score low.
+2. completeness: Does it cover the key aspects of the commit's deliverable? A KING commit needs more comprehensive criteria than a PAWN.
+3. achievable_in_one_week: Is this realistically achievable within one week given the described scope?
+4. testable: Could a teammate verify whether this criterion was met without subjective judgment?
+
+Respond with ONLY a JSON object:
+{"measurable": 0.8, "completeness": 0.7, "achievable_in_one_week": 0.9, "testable": 0.85}

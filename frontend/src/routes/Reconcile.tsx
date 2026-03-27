@@ -4,23 +4,40 @@
  */
 import { useState, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card, CardHeader, CardContent } from "../components/ui/Card.js";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/Dialog.js";
 import { cn } from "../lib/utils.js";
-import { usePlanApi } from "../api/planHooks.js";
+import { usePlanApi, useCurrentPlan } from "../api/planHooks.js";
+import { useRcdoTree } from "../api/rcdoHooks.js";
 import { useQuery } from "../api/hooks.js";
 import type { ReconciliationViewResponse, ReconcileCommitView, CommitOutcome, ChessPiece, CarryForwardReason } from "../api/planTypes.js";
+import type { RcdoTreeNode } from "../api/rcdoTypes.js";
 import { OutcomeSelector } from "../components/reconcile/OutcomeSelector.js";
 import { CarryForwardDialog } from "../components/reconcile/CarryForwardDialog.js";
 import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
+import { ReconcileAssistPanel } from "../components/ai/ReconcileAssistPanel.js";
 
 const CHESS_PIECE_ICONS: Record<ChessPiece, string> = { KING: "♔", QUEEN: "♕", ROOK: "♖", BISHOP: "♗", KNIGHT: "♘", PAWN: "♙" };
 
 const NOTES_REQUIRED: Set<CommitOutcome> = new Set(["PARTIALLY_ACHIEVED", "NOT_ACHIEVED", "CANCELED"]);
 const CARRY_FORWARD_ELIGIBLE: Set<CommitOutcome> = new Set(["NOT_ACHIEVED", "PARTIALLY_ACHIEVED"]);
+
+/** Build a flat map of RCDO node ID → "Rally Cry > DO > Outcome" labels. */
+function buildRcdoLabels(nodes: RcdoTreeNode[] | undefined): Record<string, string> {
+  const map: Record<string, string> = {};
+  function traverse(ns: RcdoTreeNode[], path: string[] = []) {
+    for (const n of ns) {
+      const next = [...path, n.title];
+      map[n.id] = next.join(" > ");
+      traverse(n.children, next);
+    }
+  }
+  traverse(nodes ?? []);
+  return map;
+}
 
 function useReconcileView(planId: string | undefined) {
   const api = usePlanApi();
@@ -32,12 +49,12 @@ function useReconcileView(planId: string | undefined) {
 
 // ── BaselineColumn ────────────────────────────────────────────────────────────
 
-function BaselineColumn({ commitView }: { readonly commitView: ReconcileCommitView }) {
+function BaselineColumn({ commitView, rcdoLabels }: { readonly commitView: ReconcileCommitView; readonly rcdoLabels: Record<string, string> }) {
   const baseline = commitView.baselineSnapshot;
 
   if (commitView.addedPostLock) {
     return (
-      <div data-testid={`baseline-col-${commitView.commitId}`} className="px-2.5 py-2 rounded-sm bg-emerald-50 text-xs text-emerald-700 italic">
+      <div data-testid={`baseline-col-${commitView.commitId}`} className="px-2.5 py-2 rounded-sm bg-neutral-50 text-xs text-muted italic">
         Added post-lock — no baseline
       </div>
     );
@@ -56,22 +73,22 @@ function BaselineColumn({ commitView }: { readonly commitView: ReconcileCommitVi
 
   return (
     <div data-testid={`baseline-col-${commitView.commitId}`} className="flex flex-col gap-1.5">
-      <div data-testid={`baseline-title-${commitView.commitId}`} className={cn("text-sm font-semibold rounded-sm", titleChanged ? "bg-red-50 text-red-800 px-1 py-px" : "text-foreground")}>
+      <div data-testid={`baseline-title-${commitView.commitId}`} className={cn("text-sm font-semibold rounded-sm", titleChanged ? "bg-neutral-200 text-foreground line-through px-1 py-px" : "text-foreground")}>
         {baselineTitle ?? "—"}
       </div>
       {baselineChessPiece && (
-        <div data-testid={`baseline-piece-${commitView.commitId}`} className={cn("text-xs rounded-sm", pieceChanged ? "bg-red-50 text-red-800 px-1 py-px" : "text-muted")}>
+        <div data-testid={`baseline-piece-${commitView.commitId}`} className={cn("text-xs rounded-sm", pieceChanged ? "bg-neutral-200 text-foreground line-through px-1 py-px" : "text-muted")}>
           {CHESS_PIECE_ICONS[baselineChessPiece]} {baselineChessPiece}
         </div>
       )}
       {baselineEstimate != null && (
-        <div data-testid={`baseline-estimate-${commitView.commitId}`} className={cn("text-xs rounded-sm", estimateChanged ? "bg-red-50 text-red-800 px-1 py-px" : "text-muted")}>
+        <div data-testid={`baseline-estimate-${commitView.commitId}`} className={cn("text-xs rounded-sm", estimateChanged ? "bg-neutral-200 text-foreground line-through px-1 py-px" : "text-muted")}>
           {baselineEstimate} pts
         </div>
       )}
       {baselineRcdo && (
-        <div data-testid={`baseline-rcdo-${commitView.commitId}`} className="text-[0.7rem] text-muted font-mono">
-          🎯 {baselineRcdo.slice(0, 8)}…
+        <div data-testid={`baseline-rcdo-${commitView.commitId}`} className="text-[0.7rem] text-muted">
+          {rcdoLabels[baselineRcdo] ?? baselineRcdo.slice(0, 8) + "…"}
         </div>
       )}
     </div>
@@ -88,19 +105,19 @@ function CurrentColumn({ commitView }: { readonly commitView: ReconcileCommitVie
 
   return (
     <div data-testid={`current-col-${commitView.commitId}`} className="flex flex-col gap-1.5">
-      <div data-testid={`current-title-${commitView.commitId}`} className={cn("text-sm font-semibold rounded-sm", titleChanged ? "bg-emerald-50 text-emerald-800 px-1 py-px" : "text-foreground")}>
+      <div data-testid={`current-title-${commitView.commitId}`} className={cn("text-sm font-semibold rounded-sm", titleChanged ? "bg-foreground/5 text-foreground font-bold px-1 py-px" : "text-foreground")}>
         {commitView.currentTitle}
       </div>
-      <div data-testid={`current-piece-${commitView.commitId}`} className={cn("text-xs rounded-sm", pieceChanged ? "bg-emerald-50 text-emerald-800 px-1 py-px" : "text-muted")}>
+      <div data-testid={`current-piece-${commitView.commitId}`} className={cn("text-xs rounded-sm", pieceChanged ? "bg-foreground/5 text-foreground font-bold px-1 py-px" : "text-muted")}>
         {CHESS_PIECE_ICONS[commitView.currentChessPiece]} {commitView.currentChessPiece}
       </div>
       {commitView.currentEstimatePoints != null && (
-        <div data-testid={`current-estimate-${commitView.commitId}`} className={cn("text-xs rounded-sm", estimateChanged ? "bg-emerald-50 text-emerald-800 px-1 py-px" : "text-muted")}>
+        <div data-testid={`current-estimate-${commitView.commitId}`} className={cn("text-xs rounded-sm", estimateChanged ? "bg-foreground/5 text-foreground font-bold px-1 py-px" : "text-muted")}>
           {commitView.currentEstimatePoints} pts
         </div>
       )}
       {commitView.linkedTicketStatus && (
-        <span data-testid={`ticket-status-${commitView.commitId}`} className={cn("inline-flex items-center gap-1 px-2 py-px rounded-full text-[0.7rem] font-semibold", commitView.linkedTicketStatus === "DONE" ? "bg-emerald-100 text-emerald-800" : "bg-indigo-100 text-indigo-700")}>
+        <span data-testid={`ticket-status-${commitView.commitId}`} className={cn("inline-flex items-center gap-1 px-2 py-px rounded-full text-[0.7rem] font-semibold", commitView.linkedTicketStatus === "DONE" ? "bg-foreground/10 text-foreground" : "bg-neutral-200 text-neutral-700")}>
           🎫 {commitView.linkedTicketStatus}
         </span>
       )}
@@ -117,12 +134,13 @@ interface ReconcileCommitRowProps {
   readonly carryForward: boolean;
   readonly notesError: string | null;
   readonly isReadOnly: boolean;
+  readonly rcdoLabels: Record<string, string>;
   readonly onOutcomeChange: (outcome: CommitOutcome) => void;
   readonly onNotesChange: (notes: string) => void;
   readonly onCarryForwardChange: (checked: boolean) => void;
 }
 
-function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesError, isReadOnly, onOutcomeChange, onNotesChange, onCarryForwardChange }: ReconcileCommitRowProps) {
+function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesError, isReadOnly, rcdoLabels, onOutcomeChange, onNotesChange, onCarryForwardChange }: ReconcileCommitRowProps) {
   const needsNotes = outcome != null && NOTES_REQUIRED.has(outcome);
   const canCarryForward = !isReadOnly && outcome != null && CARRY_FORWARD_ELIGIBLE.has(outcome);
   const isAutoAchieved = commitView.linkedTicketStatus === "DONE" && outcome === "ACHIEVED" && commitView.currentOutcome === "ACHIEVED";
@@ -136,14 +154,14 @@ function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesErr
         </span>
         {commitView.addedPostLock && <Badge data-testid={`added-post-lock-badge-${commitView.commitId}`} variant="success">+ Post-lock</Badge>}
         {commitView.removedPostLock && <Badge data-testid={`removed-post-lock-badge-${commitView.commitId}`} variant="danger">− Removed</Badge>}
-        {isAutoAchieved && <Badge data-testid={`auto-achieved-badge-${commitView.commitId}`} variant="success">✅ Auto-achieved (ticket Done)</Badge>}
+        {isAutoAchieved && <Badge data-testid={`auto-achieved-badge-${commitView.commitId}`} variant="success">Auto-achieved (ticket Done)</Badge>}
       </div>
 
       {/* Baseline vs current */}
       <div className="grid border-b border-border" style={{ gridTemplateColumns: "1fr 1fr" }}>
         <div className="px-3 py-2.5 border-r border-border">
           <p className="m-0 mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-muted">Baseline (at lock)</p>
-          <BaselineColumn commitView={commitView} />
+          <BaselineColumn commitView={commitView} rcdoLabels={rcdoLabels} />
         </div>
         <div className="px-3 py-2.5">
           <p className="m-0 mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-muted">Current</p>
@@ -199,10 +217,10 @@ function SubmitConfirmDialog({ achievedCount, partialCount, notAchievedCount, ca
   readonly onConfirm: () => void; readonly onCancel: () => void; readonly isSubmitting: boolean;
 }) {
   const summaryItems = [
-    { label: "Achieved", count: achievedCount, cls: "bg-emerald-50 text-emerald-700" },
-    { label: "Partial", count: partialCount, cls: "bg-amber-50 text-amber-700" },
-    { label: "Not Achieved", count: notAchievedCount, cls: "bg-red-50 text-red-700" },
-    { label: "Canceled", count: canceledCount, cls: "bg-slate-100 text-slate-600" },
+    { label: "Achieved", count: achievedCount, cls: "bg-foreground/5 text-foreground" },
+    { label: "Partial", count: partialCount, cls: "bg-neutral-100 text-muted" },
+    { label: "Not Achieved", count: notAchievedCount, cls: "bg-neutral-200 text-foreground" },
+    { label: "Canceled", count: canceledCount, cls: "bg-neutral-100 text-neutral-500" },
   ];
   return (
     <Dialog open onClose={onCancel} aria-label="Submit Reconciliation" data-testid="reconcile-submit-dialog">
@@ -232,9 +250,16 @@ function SubmitConfirmDialog({ achievedCount, partialCount, notAchievedCount, ca
 
 export default function ReconcilePage() {
   const { planId: planIdParam } = useParams<{ planId?: string }>();
-  const planId = planIdParam;
+  // If no planId in URL, auto-discover the current week's plan (only if reconcilable)
+  const { data: currentPlanData, loading: currentPlanLoading } = useCurrentPlan();
+  const currentPlan = currentPlanData?.plan;
+  const isReconcilable = currentPlan?.state === "LOCKED" || currentPlan?.state === "RECONCILING";
+  const discoveredPlanId = isReconcilable ? currentPlan?.id : undefined;
+  const planId = planIdParam ?? discoveredPlanId;
   const planApi = usePlanApi();
   const { data, loading, error, refetch } = useReconcileView(planId);
+  const { data: rcdoTreeData } = useRcdoTree();
+  const rcdoLabels = useMemo(() => buildRcdoLabels(rcdoTreeData), [rcdoTreeData]);
 
   const [localOutcomes, setLocalOutcomes] = useState<Record<string, CommitOutcome>>({});
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
@@ -358,13 +383,22 @@ export default function ReconcilePage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (!planId) {
+    // Still discovering the current plan — show loading state
+    if (!planIdParam && currentPlanLoading) {
+      return (
+        <div data-testid="page-reconcile" className="flex flex-col gap-4">
+          <h2 className="m-0 text-xl font-bold">Reconcile</h2>
+          <div role="status" className="text-sm text-muted">Loading plan…</div>
+        </div>
+      );
+    }
     return (
       <div data-testid="page-reconcile" className="flex flex-col gap-4">
         <h2 className="m-0 text-xl font-bold">Reconcile</h2>
         <p className="text-sm text-muted">
-          No plan selected. Navigate to{" "}
+          No plan available for reconciliation this week. Navigate to{" "}
           <a href="/weekly/my-week" className="text-primary hover:underline">My Week</a>
-          {" "}and use the Reconcile link when your plan is LOCKED or RECONCILING.
+          {" "}and lock your plan first.
         </p>
       </div>
     );
@@ -386,7 +420,7 @@ export default function ReconcilePage() {
           <h2 className="m-0 text-xl font-bold">Reconcile</h2>
           <Card data-testid="reconcile-locked-prompt" className="max-w-[480px]">
             <CardContent className="py-4">
-              <p className="m-0 mb-3 font-semibold">🔒 Plan is locked — ready for reconciliation</p>
+              <p className="m-0 mb-3 font-semibold flex items-center gap-1.5"><Lock className="h-4 w-4" /> Plan is locked — ready for reconciliation</p>
               <p className="m-0 mb-4 text-sm text-muted">The week is over. Open reconciliation to record outcomes for each commitment.</p>
               {openError && <p role="alert" className="text-sm text-danger mb-3">{openError}</p>}
               <Button variant="primary" onClick={() => void handleOpenReconciliation()} disabled={openingReconcile} data-testid="open-reconciliation-btn">
@@ -400,7 +434,7 @@ export default function ReconcilePage() {
     return (
       <div data-testid="page-reconcile" className="flex flex-col gap-4">
         <h2 className="m-0 text-xl font-bold">Reconcile</h2>
-        <div role="alert" data-testid="reconcile-error" className="rounded-default border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-danger">
+        <div role="alert" data-testid="reconcile-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2.5 text-sm text-danger">
           Failed to load reconciliation view: {error.message}
         </div>
       </div>
@@ -431,12 +465,23 @@ export default function ReconcilePage() {
         </CardContent>
       </Card>
 
+      {/* AI Reconciliation Assist */}
+      {!isReadOnly && data.plan.state === "RECONCILING" && (
+        <ReconcileAssistPanel
+          planId={data.plan.id}
+          onAcceptOutcome={(commitId: string, outcome: CommitOutcome) => void handleOutcomeChange(commitId, outcome)}
+          onAcceptCarryForward={(commitId: string) => {
+            setCarryForwardSet((prev) => new Set(prev).add(commitId));
+          }}
+        />
+      )}
+
       {submitError && (
-        <div role="alert" data-testid="reconcile-submit-error" className="rounded-default border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-danger">{submitError}</div>
+        <div role="alert" data-testid="reconcile-submit-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2.5 text-sm text-danger">{submitError}</div>
       )}
 
       {isReadOnly && (
-        <div data-testid="reconcile-readonly-banner" className="flex items-center gap-2 rounded-default border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div data-testid="reconcile-readonly-banner" className="flex items-center gap-2 rounded-default border border-foreground/20 bg-foreground/5 px-4 py-3 text-sm text-foreground">
           <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
           This plan has been fully reconciled and is now read-only.
         </div>
@@ -459,6 +504,7 @@ export default function ReconcilePage() {
                 carryForward={carryForwardSet.has(commitId)}
                 notesError={notesErrors[commitId] ?? null}
                 isReadOnly={isReadOnly}
+                rcdoLabels={rcdoLabels}
                 onOutcomeChange={(o) => void handleOutcomeChange(commitId, o)}
                 onNotesChange={(n) => setLocalNotes((prev) => ({ ...prev, [commitId]: n }))}
                 onCarryForwardChange={(checked) => {

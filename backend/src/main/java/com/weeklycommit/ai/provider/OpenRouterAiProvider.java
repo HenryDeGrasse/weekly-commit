@@ -58,7 +58,7 @@ public class OpenRouterAiProvider implements AiProvider {
 	/** Simple rate limiter: track request count per minute window. */
 	private final AtomicLong windowStart = new AtomicLong(System.currentTimeMillis());
 	private final AtomicLong windowCount = new AtomicLong(0);
-	private static final int MAX_REQUESTS_PER_MINUTE = 10;
+	private static final int MAX_REQUESTS_PER_MINUTE = 30;
 
 	/** Running totals for observability. */
 	private final AtomicLong totalTokensUsed = new AtomicLong(0);
@@ -132,13 +132,14 @@ public class OpenRouterAiProvider implements AiProvider {
 		}
 
 		try {
+			String promptVersion = resolvePromptVersion(context.suggestionType());
 			String systemPrompt = loadPromptTemplate(context.suggestionType());
 			String userMessage = buildUserMessage(context);
 
 			String responseBody = callOpenRouter(systemPrompt, userMessage);
 			totalRequests.incrementAndGet();
 
-			return parseResponse(responseBody, context.suggestionType());
+			return parseResponse(responseBody, context.suggestionType(), promptVersion);
 		} catch (Exception e) {
 			log.warn("OpenRouter request failed for type={}: {}", context.suggestionType(), e.getMessage());
 			return AiSuggestionResult.unavailable();
@@ -184,7 +185,7 @@ public class OpenRouterAiProvider implements AiProvider {
 
 	// ── Response parsing ─────────────────────────────────────────────────
 
-	private AiSuggestionResult parseResponse(String responseBody, String suggestionType) {
+	private AiSuggestionResult parseResponse(String responseBody, String suggestionType, String promptVersion) {
 		try {
 			JsonNode root = objectMapper.readTree(responseBody);
 			JsonNode choices = root.get("choices");
@@ -204,7 +205,7 @@ public class OpenRouterAiProvider implements AiProvider {
 			// Validate it's parseable JSON
 			objectMapper.readTree(jsonPayload);
 
-			return new AiSuggestionResult(true, jsonPayload, rationale, 0.85, model);
+			return new AiSuggestionResult(true, jsonPayload, rationale, 0.85, model, promptVersion);
 		} catch (Exception e) {
 			log.warn("Failed to parse OpenRouter response for {}: {}", suggestionType, e.getMessage());
 			return AiSuggestionResult.unavailable();
@@ -225,6 +226,7 @@ public class OpenRouterAiProvider implements AiProvider {
 			case AiContext.TYPE_RAG_QUERY -> "rag-query.txt";
 			case AiContext.TYPE_TEAM_INSIGHT -> "team-insight.txt";
 			case AiContext.TYPE_PERSONAL_INSIGHT -> "personal-insight.txt";
+			case "FAITHFULNESS_EVAL" -> "faithfulness-eval.txt";
 			default -> "generic.txt";
 		};
 		try {
@@ -249,6 +251,29 @@ public class OpenRouterAiProvider implements AiProvider {
 		} catch (Exception e) {
 			return "{}";
 		}
+	}
+
+	/**
+	 * Resolves the prompt version identifier for the given suggestion type. Uses
+	 * the base prompt filename as the version key with a "-v1" suffix. When A/B
+	 * testing, this method can be extended to read from feature flags and load
+	 * variant templates (e.g. "commit-draft-assist-v2.txt").
+	 */
+	private String resolvePromptVersion(String suggestionType) {
+		String base = switch (suggestionType) {
+			case AiContext.TYPE_COMMIT_DRAFT -> "commit-draft-assist";
+			case AiContext.TYPE_COMMIT_LINT -> "commit-lint";
+			case AiContext.TYPE_RCDO_SUGGEST -> "rcdo-suggest";
+			case AiContext.TYPE_RISK_SIGNAL -> "risk-signal";
+			case AiContext.TYPE_RECONCILE_ASSIST -> "reconcile-assist";
+			case AiContext.TYPE_TEAM_SUMMARY -> "team-summary";
+			case AiContext.TYPE_RAG_INTENT -> "rag-intent";
+			case AiContext.TYPE_RAG_QUERY -> "rag-query";
+			case AiContext.TYPE_TEAM_INSIGHT -> "team-insight";
+			case AiContext.TYPE_PERSONAL_INSIGHT -> "personal-insight";
+			default -> "generic";
+		};
+		return base + "-v1";
 	}
 
 	// ── Helpers ──────────────────────────────────────────────────────────

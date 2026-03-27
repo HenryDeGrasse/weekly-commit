@@ -2,10 +2,12 @@
  * TicketForm — modal form for creating or editing a native ticket.
  */
 import { useState, type FormEvent } from "react";
-import { X } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Input } from "../ui/Input.js";
 import { Select } from "../ui/Select.js";
+import { RcdoTreeView } from "../rcdo/RcdoTreeView.js";
+import type { RcdoTreeNode } from "../../api/rcdoTypes.js";
 import type { CreateTicketPayload, TicketStatus, TicketPriority, TicketResponse } from "../../api/ticketTypes.js";
 import type { EstimatePoints } from "../../api/planTypes.js";
 import { TICKET_STATUS_LABELS, TICKET_PRIORITY_LABELS } from "../../api/ticketTypes.js";
@@ -19,14 +21,25 @@ export interface TicketFormProps {
   readonly initialValues?: Partial<CreateTicketPayload>;
   readonly currentUserId: string;
   readonly currentTeamId?: string;
+  /** RCDO tree for the picker. When provided, shows a browsable tree instead of a text input. */
+  readonly rcdoTree?: RcdoTreeNode[];
   readonly onSubmit: (payload: CreateTicketPayload) => Promise<void>;
   readonly onCancel: () => void;
   readonly ticket?: TicketResponse;
 }
 
+function findNodeById(nodes: RcdoTreeNode[], id: string): RcdoTreeNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const found = findNodeById(node.children, id);
+    if (found) return found;
+  }
+  return null;
+}
+
 const textareaCls = "w-full rounded-default border border-border bg-surface px-3 py-1.5 text-sm resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary";
 
-export function TicketForm({ mode, initialValues, currentUserId, currentTeamId, onSubmit, onCancel, ticket }: TicketFormProps) {
+export function TicketForm({ mode, initialValues, currentUserId, currentTeamId, rcdoTree, onSubmit, onCancel, ticket }: TicketFormProps) {
   const [title, setTitle] = useState(ticket?.title ?? initialValues?.title ?? "");
   const [description, setDescription] = useState(ticket?.description ?? initialValues?.description ?? "");
   const [status, setStatus] = useState<TicketStatus>(ticket?.status ?? initialValues?.status ?? "TODO");
@@ -40,6 +53,10 @@ export function TicketForm({ mode, initialValues, currentUserId, currentTeamId, 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showRcdoPicker, setShowRcdoPicker] = useState(false);
+
+  const hasRcdoTree = rcdoTree && rcdoTree.length > 0;
+  const selectedRcdoNode = hasRcdoTree && rcdoNodeId ? findNodeById(rcdoTree, rcdoNodeId) : null;
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -118,11 +135,44 @@ export function TicketForm({ mode, initialValues, currentUserId, currentTeamId, 
             </Select>
           </div>
 
-          <Input id="tf-rcdo" label="RCDO Link (optional)" type="text" value={rcdoNodeId} onChange={(e) => setRcdoNodeId(e.target.value)} data-testid="ticket-form-rcdo" placeholder="RCDO node ID" />
+          {/* RCDO picker */}
+          <div>
+            <p className="text-sm font-medium mb-1.5">RCDO Link (optional)</p>
+            {selectedRcdoNode && (
+              <div data-testid="ticket-rcdo-selected" className="flex items-center gap-2 px-3 py-2 rounded-default border border-foreground/20 bg-foreground/5 mb-2 text-sm">
+                <Check className="h-3.5 w-3.5 text-foreground shrink-0" aria-hidden="true" />
+                <span className="flex-1 text-foreground">{selectedRcdoNode.title}</span>
+                <Button variant="ghost" size="icon" type="button" onClick={() => setRcdoNodeId("")} aria-label="Clear RCDO link" className="h-6 w-6 text-muted">
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            {hasRcdoTree ? (
+              <>
+                <Button variant="secondary" size="sm" type="button" onClick={() => setShowRcdoPicker((v) => !v)} data-testid="ticket-rcdo-picker-toggle" aria-expanded={showRcdoPicker}>
+                  {showRcdoPicker ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  {showRcdoPicker ? "Close RCDO picker" : "Browse RCDO nodes"}
+                </Button>
+                {showRcdoPicker && (
+                  <div data-testid="ticket-rcdo-picker-panel" className="mt-2 rounded-default border border-border p-3 max-h-[250px] overflow-y-auto">
+                    <RcdoTreeView
+                      nodes={rcdoTree}
+                      selectedId={rcdoNodeId || null}
+                      onSelect={(id) => { setRcdoNodeId(id); setShowRcdoPicker(false); }}
+                      statusFilter="active-only"
+                      searchQuery=""
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <Input id="tf-rcdo" type="text" value={rcdoNodeId} onChange={(e) => setRcdoNodeId(e.target.value)} data-testid="ticket-form-rcdo" placeholder="RCDO node ID" />
+            )}
+          </div>
           <Input id="tf-target-week" label="Target Week (optional)" type="date" value={targetWeek} onChange={(e) => setTargetWeek(e.target.value)} data-testid="ticket-form-target-week" />
 
           {submitError && (
-            <div role="alert" data-testid="ticket-form-submit-error" className="rounded-default border border-red-200 bg-red-50 px-3 py-2 text-xs text-danger">{submitError}</div>
+            <div role="alert" data-testid="ticket-form-submit-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-xs text-foreground font-semibold">{submitError}</div>
           )}
 
           <div className="flex gap-2 justify-end mt-1">

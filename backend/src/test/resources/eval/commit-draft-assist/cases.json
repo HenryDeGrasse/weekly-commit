@@ -1,0 +1,206 @@
+[
+  {
+    "id": "draft-001",
+    "description": "Vague KING commit with no title specificity and missing success criteria",
+    "edgeCaseType": "vague_input",
+    "input": {
+      "title": "Do API stuff",
+      "description": "",
+      "chessPiece": "KING",
+      "estimatePoints": null,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": true,
+      "titleShouldNotContain": ["stuff", "things", "work on", "do"],
+      "shouldSuggestSuccessCriteria": true,
+      "shouldSuggestEstimate": true,
+      "estimateRange": [3, 8]
+    }
+  },
+  {
+    "id": "draft-002",
+    "description": "Good ROOK commit that needs no changes",
+    "edgeCaseType": "already_good",
+    "input": {
+      "title": "Migrate user auth from JWT to session tokens across all API endpoints",
+      "description": "Replace JWT-based auth with server-side session tokens. Covers /api/v2/* routes.",
+      "chessPiece": "ROOK",
+      "estimatePoints": 3,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": false,
+      "shouldSuggestDescription": false,
+      "shouldSuggestEstimate": false
+    }
+  },
+  {
+    "id": "draft-003",
+    "description": "Activity-focused title with unrealistic high estimate for a PAWN",
+    "edgeCaseType": "bad_estimate",
+    "input": {
+      "title": "Work on bugs",
+      "description": "",
+      "chessPiece": "PAWN",
+      "estimatePoints": 8,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": true,
+      "titleShouldNotContain": ["work on"],
+      "shouldSuggestEstimate": true,
+      "estimateRange": [1, 3]
+    }
+  },
+  {
+    "id": "draft-004",
+    "description": "QUEEN commit with good title but missing success criteria",
+    "edgeCaseType": "missing_criteria",
+    "input": {
+      "title": "Launch self-serve billing portal for enterprise customers",
+      "description": "Implement the billing dashboard with invoice history and payment method management",
+      "chessPiece": "QUEEN",
+      "estimatePoints": 5,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": false,
+      "shouldSuggestSuccessCriteria": true,
+      "criteriaShouldBeMeasurable": true,
+      "shouldSuggestEstimate": false
+    }
+  },
+  {
+    "id": "draft-005",
+    "description": "Single-word title, completely meaningless",
+    "edgeCaseType": "minimal_input",
+    "input": {
+      "title": "TBD",
+      "description": "",
+      "chessPiece": "ROOK",
+      "estimatePoints": null,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": true,
+      "titleMinLength": 10,
+      "shouldSuggestEstimate": true
+    }
+  },
+  {
+    "id": "draft-006",
+    "description": "KNIGHT (exploratory) with reasonable title, no criteria",
+    "edgeCaseType": "exploratory_work",
+    "input": {
+      "title": "Spike: evaluate GraphQL vs REST for mobile API",
+      "description": "Research and prototype both approaches. Produce a comparison doc.",
+      "chessPiece": "KNIGHT",
+      "estimatePoints": 2,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": false,
+      "shouldSuggestSuccessCriteria": true
+    }
+  },
+  {
+    "id": "draft-007",
+    "description": "BISHOP enabling work with overly long title",
+    "edgeCaseType": "verbose_title",
+    "input": {
+      "title": "Set up CI/CD pipeline for the new microservice including Docker build, push to ECR, deploy to ECS staging, and configure CloudWatch alarms and dashboards for monitoring",
+      "description": "",
+      "chessPiece": "BISHOP",
+      "estimatePoints": 5,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": true,
+      "titleMaxLength": 100
+    }
+  },
+  {
+    "id": "draft-008",
+    "description": "KING with existing success criteria — should return all nulls",
+    "edgeCaseType": "fully_specified",
+    "input": {
+      "title": "Zero-downtime database migration from PostgreSQL 14 to 16",
+      "description": "Upgrade production database with logical replication failover",
+      "chessPiece": "KING",
+      "estimatePoints": 8,
+      "successCriteria": "PostgreSQL 16 serving production traffic, zero data loss, rollback tested, <5min total failover window"
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": false,
+      "shouldSuggestDescription": false,
+      "shouldSuggestSuccessCriteria": false,
+      "shouldSuggestEstimate": false
+    }
+  },
+  {
+    "id": "draft-009",
+    "description": "PAWN with estimate of 1 that is reasonable — should not change estimate",
+    "edgeCaseType": "correct_low_estimate",
+    "input": {
+      "title": "Update team Slack channel topic with Q2 priorities",
+      "description": "",
+      "chessPiece": "PAWN",
+      "estimatePoints": 1,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": false,
+      "shouldSuggestEstimate": false
+    }
+  },
+  {
+    "id": "draft-010",
+    "description": "Commit with emoji and special characters in title",
+    "edgeCaseType": "special_chars",
+    "input": {
+      "title": "🚀 ship the thing!!!",
+      "description": "deploy v2",
+      "chessPiece": "ROOK",
+      "estimatePoints": 3,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": true,
+      "titleShouldNotContain": ["🚀", "!!!"]
+    }
+  },
+  {
+    "id": "draft-011",
+    "description": "QUEEN underestimated at 1 point — should suggest higher",
+    "edgeCaseType": "underestimate",
+    "input": {
+      "title": "Redesign the entire checkout flow for mobile",
+      "description": "Complete UX overhaul of the 5-step checkout process",
+      "chessPiece": "QUEEN",
+      "estimatePoints": 1,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestEstimate": true,
+      "estimateRange": [5, 8],
+      "shouldSuggestSuccessCriteria": true
+    }
+  },
+  {
+    "id": "draft-012",
+    "description": "Duplicate-sounding title that matches a common pattern",
+    "edgeCaseType": "common_pattern",
+    "input": {
+      "title": "Code review",
+      "description": "",
+      "chessPiece": "PAWN",
+      "estimatePoints": 2,
+      "successCriteria": ""
+    },
+    "expectedBehavior": {
+      "shouldSuggestTitle": true,
+      "titleMinLength": 15
+    }
+  }
+]

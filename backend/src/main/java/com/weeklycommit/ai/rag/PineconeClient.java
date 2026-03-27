@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -64,6 +65,7 @@ public class PineconeClient {
 	 * Spring-managed constructor. {@link HttpClient} is created internally with a
 	 * 10-second connect timeout.
 	 */
+	@Autowired
 	public PineconeClient(@Value("${ai.pinecone.api-key:}") String apiKey,
 			@Value("${ai.pinecone.index-name:weekly-commit}") String indexName,
 			@Value("${ai.pinecone.environment:us-east-1}") String environment, ObjectMapper objectMapper) {
@@ -224,7 +226,7 @@ public class PineconeClient {
 				body.set("filter", objectMapper.valueToTree(filter));
 			}
 			String json = objectMapper.writeValueAsString(body);
-			HttpRequest req = dataRequest("POST", "/vectors/query", json);
+			HttpRequest req = dataRequest("POST", "/query", json);
 			HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 			if (resp.statusCode() != 200) {
 				log.warn("PineconeClient: query returned {}: {}", resp.statusCode(), resp.body());

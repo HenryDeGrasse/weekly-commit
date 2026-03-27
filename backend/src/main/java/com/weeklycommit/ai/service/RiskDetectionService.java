@@ -18,12 +18,17 @@ import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.domain.repository.WorkItemRepository;
 import com.weeklycommit.domain.repository.WorkItemStatusHistoryRepository;
+import com.weeklycommit.ai.provider.AiContext;
+import com.weeklycommit.ai.provider.AiProviderRegistry;
+import com.weeklycommit.ai.provider.AiSuggestionResult;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
 import com.weeklycommit.team.service.AuthorizationService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,12 +87,13 @@ public class RiskDetectionService {
 	private final ScopeChangeEventRepository scopeChangeRepo;
 	private final AiSuggestionRepository suggestionRepo;
 	private final AuthorizationService authService;
+	private final AiProviderRegistry aiProviderRegistry;
 	private final ObjectMapper objectMapper;
 
 	public RiskDetectionService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			WorkItemRepository workItemRepo, WorkItemStatusHistoryRepository statusHistoryRepo,
 			ScopeChangeEventRepository scopeChangeRepo, AiSuggestionRepository suggestionRepo,
-			AuthorizationService authService, ObjectMapper objectMapper) {
+			AuthorizationService authService, AiProviderRegistry aiProviderRegistry, ObjectMapper objectMapper) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.workItemRepo = workItemRepo;
@@ -95,6 +101,7 @@ public class RiskDetectionService {
 		this.scopeChangeRepo = scopeChangeRepo;
 		this.suggestionRepo = suggestionRepo;
 		this.authService = authService;
+		this.aiProviderRegistry = aiProviderRegistry;
 		this.objectMapper = objectMapper;
 	}
 
@@ -242,6 +249,10 @@ public class RiskDetectionService {
 					+ " post-lock scope changes (threshold: " + SCOPE_VOLATILITY_THRESHOLD + ")."));
 		}
 
+		// ── LLM augmentation: find risks that rules miss (BOAD/ADR-001 pattern) ──
+		List<RawSignal> aiSignals = detectAiRiskSignals(plan, commits);
+		signals.addAll(aiSignals);
+
 		// Persist signals
 		for (RawSignal signal : signals) {
 			AiSuggestion s = new AiSuggestion();
@@ -252,11 +263,118 @@ public class RiskDetectionService {
 			s.setPrompt("{}");
 			s.setRationale(signal.rationale());
 			s.setSuggestionPayload("{\"signalType\":\"" + signal.type() + "\"}");
-			s.setModelVersion(MODEL_VERSION);
+			s.setModelVersion(signal.type().startsWith("AI_")
+					? aiProviderRegistry.getActiveProvider().map(p -> p.getVersion()).orElse(MODEL_VERSION)
+					: MODEL_VERSION);
 			suggestionRepo.save(s);
 		}
 
-		log.debug("Risk detection for plan {}: {} signal(s) stored", plan.getId(), signals.size());
+		log.debug("Risk detection for plan {}: {} signal(s) stored ({} rules, {} AI)", plan.getId(), signals.size(),
+				signals.size() - aiSignals.size(), aiSignals.size());
+	}
+
+	// -------------------------------------------------------------------------
+	// LLM risk augmentation (BOAD/ADR-001: supplementary AI risk detection)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Calls the LLM with the risk-signal prompt to find risks that the rules engine
+	 * misses (hidden dependencies, unrealistic estimates, concentration risk,
+	 * etc.). Returns an empty list if AI is unavailable — never blocks the rules
+	 * engine.
+	 */
+	private List<RawSignal> detectAiRiskSignals(WeeklyPlan plan, List<WeeklyCommit> commits) {
+		if (!aiProviderRegistry.isAiEnabled()) {
+			return List.of();
+		}
+
+		try {
+			// Build commit data for the LLM
+			List<Map<String, Object>> commitDataList = new ArrayList<>();
+			for (WeeklyCommit c : commits) {
+				Map<String, Object> cd = new LinkedHashMap<>();
+				cd.put("commitId", c.getId() != null ? c.getId().toString() : null);
+				cd.put("title", c.getTitle());
+				cd.put("chessPiece", c.getChessPiece() != null ? c.getChessPiece().name() : null);
+				cd.put("estimatePoints", c.getEstimatePoints());
+				cd.put("description", c.getDescription());
+				cd.put("successCriteria", c.getSuccessCriteria());
+				cd.put("carryForwardStreak", c.getCarryForwardStreak());
+				cd.put("outcome", c.getOutcome() != null ? c.getOutcome().name() : null);
+				commitDataList.add(cd);
+			}
+
+			Map<String, Object> planData = new LinkedHashMap<>();
+			planData.put("state", plan.getState() != null ? plan.getState().name() : null);
+			planData.put("capacityBudgetPoints", plan.getCapacityBudgetPoints());
+			planData.put("weekStartDate", plan.getWeekStartDate() != null ? plan.getWeekStartDate().toString() : null);
+			planData.put("totalPlannedPoints",
+					commits.stream().mapToInt(c -> c.getEstimatePoints() != null ? c.getEstimatePoints() : 0).sum());
+
+			// Build scope change context
+			var scopeChanges = scopeChangeRepo.findByPlanIdOrderByCreatedAtAsc(plan.getId());
+			Map<String, Object> additionalContext = new LinkedHashMap<>();
+			additionalContext.put("scopeChanges", scopeChanges.stream().map(sc -> {
+				Map<String, Object> m = new LinkedHashMap<>();
+				m.put("category", sc.getCategory() != null ? sc.getCategory().name() : null);
+				m.put("reason", sc.getReason());
+				return m;
+			}).toList());
+
+			AiContext context = new AiContext(AiContext.TYPE_RISK_SIGNAL, plan.getOwnerUserId(), plan.getId(), null,
+					Map.of(), planData, commitDataList, List.of(), additionalContext);
+
+			AiSuggestionResult result = aiProviderRegistry.generateSuggestion(context);
+			if (!result.available() || result.payload() == null) {
+				return List.of();
+			}
+
+			// Parse the LLM response
+			return parseAiRiskSignals(result.payload());
+		} catch (Exception ex) {
+			log.debug("AI risk augmentation failed for plan {}: {}", plan.getId(), ex.getMessage());
+			return List.of();
+		}
+	}
+
+	/**
+	 * Parses the LLM risk signal JSON into RawSignal records. Expects the format
+	 * defined in risk-signal.txt: {@code {"signals": [{"signalType": ...,
+	 * "commitId": ..., "severity": ..., "description": ..., "suggestedAction":
+	 * ...}]}}.
+	 */
+	private List<RawSignal> parseAiRiskSignals(String payload) {
+		List<RawSignal> result = new ArrayList<>();
+		try {
+			com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(payload);
+			com.fasterxml.jackson.databind.JsonNode signalsNode = root.get("signals");
+			if (signalsNode == null || !signalsNode.isArray()) {
+				return result;
+			}
+			for (com.fasterxml.jackson.databind.JsonNode signal : signalsNode) {
+				String signalType = signal.path("signalType").asText("AI_RISK_DETECTED");
+				String description = signal.path("description").asText("");
+				String severity = signal.path("severity").asText("MEDIUM");
+				String suggestedAction = signal.path("suggestedAction").asText("");
+				String commitIdStr = signal.path("commitId").asText(null);
+				UUID commitId = null;
+				if (commitIdStr != null && !"null".equals(commitIdStr) && !commitIdStr.isBlank()) {
+					try {
+						commitId = UUID.fromString(commitIdStr);
+					} catch (IllegalArgumentException ignored) {
+					}
+				}
+
+				String rationale = "[" + severity + "] " + description;
+				if (!suggestedAction.isBlank()) {
+					rationale += " → " + suggestedAction;
+				}
+				result.add(new RawSignal(signalType, commitId, rationale));
+			}
+		} catch (Exception ex) {
+			log.debug("Failed to parse AI risk signals: {}", ex.getMessage());
+		}
+		return result;
 	}
 
 	// -------------------------------------------------------------------------

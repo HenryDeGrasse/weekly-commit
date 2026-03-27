@@ -49,7 +49,7 @@ function TogglePill<T extends string>({ value, label, active, onToggle }: { valu
       aria-pressed={active}
       className={cn(
         "px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors",
-        active ? "border-primary bg-primary text-white" : "border-border bg-surface text-foreground hover:bg-muted/10",
+        active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground hover:bg-muted/10",
       )}
     >
       {label}

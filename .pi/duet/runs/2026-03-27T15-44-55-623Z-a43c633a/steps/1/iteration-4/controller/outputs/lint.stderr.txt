@@ -1,0 +1,68 @@
+/Users/henrydegrasse/.bash_profile: line 5: /Users/henrydegrasse/.cargo/env: No such file or directory
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':spotlessJavaCheck'.
+> The following files had format violations:
+      src/main/java/com/weeklycommit/ai/eval/FaithfulnessEvaluator.java
+          @@ -36,11 +36,8 @@
+           \tprivate·static·final·Logger·log·=·LoggerFactory.getLogger(FaithfulnessEvaluator.class);
+           
+           \t/**·Suggestion·types·where·faithfulness·is·critical·(always·evaluate).·*/
+          -\tprivate·static·final·java.util.Set<String>·HIGH_STAKES_TYPES·=·java.util.Set.of(
+          -\t\t\tAiContext.TYPE_RISK_SIGNAL,
+          -\t\t\tAiContext.TYPE_TEAM_INSIGHT,
+          -\t\t\tAiContext.TYPE_PERSONAL_INSIGHT,
+          -\t\t\tAiContext.TYPE_RAG_QUERY);
+          +\tprivate·static·final·java.util.Set<String>·HIGH_STAKES_TYPES·=·java.util.Set.of(AiContext.TYPE_RISK_SIGNAL,
+          +\t\t\tAiContext.TYPE_TEAM_INSIGHT,·AiContext.TYPE_PERSONAL_INSIGHT,·AiContext.TYPE_RAG_QUERY);
+           
+           \t/**·Sampling·rate·for·lower-stakes·suggestion·types.·*/
+           \tprivate·static·final·double·LOW_STAKES_SAMPLE_RATE·=·0.10;
+          @@ -49,8 +46,8 @@
+           \tprivate·final·AiSuggestionRepository·suggestionRepo;
+           \tprivate·final·ObjectMapper·objectMapper;
+           
+          -\tpublic·FaithfulnessEvaluator(AiProviderRegistry·aiProviderRegistry,
+          -\t\t\tAiSuggestionRepository·suggestionRepo,·ObjectMapper·objectMapper)·{
+          +\tpublic·FaithfulnessEvaluator(AiProviderRegistry·aiProviderRegistry,·AiSuggestionRepository·suggestionRepo,
+          +\t\t\tObjectMapper·objectMapper)·{
+           \t\tthis.aiProviderRegistry·=·aiProviderRegistry;
+           \t\tthis.suggestionRepo·=·suggestionRepo;
+           \t\tthis.objectMapper·=·objectMapper;
+          @@ -103,19 +100,11 @@
+           \t\t\tString·context·=·suggestion.getPrompt();
+           
+           \t\t\t//·Build·judge·context
+          -\t\t\tMap<String,·Object>·judgeInput·=·Map.of(
+          -\t\t\t\t\t"answer",·answer,
+          -\t\t\t\t\t"retrievedContext",·context,
+          -\t\t\t\t\t"suggestionType",·suggestion.getSuggestionType());
+          +\t\t\tMap<String,·Object>·judgeInput·=·Map.of("answer",·answer,·"retrievedContext",·context,·"suggestionType",
+          +\t\t\t\t\tsuggestion.getSuggestionType());
+           
+          -\t\t\tAiContext·judgeContext·=·new·AiContext(
+          -\t\t\t\t\t"FAITHFULNESS_EVAL",
+          -\t\t\t\t\tnull,·null,·null,
+          -\t\t\t\t\tMap.of(),
+          -\t\t\t\t\tMap.of(),
+          -\t\t\t\t\tjava.util.List.of(),
+          -\t\t\t\t\tjava.util.List.of(),
+          -\t\t\t\t\tjudgeInput);
+          +\t\t\tAiContext·judgeContext·=·new·AiContext("FAITHFULNESS_EVAL",·null,·null,·null,·Map.of(),·Map.of(),
+          +\t\t\t\t\tjava.util.List.of(),·java.util.List.of(),·judgeInput);
+           
+           \t\t\tAiSuggestionResult·judgeResult·=·aiProviderRegistry.generateSuggestion(judgeContext);
+           
+      ... (24 more lines that didn't fit)
+  Violations also present in 14 other files.
+  Run './gradlew :spotlessApply' to fix these violations.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 500ms

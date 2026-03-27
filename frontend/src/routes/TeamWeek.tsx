@@ -92,10 +92,12 @@ export default function TeamWeek() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="m-0 text-xl font-bold">Team Week</h2>
         {teamWeekData && <span className="text-sm text-muted font-semibold">{teamWeekData.teamName}</span>}
-        {aiAssistanceEnabled && teamId && (
-          <SemanticSearchInput teamId={teamId} userId={userId} className="w-full mt-2 sm:w-auto sm:mt-0" />
-        )}
       </div>
+
+      {/* AI semantic search — full-width row so the answer card doesn't shift the header */}
+      {aiAssistanceEnabled && teamId && (
+        <SemanticSearchInput teamId={teamId} userId={userId} />
+      )}
 
       {/* Week selector */}
       <div data-testid="team-week-selector" className="flex items-center gap-2 flex-wrap">
@@ -120,12 +122,12 @@ export default function TeamWeek() {
         <div role="status" aria-label="Loading team data" data-testid="team-week-loading" className="text-sm text-muted">Loading team data…</div>
       )}
       {(teamError ?? exceptionsError) && (
-        <div role="alert" data-testid="team-week-error" className="rounded-default border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">
+        <div role="alert" data-testid="team-week-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-foreground font-semibold">
           Failed to load team data: {(teamError ?? exceptionsError)?.message}
         </div>
       )}
       {actionError && (
-        <div role="alert" data-testid="team-action-error" className="rounded-default border border-red-200 bg-red-50 px-3 py-2 text-xs text-danger">{actionError}</div>
+        <div role="alert" data-testid="team-action-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-xs text-foreground font-semibold">{actionError}</div>
       )}
 
       {teamWeekData && (
@@ -167,7 +169,7 @@ export default function TeamWeek() {
               >
                 {tab.label}
                 {tab.id === "exceptions" && unresolvedExceptions > 0 && (
-                  <span className="ml-1.5 text-[0.6rem] font-bold px-1 py-px rounded-full bg-red-100 text-red-700">{unresolvedExceptions}</span>
+                  <span className="ml-1.5 text-[0.6rem] font-bold px-1 py-px rounded-full bg-foreground text-background">{unresolvedExceptions}</span>
                 )}
               </button>
             ))}

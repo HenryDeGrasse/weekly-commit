@@ -15,9 +15,9 @@ interface RollupMap { [rcdoNodeId: string]: RcdoRollupEntry; }
 interface PointsMap { [rcdoNodeId: string]: number; }
 
 const TYPE_BADGE: Record<string, string> = {
-  RALLY_CRY: "bg-violet-100 text-violet-700",
-  DEFINING_OBJECTIVE: "bg-blue-100 text-blue-700",
-  OUTCOME: "bg-emerald-100 text-emerald-700",
+  RALLY_CRY: "bg-foreground text-background",
+  DEFINING_OBJECTIVE: "bg-neutral-400 text-background",
+  OUTCOME: "bg-neutral-200 text-neutral-700",
 };
 const TYPE_ABBR: Record<string, string> = { RALLY_CRY: "RC", DEFINING_OBJECTIVE: "DO", OUTCOME: "OUT" };
 
@@ -39,14 +39,14 @@ function RcdoRow({ node, rollupMap, achievedPointsMap, depth }: { node: RcdoTree
       <tr data-testid={`rcdo-row-${node.id}`} className={cn("border-b border-border", node.status === "ARCHIVED" && "opacity-50")}>
         <td className="px-3 py-2" style={{ paddingLeft: `${0.75 + depth * 1.25}rem` }}>
           <div className="flex items-center gap-2">
-            <span className={cn("text-[0.6rem] font-bold px-1.5 py-px rounded-full uppercase tracking-wider shrink-0", TYPE_BADGE[node.nodeType] ?? "bg-slate-100 text-slate-600")}>
+            <span className={cn("text-[0.6rem] font-bold px-1.5 py-px rounded-full uppercase tracking-wider shrink-0", TYPE_BADGE[node.nodeType] ?? "bg-neutral-100 text-neutral-600")}>
               {TYPE_ABBR[node.nodeType] ?? node.nodeType}
             </span>
             <span className={cn("text-sm", depth === 0 ? "font-bold" : depth === 1 ? "font-semibold" : "font-normal", !hasCoverage && totalCommits === 0 && "text-muted")}>
               {node.title}
             </span>
             {!hasCoverage && totalCommits === 0 && node.status === "ACTIVE" && (
-              <span data-testid={`coverage-gap-${node.id}`} className="text-[0.6rem] px-1.5 py-px rounded-full bg-red-100 text-red-700 font-semibold">No coverage</span>
+              <span data-testid={`coverage-gap-${node.id}`} className="text-[0.6rem] px-1.5 py-px rounded-full bg-foreground/10 text-foreground font-bold underline">No coverage</span>
             )}
           </div>
         </td>
@@ -57,14 +57,14 @@ function RcdoRow({ node, rollupMap, achievedPointsMap, depth }: { node: RcdoTree
           {totalPoints > 0 ? totalPoints : <span className="text-muted font-normal">0</span>}
         </td>
         <td className="px-3 py-2 text-right" data-testid={`rcdo-achieved-${node.id}`}>
-          <span className={cn("font-semibold text-sm", achievedPoints > 0 ? "text-success" : "text-muted")}>
+          <span className={cn("font-semibold text-sm", achievedPoints > 0 ? "text-foreground" : "text-muted")}>
             {achievedPoints > 0 ? achievedPoints : 0}
           </span>
         </td>
         <td className="px-3 py-2 min-w-[140px]">
           <div data-testid={`rcdo-progress-${node.id}`} aria-label={`${node.title} planned versus achieved`} className="flex flex-col gap-1">
-            <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
-              <div className={cn("h-full transition-[width] duration-200", achievedPoints > 0 ? "bg-success" : "bg-slate-300")} style={{ width: `${achievedPct}%` }} />
+            <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+              <div className={cn("h-full transition-[width] duration-200", achievedPoints > 0 ? "bg-foreground" : "bg-neutral-300")} style={{ width: `${achievedPct}%` }} />
             </div>
             <span className="text-[0.65rem] text-muted text-right">{totalPoints > 0 ? `${Math.round(achievedPct)}%` : "—"}</span>
           </div>

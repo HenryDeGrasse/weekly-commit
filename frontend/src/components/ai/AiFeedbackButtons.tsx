@@ -48,7 +48,7 @@ export function AiFeedbackButtons({ suggestionId, className }: AiFeedbackButtons
         size="icon"
         onClick={() => void handleFeedback("ACCEPTED")}
         aria-label="Helpful suggestion"
-        className="h-6 w-6 text-muted hover:text-success"
+        className="h-6 w-6 text-muted hover:text-foreground"
         data-testid="ai-feedback-accept"
       >
         <ThumbsUp className="h-3.5 w-3.5" />
@@ -58,7 +58,7 @@ export function AiFeedbackButtons({ suggestionId, className }: AiFeedbackButtons
         size="icon"
         onClick={() => void handleFeedback("DISMISSED")}
         aria-label="Not helpful"
-        className="h-6 w-6 text-muted hover:text-danger"
+        className="h-6 w-6 text-muted hover:text-foreground"
         data-testid="ai-feedback-dismiss"
       >
         <ThumbsDown className="h-3.5 w-3.5" />

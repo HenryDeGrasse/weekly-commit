@@ -8,22 +8,28 @@ import type {
 } from "@weekly-commit/shared";
 import { HostProvider, type HostBridge } from "./HostProvider.js";
 
-/** Default design tokens for standalone development (maps to CSS custom props). */
+/**
+ * Default design tokens for standalone development (maps to CSS custom props).
+ *
+ * Design direction: monochrome utilitarian — Geist Mono everywhere, zero
+ * radius, neutral gray primary, minimal shadow. Inspired by shadcn/ui
+ * "New York" neutral theme.
+ */
 export const defaultDesignTokens: DesignTokens = {
-  colorPrimary: "#2563eb",
-  colorSecondary: "#7c3aed",
-  colorBackground: "#f9fafb",
+  colorPrimary: "#737373",
+  colorSecondary: "#f5f5f5",
+  colorBackground: "#ffffff",
   colorSurface: "#ffffff",
-  colorText: "#111827",
-  colorTextMuted: "#6b7280",
-  colorBorder: "#e5e7eb",
-  colorSuccess: "#059669",
+  colorText: "#0a0a0a",
+  colorTextMuted: "#717171",
+  colorBorder: "#e5e5e5",
+  colorSuccess: "#16a34a",
   colorWarning: "#d97706",
-  colorDanger: "#dc2626",
+  colorDanger: "#e7000b",
   fontFamilyBase:
-    "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
   fontSizeBase: "16px",
-  borderRadius: "6px",
+  borderRadius: "0px",
   spacingUnit: "8px",
 };
 
@@ -50,6 +56,7 @@ export const mockHostContext: HostContext = {
     aiAssistanceEnabled: true,
     managerReviewEnabled: true,
     notificationsEnabled: true,
+    rcdoAdminEnabled: true,
   },
   authToken: "mock-dev-token",
 };

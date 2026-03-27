@@ -6,6 +6,7 @@
 import type { ApiClient } from "./client.js";
 import type {
   TeamWeekViewResponse,
+  TeamMember,
   ExceptionResponse,
   CommentResponse,
   ResolveExceptionPayload,
@@ -17,6 +18,13 @@ export function createTeamApi(client: ApiClient, actorUserId: string) {
   const actorHeader = { "X-Actor-User-Id": actorUserId };
 
   return {
+    /**
+     * GET /api/teams/{id}/members
+     * Returns the lightweight member list (id + displayName + email + role).
+     */
+    getTeamMembers: (teamId: string): Promise<TeamMember[]> =>
+      client.get(`/teams/${encodeURIComponent(teamId)}/members`),
+
     /**
      * GET /api/teams/{id}/week/{weekStart}
      * Returns the aggregated weekly view for all team members.

@@ -87,20 +87,20 @@ export function ScopeChangeDialog({ action, commit, proposedChanges, newCommitTi
         </div>
 
         {/* Locked notice */}
-        <div data-testid="scope-change-locked-notice" className="mb-4 flex items-center gap-2 rounded-default border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs text-blue-800">
+        <div data-testid="scope-change-locked-notice" className="mb-4 flex items-center gap-2 rounded-default border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-xs text-foreground">
           <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           This plan is <strong>locked</strong>. This change will be recorded in the scope-change timeline with your reason.
         </div>
 
         {/* What's changing */}
         {action === "ADD" && newCommitTitle && (
-          <div data-testid="scope-change-add-preview" className="mb-4 rounded-default border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm">
-            <span className="font-semibold text-success">+ Adding:</span> {newCommitTitle}
+          <div data-testid="scope-change-add-preview" className="mb-4 rounded-default border border-foreground/20 bg-foreground/5 px-3 py-2.5 text-sm">
+            <span className="font-semibold text-foreground">+ Adding:</span> {newCommitTitle}
           </div>
         )}
         {action === "REMOVE" && commit && (
-          <div data-testid="scope-change-remove-preview" className="mb-4 rounded-default border border-red-200 bg-red-50 px-3 py-2.5 text-sm">
-            <span className="font-semibold text-danger">− Removing:</span> {commit.title}
+          <div data-testid="scope-change-remove-preview" className="mb-4 rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2.5 text-sm">
+            <span className="font-semibold text-foreground">− Removing:</span> {commit.title}
           </div>
         )}
         {action === "EDIT" && fieldChanges.length > 0 && (
@@ -112,16 +112,16 @@ export function ScopeChangeDialog({ action, commit, proposedChanges, newCommitTi
               <thead>
                 <tr>
                   <th className={thCls}>Field</th>
-                  <th className={cn(thCls, "text-danger")}>Before</th>
-                  <th className={cn(thCls, "text-success")}>After</th>
+                  <th className={cn(thCls, "text-foreground")}>Before</th>
+                  <th className={cn(thCls, "text-foreground")}>After</th>
                 </tr>
               </thead>
               <tbody>
                 {fieldChanges.map((change) => (
                   <tr key={change.field} data-testid="scope-change-field-row">
                     <td className="px-2.5 py-1.5 text-xs font-semibold border-b border-border">{change.field}</td>
-                    <td className="px-2.5 py-1.5 text-xs text-danger bg-red-50 border-b border-border">{change.before}</td>
-                    <td className="px-2.5 py-1.5 text-xs text-success bg-emerald-50 border-b border-border">{change.after}</td>
+                    <td className="px-2.5 py-1.5 text-xs text-foreground bg-neutral-100 border-b border-border line-through">{change.before}</td>
+                    <td className="px-2.5 py-1.5 text-xs text-foreground bg-foreground/5 border-b border-border font-semibold">{change.after}</td>
                   </tr>
                 ))}
               </tbody>

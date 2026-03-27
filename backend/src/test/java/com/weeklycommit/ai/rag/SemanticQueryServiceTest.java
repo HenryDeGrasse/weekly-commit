@@ -192,7 +192,7 @@ class SemanticQueryServiceTest {
 		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
 
 		// Pinecone is still called (with default/empty filter)
-		verify(pineconeClient).query(anyString(), any(), eq(5), any());
+		verify(pineconeClient).query(anyString(), any(), eq(40), any());
 		assertThat(result.available()).isTrue();
 	}
 
@@ -284,13 +284,18 @@ class SemanticQueryServiceTest {
 		service.query(QUESTION, TEAM_ID, USER_ID);
 
 		ArgumentCaptor<Map<String, Object>> filterCaptor = ArgumentCaptor.forClass(Map.class);
-		verify(pineconeClient).query(anyString(), any(), eq(5), filterCaptor.capture());
+		verify(pineconeClient).query(anyString(), any(), eq(40), filterCaptor.capture());
 		Map<String, Object> filter = filterCaptor.getValue();
 		assertThat(filter.get("teamId")).isEqualTo(TEAM_ID.toString());
 		assertThat(filter.get("userId")).isEqualTo(USER_ID.toString());
-		assertThat((Map<String, Object>) filter.get("entityType")).containsEntry("$in", List.of("commit"));
-		assertThat((Map<String, Object>) filter.get("weekStartDate")).containsEntry("$gte", "2025-01-06")
-				.containsEntry("$lte", "2025-01-31");
+		// entityType is now filtered by exact string match (single type)
+		assertThat(filter.get("entityType")).isEqualTo("commit");
+		// date range is now stored as numeric epoch days
+		@SuppressWarnings("unchecked")
+		Map<String, Object> epochRange = (Map<String, Object>) filter.get("weekStartEpochDay");
+		assertThat(epochRange).isNotNull();
+		assertThat((Long) epochRange.get("$gte")).isEqualTo(java.time.LocalDate.parse("2025-01-06").toEpochDay());
+		assertThat((Long) epochRange.get("$lte")).isEqualTo(java.time.LocalDate.parse("2025-01-31").toEpochDay());
 	}
 
 	// ── Helpers ───────────────────────────────────────────────────────────

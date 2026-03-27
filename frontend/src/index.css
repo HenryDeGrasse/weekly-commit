@@ -1,36 +1,99 @@
+/*
+ * Geist Mono font — loaded from CDN. In production this would come from
+ * the host app's font stack or be self-hosted.
+ * Must precede @import "tailwindcss" because CSS @import rules must come
+ * before all other statements in the compiled output.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300..900&display=swap");
+
 @import "tailwindcss";
 
 /*
  * Map HostBridge DesignTokens (set as CSS custom properties by AppShell)
  * into Tailwind's theme so utilities like bg-primary, text-muted, etc. work.
  *
- * The --color-* vars are injected at runtime by tokensToStyle() in AppShell.
- * We provide sensible defaults here so Tailwind classes work even before
- * the React tree mounts.
+ * Design direction: monochrome utilitarian — Geist Mono everywhere, zero
+ * radius, neutral gray primary, minimal shadow. All colors resolve through
+ * CSS vars so the host app can override at runtime.
  */
 
 @theme {
-  /* Colors */
-  --color-primary: var(--color-primary, #2563eb);
-  --color-secondary: var(--color-secondary, #7c3aed);
+  /* ── Colors ──────────────────────────────────────────────────────── */
+  --color-primary: var(--color-primary, #737373);
+  --color-primary-foreground: #fafafa;
+  --color-secondary: var(--color-secondary, #f5f5f5);
+  --color-secondary-foreground: #171717;
   --color-surface: var(--color-surface, #ffffff);
-  --color-background: var(--color-background, #f8fafc);
-  --color-foreground: var(--color-text, #1e293b);
-  --color-muted: var(--color-text-muted, #64748b);
-  --color-border: var(--color-border, #e2e8f0);
-  --color-success: var(--color-success, #16a34a);
-  --color-warning: var(--color-warning, #d97706);
-  --color-danger: var(--color-danger, #dc2626);
+  --color-surface-raised: #fafafa;
+  --color-background: var(--color-background, #ffffff);
+  --color-foreground: var(--color-text, #0a0a0a);
+  --color-muted: var(--color-text-muted, #717171);
+  --color-muted-bg: #f5f5f5;
+  --color-border: var(--color-border, #e5e5e5);
+  --color-input: #e5e5e5;
+  --color-ring: #a1a1a1;
+  --color-success: var(--color-success, #404040);
+  --color-success-foreground: #fafafa;
+  --color-warning: var(--color-warning, #737373);
+  --color-warning-foreground: #fafafa;
+  --color-danger: var(--color-danger, #171717);
+  --color-danger-foreground: #f5f5f5;
 
-  /* Typography */
-  --font-family-base: var(--font-family-base, "Inter", ui-sans-serif, system-ui, sans-serif);
+  /* ── Typography ──────────────────────────────────────────────────── */
+  --font-family-base: var(--font-family-base, "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace);
+  --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  /* Radii */
-  --radius-sm: calc(var(--border-radius, 0.375rem) * 0.75);
-  --radius-default: var(--border-radius, 0.375rem);
-  --radius-md: calc(var(--border-radius, 0.375rem) * 1.25);
-  --radius-lg: calc(var(--border-radius, 0.375rem) * 2);
+  /* ── Radii (0rem = sharp corners everywhere) ─────────────────────── */
+  --radius-sm: calc(var(--border-radius, 0rem) * 0.75);
+  --radius-default: var(--border-radius, 0rem);
+  --radius-md: calc(var(--border-radius, 0rem) * 1.25);
+  --radius-lg: calc(var(--border-radius, 0rem) * 2);
   --radius-full: 9999px;
+
+  /* ── Shadows (minimal — 1px y-offset, low opacity) ───────────────── */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 2px 8px 0 rgba(0, 0, 0, 0.08);
+}
+
+/*
+ * ── Dark mode ─────────────────────────────────────────────────────────
+ *
+ * Activated by <html data-theme="dark">. Every semantic color is remapped;
+ * components pick up the change automatically through CSS vars.
+ * The palette is the same neutral gray family, just inverted.
+ */
+
+@layer base {
+  [data-theme="dark"] {
+    --color-primary: #a3a3a3;
+    --color-primary-foreground: #0a0a0a;
+    --color-secondary: #1c1c1c;
+    --color-secondary-foreground: #e5e5e5;
+    --color-surface: #141414;
+    --color-surface-raised: #1c1c1c;
+    --color-background: #0a0a0a;
+    --color-foreground: #e5e5e5;
+    --color-text: #e5e5e5;
+    --color-muted: #737373;
+    --color-text-muted: #737373;
+    --color-muted-bg: #1c1c1c;
+    --color-border: #2a2a2a;
+    --color-input: #2a2a2a;
+    --color-ring: #525252;
+    --color-success: #4ade80;
+    --color-success-foreground: #0a0a0a;
+    --color-warning: #fbbf24;
+    --color-warning-foreground: #0a0a0a;
+    --color-danger: #f87171;
+    --color-danger-foreground: #0a0a0a;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 2px 8px 0 rgba(0, 0, 0, 0.5);
+
+    color-scheme: dark;
+  }
 }
 
 /* ── Base resets ─────────────────────────────────────────────────────── */
@@ -45,11 +108,12 @@
     font-family: var(--font-family-base);
     color: var(--color-foreground);
     background: var(--color-background);
+    font-feature-settings: "ss01", "ss02", "cv01";
   }
 
-  /* Accessible focus ring */
+  /* Accessible focus ring — uses the ring color token */
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-ring);
     outline-offset: 2px;
   }
 
@@ -84,9 +148,43 @@
   ::-webkit-scrollbar-thumb {
     background: var(--color-border);
     border-radius: var(--radius-full);
+    transition: background 0.2s;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-muted);
+  }
+}
+
+/* ── Theme transition ────────────────────────────────────────────────── */
+
+@layer base {
+  [data-theme] {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+}
+
+/* ── Chess piece shade tokens ─────────────────────────────────────────
+ * Used by Reports, ChessDistributionSection, and AnswerRenderer via
+ * var(--chess-king) etc. Flip to light shades in dark mode so the
+ * gradient still reads darkest=KING → lightest=PAWN relative to bg.
+ */
+
+@layer base {
+  :root {
+    --chess-king: #0a0a0a;
+    --chess-queen: #262626;
+    --chess-rook: #525252;
+    --chess-bishop: #737373;
+    --chess-knight: #a3a3a3;
+    --chess-pawn: #d4d4d4;
+  }
+  [data-theme="dark"] {
+    --chess-king: #f5f5f5;
+    --chess-queen: #d4d4d4;
+    --chess-rook: #a3a3a3;
+    --chess-bishop: #737373;
+    --chess-knight: #525252;
+    --chess-pawn: #2a2a2a;
   }
 }
 

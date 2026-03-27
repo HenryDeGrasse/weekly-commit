@@ -81,7 +81,7 @@ function SortableItem({ commit, rank, totalCount, isDraft, rcdoLabel, onEdit, on
           {/* Priority rank badge */}
           <span
             data-testid={`priority-rank-${commit.id}`}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shrink-0"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0"
           >
             {rank}
           </span>
@@ -170,10 +170,10 @@ function SortableItem({ commit, rank, totalCount, isDraft, rcdoLabel, onEdit, on
               </div>
             )}
             {commit.carryForwardStreak > 0 && (
-              <div data-testid={`carry-forward-streak-${commit.id}`} className="flex items-center justify-between gap-2 rounded-default bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
+              <div data-testid={`carry-forward-streak-${commit.id}`} className="flex items-center justify-between gap-2 rounded-default bg-neutral-100 px-3 py-1.5 text-xs text-foreground">
                 <span>🔁 Carried forward {commit.carryForwardStreak} time{commit.carryForwardStreak !== 1 ? "s" : ""}</span>
                 {onViewLineage && (
-                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onViewLineage(commit.id); }} data-testid={`view-lineage-btn-${commit.id}`} className="h-6 px-2 text-xs border border-blue-300 text-blue-700 hover:bg-blue-100">
+                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onViewLineage(commit.id); }} data-testid={`view-lineage-btn-${commit.id}`} className="h-6 px-2 text-xs border border-neutral-300 text-foreground hover:bg-neutral-200">
                     View lineage
                   </Button>
                 )}

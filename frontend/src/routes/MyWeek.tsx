@@ -2,8 +2,9 @@
  * My Week — personal weekly plan view.
  * Route: /weekly/my-week
  */
-import { useState, useCallback, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Lock, AlertTriangle, Check, X } from "lucide-react";
+import { useState, useCallback, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Lock, AlertTriangle, Check, X, ArrowRight } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card.js";
@@ -26,6 +27,7 @@ import { ScopeChangeDialog } from "../components/lock/ScopeChangeDialog.js";
 import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
 import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js";
 import { InsightPanel } from "../components/ai/InsightPanel.js";
+import { AiLintPanel } from "../components/ai/AiLintPanel.js";
 import type {
   CommitResponse, PlanState, LockValidationError,
   ScopeChangeEventResponse, UpdateCommitPayload, CreateCommitPayload,
@@ -88,6 +90,13 @@ function DeleteConfirmDialog({ title, onConfirm, onCancel }: { readonly title: s
       </DialogFooter>
     </Dialog>
   );
+}
+
+class AiErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(_: Error, __: ErrorInfo) { /* silently suppress */ }
+  render() { return this.state.hasError ? null : this.props.children; }
 }
 
 // ── MyWeek Page ─────────────────────────────────────────────────────────────
@@ -300,7 +309,7 @@ export default function MyWeek() {
 
       {/* Error */}
       {planError && (
-        <div role="alert" data-testid="plan-error" className="rounded-default border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-danger">
+        <div role="alert" data-testid="plan-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2.5 text-sm text-foreground font-semibold">
           Failed to load plan: {planError.message}
         </div>
       )}
@@ -315,7 +324,7 @@ export default function MyWeek() {
             </div>
             <div className="flex items-center gap-2">
               {actionError && (
-                <span role="alert" data-testid="plan-action-error" className="text-xs text-danger">{actionError}</span>
+                <span role="alert" data-testid="plan-action-error" className="text-xs text-foreground font-semibold">{actionError}</span>
               )}
               {isDraft && (
                 <Button variant="primary" size="sm" onClick={handleLockButtonClick} disabled={lockLoading} data-testid="lock-plan-btn">
@@ -327,11 +336,12 @@ export default function MyWeek() {
                 <Button variant="primary" size="sm" onClick={handleOpenCreate} data-testid="post-lock-add-commit-btn">+ Add Commit</Button>
               )}
               {(plan.state === "LOCKED" || plan.state === "RECONCILING") && (
-                <span data-testid="reconcile-hint" className="text-sm text-muted">
-                  Go to{" "}
-                  <a href={`/weekly/reconcile/${plan.id}`} className="text-primary hover:underline">Reconcile</a>
-                  {" "}to close this week.
-                </span>
+                <Link to={`/weekly/reconcile/${plan.id}`} data-testid="reconcile-hint">
+                  <Button variant="primary" size="sm" type="button">
+                    <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                    {plan.state === "RECONCILING" ? "Continue Reconciliation" : "Reconcile This Week"}
+                  </Button>
+                </Link>
               )}
             </div>
           </CardHeader>
@@ -345,8 +355,8 @@ export default function MyWeek() {
 
       {/* Auto-lock system banner */}
       {plan?.systemLockedWithErrors && (
-        <div data-testid="auto-lock-banner" role="alert" className="flex items-start gap-2 rounded-default border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" aria-hidden="true" />
+        <div data-testid="auto-lock-banner" role="alert" className="flex items-start gap-2 rounded-default border border-neutral-300 bg-neutral-100 px-4 py-3 text-sm text-foreground">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-neutral-500" aria-hidden="true" />
           <span><strong>System-locked with errors</strong> — this plan was automatically locked at the deadline. Some validation issues were present at lock time. Please review and reconcile.</span>
         </div>
       )}
@@ -379,6 +389,15 @@ export default function MyWeek() {
       {/* Soft warnings */}
       {commits.length > 0 && <SoftWarningsPanel commits={commits} />}
 
+      {/* Inline AI commit quality hints — auto-runs in DRAFT so feedback appears without any extra click */}
+      {aiAssistanceEnabled && isDraft && plan && commits.length > 0 && (
+        <div data-testid="inline-ai-lint-panel">
+          <AiErrorBoundary>
+            <AiLintPanel planId={plan.id} userId={currentUserId} autoRun />
+          </AiErrorBoundary>
+        </div>
+      )}
+
       {/* Commit list */}
       {plan && (
         <CommitList
@@ -408,13 +427,13 @@ export default function MyWeek() {
 
       {/* CommitForm modals */}
       {formMode === "create" && plan && !isLocked && (
-        <CommitForm mode="create" rcdoTree={rcdoTree ?? []} existingCommits={commits} onSubmit={handleCreateCommit} onCancel={handleFormCancel} />
+        <CommitForm mode="create" planId={plan.id} rcdoTree={rcdoTree ?? []} existingCommits={commits} onSubmit={handleCreateCommit} onCancel={handleFormCancel} />
       )}
       {formMode === "edit" && plan && editingCommit && (
         <CommitForm mode="edit" commit={editingCommit} rcdoTree={rcdoTree ?? []} existingCommits={commits} onSubmit={handleUpdateCommit} onCancel={handleFormCancel} />
       )}
       {scopeChangeMode === "add" && !pendingCreatePayload && plan && (
-        <CommitForm mode="create" rcdoTree={rcdoTree ?? []} existingCommits={commits} onSubmit={async (payload) => { setPendingCreatePayload(payload); }} onCancel={handleScopeChangeCancel} />
+        <CommitForm mode="create" planId={plan.id} rcdoTree={rcdoTree ?? []} existingCommits={commits} onSubmit={async (payload) => { setPendingCreatePayload(payload); }} onCancel={handleScopeChangeCancel} />
       )}
 
       {/* Delete confirm */}
@@ -424,7 +443,7 @@ export default function MyWeek() {
 
       {/* Ticket form */}
       {ticketFormVisible && (
-        <TicketForm mode="create" initialValues={ticketFormInitialValues} currentUserId={currentUserId} {...(bridge.context.currentTeam ? { currentTeamId: bridge.context.currentTeam.id } : {})} onSubmit={handleTicketFormSubmit} onCancel={() => { setTicketFormVisible(false); setTicketFormInitialValues({}); }} />
+        <TicketForm mode="create" initialValues={ticketFormInitialValues} currentUserId={currentUserId} {...(bridge.context.currentTeam ? { currentTeamId: bridge.context.currentTeam.id } : {})} rcdoTree={rcdoTree ?? []} onSubmit={handleTicketFormSubmit} onCancel={() => { setTicketFormVisible(false); setTicketFormInitialValues({}); }} />
       )}
 
       {/* Lock confirm */}

@@ -9,6 +9,8 @@ import {
   Users,
   Ticket,
   Target,
+  BarChart3,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "../lib/utils.js";
@@ -26,6 +28,8 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: "/weekly/team", label: "Team Week", icon: Users },
   { to: "/weekly/tickets", label: "Tickets", icon: Ticket },
   { to: "/weekly/rcdos", label: "RCDOs", icon: Target },
+  { to: "/weekly/reports", label: "Reports", icon: BarChart3 },
+  { to: "/weekly/admin", label: "Admin", icon: Settings },
 ];
 
 interface NavigationProps {

@@ -171,7 +171,7 @@ export default function Rcdos() {
           {loading ? (
             <div role="status" aria-label="Loading RCDO hierarchy" className="text-sm text-muted px-2">Loading…</div>
           ) : error ? (
-            <div role="alert" className="text-sm text-danger">Failed to load: {error.message}</div>
+            <div role="alert" className="text-sm text-foreground font-semibold">Failed to load: {error.message}</div>
           ) : (
             <RcdoTreeView nodes={nodes} selectedId={selectedId} onSelect={handleSelect} statusFilter={statusFilter} searchQuery={searchQuery} />
           )}
@@ -201,7 +201,7 @@ export default function Rcdos() {
               </div>
 
               {actionError && (
-                <div role="alert" className="rounded-default border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{actionError}</div>
+                <div role="alert" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-foreground font-semibold">{actionError}</div>
               )}
 
               {!perms.isReadOnly && (

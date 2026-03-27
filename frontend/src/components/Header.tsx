@@ -5,15 +5,19 @@
 import { useHostContext } from "../host/HostProvider.js";
 import {
   Calendar,
-  Bell,
   ChevronLeft,
   ChevronRight,
   PanelLeftClose,
   PanelLeft,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { Button } from "./ui/Button.js";
 import { Tooltip } from "./ui/Tooltip.js";
+import { NotificationPanel } from "./notifications/NotificationPanel.js";
 import { Breadcrumb } from "./Breadcrumb.js";
+import { useTheme } from "../lib/useTheme.js";
 
 /** Returns the ISO date string (yyyy-MM-dd) for the Monday of the given date. */
 function getWeekMonday(date: Date): string {
@@ -47,6 +51,10 @@ export function Header({
   onToggleSidebar,
 }: HeaderProps) {
   const { authenticatedUser } = useHostContext();
+  const { mode, toggle } = useTheme();
+
+  const ThemeIcon = mode === "dark" ? Moon : mode === "light" ? Sun : Monitor;
+  const themeLabel = mode === "dark" ? "Dark" : mode === "light" ? "Light" : "System";
 
   function handleWeekChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.value) {
@@ -150,20 +158,22 @@ export function Header({
         </Button>
       </div>
 
-      {/* Right: notifications + user */}
+      {/* Right: theme + notifications + user */}
       <div className="flex items-center gap-2">
-        <Tooltip content="Notifications">
+        <Tooltip content={`Theme: ${themeLabel}`}>
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Notifications"
-            className="relative"
+            onClick={toggle}
+            aria-label={`Switch theme (currently ${themeLabel})`}
+            className="h-8 w-8"
+            data-testid="theme-toggle"
           >
-            <Bell className="h-4 w-4" />
-            {/* Notification badge dot — placeholder for real count */}
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger" />
+            <ThemeIcon className="h-4 w-4" />
           </Button>
         </Tooltip>
+
+        <NotificationPanel />
 
         <div className="flex items-center gap-2 pl-2 border-l border-border" aria-label="Current user">
           {authenticatedUser.avatarUrl ? (

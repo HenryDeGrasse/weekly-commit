@@ -40,6 +40,7 @@ vi.mock("../api/teamHooks.js", () => ({
   useTeamApi: vi.fn(),
   useTeamWeekView: vi.fn(),
   useExceptionQueue: vi.fn(),
+  useTeamMembers: vi.fn().mockReturnValue({ data: [], loading: false, error: null, refetch: vi.fn() }),
 }));
 vi.mock("../api/ticketHooks.js", () => ({
   useTicketApi: vi.fn(),
@@ -209,6 +210,7 @@ const mockPlanApi = {
 };
 
 const mockTeamApi = {
+  getTeamMembers: vi.fn().mockResolvedValue([]),
   getTeamWeekView: vi.fn(),
   getExceptionQueue: vi.fn(),
   resolveException: vi.fn(),
@@ -338,6 +340,7 @@ describe("Fix 2 — Estimate points: selected button highlights correctly", () =
     render(
       <CommitForm
         mode="create"
+        planId="00000000-0000-0000-0000-000000000099"
         rcdoTree={seededRcdoTree}
         existingCommits={[]}
         onSubmit={onSubmit}
@@ -491,6 +494,7 @@ describe("Fix 4 — RCDO picker: CommitForm shows the seeded RCDO tree", () => {
         <MockHostProvider>
           <CommitForm
             mode="create"
+            planId="00000000-0000-0000-0000-000000000099"
             rcdoTree={seededRcdoTree}
             existingCommits={[]}
             onSubmit={vi.fn().mockResolvedValue(undefined)}

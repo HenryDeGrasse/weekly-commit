@@ -67,10 +67,13 @@ class RiskDetectionServiceTest {
 	private UUID userId;
 	private WeeklyPlan plan;
 
+	@Mock
+	private com.weeklycommit.ai.provider.AiProviderRegistry aiProviderRegistry;
+
 	@BeforeEach
 	void setUp() {
 		service = new RiskDetectionService(planRepo, commitRepo, workItemRepo, statusHistoryRepo, scopeChangeRepo,
-				suggestionRepo, authService, new ObjectMapper());
+				suggestionRepo, authService, aiProviderRegistry, new ObjectMapper());
 		planId = UUID.randomUUID();
 		userId = UUID.randomUUID();
 

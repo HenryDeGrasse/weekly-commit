@@ -34,6 +34,18 @@ public interface WeeklyPlanRepository extends JpaRepository<WeeklyPlan, UUID> {
 	 */
 	List<WeeklyPlan> findByStateAndReconcileDeadlineBefore(PlanState state, Instant deadline);
 
+	/**
+	 * Used by the deadline reminder job to find DRAFT plans with lock due within a
+	 * window.
+	 */
+	List<WeeklyPlan> findByStateAndLockDeadlineBetween(PlanState state, Instant from, Instant to);
+
+	/**
+	 * Used by the deadline reminder job to find RECONCILING plans with reconcile
+	 * due within a window.
+	 */
+	List<WeeklyPlan> findByStateAndReconcileDeadlineBetween(PlanState state, Instant from, Instant to);
+
 	boolean existsByOwnerUserIdAndWeekStartDate(UUID ownerUserId, LocalDate weekStartDate);
 
 	/**

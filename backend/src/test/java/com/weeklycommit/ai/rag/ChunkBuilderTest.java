@@ -376,10 +376,13 @@ class ChunkBuilderTest {
 
 		ChunkBuilder.ChunkData chunk = builder.buildPlanSummaryChunk(plan, List.of(c1, c2));
 
-		assertThat(chunk.text()).contains("Week of " + WEEK);
+		assertThat(chunk.text()).contains("week of " + WEEK);
 		assertThat(chunk.text()).contains("2 commits");
-		assertThat(chunk.text()).contains("8pts");
+		assertThat(chunk.text()).contains("8pts planned");
 		assertThat(chunk.text()).contains("RECONCILED");
+		// Verify inline commit titles are present
+		assertThat(chunk.text()).contains("\"Commit 1\"");
+		assertThat(chunk.text()).contains("\"Commit 2\"");
 	}
 
 	@Test

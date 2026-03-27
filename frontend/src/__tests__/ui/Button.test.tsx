@@ -11,7 +11,7 @@ describe("Button", () => {
   it("applies primary variant by default", () => {
     render(<Button>Primary</Button>);
     const btn = screen.getByRole("button");
-    expect(btn.className).toContain("bg-primary");
+    expect(btn.className).toContain("bg-foreground");
   });
 
   it("applies secondary variant", () => {
@@ -98,6 +98,6 @@ describe("Button", () => {
 
   it("applies link variant with underline styles", () => {
     render(<Button variant="link">Link</Button>);
-    expect(screen.getByRole("button").className).toContain("text-primary");
+    expect(screen.getByRole("button").className).toContain("text-foreground");
   });
 });

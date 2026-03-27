@@ -96,7 +96,7 @@ export function UncommittedWorkSection({ assignedTickets, unassignedTickets, onQ
     return (
       <section aria-labelledby="uncommitted-heading" data-testid="uncommitted-work-section">
         <h3 id="uncommitted-heading" className="m-0 mb-3 text-sm font-bold">Uncommitted Work</h3>
-        <p data-testid="no-uncommitted-work" className="text-sm text-success font-semibold">✓ No uncommitted work for this week.</p>
+        <p data-testid="no-uncommitted-work" className="text-sm text-foreground font-semibold">✓ No uncommitted work for this week.</p>
       </section>
     );
   }
@@ -107,12 +107,12 @@ export function UncommittedWorkSection({ assignedTickets, unassignedTickets, onQ
       <div className="flex flex-col gap-4">
         {/* Assigned but no commit */}
         <div data-testid="assigned-uncommitted-section" className="rounded-default border border-border bg-surface overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2.5 bg-amber-50 border-b border-border">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+          <div className="flex items-center justify-between px-3 py-2.5 bg-neutral-100 border-b border-border">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
               Assigned — no commit planned
             </span>
-            <span data-testid="assigned-uncommitted-count" className="text-xs font-bold text-amber-800">{assignedTickets.length}</span>
+            <span data-testid="assigned-uncommitted-count" className="text-xs font-bold text-foreground">{assignedTickets.length}</span>
           </div>
           {assignedTickets.length === 0 ? (
             <p className="m-0 px-3 py-2 text-xs text-muted">None.</p>
@@ -126,12 +126,12 @@ export function UncommittedWorkSection({ assignedTickets, unassignedTickets, onQ
 
         {/* Unassigned */}
         <div data-testid="unassigned-section" className="rounded-default border border-border bg-surface overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2.5 bg-red-50 border-b border-border">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-red-800">
+          <div className="flex items-center justify-between px-3 py-2.5 bg-neutral-200 border-b border-border">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
               Unassigned — targeted this week
             </span>
-            <span data-testid="unassigned-count" className="text-xs font-bold text-red-800">{unassignedTickets.length}</span>
+            <span data-testid="unassigned-count" className="text-xs font-bold text-foreground">{unassignedTickets.length}</span>
           </div>
           {unassignedTickets.length === 0 ? (
             <p className="m-0 px-3 py-2 text-xs text-muted">None.</p>

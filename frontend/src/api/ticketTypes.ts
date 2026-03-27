@@ -55,7 +55,7 @@ export interface LinkedCommitEntry {
   readonly outcome: CommitOutcome | null;
 }
 
-/** Full ticket detail response. Mirrors TicketResponse Java record. */
+/** Full ticket detail response. Mirrors TicketDetailResponse Java record. */
 export interface TicketResponse {
   readonly id: string;
   readonly key: string;
@@ -64,8 +64,14 @@ export interface TicketResponse {
   readonly status: TicketStatus;
   readonly priority: TicketPriority;
   readonly assigneeUserId: string | null;
+  /** Resolved display name for assignee (null if unassigned). */
+  readonly assigneeDisplayName: string | null;
   readonly reporterUserId: string;
+  /** Resolved display name for reporter. */
+  readonly reporterDisplayName: string | null;
   readonly teamId: string;
+  /** Resolved display name for team. */
+  readonly teamName: string | null;
   readonly rcdoNodeId: string | null;
   readonly estimatePoints: EstimatePoints | null;
   readonly targetWeekStartDate: string | null;
@@ -83,7 +89,11 @@ export interface TicketSummaryResponse {
   readonly status: TicketStatus;
   readonly priority: TicketPriority;
   readonly assigneeUserId: string | null;
+  /** Resolved display name for assignee (null if unassigned). */
+  readonly assigneeDisplayName: string | null;
   readonly teamId: string;
+  /** Resolved display name for team. */
+  readonly teamName: string | null;
   readonly rcdoNodeId: string | null;
   readonly estimatePoints: EstimatePoints | null;
   readonly targetWeekStartDate: string | null;

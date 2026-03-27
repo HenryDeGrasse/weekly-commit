@@ -55,3 +55,41 @@ groups:
           severity: warning
         annotations:
           summary: "JVM heap usage >85%"
+
+      # ── AI Quality (Phase 4c) ──────────────────────────────────
+      # Thresholds from Manus RAG Evaluation Research Report §8
+      - alert: AiFaithfulnessLow
+        expr: weekly_commit_ai_faithfulness_score < 0.88
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI faithfulness score below 0.88 ({{ $labels.suggestion_type }})"
+          description: "Rolling 7-day faithfulness is {{ $value }}. Production threshold is 0.88 (Manus §8). Investigate prompt quality or retrieval drift."
+
+      - alert: AiFaithfulnessCritical
+        expr: weekly_commit_ai_faithfulness_score < 0.85
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AI faithfulness CRITICAL — below 0.85 ({{ $labels.suggestion_type }})"
+          description: "Rolling 7-day faithfulness is {{ $value }}. Below development gate threshold (Manus §8). AI outputs may contain hallucinated content."
+
+      - alert: AiAcceptanceRateLow
+        expr: weekly_commit_ai_acceptance_rate < 0.20
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI suggestion acceptance rate below 20% ({{ $labels.suggestion_type }})"
+          description: "Users are dismissing >80% of {{ $labels.suggestion_type }} suggestions. Consider disabling this suggestion type or improving the prompt."
+
+      - alert: AiProviderDown
+        expr: weekly_commit_ai_provider_available == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AI provider unavailable for >5 minutes"
+          description: "The OpenRouter AI provider is unreachable. All AI features are degraded but core planning workflow is unaffected (PRD §FR-12)."

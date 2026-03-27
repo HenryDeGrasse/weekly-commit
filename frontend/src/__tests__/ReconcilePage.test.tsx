@@ -37,7 +37,13 @@ import type {
 
 vi.mock("../api/planHooks.js", () => ({
   usePlanApi: vi.fn(),
-  useCurrentPlan: vi.fn(),
+  useCurrentPlan: vi.fn().mockReturnValue({ data: undefined, loading: false, error: null, refetch: vi.fn() }),
+}));
+
+vi.mock("../api/rcdoHooks.js", () => ({
+  useRcdoTree: vi.fn().mockReturnValue({ data: [], loading: false, error: null, refetch: vi.fn() }),
+  useRcdoNode: vi.fn(),
+  useRcdoApi: vi.fn(),
 }));
 
 import { usePlanApi } from "../api/planHooks.js";
@@ -178,7 +184,7 @@ describe("ReconcilePage — basic rendering", () => {
   it("shows no-plan message when planId is missing", () => {
     renderReconcileNoId();
     expect(screen.getByTestId("page-reconcile")).toBeInTheDocument();
-    expect(screen.getByText(/No plan selected/i)).toBeInTheDocument();
+    expect(screen.getByText(/No plan available for reconciliation/i)).toBeInTheDocument();
   });
 
   it("shows loading indicator while fetching", () => {

@@ -5,10 +5,12 @@ import com.weeklycommit.config.service.ConfigurationService;
 import com.weeklycommit.domain.entity.UserAccount;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
+import com.weeklycommit.domain.enums.NotificationEvent;
 import com.weeklycommit.domain.enums.PlanState;
 import com.weeklycommit.domain.repository.UserAccountRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
+import com.weeklycommit.notification.service.NotificationService;
 import com.weeklycommit.plan.dto.CommitResponse;
 import com.weeklycommit.plan.dto.PlanResponse;
 import com.weeklycommit.plan.dto.PlanWithCommitsResponse;
@@ -37,6 +39,7 @@ public class WeeklyPlanService {
 	private final WeeklyCommitRepository commitRepo;
 	private final ConfigurationService configurationService;
 	private final AuditLogService auditLogService;
+	private final NotificationService notificationService;
 
 	/**
 	 * Self-reference through the Spring proxy so that calls to
@@ -50,12 +53,13 @@ public class WeeklyPlanService {
 
 	public WeeklyPlanService(WeeklyPlanRepository planRepo, UserAccountRepository userRepo,
 			WeeklyCommitRepository commitRepo, ConfigurationService configurationService,
-			AuditLogService auditLogService) {
+			AuditLogService auditLogService, NotificationService notificationService) {
 		this.planRepo = planRepo;
 		this.userRepo = userRepo;
 		this.commitRepo = commitRepo;
 		this.configurationService = configurationService;
 		this.auditLogService = auditLogService;
+		this.notificationService = notificationService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -165,6 +169,19 @@ public class WeeklyPlanService {
 		auditLogService.record(AuditLogService.PLAN_CREATED, userId, "IC", AuditLogService.TARGET_PLAN, saved.getId(),
 				null, Map.of("ownerUserId", userId.toString(), "weekStartDate", weekStartDate.toString(), "teamId",
 						teamId.toString()));
+
+		// Notify: draft window opened (LOW priority — daily digest)
+		try {
+			notificationService.createNotification(userId, NotificationEvent.DRAFT_WINDOW_OPENED,
+					"Draft plan opened for " + weekStartDate,
+					"Your weekly plan for the week of " + weekStartDate
+							+ " is ready for editing. Add your commitments before the lock deadline.",
+					saved.getId(), "PLAN");
+		} catch (Exception ex) {
+			// Non-critical — don't fail plan creation
+			org.slf4j.LoggerFactory.getLogger(WeeklyPlanService.class)
+					.warn("Failed to send draft notification for plan {}: {}", saved.getId(), ex.getMessage());
+		}
 
 		return saved;
 	}

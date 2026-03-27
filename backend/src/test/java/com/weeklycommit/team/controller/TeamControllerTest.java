@@ -38,6 +38,12 @@ class TeamControllerTest {
 	@MockBean
 	private ManagerReviewService managerReviewService;
 
+	@MockBean
+	private com.weeklycommit.domain.repository.TeamMembershipRepository teamMembershipRepository;
+
+	@MockBean
+	private com.weeklycommit.domain.repository.UserAccountRepository userAccountRepository;
+
 	@Autowired
 	private ObjectMapper objectMapper;
 

@@ -18,11 +18,11 @@ const SIGNAL_ICONS: Record<string, typeof AlertTriangle> = {
 };
 
 const SIGNAL_CLS: Record<string, string> = {
-  OVERCOMMIT: "border-red-200 bg-red-50 text-red-800",
-  UNDERCOMMIT: "border-amber-200 bg-amber-50 text-amber-800",
-  REPEATED_CARRY_FORWARD: "border-blue-200 bg-blue-50 text-blue-800",
-  BLOCKED_CRITICAL: "border-red-200 bg-red-50 text-red-800",
-  SCOPE_VOLATILITY: "border-violet-200 bg-violet-50 text-violet-800",
+  OVERCOMMIT: "border-neutral-300 bg-neutral-100 text-foreground",
+  UNDERCOMMIT: "border-neutral-200 bg-neutral-50 text-foreground",
+  REPEATED_CARRY_FORWARD: "border-neutral-200 bg-neutral-50 text-foreground",
+  BLOCKED_CRITICAL: "border-neutral-300 bg-neutral-100 text-foreground",
+  SCOPE_VOLATILITY: "border-neutral-200 bg-neutral-50 text-foreground",
 };
 
 function SignalCard({ signal }: { signal: RiskSignal }) {
@@ -87,7 +87,7 @@ export function RiskSignalsPanel({ planId }: RiskSignalsPanelProps) {
 
   if (data.signals.length === 0) {
     return (
-      <div className="flex items-center gap-2 text-sm text-success py-4" data-testid="risk-signals-clear">
+      <div className="flex items-center gap-2 text-sm text-foreground py-4" data-testid="risk-signals-clear">
         <ShieldAlert className="h-4 w-4" />
         No risk signals detected for this plan.
       </div>

@@ -59,6 +59,9 @@ class AiControllerTest {
 	private AiProviderRegistry providerRegistry;
 
 	@MockBean
+	private com.weeklycommit.ai.rag.SemanticIndexService semanticIndexService;
+
+	@MockBean
 	private SemanticQueryService semanticQueryService;
 
 	@MockBean

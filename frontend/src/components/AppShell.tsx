@@ -4,10 +4,12 @@
  * Sidebar is collapsible with state persisted to localStorage.
  */
 import { type ReactNode, useState, useEffect } from "react";
+import type { DesignTokens } from "@weekly-commit/shared";
 import { useHostBridge } from "../host/HostProvider.js";
 import { Navigation } from "./Navigation.js";
 import { Header, getWeekMonday } from "./Header.js";
 import { cn } from "../lib/utils.js";
+import { useTheme } from "../lib/useTheme.js";
 
 interface AppShellProps {
   readonly children: ReactNode;
@@ -15,30 +17,48 @@ interface AppShellProps {
 
 const SIDEBAR_KEY = "wc-sidebar-collapsed";
 
-/** Converts a DesignTokens object into CSS custom properties. */
+/**
+ * Converts DesignTokens into CSS custom properties.
+ *
+ * When dark mode is active, color tokens are omitted so the CSS
+ * [data-theme="dark"] overrides in index.css take effect. Non-color
+ * tokens (font, spacing, radius) always apply.
+ */
 function tokensToStyle(
-  tokens: import("@weekly-commit/shared").DesignTokens,
+  tokens: DesignTokens,
+  isDark: boolean,
 ): React.CSSProperties {
-  return {
-    "--color-primary": tokens.colorPrimary,
-    "--color-secondary": tokens.colorSecondary,
-    "--color-background": tokens.colorBackground,
-    "--color-surface": tokens.colorSurface,
-    "--color-text": tokens.colorText,
-    "--color-text-muted": tokens.colorTextMuted,
-    "--color-border": tokens.colorBorder,
-    "--color-success": tokens.colorSuccess,
-    "--color-warning": tokens.colorWarning,
-    "--color-danger": tokens.colorDanger,
+  const base: Record<string, string> = {
     "--font-family-base": tokens.fontFamilyBase,
     "--font-size-base": tokens.fontSizeBase,
     "--border-radius": tokens.borderRadius,
     "--spacing-unit": tokens.spacingUnit,
-  } as React.CSSProperties;
+  };
+
+  if (!isDark) {
+    // In light mode (or host-provided), apply color tokens as inline vars
+    // so the host app's palette overrides our CSS defaults.
+    Object.assign(base, {
+      "--color-primary": tokens.colorPrimary,
+      "--color-secondary": tokens.colorSecondary,
+      "--color-background": tokens.colorBackground,
+      "--color-surface": tokens.colorSurface,
+      "--color-text": tokens.colorText,
+      "--color-text-muted": tokens.colorTextMuted,
+      "--color-border": tokens.colorBorder,
+      "--color-success": tokens.colorSuccess,
+      "--color-warning": tokens.colorWarning,
+      "--color-danger": tokens.colorDanger,
+    });
+  }
+
+  return base as React.CSSProperties;
 }
 
 export function AppShell({ children }: AppShellProps) {
   const { tokens } = useHostBridge();
+  const { resolved } = useTheme();
+  const isDark = resolved === "dark";
   const [selectedWeek, setSelectedWeek] = useState(() =>
     getWeekMonday(new Date()),
   );
@@ -62,7 +82,7 @@ export function AppShell({ children }: AppShellProps) {
     <div
       className="flex h-screen flex-col overflow-hidden bg-background text-foreground"
       style={{
-        ...tokensToStyle(tokens),
+        ...tokensToStyle(tokens, isDark),
         fontFamily: "var(--font-family-base)",
         fontSize: "var(--font-size-base)",
       }}

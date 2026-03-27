@@ -31,6 +31,13 @@ vi.mock("../api/rcdoHooks.js", () => ({
   useRcdoApi: vi.fn(),
 }));
 
+vi.mock("../api/teamHooks.js", () => ({
+  useTeamApi: vi.fn(),
+  useTeamWeekView: vi.fn(),
+  useExceptionQueue: vi.fn(),
+  useTeamMembers: vi.fn().mockReturnValue({ data: [], loading: false, error: null, refetch: vi.fn() }),
+}));
+
 import {
   useTicketApi,
   useTicketList,
@@ -57,7 +64,9 @@ function makeTicketSummary(
     status: "TODO",
     priority: "MEDIUM",
     assigneeUserId: null,
+    assigneeDisplayName: null,
     teamId: "team-1",
+    teamName: "Engineering",
     rcdoNodeId: null,
     estimatePoints: 3,
     targetWeekStartDate: "2026-03-24",
@@ -79,8 +88,11 @@ function makeTicketDetail(
     status: "TODO",
     priority: "MEDIUM",
     assigneeUserId: null,
+    assigneeDisplayName: null,
     reporterUserId: "user-dev-1",
+    reporterDisplayName: "Dev User",
     teamId: "team-1",
+    teamName: "Engineering",
     rcdoNodeId: null,
     estimatePoints: 3,
     targetWeekStartDate: "2026-03-24",

@@ -1,6 +1,7 @@
 package com.weeklycommit.ai.service;
 
 import com.weeklycommit.ai.dto.AiFeedbackRequest;
+import com.weeklycommit.ai.eval.FaithfulnessEvaluator;
 import com.weeklycommit.ai.provider.AiSuggestionResult;
 import com.weeklycommit.domain.entity.AiFeedback;
 import com.weeklycommit.domain.entity.AiSuggestion;
@@ -15,6 +16,7 @@ import java.util.HexFormat;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,9 @@ public class AiSuggestionService {
 
 	private final AiSuggestionRepository suggestionRepo;
 	private final AiFeedbackRepository feedbackRepo;
+
+	@Autowired(required = false)
+	private FaithfulnessEvaluator faithfulnessEvaluator;
 
 	public AiSuggestionService(AiSuggestionRepository suggestionRepo, AiFeedbackRepository feedbackRepo) {
 		this.suggestionRepo = suggestionRepo;
@@ -66,7 +71,15 @@ public class AiSuggestionService {
 		s.setRationale(result.rationale());
 		s.setSuggestionPayload(result.payload());
 		s.setModelVersion(result.modelVersion());
-		return suggestionRepo.save(s);
+		s.setPromptVersion(result.promptVersion());
+		AiSuggestion saved = suggestionRepo.save(s);
+
+		// Async production eval sampling (Phase 4a)
+		if (faithfulnessEvaluator != null) {
+			faithfulnessEvaluator.maybeScopeAsync(saved.getId());
+		}
+
+		return saved;
 	}
 
 	/**

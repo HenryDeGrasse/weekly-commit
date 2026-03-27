@@ -1,0 +1,8 @@
+All three checks pass:
+- **lint**: exit code 0 (spotlessCheck now passes after `spotlessApply`)
+- **typecheck**: clean
+- **unit**: all tests pass
+
+**What happened:** The previous iteration introduced Java backend files (in the eval/metrics directories) that didn't comply with the project's Google Java Format rules enforced by Spotless. Running `./gradlew spotlessApply` auto-reformatted the affected files. No logic changed — only whitespace/line-wrapping was adjusted.
+
+Verdict: changes_made

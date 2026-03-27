@@ -12,7 +12,7 @@ export interface OverviewSectionProps {
 
 function ComplianceCard({ label, compliantCount, totalCount, testId }: { label: string; compliantCount: number; totalCount: number; testId: string }) {
   const pct = totalCount > 0 ? Math.round((compliantCount / totalCount) * 100) : 100;
-  const valueCls = pct >= 80 ? "text-success" : pct >= 50 ? "text-warning" : "text-danger";
+  const valueCls = pct >= 80 ? "text-foreground" : pct >= 50 ? "text-muted" : "text-foreground font-black underline";
 
   return (
     <div data-testid={testId} className="rounded-default border border-border bg-surface p-4 flex-1 min-w-[180px]">
@@ -34,12 +34,12 @@ function PointsCard({ plannedPoints, achievedPoints }: { plannedPoints: number; 
           <span className="text-xs text-muted ml-1">planned</span>
         </div>
         <div>
-          <span className={cn("text-2xl font-bold", achievedPoints > 0 ? "text-success" : "text-muted")} data-testid="achieved-points">{achievedPoints}</span>
+          <span className={cn("text-2xl font-bold", achievedPoints > 0 ? "text-foreground" : "text-muted")} data-testid="achieved-points">{achievedPoints}</span>
           <span className="text-xs text-muted ml-1">achieved</span>
         </div>
       </div>
       {achievedPoints > 0 && (
-        <div className={cn("text-xs mt-1", delta >= 0 ? "text-success" : "text-danger")} data-testid="points-delta">
+        <div className={cn("text-xs mt-1 font-semibold", delta >= 0 ? "text-foreground" : "text-foreground underline")} data-testid="points-delta">
           {delta >= 0 ? "+" : ""}{delta} delta
         </div>
       )}
@@ -48,9 +48,9 @@ function PointsCard({ plannedPoints, achievedPoints }: { plannedPoints: number; 
 }
 
 const SEVERITY_BADGE: Record<ExceptionSeverity, string> = {
-  HIGH: "bg-red-100 text-red-800",
-  MEDIUM: "bg-amber-100 text-amber-800",
-  LOW: "bg-blue-100 text-blue-800",
+  HIGH: "bg-foreground text-background",
+  MEDIUM: "bg-neutral-400 text-background",
+  LOW: "bg-neutral-200 text-neutral-700",
 };
 
 function ExceptionsCard({ exceptions }: { exceptions: ExceptionResponse[] }) {
@@ -62,7 +62,7 @@ function ExceptionsCard({ exceptions }: { exceptions: ExceptionResponse[] }) {
   return (
     <div data-testid="exceptions-overview-card" className="rounded-default border border-border bg-surface p-4 flex-1 min-w-[180px]">
       <div className="text-[0.7rem] text-muted font-semibold uppercase tracking-wider mb-2">Open Exceptions</div>
-      <div className={cn("text-2xl font-bold", open.length > 0 ? "text-danger" : "text-success")} data-testid="open-exceptions-count">{open.length}</div>
+      <div className={cn("text-2xl font-bold", open.length > 0 ? "text-foreground underline" : "text-foreground")} data-testid="open-exceptions-count">{open.length}</div>
       {open.length > 0 && (
         <div className="flex gap-1.5 mt-2 flex-wrap">
           {highCount > 0 && <span data-testid="exceptions-high-count" className={cn("text-[0.65rem] font-bold px-1.5 py-px rounded-full", SEVERITY_BADGE.HIGH)}>{highCount} HIGH</span>}

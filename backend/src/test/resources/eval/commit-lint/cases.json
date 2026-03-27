@@ -1,0 +1,112 @@
+[
+  {
+    "id": "lint-001",
+    "description": "Plan with KING missing success criteria and a vague title",
+    "edgeCaseType": "hard_validation_issues",
+    "input": {
+      "commits": [
+        {"commitId": "c-001", "title": "King thing", "chessPiece": "KING", "successCriteria": "", "estimatePoints": 3, "rcdoNodeId": "out-1"},
+        {"commitId": "c-002", "title": "stuff", "chessPiece": "ROOK", "successCriteria": "", "estimatePoints": 5, "rcdoNodeId": "out-2"},
+        {"commitId": "c-003", "title": "Fix login bug", "chessPiece": "PAWN", "successCriteria": "", "estimatePoints": 1, "rcdoNodeId": "out-1"}
+      ],
+      "capacityBudgetPoints": 10
+    },
+    "expectedBehavior": {
+      "minHardValidations": 2,
+      "expectedHardCodes": ["MISSING_SUCCESS_CRITERIA", "VAGUE_TITLE"],
+      "hardShouldReferenceCommitIds": ["c-001", "c-002"]
+    }
+  },
+  {
+    "id": "lint-002",
+    "description": "Clean plan with no issues",
+    "edgeCaseType": "clean_plan",
+    "input": {
+      "commits": [
+        {"commitId": "c-010", "title": "Deploy payment API v2 to staging", "chessPiece": "QUEEN", "successCriteria": "API handles 100 req/s, <200ms p95", "estimatePoints": 5, "rcdoNodeId": "out-1"},
+        {"commitId": "c-011", "title": "Write integration tests for auth service", "chessPiece": "ROOK", "successCriteria": "", "estimatePoints": 3, "rcdoNodeId": "out-2"},
+        {"commitId": "c-012", "title": "Update monitoring dashboards", "chessPiece": "PAWN", "successCriteria": "", "estimatePoints": 1, "rcdoNodeId": "out-3"}
+      ],
+      "capacityBudgetPoints": 10
+    },
+    "expectedBehavior": {
+      "maxHardValidations": 0,
+      "maxSoftGuidance": 2
+    }
+  },
+  {
+    "id": "lint-003",
+    "description": "Plan with 2 KING commits — should hard-fail",
+    "edgeCaseType": "chess_piece_violation",
+    "input": {
+      "commits": [
+        {"commitId": "c-020", "title": "Production database migration", "chessPiece": "KING", "successCriteria": "Zero downtime, zero data loss", "estimatePoints": 5, "rcdoNodeId": "out-1"},
+        {"commitId": "c-021", "title": "Security audit remediation", "chessPiece": "KING", "successCriteria": "All critical CVEs patched", "estimatePoints": 5, "rcdoNodeId": "out-2"}
+      ],
+      "capacityBudgetPoints": 10
+    },
+    "expectedBehavior": {
+      "minHardValidations": 1,
+      "expectedHardCodes": ["KING_LIMIT_EXCEEDED"]
+    }
+  },
+  {
+    "id": "lint-004",
+    "description": "Plan with 3 QUEEN commits — should hard-fail",
+    "edgeCaseType": "chess_piece_violation",
+    "input": {
+      "commits": [
+        {"commitId": "c-030", "title": "Launch billing portal", "chessPiece": "QUEEN", "successCriteria": "Portal live in production", "estimatePoints": 3, "rcdoNodeId": "out-1"},
+        {"commitId": "c-031", "title": "Partner API v2 release", "chessPiece": "QUEEN", "successCriteria": "API docs published, 3 partners onboarded", "estimatePoints": 3, "rcdoNodeId": "out-2"},
+        {"commitId": "c-032", "title": "Mobile app redesign", "chessPiece": "QUEEN", "successCriteria": "New designs shipped to TestFlight", "estimatePoints": 3, "rcdoNodeId": "out-3"}
+      ],
+      "capacityBudgetPoints": 10
+    },
+    "expectedBehavior": {
+      "minHardValidations": 1,
+      "expectedHardCodes": ["QUEEN_LIMIT_EXCEEDED"]
+    }
+  },
+  {
+    "id": "lint-005",
+    "description": "Fragmented plan with 10 tiny commits — should soft-warn",
+    "edgeCaseType": "fragmentation",
+    "input": {
+      "commits": [
+        {"commitId": "c-040", "title": "Fix typo in readme", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-041", "title": "Update npm deps", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-042", "title": "Rename config var", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-043", "title": "Fix lint warning", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-044", "title": "Add missing test", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-045", "title": "Update changelog", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-046", "title": "Remove dead code", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-047", "title": "Fix CSS alignment", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-048", "title": "Bump version", "chessPiece": "PAWN", "estimatePoints": 1},
+        {"commitId": "c-049", "title": "Update env vars", "chessPiece": "PAWN", "estimatePoints": 1}
+      ],
+      "capacityBudgetPoints": 10
+    },
+    "expectedBehavior": {
+      "maxHardValidations": 0,
+      "minSoftGuidance": 1,
+      "expectedSoftCodes": ["TOO_MANY_COMMITS", "EXCESSIVE_PAWNS"]
+    }
+  },
+  {
+    "id": "lint-006",
+    "description": "Near-duplicate commit titles in the same plan",
+    "edgeCaseType": "duplicates",
+    "input": {
+      "commits": [
+        {"commitId": "c-050", "title": "Write tests for auth module", "chessPiece": "ROOK", "estimatePoints": 3},
+        {"commitId": "c-051", "title": "Write tests for auth service", "chessPiece": "ROOK", "estimatePoints": 3}
+      ],
+      "capacityBudgetPoints": 10
+    },
+    "expectedBehavior": {
+      "maxHardValidations": 0,
+      "minSoftGuidance": 1,
+      "softShouldMentionDuplicate": true
+    }
+  }
+]

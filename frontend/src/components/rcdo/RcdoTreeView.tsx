@@ -1,7 +1,7 @@
 /**
  * Expandable tree view of the full RCDO hierarchy.
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, type ReactNode } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { Badge } from "../ui/Badge.js";
 import { Button } from "../ui/Button.js";
@@ -10,10 +10,39 @@ import type { RcdoTreeNode, RcdoNodeType, RcdoNodeStatus } from "../../api/rcdoT
 
 export type StatusFilter = "all" | "active-only" | "archived-only";
 
-const NODE_TYPE_ICONS: Record<RcdoNodeType, string> = {
-  RALLY_CRY: "🎯",
-  DEFINING_OBJECTIVE: "📋",
-  OUTCOME: "✅",
+/* ── Minimal geometric SVG icons for RCDO node types ──────────────── */
+
+/** Diamond — Rally Cry (top-level strategic anchor) */
+function DiamondIcon({ className }: { readonly className?: string }) {
+  return (
+    <svg className={className} width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <path d="M7 1 L13 7 L7 13 L1 7 Z" />
+    </svg>
+  );
+}
+
+/** Triangle — Defining Objective (directional, points upward) */
+function TriangleIcon({ className }: { readonly className?: string }) {
+  return (
+    <svg className={className} width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <path d="M7 1.5 L12.5 12 L1.5 12 Z" />
+    </svg>
+  );
+}
+
+/** Circle — Outcome (completion, target) */
+function CircleIcon({ className }: { readonly className?: string }) {
+  return (
+    <svg className={className} width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <circle cx="7" cy="7" r="5.5" />
+    </svg>
+  );
+}
+
+const NODE_TYPE_ICON_ELEMENTS: Record<RcdoNodeType, ReactNode> = {
+  RALLY_CRY: <DiamondIcon className="h-3.5 w-3.5 text-muted inline-block shrink-0" />,
+  DEFINING_OBJECTIVE: <TriangleIcon className="h-3.5 w-3.5 text-muted inline-block shrink-0" />,
+  OUTCOME: <CircleIcon className="h-3.5 w-3.5 text-muted inline-block shrink-0" />,
 };
 const NODE_TYPE_LABELS: Record<RcdoNodeType, string> = {
   RALLY_CRY: "Rally Cry",
@@ -64,13 +93,14 @@ function TreeNodeItem({ node, depth, selectedId, expandedIds, onSelect, onToggle
       <div
         className={cn(
           "flex items-center gap-1.5 px-2 py-1.5 rounded-default cursor-pointer select-none transition-colors",
-          isSelected ? "bg-primary text-white" : "hover:bg-muted/10 text-foreground",
+          isSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted/10 text-foreground",
         )}
         style={{ paddingLeft: `${depth * 1.25 + 0.5}rem` }}
         onClick={() => onSelect(node.id)}
         data-testid={`tree-node-${node.id}`}
       >
         <button
+          type="button"
           aria-label={hasChildren ? (isExpanded ? `Collapse ${node.title}` : `Expand ${node.title}`) : undefined}
           onClick={(e) => { e.stopPropagation(); if (hasChildren) onToggleExpand(node.id); }}
           tabIndex={-1}
@@ -80,13 +110,13 @@ function TreeNodeItem({ node, depth, selectedId, expandedIds, onSelect, onToggle
           {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </button>
         <span aria-label={NODE_TYPE_LABELS[node.nodeType]} title={NODE_TYPE_LABELS[node.nodeType]} className="shrink-0">
-          {NODE_TYPE_ICONS[node.nodeType]}
+          {NODE_TYPE_ICON_ELEMENTS[node.nodeType]}
         </span>
         <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm">{node.title}</span>
         <Badge
           variant={STATUS_VARIANT[node.status]}
           data-testid={`status-badge-${node.status.toLowerCase()}`}
-          className={cn(isSelected && "bg-white/20 text-white")}
+          className={cn(isSelected && "bg-primary-foreground/20 text-primary-foreground")}
         >
           {node.status.charAt(0) + node.status.slice(1).toLowerCase()}
         </Badge>
@@ -131,8 +161,8 @@ export function RcdoTreeView({ nodes, selectedId, onSelect, statusFilter, search
   return (
     <div className="flex flex-col gap-2" data-testid="rcdo-tree-view">
       <div className="flex gap-2">
-        <Button variant="ghost" size="sm" onClick={expandAll} aria-label="Expand all nodes" className="h-7 px-2 text-xs border border-border">Expand all</Button>
-        <Button variant="ghost" size="sm" onClick={collapseAll} aria-label="Collapse all nodes" className="h-7 px-2 text-xs border border-border">Collapse all</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={expandAll} aria-label="Expand all nodes" className="h-7 px-2 text-xs border border-border">Expand all</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={collapseAll} aria-label="Collapse all nodes" className="h-7 px-2 text-xs border border-border">Collapse all</Button>
       </div>
       <ul role="tree" aria-label="RCDO hierarchy" className="m-0 p-0 list-none">
         {filteredNodes.length === 0 ? (

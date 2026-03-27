@@ -32,6 +32,7 @@ vi.mock("../api/teamHooks.js", () => ({
   useTeamApi: vi.fn(),
   useTeamWeekView: vi.fn(),
   useExceptionQueue: vi.fn(),
+  useTeamMembers: vi.fn().mockReturnValue({ data: [], loading: false, error: null, refetch: vi.fn() }),
 }));
 
 vi.mock("../api/ragHooks.js", () => ({
@@ -256,6 +257,7 @@ const exceptions: ExceptionResponse[] = [
 
 const mockRefetch = vi.fn();
 const mockTeamApi = {
+  getTeamMembers: vi.fn().mockResolvedValue([]),
   getTeamWeekView: vi.fn(),
   getExceptionQueue: vi.fn(),
   resolveException: vi.fn(),

@@ -24,10 +24,24 @@ public record AiSuggestionResult(
 		 */
 		double confidence,
 		/** Provider model identifier for audit and reproducibility. */
-		String modelVersion) {
+		String modelVersion,
+		/**
+		 * Prompt template version identifier for A/B testing (e.g.
+		 * "commit-draft-assist-v1"). May be null for older results.
+		 */
+		String promptVersion) {
+
+	/**
+	 * Backwards-compatible constructor for callers that do not yet provide a prompt
+	 * version.
+	 */
+	public AiSuggestionResult(boolean available, String payload, String rationale, double confidence,
+			String modelVersion) {
+		this(available, payload, rationale, confidence, modelVersion, null);
+	}
 
 	/** Convenience factory for an unavailable (degraded) result. */
 	public static AiSuggestionResult unavailable() {
-		return new AiSuggestionResult(false, "{}", "AI provider unavailable", 0.0, "none");
+		return new AiSuggestionResult(false, "{}", "AI provider unavailable", 0.0, "none", null);
 	}
 }

@@ -209,7 +209,7 @@ class PineconeClientTest {
 		client.query("ns", new float[]{0.1f}, 1, null);
 
 		HttpRequest req = captor.getValue();
-		assertThat(req.uri().toString()).isEqualTo("https://" + INDEX_HOST + "/vectors/query");
+		assertThat(req.uri().toString()).isEqualTo("https://" + INDEX_HOST + "/query");
 		assertThat(req.method()).isEqualTo("POST");
 		assertThat(req.headers().firstValue("Api-Key")).hasValue(API_KEY);
 	}

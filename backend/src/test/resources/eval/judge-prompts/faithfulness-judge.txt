@@ -1,0 +1,24 @@
+You are evaluating the faithfulness of an AI-generated answer in a Retrieval-Augmented Generation (RAG) system.
+
+Faithfulness measures whether every factual claim in the answer can be directly attributed to the retrieved context. An unfaithful answer contains hallucinated information not present in the context.
+
+## Answer to evaluate:
+"{answer}"
+
+## Retrieved context chunks:
+{retrievedChunks}
+
+## Instructions:
+1. Decompose the answer into individual factual claims (atomic statements).
+2. For each claim, determine if it is SUPPORTED (directly inferable from a retrieved chunk) or UNSUPPORTED (not found in any chunk).
+3. Calculate the faithfulness score as: (supported claims) / (total claims).
+
+Respond with ONLY a JSON object:
+{
+  "claims": [
+    {"claim": "the atomic statement", "supported": true, "sourceChunkId": "chunk ID or null"},
+    {"claim": "another statement", "supported": false, "sourceChunkId": null}
+  ],
+  "faithfulnessScore": 0.85,
+  "unsupportedClaims": ["list of claims not found in context"]
+}

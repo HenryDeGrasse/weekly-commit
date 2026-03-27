@@ -238,9 +238,9 @@ describe("InsightPanel", () => {
     expect(screen.getByTestId("insight-severity-s-3")).toHaveTextContent("Low");
   });
 
-  // ── Source entity IDs ──────────────────────────────────────────────────
+  // ── Source entity IDs are internal — not rendered to users ───────────────
 
-  it("renders source entity IDs when present", () => {
+  it("does not render raw source entity ID UUIDs", () => {
     vi.mocked(ragHooks.useTeamInsights).mockReturnValue({
       data: available([sampleInsight1]),
       loading: false,
@@ -250,24 +250,8 @@ describe("InsightPanel", () => {
 
     renderTeam();
 
-    expect(screen.getByTestId("insight-sources-s-1")).toHaveTextContent(
-      "plan-abc",
-    );
-  });
-
-  it("renders source entity IDs as clickable links", () => {
-    vi.mocked(ragHooks.useTeamInsights).mockReturnValue({
-      data: available([sampleInsight1]),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    renderTeam();
-
-    expect(
-      screen.getByTestId("insight-source-link-s-1-plan-abc"),
-    ).toHaveAttribute("href", "/team/team-1#plan-abc");
+    expect(screen.queryByTestId("insight-sources-s-1")).not.toBeInTheDocument();
+    expect(screen.queryByText("plan-abc")).not.toBeInTheDocument();
   });
 
   // ── AiFeedbackButtons ──────────────────────────────────────────────────

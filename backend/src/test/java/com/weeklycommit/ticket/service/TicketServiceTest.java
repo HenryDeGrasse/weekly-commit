@@ -62,6 +62,15 @@ class TicketServiceTest {
 	@Mock
 	private WeeklyPlanRepository planRepo;
 
+	@Mock
+	private com.weeklycommit.notification.service.NotificationService notificationService;
+
+	@Mock
+	private com.weeklycommit.domain.repository.UserAccountRepository userRepo;
+
+	@Mock
+	private com.weeklycommit.domain.repository.TeamRepository teamRepo;
+
 	@InjectMocks
 	private TicketService service;
 

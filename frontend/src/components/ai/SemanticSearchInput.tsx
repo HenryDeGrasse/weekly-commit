@@ -3,12 +3,21 @@
  * and renders the answer in a QueryAnswerCard below the input.
  */
 import { useCallback, useRef, useState } from "react";
-import { Bot, RotateCcw, Search } from "lucide-react";
+import { Bot, RotateCcw, Search, MessageCircle } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Input } from "../ui/Input.js";
+
 import { cn } from "../../lib/utils.js";
 import { useSemanticQuery } from "../../api/ragHooks.js";
 import { QueryAnswerCard } from "./QueryAnswerCard.js";
+
+const SUGGESTED_QUESTIONS = [
+  "What did the team commit to last week?",
+  "Which RCDOs received the most effort this month?",
+  "What are the recurring carry-forward patterns?",
+  "Which team members are overcommitting?",
+  "What KING/QUEEN work was achieved last week?",
+] as const;
 
 interface SemanticSearchInputProps {
   teamId?: string;
@@ -42,16 +51,15 @@ export function SemanticSearchInput({
   }, [question, mutate, teamId, userId]);
 
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
-      {/* Header */}
+    <div className={cn("rounded-default border border-border bg-surface p-4 flex flex-col gap-3", className)}>
+      {/* Header + form on one line */}
       <div className="flex items-center gap-2">
         <Bot className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
-        <span className="text-sm font-semibold text-foreground">
+        <span className="text-sm font-semibold text-foreground whitespace-nowrap">
           Ask AI about your team&apos;s work
         </span>
       </div>
 
-      {/* Search form */}
       <form onSubmit={(e) => void handleSubmit(e)} className="flex gap-2">
         <Input
           ref={inputRef}
@@ -88,6 +96,29 @@ export function SemanticSearchInput({
           )}
         </Button>
       </form>
+
+      {/* Suggested questions — shown when input is empty and no result */}
+      {!question.trim() && !data && !loading && !error && (
+        <div className="flex flex-wrap gap-1.5" data-testid="suggested-questions">
+          <span className="text-[0.65rem] text-muted flex items-center gap-1 mr-1">
+            <MessageCircle className="h-3 w-3" /> Try asking:
+          </span>
+          {SUGGESTED_QUESTIONS.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => {
+                setQuestion(q);
+                void mutate(q, teamId, userId);
+              }}
+              className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-[0.65rem] text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors cursor-pointer"
+              data-testid={`suggested-q-${q.slice(0, 20).replace(/\s/g, "-").toLowerCase()}`}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Loading state */}
       {loading && (
@@ -134,14 +165,19 @@ export function SemanticSearchInput({
         />
       )}
 
-      {/* AI unavailable */}
+      {/* AI unavailable (no Pinecone / LLM) */}
       {!loading && !error && data && !data.aiAvailable && (
-        <p
-          className="text-sm text-muted italic"
+        <div
+          className="flex items-start gap-2 rounded-default border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs text-muted"
           data-testid="semantic-search-unavailable"
         >
-          AI search is currently unavailable. Try again later.
-        </p>
+          <Bot className="h-3.5 w-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+          <span>
+            AI search requires the vector index to be configured and populated.
+            Go to <strong>Admin → Reindex</strong> to build the search index, or
+            ensure <code>PINECONE_API_KEY</code> is set.
+          </span>
+        </div>
       )}
     </div>
   );

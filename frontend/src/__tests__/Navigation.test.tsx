@@ -15,10 +15,10 @@ function renderNav(props: { collapsed?: boolean } = {}) {
 }
 
 describe("Navigation", () => {
-  it("renders 5 navigation links", () => {
+  it("renders 7 navigation links", () => {
     renderNav();
     const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(5);
+    expect(links).toHaveLength(7);
   });
 
   it("renders correct nav labels", () => {
@@ -45,7 +45,7 @@ describe("Navigation", () => {
     renderNav();
     // Each nav item should have an SVG icon
     const svgs = document.querySelectorAll("nav svg");
-    expect(svgs.length).toBe(5);
+    expect(svgs.length).toBe(7);
   });
 
   it("hides nav label spans when collapsed", () => {
@@ -62,7 +62,7 @@ describe("Navigation", () => {
     renderNav({ collapsed: true });
     // Tooltips wrap the links — check for tooltip role
     const tooltips = document.querySelectorAll("[role='tooltip']");
-    expect(tooltips.length).toBe(5);
+    expect(tooltips.length).toBe(7);
   });
 
   it("shows labels when expanded (default)", () => {

@@ -1,0 +1,20 @@
+All checks pass. Here's what I did:
+
+**Root cause:** The `npm run lint` gate runs `eslint src` on the full frontend source. Four files had `@typescript-eslint/no-unused-vars` **errors** (not warnings) for `_`-prefixed intentionally-unused variables:
+- `ragApi.ts:46` — `_actorUserId` function parameter
+- `CommitForm.tsx:21` — `_: Error` and `__: ErrorInfo` parameters in `componentDidCatch`
+- `CarryForwardDialog.tsx:122` — `_r` destructured to exclude a key
+
+**Fix:** Added the standard `_`-prefix ignore patterns to `frontend/eslint.config.js`:
+```js
+"@typescript-eslint/no-unused-vars": ["error", {
+  argsIgnorePattern: "^_",
+  varsIgnorePattern: "^_",
+  caughtErrorsIgnorePattern: "^_",
+  destructuredArrayIgnorePattern: "^_",
+}]
+```
+
+This is the conventional ESLint configuration for the `_`-unused-intentional pattern. All 4 errors are now gone (0 errors, 12 warnings only). All 674 tests pass and typecheck is clean.
+
+Verdict: changes_made

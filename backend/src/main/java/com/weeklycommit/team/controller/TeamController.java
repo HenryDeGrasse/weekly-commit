@@ -1,5 +1,9 @@
 package com.weeklycommit.team.controller;
 
+import com.weeklycommit.domain.entity.TeamMembership;
+import com.weeklycommit.domain.entity.UserAccount;
+import com.weeklycommit.domain.repository.TeamMembershipRepository;
+import com.weeklycommit.domain.repository.UserAccountRepository;
 import com.weeklycommit.team.dto.AddCommentRequest;
 import com.weeklycommit.team.dto.CapacityOverrideResponse;
 import com.weeklycommit.team.dto.CommentResponse;
@@ -7,6 +11,7 @@ import com.weeklycommit.team.dto.ExceptionResponse;
 import com.weeklycommit.team.dto.ResolveExceptionRequest;
 import com.weeklycommit.team.dto.SetCapacityOverrideRequest;
 import com.weeklycommit.team.dto.TeamHistoryResponse;
+import com.weeklycommit.team.dto.TeamMemberDto;
 import com.weeklycommit.team.dto.TeamWeekViewResponse;
 import com.weeklycommit.team.service.ManagerReviewService;
 import com.weeklycommit.team.service.TeamWeeklyViewService;
@@ -44,10 +49,15 @@ public class TeamController {
 
 	private final TeamWeeklyViewService teamViewService;
 	private final ManagerReviewService managerReviewService;
+	private final TeamMembershipRepository membershipRepo;
+	private final UserAccountRepository userRepo;
 
-	public TeamController(TeamWeeklyViewService teamViewService, ManagerReviewService managerReviewService) {
+	public TeamController(TeamWeeklyViewService teamViewService, ManagerReviewService managerReviewService,
+			TeamMembershipRepository membershipRepo, UserAccountRepository userRepo) {
 		this.teamViewService = teamViewService;
 		this.managerReviewService = managerReviewService;
+		this.membershipRepo = membershipRepo;
+		this.userRepo = userRepo;
 	}
 
 	// -------------------------------------------------------------------------
@@ -63,6 +73,29 @@ public class TeamController {
 			@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
 			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID callerId) {
 		return ResponseEntity.ok(teamViewService.getTeamWeekView(id, weekStart, callerId));
+	}
+
+	// -------------------------------------------------------------------------
+	// Team members
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns the list of members for a team with their display names. Lightweight
+	 * endpoint used by the frontend for assignee dropdowns without fetching the
+	 * full team-weekly-view payload.
+	 */
+	@GetMapping("/api/teams/{id}/members")
+	public ResponseEntity<List<TeamMemberDto>> getTeamMembers(@PathVariable UUID id) {
+		List<TeamMembership> memberships = membershipRepo.findByTeamId(id);
+		List<UUID> userIds = memberships.stream().map(TeamMembership::getUserId).toList();
+		java.util.Map<UUID, String> roleMap = memberships.stream()
+				.collect(java.util.stream.Collectors.toMap(TeamMembership::getUserId, TeamMembership::getRole));
+		List<UserAccount> users = userRepo.findAllById(userIds);
+		List<TeamMemberDto> result = users.stream().filter(UserAccount::isActive)
+				.map(u -> new TeamMemberDto(u.getId(), u.getDisplayName(), u.getEmail(),
+						roleMap.getOrDefault(u.getId(), "MEMBER")))
+				.sorted(java.util.Comparator.comparing(TeamMemberDto::displayName)).toList();
+		return ResponseEntity.ok(result);
 	}
 
 	// -------------------------------------------------------------------------

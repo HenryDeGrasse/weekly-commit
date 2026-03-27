@@ -1,0 +1,6 @@
+{
+  "verdict": "changes_requested",
+  "blockingIssues": [
+    "Step 4 relies on existing AI endpoints to return a fully structured commit, but `commitDraftAssist` does not return a suggested chess piece (and does not itself provide full structured output), so the “no backend changes needed” premise is incorrect for that flow."
+  ]
+}

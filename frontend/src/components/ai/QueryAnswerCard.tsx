@@ -1,8 +1,18 @@
 /**
- * QueryAnswerCard — displays a RAG-generated answer with source citations,
- * a confidence indicator, and AI feedback buttons.
+ * QueryAnswerCard — displays a RAG-generated answer with rich formatting,
+ * source citations, a confidence indicator, and AI feedback buttons.
  */
-import { ExternalLink, FileText, Ticket } from "lucide-react";
+import { useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  FileText,
+  Ticket,
+  ArrowRightLeft,
+  MessageSquare,
+  Bot,
+} from "lucide-react";
 import { Badge } from "../ui/Badge.js";
 import {
   Card,
@@ -13,6 +23,7 @@ import {
 } from "../ui/Card.js";
 import { cn } from "../../lib/utils.js";
 import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
+import { AnswerRenderer } from "./AnswerRenderer.js";
 import type { RagSource } from "../../api/ragApi.js";
 
 // ── Confidence indicator ──────────────────────────────────────────────────────
@@ -24,32 +35,45 @@ function confidenceLabel(confidence: number): string {
 }
 
 function confidenceCls(confidence: number): string {
-  if (confidence >= 0.8) return "text-success";
-  if (confidence >= 0.5) return "text-warning";
-  return "text-danger";
+  if (confidence >= 0.8) return "text-foreground font-bold";
+  if (confidence >= 0.5) return "text-muted";
+  return "text-foreground underline";
 }
 
 function confidenceBarCls(confidence: number): string {
-  if (confidence >= 0.8) return "bg-success";
-  if (confidence >= 0.5) return "bg-warning";
-  return "bg-danger";
+  if (confidence >= 0.8) return "bg-foreground";
+  if (confidence >= 0.5) return "bg-foreground/40";
+  return "bg-foreground/20";
+}
+
+// ── Source icon ───────────────────────────────────────────────────────────────
+
+function sourceIcon(entityType: string) {
+  switch (entityType) {
+    case "commit":
+    case "plan_summary":
+      return FileText;
+    case "ticket":
+      return Ticket;
+    case "scope_change":
+      return ArrowRightLeft;
+    case "carry_forward":
+      return ArrowRightLeft;
+    case "manager_comment":
+      return MessageSquare;
+    default:
+      return FileText;
+  }
 }
 
 // ── Source citation ───────────────────────────────────────────────────────────
 
 function SourceCitation({ source }: { source: RagSource }) {
   const { entityType, entityId, weekStartDate, snippet } = source;
+  const Icon = sourceIcon(entityType);
 
   let link: string | null = null;
-  let Icon = FileText;
-
-  if (entityType === "commit" || entityType === "plan_summary") {
-    // No reliable deep-link without planId; show entity info only
-    link = null;
-  } else if (entityType === "ticket") {
-    link = "/tickets";
-    Icon = Ticket;
-  }
+  if (entityType === "ticket") link = "/tickets";
 
   const label =
     entityType === "carry_forward"
@@ -58,26 +82,28 @@ function SourceCitation({ source }: { source: RagSource }) {
 
   return (
     <li
-      className="flex items-start gap-2 text-xs text-muted"
+      className="flex items-start gap-2 text-xs rounded-default border border-border/50 bg-surface-raised px-2.5 py-2"
       data-testid={`rag-source-${entityId}`}
     >
-      <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+      <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted" aria-hidden="true" />
       <span className="flex-1 min-w-0">
-        <Badge variant="default" className="text-[0.6rem] mr-1 capitalize">
-          {label}
-        </Badge>
-        {weekStartDate && (
-          <span className="text-[0.65rem]">w/{weekStartDate}</span>
-        )}
+        <span className="flex items-center gap-1.5 flex-wrap">
+          <Badge variant="default" className="text-[0.6rem] capitalize">
+            {label}
+          </Badge>
+          {weekStartDate && (
+            <span className="text-[0.65rem] text-muted tabular-nums">w/{weekStartDate}</span>
+          )}
+        </span>
         {snippet && (
-          <span className="block text-[0.65rem] italic truncate mt-0.5">
+          <span className="block text-[0.65rem] text-muted mt-1 leading-relaxed">
             &ldquo;{snippet}&rdquo;
           </span>
         )}
         {link && (
           <a
             href={link}
-            className="ml-1 inline-flex items-center gap-0.5 text-primary hover:underline text-[0.65rem]"
+            className="inline-flex items-center gap-0.5 text-primary hover:underline text-[0.65rem] mt-0.5"
             target="_blank"
             rel="noreferrer"
             data-testid={`rag-source-link-${entityId}`}
@@ -108,11 +134,15 @@ export function QueryAnswerCard({
   className,
 }: QueryAnswerCardProps) {
   const pct = Math.round(Math.max(0, Math.min(1, confidence)) * 100);
+  const [sourcesExpanded, setSourcesExpanded] = useState(false);
 
   return (
     <Card className={cn("w-full", className)} data-testid="query-answer-card">
       <CardHeader>
-        <CardTitle>AI Answer</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <Bot className="h-4 w-4 text-primary" />
+          AI Answer
+        </CardTitle>
         {/* Confidence indicator */}
         <div
           className="flex items-center gap-1.5"
@@ -127,37 +157,48 @@ export function QueryAnswerCard({
             {confidenceLabel(confidence)}
           </span>
           <div
-            className="h-1.5 w-16 rounded-full bg-border overflow-hidden"
+            className="h-1.5 w-16 bg-border overflow-hidden"
             aria-label={`Confidence: ${pct}%`}
             title={`Confidence: ${pct}%`}
           >
             <div
-              className={cn("h-full rounded-full", confidenceBarCls(confidence))}
+              className={cn("h-full", confidenceBarCls(confidence))}
               style={{ width: `${pct}%` }}
               data-testid="confidence-bar"
             />
           </div>
-          <span className="text-[0.65rem] text-muted">{pct}%</span>
+          <span className="text-[0.65rem] text-muted tabular-nums">{pct}%</span>
         </div>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3">
-        {/* Answer text */}
-        <p className="text-sm leading-relaxed" data-testid="rag-answer-text">
-          {answer}
-        </p>
+        {/* Rich answer text */}
+        <AnswerRenderer text={answer} />
 
-        {/* Source citations */}
+        {/* Source citations — collapsible */}
         {sources.length > 0 && (
           <div data-testid="rag-sources-section">
-            <h4 className="text-[0.65rem] font-semibold text-muted uppercase tracking-wider mb-1.5">
-              Sources
-            </h4>
-            <ul className="flex flex-col gap-1.5 list-none m-0 p-0">
-              {sources.map((s) => (
-                <SourceCitation key={`${s.entityType}-${s.entityId}`} source={s} />
-              ))}
-            </ul>
+            <button
+              type="button"
+              onClick={() => setSourcesExpanded((v) => !v)}
+              className="flex items-center gap-1 text-[0.65rem] font-semibold text-muted uppercase tracking-wider hover:text-foreground transition-colors cursor-pointer bg-transparent border-none p-0"
+              aria-expanded={sourcesExpanded}
+              data-testid="rag-sources-toggle"
+            >
+              {sourcesExpanded ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+              Sources ({sources.length})
+            </button>
+            {sourcesExpanded && (
+              <ul className="flex flex-col gap-1.5 list-none m-0 p-0 mt-2">
+                {sources.map((s) => (
+                  <SourceCitation key={`${s.entityType}-${s.entityId}`} source={s} />
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </CardContent>

@@ -20,7 +20,7 @@ function DeltaIndicator({ current, previous, higherIsBetter = true }: { current:
   if (delta === 0) return null;
   const isGood = higherIsBetter ? delta > 0 : delta < 0;
   return (
-    <span className={cn("ml-1 text-[0.65rem] font-semibold", isGood ? "text-success" : "text-danger")}>
+    <span className={cn("ml-1 text-[0.65rem] font-semibold", isGood ? "text-foreground" : "text-foreground underline")}>
       {delta > 0 ? "▲" : "▼"}{Math.abs(Math.round(delta * 100) / 100)}
     </span>
   );
@@ -76,8 +76,7 @@ export function TeamHistoryView({ entries, loading }: TeamHistoryViewProps) {
                   <td className={tdCls}>
                     <span
                       data-testid={`team-history-compliance-${entry.weekStartDate}`}
-                      className="font-semibold"
-                      style={{ color: entry.complianceRate >= 0.8 ? "var(--color-success)" : entry.complianceRate >= 0.5 ? "var(--color-warning)" : "var(--color-danger)" }}
+                      className={cn("font-semibold", entry.complianceRate >= 0.8 ? "text-foreground" : entry.complianceRate >= 0.5 ? "text-muted" : "text-foreground underline")}
                     >
                       {formatPct(entry.complianceRate)}
                     </span>
@@ -88,19 +87,19 @@ export function TeamHistoryView({ entries, loading }: TeamHistoryViewProps) {
                     <DeltaIndicator current={entry.plannedPoints} previous={prev?.plannedPoints} />
                   </td>
                   <td className={cn(tdCls, "text-center")}>
-                    <span data-testid={`team-history-achieved-${entry.weekStartDate}`} className={entry.achievedPoints > 0 ? "text-success" : "text-muted"}>
+                    <span data-testid={`team-history-achieved-${entry.weekStartDate}`} className={entry.achievedPoints > 0 ? "text-foreground font-semibold" : "text-muted"}>
                       {entry.achievedPoints}
                     </span>
                     <DeltaIndicator current={entry.achievedPoints} previous={prev?.achievedPoints} />
                   </td>
                   <td className={tdCls}>
-                    <span data-testid={`team-history-cf-rate-${entry.weekStartDate}`} className={entry.carryForwardRate > 0.3 ? "text-warning" : "text-foreground"}>
+                    <span data-testid={`team-history-cf-rate-${entry.weekStartDate}`} className={entry.carryForwardRate > 0.3 ? "text-foreground underline" : "text-foreground"}>
                       {formatPct(entry.carryForwardRate)}
                     </span>
                     <DeltaIndicator current={entry.carryForwardRate} previous={prev?.carryForwardRate} higherIsBetter={false} />
                   </td>
                   <td className={cn(tdCls, "text-center")}>
-                    <span data-testid={`team-history-exceptions-${entry.weekStartDate}`} className={cn(entry.exceptionCount > 0 ? "text-danger font-semibold" : "text-muted")}>
+                    <span data-testid={`team-history-exceptions-${entry.weekStartDate}`} className={cn(entry.exceptionCount > 0 ? "text-foreground font-bold underline" : "text-muted")}>
                       {entry.exceptionCount}
                     </span>
                   </td>

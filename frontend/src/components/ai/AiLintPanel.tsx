@@ -2,8 +2,13 @@
  * AI commit lint panel — replaces the placeholder in PreLockValidationPanel.
  * Calls POST /api/ai/commit-lint and displays hard + soft lint messages
  * with feedback buttons on each.
+ *
+ * When `autoRun` is true the lint API is called automatically on mount and
+ * whenever `planId` changes — no button click required.  The manual refresh
+ * button is still shown inside the results view so users can re-run after
+ * editing commits.
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Bot, RefreshCw } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
@@ -13,14 +18,18 @@ import type { CommitLintResponse } from "../../api/aiApi.js";
 interface AiLintPanelProps {
   planId: string;
   userId: string;
+  /** When true, lint fires automatically on mount and on planId change (no button click required). */
+  autoRun?: boolean;
 }
 
-export function AiLintPanel({ planId, userId }: AiLintPanelProps) {
+export function AiLintPanel({ planId, userId, autoRun = false }: AiLintPanelProps) {
   const aiApi = useAiApi();
   const { data: status } = useAiStatus();
   const [lintResult, setLintResult] = useState<CommitLintResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isAvailable = status?.available ?? false;
 
   const runLint = useCallback(async () => {
     setLoading(true);
@@ -35,6 +44,13 @@ export function AiLintPanel({ planId, userId }: AiLintPanelProps) {
     }
   }, [aiApi, planId, userId]);
 
+  // Auto-run: fire lint on mount (and whenever planId changes) when AI is available.
+  // Guard on isAvailable so we don't kick off a doomed request when AI is down.
+  useEffect(() => {
+    if (!autoRun || !isAvailable) return;
+    void runLint();
+  }, [autoRun, planId, isAvailable, runLint]);
+
   // AI not available — show disabled state
   if (status && !status.available) {
     return (
@@ -45,8 +61,14 @@ export function AiLintPanel({ planId, userId }: AiLintPanelProps) {
     );
   }
 
-  // Not yet run
+  // Not yet run:
+  //   - autoRun=false  → show the manual trigger button
+  //   - autoRun=true   → lint is about to fire (or waiting for status); render nothing
+  //                       so there is no flash of a button that immediately disappears
   if (!lintResult && !loading) {
+    if (autoRun) {
+      return null;
+    }
     return (
       <div className="flex items-center gap-2" data-testid="ai-lint-ready">
         <Button variant="ghost" size="sm" onClick={() => void runLint()} className="h-7 text-xs border border-dashed border-border" data-testid="ai-lint-run-btn">
@@ -109,11 +131,11 @@ export function AiLintPanel({ planId, userId }: AiLintPanelProps) {
 
       {/* Hard validations */}
       {hasHard && (
-        <div className="rounded-sm border border-red-200 bg-red-50 px-3 py-2" data-testid="ai-lint-hard">
-          <p className="m-0 mb-1 text-xs font-semibold text-red-800">Hard Issues</p>
+        <div className="rounded-sm border border-neutral-300 bg-neutral-100 px-3 py-2" data-testid="ai-lint-hard">
+          <p className="m-0 mb-1 text-xs font-bold text-foreground underline">Hard Issues</p>
           <ul className="m-0 pl-4 flex flex-col gap-0.5">
             {lintResult.hardValidation.map((msg, i) => (
-              <li key={i} className="text-xs text-red-700">{msg.message}</li>
+              <li key={i} className="text-xs text-foreground">{msg.message}</li>
             ))}
           </ul>
         </div>
@@ -121,11 +143,11 @@ export function AiLintPanel({ planId, userId }: AiLintPanelProps) {
 
       {/* Soft guidance */}
       {hasSoft && (
-        <div className="rounded-sm border border-amber-200 bg-amber-50 px-3 py-2" data-testid="ai-lint-soft">
-          <p className="m-0 mb-1 text-xs font-semibold text-amber-800">Suggestions</p>
+        <div className="rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2" data-testid="ai-lint-soft">
+          <p className="m-0 mb-1 text-xs font-semibold text-muted">Suggestions</p>
           <ul className="m-0 pl-4 flex flex-col gap-0.5">
             {lintResult.softGuidance.map((msg, i) => (
-              <li key={i} className="text-xs text-amber-700">{msg.message}</li>
+              <li key={i} className="text-xs text-muted">{msg.message}</li>
             ))}
           </ul>
         </div>
@@ -133,7 +155,7 @@ export function AiLintPanel({ planId, userId }: AiLintPanelProps) {
 
       {/* All clear */}
       {!hasHard && !hasSoft && (
-        <div className="text-xs text-success flex items-center gap-1" data-testid="ai-lint-clear">
+        <div className="text-xs text-foreground flex items-center gap-1" data-testid="ai-lint-clear">
           ✓ No quality issues detected
         </div>
       )}

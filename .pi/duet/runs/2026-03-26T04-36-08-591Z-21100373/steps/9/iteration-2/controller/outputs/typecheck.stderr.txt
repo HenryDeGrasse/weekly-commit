@@ -1,8 +1,0 @@
-/Users/henrydegrasse/.bash_profile: line 5: /Users/henrydegrasse/.cargo/env: No such file or directory
-npm error Lifecycle script `typecheck` failed with error:
-npm error code 2
-npm error path /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend
-npm error workspace frontend@1.0.0
-npm error location /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend
-npm error command failed
-npm error command sh -c tsc --noEmit

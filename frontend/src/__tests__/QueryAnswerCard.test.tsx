@@ -2,7 +2,7 @@
  * Tests for QueryAnswerCard component.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MockHostProvider } from "../host/MockHostProvider.js";
 import { QueryAnswerCard } from "../components/ai/QueryAnswerCard.js";
 import type { RagSource } from "../api/ragApi.js";
@@ -68,12 +68,47 @@ describe("QueryAnswerCard", () => {
     renderCard({ answer: "The team achieved all KING commits this week." });
     expect(
       screen.getByTestId("rag-answer-text"),
-    ).toHaveTextContent("The team achieved all KING commits this week.");
+    ).toHaveTextContent(/The team achieved all.*KING.*commits this week/);
   });
 
   it("renders the AI Answer heading", () => {
     renderCard({});
     expect(screen.getByText("AI Answer")).toBeInTheDocument();
+  });
+
+  it("renders bold text as strong elements", () => {
+    renderCard({ answer: "**Alice Chen** did great work." });
+    const answerEl = screen.getByTestId("rag-answer-text");
+    const strongEls = answerEl.querySelectorAll("strong");
+    expect(strongEls.length).toBeGreaterThanOrEqual(1);
+    expect(strongEls[0]!.textContent).toBe("Alice Chen");
+  });
+
+  it("renders paragraphs from double newlines", () => {
+    renderCard({ answer: "First paragraph.\n\nSecond paragraph." });
+    const answerEl = screen.getByTestId("rag-answer-text");
+    const paragraphs = answerEl.querySelectorAll("p");
+    expect(paragraphs.length).toBe(2);
+  });
+
+  it("renders chess piece names with glyphs", () => {
+    renderCard({ answer: "The KING commit was critical." });
+    const answerEl = screen.getByTestId("rag-answer-text");
+    expect(answerEl.textContent).toContain("♔");
+    expect(answerEl.textContent).toContain("KING");
+  });
+
+  it("renders commit titles with monospace styling", () => {
+    renderCard({ answer: 'She worked on "Deploy the API gateway" last week.' });
+    const answerEl = screen.getByTestId("rag-answer-text");
+    expect(answerEl.textContent).toContain("Deploy the API gateway");
+  });
+
+  it("renders metric values with emphasis", () => {
+    renderCard({ answer: "The team achieved 42pts this week, an 85% rate." });
+    const answerEl = screen.getByTestId("rag-answer-text");
+    expect(answerEl.textContent).toContain("42pts");
+    expect(answerEl.textContent).toContain("85%");
   });
 
   // ── confidence indicator ─────────────────────────────────────────────────
@@ -107,9 +142,10 @@ describe("QueryAnswerCard", () => {
 
   // ── sources ──────────────────────────────────────────────────────────────
 
-  it("renders sources section when sources are provided", () => {
+  it("renders sources toggle when sources are provided", () => {
     renderCard({ sources: [commitSource] });
     expect(screen.getByTestId("rag-sources-section")).toBeInTheDocument();
+    expect(screen.getByTestId("rag-sources-toggle")).toBeInTheDocument();
   });
 
   it("does not render sources section when sources array is empty", () => {
@@ -119,38 +155,44 @@ describe("QueryAnswerCard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders a source citation for each source", () => {
+  it("shows sources after clicking toggle", () => {
     renderCard({ sources: [commitSource, ticketSource] });
-    expect(
-      screen.getByTestId(`rag-source-${commitSource.entityId}`),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId(`rag-source-${ticketSource.entityId}`),
-    ).toBeInTheDocument();
+    // Sources hidden initially
+    expect(screen.queryByTestId(`rag-source-${commitSource.entityId}`)).not.toBeInTheDocument();
+    // Click toggle
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
+    // Sources now visible
+    expect(screen.getByTestId(`rag-source-${commitSource.entityId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`rag-source-${ticketSource.entityId}`)).toBeInTheDocument();
   });
 
   it("renders entity type badge for each source", () => {
     renderCard({ sources: [commitSource] });
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
     expect(screen.getByText("commit")).toBeInTheDocument();
   });
 
   it("renders ticket entity type badge for ticket source", () => {
     renderCard({ sources: [ticketSource] });
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
     expect(screen.getByText("ticket")).toBeInTheDocument();
   });
 
   it("renders plan_summary entity type as 'plan summary'", () => {
     renderCard({ sources: [planSummarySource] });
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
     expect(screen.getByText("plan summary")).toBeInTheDocument();
   });
 
   it("renders week start date when provided", () => {
     renderCard({ sources: [commitSource] });
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
     expect(screen.getByText("w/2025-01-06")).toBeInTheDocument();
   });
 
   it("renders snippet text when provided", () => {
     renderCard({ sources: [commitSource] });
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
     expect(
       screen.getByText(/Deploy the new API gateway/),
     ).toBeInTheDocument();
@@ -158,6 +200,7 @@ describe("QueryAnswerCard", () => {
 
   it("renders a link for ticket entity type", () => {
     renderCard({ sources: [ticketSource] });
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
     const link = screen.getByTestId(
       `rag-source-link-${ticketSource.entityId}`,
     );
@@ -166,6 +209,7 @@ describe("QueryAnswerCard", () => {
 
   it("does not render a link for commit entity type", () => {
     renderCard({ sources: [commitSource] });
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
     expect(
       screen.queryByTestId(`rag-source-link-${commitSource.entityId}`),
     ).not.toBeInTheDocument();
@@ -189,6 +233,7 @@ describe("QueryAnswerCard", () => {
     renderCard({
       sources: [commitSource, ticketSource, planSummarySource],
     });
+    fireEvent.click(screen.getByTestId("rag-sources-toggle"));
     expect(screen.getByTestId(`rag-source-${commitSource.entityId}`)).toBeInTheDocument();
     expect(screen.getByTestId(`rag-source-${ticketSource.entityId}`)).toBeInTheDocument();
     expect(screen.getByTestId(`rag-source-${planSummarySource.entityId}`)).toBeInTheDocument();

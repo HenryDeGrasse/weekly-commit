@@ -1,0 +1,23 @@
+Reviewed the current step-1 implementation and the failing concern area in:
+- `frontend/src/routes/MyWeek.tsx`
+- `frontend/src/components/ai/AiLintPanel.tsx`
+- `frontend/src/components/lock/PreLockValidationPanel.tsx`
+
+I found one concrete defect relative to the step requirements:
+- The inline draft-state `AiLintPanel` on `MyWeek` was **not wrapped in the existing AiErrorBoundary pattern** as explicitly required. That meant the new always-on AI surface could crash the page if the AI component threw.
+
+What I changed:
+- `frontend/src/routes/MyWeek.tsx`
+  - added a local `AiErrorBoundary` matching the existing silent-suppress pattern
+  - wrapped the inline `<AiLintPanel ... autoRun />` with that boundary
+
+Checks run after the fix:
+- `cd frontend && npx eslint src/routes/MyWeek.tsx` ✅
+- `npm run typecheck -w frontend` ✅
+- `npm run test -w frontend -- --run src/__tests__/MyWeekPage.test.tsx src/__tests__/PreLockValidation.test.tsx` ✅
+
+Assessment:
+- The specific missing requirement is now fixed.
+- Step 1 is complete and the relevant checks pass.
+
+Verdict: changes_made

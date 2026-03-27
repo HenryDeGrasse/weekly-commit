@@ -7,6 +7,14 @@ import type { PlanState, ChessPiece, CommitOutcome } from "./planTypes.js";
 
 export type { PlanState, ChessPiece, CommitOutcome };
 
+/** Lightweight team member summary. Mirrors TeamMemberDto Java record. */
+export interface TeamMember {
+  readonly id: string;
+  readonly displayName: string;
+  readonly email: string;
+  readonly role: string;
+}
+
 export type ExceptionSeverity = "HIGH" | "MEDIUM" | "LOW";
 
 export type ExceptionType =

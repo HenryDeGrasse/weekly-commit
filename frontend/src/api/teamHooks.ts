@@ -8,7 +8,7 @@ import { useHostBridge } from "../host/HostProvider.js";
 import { createApiClient } from "./client.js";
 import { useQuery, type QueryState } from "./hooks.js";
 import { createTeamApi, type TeamApi } from "./teamApi.js";
-import type { TeamWeekViewResponse, ExceptionResponse } from "./teamTypes.js";
+import type { TeamWeekViewResponse, ExceptionResponse, TeamMember } from "./teamTypes.js";
 
 /**
  * Returns a stable TeamApi instance bound to the current user's auth token.
@@ -43,6 +43,22 @@ export function useTeamWeekView(
   return useQuery<TeamWeekViewResponse>(
     key,
     () => api.getTeamWeekView(teamId ?? "", weekStart),
+    { enabled: teamId !== null },
+  );
+}
+
+/**
+ * Fetches the lightweight member list for a team.
+ * Used for assignee dropdowns and similar selectors.
+ */
+export function useTeamMembers(
+  teamId: string | null,
+): QueryState<TeamMember[]> {
+  const api = useTeamApi();
+  const key = `team-members-${teamId ?? "none"}`;
+  return useQuery<TeamMember[]>(
+    key,
+    () => api.getTeamMembers(teamId ?? ""),
     { enabled: teamId !== null },
   );
 }

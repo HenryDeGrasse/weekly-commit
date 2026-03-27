@@ -11,10 +11,10 @@ export interface CarryForwardLineageViewProps {
 }
 
 const OUTCOME_STYLES: Record<CommitOutcome, { cls: string; label: string }> = {
-  ACHIEVED:           { cls: "bg-emerald-100 text-emerald-800",  label: "✓ Achieved" },
-  PARTIALLY_ACHIEVED: { cls: "bg-amber-100 text-amber-800",      label: "◑ Partial" },
-  NOT_ACHIEVED:       { cls: "bg-red-100 text-red-800",          label: "✗ Not achieved" },
-  CANCELED:           { cls: "bg-slate-100 text-slate-500",       label: "— Canceled" },
+  ACHIEVED:           { cls: "bg-foreground/10 text-foreground font-bold",   label: "✓ Achieved" },
+  PARTIALLY_ACHIEVED: { cls: "bg-neutral-200 text-neutral-600",              label: "◑ Partial" },
+  NOT_ACHIEVED:       { cls: "bg-neutral-300 text-foreground underline",     label: "✗ Not achieved" },
+  CANCELED:           { cls: "bg-neutral-100 text-neutral-500",              label: "— Canceled" },
 };
 
 function ChainNode({ node, isCurrent }: { readonly node: CarryForwardNode; readonly isCurrent: boolean }) {
@@ -26,7 +26,7 @@ function ChainNode({ node, isCurrent }: { readonly node: CarryForwardNode; reado
       className={cn(
         "rounded-default border p-3 min-w-[130px] max-w-[180px] flex flex-col gap-1 shrink-0",
         isCurrent
-          ? "border-primary bg-primary text-white"
+          ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-surface text-foreground",
       )}
     >
@@ -37,16 +37,16 @@ function ChainNode({ node, isCurrent }: { readonly node: CarryForwardNode; reado
         {node.title}
       </span>
       {node.streak > 0 && (
-        <span data-testid={`cf-node-streak-${node.commitId}`} className={cn("text-[0.65rem] rounded-full px-1.5 py-px font-semibold self-start", isCurrent ? "bg-white/25 text-white" : "bg-amber-100 text-amber-800")}>
+        <span data-testid={`cf-node-streak-${node.commitId}`} className={cn("text-[0.65rem] rounded-full px-1.5 py-px font-semibold self-start", isCurrent ? "bg-primary-foreground/25 text-primary-foreground" : "bg-muted-bg text-muted")}>
           {node.streak}× CF
         </span>
       )}
       {outcomeMeta ? (
-        <span data-testid={`cf-node-outcome-${node.commitId}`} className={cn("text-[0.65rem] rounded-full px-1.5 py-px font-semibold self-start", isCurrent ? "bg-white/20 text-white" : outcomeMeta.cls)}>
+        <span data-testid={`cf-node-outcome-${node.commitId}`} className={cn("text-[0.65rem] rounded-full px-1.5 py-px font-semibold self-start", isCurrent ? "bg-primary-foreground/20 text-primary-foreground" : outcomeMeta.cls)}>
           {outcomeMeta.label}
         </span>
       ) : (
-        <span data-testid={`cf-node-pending-${node.commitId}`} className={cn("text-[0.65rem]", isCurrent ? "text-white/70" : "text-muted")}>
+        <span data-testid={`cf-node-pending-${node.commitId}`} className={cn("text-[0.65rem]", isCurrent ? "text-primary-foreground/70" : "text-muted")}>
           {isCurrent ? "Current" : "Pending"}
         </span>
       )}

@@ -67,6 +67,18 @@ public class AiSuggestion {
 	@Column
 	private Boolean dismissed;
 
+	@Column(name = "prompt_version")
+	private String promptVersion;
+
+	@Column(name = "eval_faithfulness_score")
+	private Float evalFaithfulnessScore;
+
+	@Column(name = "eval_relevancy_score")
+	private Float evalRelevancyScore;
+
+	@Column(name = "eval_scored_at")
+	private Instant evalScoredAt;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
@@ -185,5 +197,37 @@ public class AiSuggestion {
 
 	public Instant getCreatedAt() {
 		return createdAt;
+	}
+
+	public String getPromptVersion() {
+		return promptVersion;
+	}
+
+	public void setPromptVersion(String promptVersion) {
+		this.promptVersion = promptVersion;
+	}
+
+	public Float getEvalFaithfulnessScore() {
+		return evalFaithfulnessScore;
+	}
+
+	public void setEvalFaithfulnessScore(Float evalFaithfulnessScore) {
+		this.evalFaithfulnessScore = evalFaithfulnessScore;
+	}
+
+	public Float getEvalRelevancyScore() {
+		return evalRelevancyScore;
+	}
+
+	public void setEvalRelevancyScore(Float evalRelevancyScore) {
+		this.evalRelevancyScore = evalRelevancyScore;
+	}
+
+	public Instant getEvalScoredAt() {
+		return evalScoredAt;
+	}
+
+	public void setEvalScoredAt(Instant evalScoredAt) {
+		this.evalScoredAt = evalScoredAt;
 	}
 }

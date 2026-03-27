@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "completed",
-  "updatedAt": "2026-03-26T06:33:08.499Z",
+  "updatedAt": "2026-03-26T13:02:38.828Z",
   "runId": "2026-03-26T04-36-08-591Z-21100373",
   "handoffMode": "none",
   "postPlanMode": "autorun",
@@ -191,10 +191,8 @@
     ]
   },
   "stepIndex": 13,
-  "round": 2,
   "activeSummary": {
-    "stepId": "step-13",
-    "stepTitle": "Wire InsightPanel and SemanticSearchInput into MyWeek.tsx and TeamWeek.tsx",
+    "stepTitle": "All steps complete",
     "gateResults": [
       {
         "id": "typecheck",
@@ -208,7 +206,6 @@
         "id": "git-diff-check",
         "passed": true
       }
-    ],
-    "lastVerdict": "approve"
+    ]
   }
 }

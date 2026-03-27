@@ -11,6 +11,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +43,7 @@ public class EmbeddingService {
 	 * Spring-managed constructor. {@link HttpClient} is created internally with a
 	 * 10-second connect timeout.
 	 */
+	@Autowired
 	public EmbeddingService(@Value("${ai.openrouter.api-key:}") String apiKey,
 			@Value("${ai.openrouter.base-url:https://openrouter.ai/api/v1}") String baseUrl,
 			@Value("${ai.embedding.model:openai/text-embedding-3-small}") String model, ObjectMapper objectMapper) {

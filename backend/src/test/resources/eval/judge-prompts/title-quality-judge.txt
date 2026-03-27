@@ -1,0 +1,16 @@
+You are evaluating the quality of an AI-suggested commit title improvement for a weekly planning tool.
+
+Original title: "{originalTitle}"
+Suggested title: "{suggestedTitle}"
+Chess piece: {chessPiece} (KING = mission-critical, QUEEN = highest-leverage, ROOK = major deliverable, BISHOP = enabling work, KNIGHT = exploratory, PAWN = small task)
+
+Rate the suggestion on these criteria (each 0.0 to 1.0):
+
+1. clarity: Is the suggested title clearer about what will be delivered? Does it describe an OUTCOME not just an ACTIVITY?
+2. specificity: Does it contain concrete deliverables, not vague words like "stuff", "things", "work on", "various"?
+3. appropriate_scope: Does it describe work achievable in a single week? (not too broad, not trivially small for its chess piece)
+4. improvement: Is it meaningfully better than the original? If the original was already good, is the suggestion unnecessary (score 0)?
+5. professional_tone: Is the language appropriate for a work planning system? No emoji, no slang, no exclamation marks.
+
+Respond with ONLY a JSON object:
+{"clarity": 0.8, "specificity": 0.7, "appropriate_scope": 0.9, "improvement": 0.6, "professional_tone": 0.95}

@@ -81,10 +81,10 @@ export function CarryForwardDialog({ commit, onConfirm, onCancel, isSubmitting =
         </div>
 
         {/* Commit preview */}
-        <div data-testid="carry-forward-commit-preview" className="mb-4 rounded-default border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-800">
+        <div data-testid="carry-forward-commit-preview" className="mb-4 rounded-default border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-foreground">
           <strong>"{commit.title}"</strong> will be copied into the target week as a new commit with carry-forward provenance.
           {commit.carryForwardStreak > 0 && (
-            <span className="block mt-1 text-xs text-purple-700">
+            <span className="block mt-1 text-xs text-muted">
               Already carried forward {commit.carryForwardStreak} time{commit.carryForwardStreak !== 1 ? "s" : ""}.
             </span>
           )}
@@ -102,7 +102,7 @@ export function CarryForwardDialog({ commit, onConfirm, onCancel, isSubmitting =
                   key={weekStart}
                   className={cn(
                     "flex items-center gap-2 px-3 py-2 rounded-default border text-sm cursor-pointer",
-                    targetWeekStart === weekStart ? "border-primary bg-blue-50" : "border-border",
+                    targetWeekStart === weekStart ? "border-foreground bg-foreground/5" : "border-border",
                   )}
                 >
                   <input type="radio" name="targetWeek" value={weekStart} checked={targetWeekStart === weekStart} onChange={() => setTargetWeekStart(weekStart)} />

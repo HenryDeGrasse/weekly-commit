@@ -5,11 +5,17 @@
 #    make setup      install deps + create DB only
 #    make stop       kill processes on :8080 and :5173
 #    make clean      stop + wipe build artifacts
+#    make reseed     wipe runtime data + restore demo seed (no restart needed)
 #    make reset      clean + drop DB + setup (true blank slate)
 #    make check      lint + typecheck + tests
 # ─────────────────────────────────────────────────────────────
 
-.PHONY: dev setup stop clean reset check check-deps
+# ── Load .env (PINECONE_API_KEY, OPENROUTER_API_KEY, DB_USER, …) ─────────────
+# -include silently skips if .env is absent; export forwards all vars to children.
+-include .env
+export
+
+.PHONY: dev setup stop clean reset reseed check check-deps
 
 # ── tool paths (keg-only Homebrew installs) ───────────────────
 JAVA_HOME   := /opt/homebrew/opt/openjdk@21
@@ -96,6 +102,19 @@ clean: stop
 	rm -rf frontend/dist packages/shared/dist node_modules/.cache
 	JAVA_HOME=$(JAVA_HOME) PATH=$(JAVA_HOME)/bin:$$PATH cd backend && ./gradlew clean --quiet
 	@printf "$(GREEN)✓ Clean complete$(NC)\n"
+
+# ── reseed: wipe runtime data + restore demo seed (backend can stay running) ──
+reseed:
+	@printf "\n$(BOLD)Wiping runtime data...$(NC)\n"
+	@$(PSQL) -U $(DB_USER) $(DB_NAME) -f scripts/reseed.sql -q \
+		&& printf "$(GREEN)✓ Runtime data cleared, static seed restored$(NC)\n" \
+		|| { printf "$(RED)✗ Cleanup failed — is the DB running?$(NC)\n"; exit 1; }
+	@printf "$(BOLD)Restoring rich demo seed (V11)...$(NC)\n"
+	@$(PSQL) -U $(DB_USER) $(DB_NAME) \
+		-f backend/src/main/resources/db/migration/V11__rich_demo_seed.sql -q \
+		&& printf "$(GREEN)✓ Demo seed restored$(NC)\n" \
+		|| { printf "$(RED)✗ Demo seed failed$(NC)\n"; exit 1; }
+	@printf "\n$(GREEN)$(BOLD)✓ Reseed complete — refresh the browser$(NC)\n\n"
 
 # ── reset: drop DB + clean + setup ────────────────────────────
 reset: clean

@@ -1,14 +1,26 @@
 /**
  * CommitForm — modal/panel for creating and editing weekly commits.
  */
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, Component, type ErrorInfo, type ReactNode } from "react";
 import { X, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Input } from "../ui/Input.js";
 import { cn } from "../../lib/utils.js";
 import { RcdoTreeView } from "../rcdo/RcdoTreeView.js";
+import { CommitDraftAssistButton } from "../ai/CommitDraftAssistButton.js";
 import type { RcdoTreeNode } from "../../api/rcdoTypes.js";
 import type { ChessPiece, EstimatePoints, CommitResponse, CreateCommitPayload, UpdateCommitPayload } from "../../api/planTypes.js";
+
+/**
+ * Error boundary that silently hides AI components when HostProvider is absent
+ * (e.g., in unit tests). Prevents AI features from crashing the form.
+ */
+class AiErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(_: Error, __: ErrorInfo) { /* silently suppress */ }
+  render() { return this.state.hasError ? null : this.props.children; }
+}
 
 const CHESS_PIECES: ChessPiece[] = ["KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN"];
 const CHESS_PIECE_ICONS: Record<ChessPiece, string> = { KING: "♔", QUEEN: "♕", ROOK: "♖", BISHOP: "♗", KNIGHT: "♘", PAWN: "♙" };
@@ -50,6 +62,7 @@ type FormErrors = Partial<Record<keyof FormValues, string>>;
 
 interface CreateModeProps {
   readonly mode: "create";
+  readonly planId: string;
   readonly rcdoTree: RcdoTreeNode[];
   readonly existingCommits: CommitResponse[];
   readonly onSubmit: (payload: CreateCommitPayload) => Promise<void>;
@@ -69,6 +82,7 @@ export function CommitForm(props: CommitFormProps) {
   const { rcdoTree, existingCommits, onCancel } = props;
   const isCreate = props.mode === "create";
   const editCommit = props.mode === "edit" ? props.commit : null;
+  const resolvedPlanId = props.mode === "edit" ? props.commit.planId : props.planId;
 
   const [values, setValues] = useState<FormValues>({
     title: editCommit?.title ?? "",
@@ -152,7 +166,7 @@ export function CommitForm(props: CommitFormProps) {
 
         {/* Carry-forward banner */}
         {editCommit && editCommit.carryForwardStreak > 0 && (
-          <div data-testid="carry-forward-banner" className="mb-4 rounded-default border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-800">
+          <div data-testid="carry-forward-banner" className="mb-4 rounded-default border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-foreground">
             🔁 <strong>Carried forward</strong> — this commit has been carried forward {editCommit.carryForwardStreak} time{editCommit.carryForwardStreak !== 1 ? "s" : ""}.
           </div>
         )}
@@ -180,6 +194,26 @@ export function CommitForm(props: CommitFormProps) {
             />
           </div>
 
+          {/* AI Draft Assist — error boundary silently hides when HostProvider absent */}
+          {values.title.trim().length > 0 && (
+            <AiErrorBoundary>
+              <CommitDraftAssistButton
+                planId={resolvedPlanId}
+                {...(editCommit?.id ? { commitId: editCommit.id } : {})}
+                currentTitle={values.title}
+                currentDescription={values.description || undefined}
+                currentSuccessCriteria={values.successCriteria || undefined}
+                currentEstimatePoints={values.estimatePoints !== "" ? Number(values.estimatePoints) : undefined}
+                chessPiece={values.chessPiece || undefined}
+                onAcceptTitle={(t) => handleChange("title", t)}
+                onAcceptDescription={(d) => handleChange("description", d)}
+                onAcceptSuccessCriteria={(c) => handleChange("successCriteria", c)}
+                onAcceptEstimatePoints={(p) => handleChange("estimatePoints", String(p))}
+                className="mb-4"
+              />
+            </AiErrorBoundary>
+          )}
+
           {/* Description */}
           <div className="mb-4 flex flex-col gap-1.5">
             <label htmlFor="commit-form-description" className="text-sm font-medium">Description</label>
@@ -199,7 +233,7 @@ export function CommitForm(props: CommitFormProps) {
                     <label key={piece} data-testid={`chess-piece-option-${piece.toLowerCase()}`}
                       className={cn(
                         "flex items-start gap-2.5 p-2 rounded-default border cursor-pointer transition-colors",
-                        isSelected ? "border-primary bg-blue-50" : "border-border hover:border-primary/50",
+                        isSelected ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/30",
                         disabled && "opacity-55 cursor-not-allowed",
                       )}>
                       <input type="radio" name="chessPiece" value={piece} checked={isSelected} onChange={() => { if (!disabled) handleChange("chessPiece", piece); }} disabled={disabled} className="mt-0.5 shrink-0" />
@@ -225,7 +259,7 @@ export function CommitForm(props: CommitFormProps) {
                 const isActive = String(values.estimatePoints) === String(pts);
                 return (
                   <button key={pts} type="button" onClick={() => handleChange("estimatePoints", values.estimatePoints === String(pts) ? "" : String(pts))} data-testid={`estimate-btn-${pts}`} aria-pressed={isActive}
-                    className={cn("h-10 w-10 rounded-default border-2 text-sm font-bold transition-colors", isActive ? "border-primary text-white" : "border-border bg-surface text-foreground hover:border-primary/60")}
+                    className={cn("h-10 w-10 rounded-default border-2 text-sm font-bold transition-colors", isActive ? "border-primary text-primary-foreground" : "border-border bg-surface text-foreground hover:border-primary/60")}
                     style={isActive ? { background: "var(--color-primary)", color: "rgb(255, 255, 255)" } : undefined}>
                     {pts}
                   </button>
@@ -250,9 +284,9 @@ export function CommitForm(props: CommitFormProps) {
           <div className="mb-4">
             <p className="text-sm font-medium mb-2">RCDO Link</p>
             {selectedRcdoNode && (
-              <div data-testid="rcdo-selected-node" className="flex items-center gap-2 px-3 py-2 rounded-default border border-emerald-200 bg-emerald-50 mb-2 text-sm">
-                <Check className="h-3.5 w-3.5 text-success shrink-0" aria-hidden="true" />
-                <span className="flex-1 text-emerald-800">{selectedRcdoNode.title}</span>
+              <div data-testid="rcdo-selected-node" className="flex items-center gap-2 px-3 py-2 rounded-default border border-foreground/20 bg-foreground/5 mb-2 text-sm">
+                <Check className="h-3.5 w-3.5 text-foreground shrink-0" aria-hidden="true" />
+                <span className="flex-1 text-foreground">{selectedRcdoNode.title}</span>
                 <Button variant="ghost" size="icon" type="button" onClick={() => handleChange("rcdoNodeId", "")} aria-label="Clear RCDO link" className="h-6 w-6 text-muted">
                   <X className="h-3 w-3" />
                 </Button>
@@ -290,7 +324,7 @@ export function CommitForm(props: CommitFormProps) {
 
           {/* API error */}
           {submitError && (
-            <div role="alert" className="mb-4 rounded-default border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger">{submitError}</div>
+            <div role="alert" className="mb-4 rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-foreground font-semibold">{submitError}</div>
           )}
 
           <div className="flex gap-2 justify-end pt-4 border-t border-border">

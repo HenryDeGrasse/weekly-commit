@@ -39,11 +39,11 @@ export function CapacityMeter({ commits, budgetPoints, isManagerOverride = false
         <h3 className="m-0 text-sm font-bold">Capacity</h3>
         <div className="flex items-center gap-2">
           {(isManagerOverride || budgetPoints !== DEFAULT_BUDGET) && (
-            <span data-testid="override-badge" className="text-[0.7rem] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
+            <span data-testid="override-badge" className="text-[0.7rem] font-bold px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-700">
               Manager override
             </span>
           )}
-          <span data-testid="capacity-tally" className={cn("text-sm font-bold", isOver ? "text-danger" : "text-foreground")}>
+          <span data-testid="capacity-tally" className={cn("text-sm font-bold", isOver ? "text-foreground underline" : "text-foreground")}>
             {totalPoints} / {budgetPoints} pts
           </span>
         </div>
@@ -62,7 +62,7 @@ export function CapacityMeter({ commits, budgetPoints, isManagerOverride = false
           data-testid="capacity-bar"
           className={cn(
             "h-full rounded-full transition-[width] duration-300",
-            isOver ? "bg-danger" : isNear ? "bg-warning" : "bg-success",
+            isOver ? "bg-foreground" : isNear ? "bg-neutral-400" : "bg-neutral-600",
           )}
           style={{ width: `${fillPct}%` }}
         />
@@ -70,7 +70,7 @@ export function CapacityMeter({ commits, budgetPoints, isManagerOverride = false
 
       {/* Over-budget alert */}
       {isOver && (
-        <p role="alert" data-testid="over-budget-alert" className="m-0 text-xs text-danger font-semibold">
+        <p role="alert" data-testid="over-budget-alert" className="m-0 text-xs text-foreground font-bold underline">
           {totalPoints - budgetPoints} pt{totalPoints - budgetPoints !== 1 ? "s" : ""} over budget
         </p>
       )}

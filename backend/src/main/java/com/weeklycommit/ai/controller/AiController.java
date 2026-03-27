@@ -21,6 +21,7 @@ import com.weeklycommit.ai.dto.RiskSignalResponse.PlanRiskSignals;
 import com.weeklycommit.ai.provider.AiContext;
 import com.weeklycommit.ai.provider.AiProvider;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
+import com.weeklycommit.ai.rag.SemanticIndexService;
 import com.weeklycommit.ai.rag.SemanticQueryService;
 import com.weeklycommit.ai.service.AiSuggestionService;
 import com.weeklycommit.ai.service.CommitDraftAssistService;
@@ -71,6 +72,7 @@ public class AiController {
 	private final ManagerAiSummaryService managerSummaryService;
 	private final AiSuggestionService suggestionService;
 	private final AiProviderRegistry providerRegistry;
+	private final SemanticIndexService semanticIndexService;
 	private final SemanticQueryService semanticQueryService;
 	private final AiSuggestionRepository suggestionRepo;
 	private final ObjectMapper objectMapper;
@@ -79,8 +81,8 @@ public class AiController {
 			RcdoSuggestService rcdoSuggestService, RiskDetectionService riskDetectionService,
 			ReconcileAssistService reconcileAssistService, ManagerAiSummaryService managerSummaryService,
 			AiSuggestionService suggestionService, AiProviderRegistry providerRegistry,
-			SemanticQueryService semanticQueryService, AiSuggestionRepository suggestionRepo,
-			ObjectMapper objectMapper) {
+			SemanticIndexService semanticIndexService, SemanticQueryService semanticQueryService,
+			AiSuggestionRepository suggestionRepo, ObjectMapper objectMapper) {
 		this.draftAssistService = draftAssistService;
 		this.lintService = lintService;
 		this.rcdoSuggestService = rcdoSuggestService;
@@ -89,6 +91,7 @@ public class AiController {
 		this.managerSummaryService = managerSummaryService;
 		this.suggestionService = suggestionService;
 		this.providerRegistry = providerRegistry;
+		this.semanticIndexService = semanticIndexService;
 		this.semanticQueryService = semanticQueryService;
 		this.suggestionRepo = suggestionRepo;
 		this.objectMapper = objectMapper;
@@ -257,6 +260,29 @@ public class AiController {
 			log.warn("Failed to retrieve personal insights for plan={}: {}", id, ex.getMessage());
 			return ResponseEntity.ok(InsightListResponse.unavailable());
 		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Admin: full reindex
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Triggers an async full reindex of all plans into Pinecone. Returns
+	 * immediately; indexing runs in a background thread. Intended for dev/admin use
+	 * after bulk SQL seed or Pinecone wipes.
+	 */
+	@PostMapping("/api/admin/ai/reindex")
+	public ResponseEntity<java.util.Map<String, Object>> triggerFullReindex() {
+		log.info("Admin full reindex triggered");
+		int count = semanticIndexService.fullReindex();
+		java.util.LinkedHashMap<String, Object> result = new java.util.LinkedHashMap<>();
+		result.put("plansQueued", count);
+		result.put("status", count > 0 ? "indexing_started" : "pinecone_unavailable");
+		result.put("message",
+				count > 0
+						? "Indexing " + count + " plans in background. Check server logs for completion."
+						: "Pinecone not configured.");
+		return ResponseEntity.ok(result);
 	}
 
 	// -------------------------------------------------------------------------

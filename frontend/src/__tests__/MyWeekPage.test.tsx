@@ -13,6 +13,7 @@
  *   - Soft warning: >8 commits
  *   - Soft warning: >40% pawn points
  *   - Capacity meter rendered
+ *   - Inline AI lint panel shown in DRAFT state, hidden in LOCKED
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
@@ -597,5 +598,38 @@ describe("MyWeekPage — scope change timeline", () => {
     vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(LOCKED_PLAN, twoCommits));
     renderPage();
     expect(screen.getByTestId("load-scope-timeline-btn")).toBeInTheDocument();
+  });
+});
+
+// ── Tests: inline AI lint panel (step 1 — autoRun) ───────────────────────────
+
+describe("MyWeekPage — inline AI lint panel", () => {
+  it("renders the inline AI lint panel wrapper in DRAFT state when commits exist", () => {
+    // Default fixture: DRAFT plan with twoCommits, aiAssistanceEnabled=true (MockHostProvider default)
+    renderPage();
+    expect(screen.getByTestId("inline-ai-lint-panel")).toBeInTheDocument();
+  });
+
+  it("shows lint feedback (unavailable banner) without any button click in DRAFT state", () => {
+    // AI is mocked as unavailable. With autoRun=true, the unavailable state
+    // shows immediately — no "Run AI Quality Check" button required.
+    renderPage();
+    const lintWrapper = screen.getByTestId("inline-ai-lint-panel");
+    // ai-lint-unavailable is inside the wrapper
+    expect(lintWrapper.querySelector("[data-testid='ai-lint-unavailable']")).toBeInTheDocument();
+    // The manual run button must NOT be present
+    expect(screen.queryByTestId("ai-lint-run-btn")).not.toBeInTheDocument();
+  });
+
+  it("does NOT render the inline AI lint panel in LOCKED state", () => {
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(LOCKED_PLAN, twoCommits));
+    renderPage();
+    expect(screen.queryByTestId("inline-ai-lint-panel")).not.toBeInTheDocument();
+  });
+
+  it("does NOT render the inline AI lint panel when there are no commits", () => {
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(DRAFT_PLAN, []));
+    renderPage();
+    expect(screen.queryByTestId("inline-ai-lint-panel")).not.toBeInTheDocument();
   });
 });

@@ -69,18 +69,24 @@ public class TicketService {
 	private final WeeklyCommitRepository commitRepo;
 	private final WeeklyPlanRepository planRepo;
 	private final NotificationService notificationService;
+	private final com.weeklycommit.domain.repository.UserAccountRepository userRepo;
+	private final com.weeklycommit.domain.repository.TeamRepository teamRepo;
 
 	/** Optional — injected when the RAG module is active; null-safe throughout. */
 	@Autowired(required = false)
 	private com.weeklycommit.ai.rag.SemanticIndexService semanticIndexService;
 
 	public TicketService(WorkItemRepository workItemRepo, WorkItemStatusHistoryRepository historyRepo,
-			WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo, NotificationService notificationService) {
+			WeeklyCommitRepository commitRepo, WeeklyPlanRepository planRepo, NotificationService notificationService,
+			com.weeklycommit.domain.repository.UserAccountRepository userRepo,
+			com.weeklycommit.domain.repository.TeamRepository teamRepo) {
 		this.workItemRepo = workItemRepo;
 		this.historyRepo = historyRepo;
 		this.commitRepo = commitRepo;
 		this.planRepo = planRepo;
 		this.notificationService = notificationService;
+		this.userRepo = userRepo;
+		this.teamRepo = teamRepo;
 	}
 
 	// -------------------------------------------------------------------------
@@ -107,6 +113,23 @@ public class TicketService {
 		if (semanticIndexService != null) {
 			semanticIndexService.indexEntity(com.weeklycommit.ai.rag.SemanticIndexService.TYPE_TICKET, saved.getId());
 		}
+
+		// Notify: unassigned ticket created (MEDIUM — same-day digest)
+		if (saved.getAssigneeUserId() == null && saved.getTargetWeekStartDate() != null) {
+			try {
+				notificationService.findManagerForTeam(saved.getTeamId())
+						.ifPresent(managerId -> notificationService.createNotification(managerId,
+								com.weeklycommit.domain.enums.NotificationEvent.UNASSIGNED_TICKET_CREATED,
+								"Unassigned ticket: " + saved.getKey(),
+								"Ticket " + saved.getKey() + " \"" + saved.getTitle()
+										+ "\" was created without an assignee and is targeted to week "
+										+ saved.getTargetWeekStartDate() + ".",
+								saved.getId(), "TICKET"));
+			} catch (Exception ex) {
+				// Non-critical
+			}
+		}
+
 		return getTicketDetail(saved.getId());
 	}
 
@@ -161,7 +184,20 @@ public class TicketService {
 					commit.getEstimatePoints(), plan.getWeekStartDate(), commit.getOutcome());
 		}).filter(java.util.Objects::nonNull).toList();
 
-		return TicketDetailResponse.from(base, statusHistory, linkedCommits);
+		// Resolve display names
+		String assigneeName = ticket.getAssigneeUserId() != null
+				? userRepo.findById(ticket.getAssigneeUserId())
+						.map(com.weeklycommit.domain.entity.UserAccount::getDisplayName).orElse(null)
+				: null;
+		String reporterName = ticket.getReporterUserId() != null
+				? userRepo.findById(ticket.getReporterUserId())
+						.map(com.weeklycommit.domain.entity.UserAccount::getDisplayName).orElse(null)
+				: null;
+		String teamName = ticket.getTeamId() != null
+				? teamRepo.findById(ticket.getTeamId()).map(com.weeklycommit.domain.entity.Team::getName).orElse(null)
+				: null;
+
+		return TicketDetailResponse.from(base, statusHistory, linkedCommits, assigneeName, reporterName, teamName);
 	}
 
 	@Transactional(readOnly = true)
@@ -170,7 +206,7 @@ public class TicketService {
 		Pageable pageable = PageRequest.of(params.normalizedPage() - 1, params.normalizedPageSize(),
 				buildSort(params.normalizedSortBy(), params.normalizedSortDir()));
 		Page<WorkItem> page = workItemRepo.findAll(spec, pageable);
-		return new PagedTicketResponse(page.getContent().stream().map(TicketSummaryResponse::from).toList(),
+		return new PagedTicketResponse(page.getContent().stream().map(this::toSummaryWithNames).toList(),
 				page.getTotalElements(), params.normalizedPage(), params.normalizedPageSize());
 	}
 
@@ -179,7 +215,7 @@ public class TicketService {
 		Specification<WorkItem> spec = (root, query,
 				cb) -> teamId == null ? cb.conjunction() : cb.equal(root.get("teamId"), teamId);
 		return workItemRepo.findAll(spec, Sort.by(Sort.Direction.DESC, "updatedAt")).stream()
-				.map(TicketSummaryResponse::from).toList();
+				.map(this::toSummaryWithNames).toList();
 	}
 
 	// -------------------------------------------------------------------------
@@ -301,6 +337,21 @@ public class TicketService {
 
 	private WeeklyPlan requirePlan(UUID id) {
 		return planRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Weekly plan not found: " + id));
+	}
+
+	/**
+	 * Converts a WorkItem to a TicketSummaryResponse with resolved display names
+	 * for assignee and team.
+	 */
+	private TicketSummaryResponse toSummaryWithNames(WorkItem item) {
+		String assigneeName = item.getAssigneeUserId() != null
+				? userRepo.findById(item.getAssigneeUserId())
+						.map(com.weeklycommit.domain.entity.UserAccount::getDisplayName).orElse(null)
+				: null;
+		String teamName = item.getTeamId() != null
+				? teamRepo.findById(item.getTeamId()).map(com.weeklycommit.domain.entity.Team::getName).orElse(null)
+				: null;
+		return TicketSummaryResponse.from(item, assigneeName, teamName);
 	}
 
 	private void transitionStatus(WorkItem item, TicketStatus newStatus, UUID changedByUserId) {

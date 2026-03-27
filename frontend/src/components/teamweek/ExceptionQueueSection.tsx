@@ -9,9 +9,9 @@ import { cn } from "../../lib/utils.js";
 import type { ExceptionResponse, ExceptionSeverity, ExceptionType, AddCommentPayload, ResolveExceptionPayload } from "../../api/teamTypes.js";
 
 const SEVERITY_CLS: Record<ExceptionSeverity, string> = {
-  HIGH: "bg-red-100 text-red-800",
-  MEDIUM: "bg-amber-100 text-amber-800",
-  LOW: "bg-blue-100 text-blue-800",
+  HIGH: "bg-foreground text-background",
+  MEDIUM: "bg-neutral-400 text-background",
+  LOW: "bg-neutral-200 text-neutral-700",
 };
 const SEVERITY_LABELS: Record<ExceptionSeverity, string> = { HIGH: "HIGH", MEDIUM: "MED", LOW: "LOW" };
 const SEVERITY_ORDER: Record<ExceptionSeverity, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
@@ -110,21 +110,21 @@ export function ExceptionQueueSection({ exceptions, actorUserId, onResolve, onAd
       <h3 id="exception-queue-heading" className="m-0 mb-3 flex items-center gap-2 text-sm font-bold">
         Exception Queue
         {unresolvedCount > 0 && (
-          <span data-testid="exception-queue-badge" className="text-[0.65rem] font-bold px-1.5 py-px rounded-full bg-red-100 text-red-800">{unresolvedCount}</span>
+          <span data-testid="exception-queue-badge" className="text-[0.65rem] font-bold px-1.5 py-px rounded-full bg-foreground text-background">{unresolvedCount}</span>
         )}
       </h3>
 
       <div className="flex gap-1 mb-3" role="tablist" aria-label="Exception filter">
         {(["all", "unresolved", "resolved"] as FilterMode[]).map((mode) => (
           <button key={mode} type="button" role="tab" aria-selected={filter === mode} onClick={() => setFilter(mode)} data-testid={`exception-filter-${mode}`}
-            className={cn("px-3.5 py-1.5 rounded-default border text-xs font-medium transition-colors", filter === mode ? "bg-primary text-white border-primary" : "bg-surface text-foreground border-border hover:bg-muted/10")}>
+            className={cn("px-3.5 py-1.5 rounded-default border text-xs font-medium transition-colors", filter === mode ? "bg-foreground text-background border-foreground" : "bg-surface text-foreground border-border hover:bg-muted-bg")}>
             {mode.charAt(0).toUpperCase() + mode.slice(1)}
           </button>
         ))}
       </div>
 
       {filtered.length === 0 ? (
-        <p data-testid="no-exceptions-message" className={cn("text-sm", filter === "unresolved" ? "text-success font-semibold" : "text-muted")}>
+        <p data-testid="no-exceptions-message" className={cn("text-sm", filter === "unresolved" ? "text-foreground font-semibold" : "text-muted")}>
           {filter === "unresolved" ? "✓ No open exceptions." : "No exceptions to show."}
         </p>
       ) : (
@@ -147,7 +147,7 @@ export function ExceptionQueueSection({ exceptions, actorUserId, onResolve, onAd
                     <span data-testid={`exception-date-${exception.id}`}>{new Date(exception.createdAt).toLocaleDateString()}</span>
                   </div>
                   {exception.resolved && exception.resolution && (
-                    <div data-testid={`exception-resolution-${exception.id}`} className="mt-1.5 px-2.5 py-1.5 rounded-default bg-emerald-50 text-xs text-emerald-700">
+                    <div data-testid={`exception-resolution-${exception.id}`} className="mt-1.5 px-2.5 py-1.5 rounded-default bg-neutral-100 text-xs text-foreground">
                       ✓ {exception.resolution}
                     </div>
                   )}
@@ -155,7 +155,7 @@ export function ExceptionQueueSection({ exceptions, actorUserId, onResolve, onAd
                 {!exception.resolved && (
                   <div className="flex gap-1.5 shrink-0">
                     {onResolve && (
-                      <Button variant="ghost" size="sm" onClick={() => setResolvingId(exception.id)} data-testid={`resolve-btn-${exception.id}`} className="h-7 px-2 text-xs border border-success text-success hover:bg-success/10">
+                      <Button variant="ghost" size="sm" onClick={() => setResolvingId(exception.id)} data-testid={`resolve-btn-${exception.id}`} className="h-7 px-2 text-xs border border-foreground/30 text-foreground hover:bg-foreground/5">
                         <Check className="h-3 w-3" />Resolve
                       </Button>
                     )}

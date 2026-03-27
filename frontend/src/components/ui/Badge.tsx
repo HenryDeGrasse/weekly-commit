@@ -2,20 +2,27 @@ import { type HTMLAttributes } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils.js";
 
+/**
+ * Badge variants — monochrome palette with subtle tonal shifts for
+ * semantic meaning. Uses px-based rounding (not rounded-full) so badges
+ * pick up the global radius token. Plan-state badges use gray-scale tints
+ * to stay within the neutral design direction.
+ */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide transition-colors",
+  "inline-flex items-center rounded-sm border px-2.5 py-0.5 text-xs font-semibold tracking-wide transition-colors",
   {
     variants: {
       variant: {
-        default: "bg-muted/15 text-foreground",
-        primary: "bg-primary/15 text-primary",
-        success: "bg-success/15 text-success",
-        warning: "bg-warning/15 text-warning",
-        danger: "bg-danger/15 text-danger",
-        draft: "bg-amber-100 text-amber-800",
-        locked: "bg-blue-100 text-blue-800",
-        reconciling: "bg-yellow-100 text-yellow-900",
-        reconciled: "bg-emerald-100 text-emerald-800",
+        default: "border-border bg-muted-bg text-foreground",
+        primary: "border-foreground/20 bg-foreground/5 text-foreground",
+        success: "border-foreground/25 bg-foreground/5 text-foreground",
+        warning: "border-foreground/15 bg-foreground/[0.03] text-muted",
+        danger: "border-foreground/30 bg-foreground/8 text-foreground font-bold",
+        /* Plan-state badges: monochrome tonal variations */
+        draft: "border-border bg-muted-bg text-muted",
+        locked: "border-foreground/20 bg-foreground/5 text-foreground",
+        reconciling: "border-foreground/15 bg-foreground/[0.03] text-muted",
+        reconciled: "border-foreground/25 bg-foreground/5 text-foreground",
       },
     },
     defaultVariants: {

@@ -15,12 +15,12 @@ export interface AiStatusResponse {
 export interface CommitDraftAssistRequest {
   userId: string;
   planId: string;
-  commitId?: string;
+  commitId?: string | undefined;
   currentTitle: string;
-  currentDescription?: string;
-  currentSuccessCriteria?: string;
-  currentEstimatePoints?: number;
-  chessPiece?: string;
+  currentDescription?: string | undefined;
+  currentSuccessCriteria?: string | undefined;
+  currentEstimatePoints?: number | undefined;
+  chessPiece?: string | undefined;
 }
 
 export interface CommitDraftAssistResponse {
@@ -67,6 +67,34 @@ export interface PlanRiskSignalsResponse {
   signals: RiskSignal[];
 }
 
+// ── Reconcile Assist types ─────────────────────────────────────────────────
+
+export interface ReconcileAssistRequest {
+  planId: string;
+  userId: string;
+}
+
+export interface CommitOutcomeSuggestion {
+  commitId: string;
+  commitTitle: string;
+  suggestedOutcome: string;
+  rationale: string;
+}
+
+export interface CarryForwardRecommendation {
+  commitId: string;
+  commitTitle: string;
+  rationale: string;
+}
+
+export interface ReconcileAssistResponse {
+  aiAvailable: boolean;
+  suggestionId?: string;
+  likelyOutcomes: CommitOutcomeSuggestion[];
+  draftSummary?: string | null;
+  carryForwardRecommendations: CarryForwardRecommendation[];
+}
+
 export type FeedbackAction = "ACCEPTED" | "DISMISSED" | "EDITED";
 
 export interface AiFeedbackRequest {
@@ -101,6 +129,12 @@ export function createAiApi(client: ApiClient, actorUserId: string) {
       client.get(`/plans/${encodeURIComponent(planId)}/risk-signals`, {
         headers: actorHeader,
       }),
+
+    /** POST /api/ai/reconcile-assist — get reconciliation suggestions. */
+    reconcileAssist: (
+      request: ReconcileAssistRequest,
+    ): Promise<ReconcileAssistResponse> =>
+      client.post("/ai/reconcile-assist", request),
 
     /** POST /api/ai/feedback — record thumbs up/down on a suggestion. */
     recordFeedback: (request: AiFeedbackRequest): Promise<void> =>

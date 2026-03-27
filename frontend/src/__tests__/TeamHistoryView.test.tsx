@@ -106,22 +106,22 @@ describe("TeamHistoryView — row data", () => {
 });
 
 describe("TeamHistoryView — compliance color coding", () => {
-  it("uses success color for compliance ≥ 80%", () => {
+  it("uses foreground color for compliance ≥ 80%", () => {
     render(<TeamHistoryView entries={[makeEntry("2026-03-24", { complianceRate: 0.9 })]} loading={false} />);
     const cell = screen.getByTestId("team-history-compliance-2026-03-24");
-    // Color should be success color (green)
-    expect(cell).toHaveStyle({ color: "var(--color-success)" });
+    expect(cell.className).toContain("text-foreground");
+    expect(cell.className).not.toContain("underline");
   });
 
-  it("uses warning color for compliance 50%–79%", () => {
+  it("uses muted color for compliance 50%–79%", () => {
     render(<TeamHistoryView entries={[makeEntry("2026-03-24", { complianceRate: 0.6 })]} loading={false} />);
     const cell = screen.getByTestId("team-history-compliance-2026-03-24");
-    expect(cell).toHaveStyle({ color: "var(--color-warning)" });
+    expect(cell.className).toContain("text-muted");
   });
 
-  it("uses danger color for compliance < 50%", () => {
+  it("uses underline for compliance < 50%", () => {
     render(<TeamHistoryView entries={[makeEntry("2026-03-24", { complianceRate: 0.4 })]} loading={false} />);
     const cell = screen.getByTestId("team-history-compliance-2026-03-24");
-    expect(cell).toHaveStyle({ color: "var(--color-danger)" });
+    expect(cell.className).toContain("underline");
   });
 });

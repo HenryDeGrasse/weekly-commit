@@ -54,16 +54,16 @@ class TicketControllerTest {
 
 	private TicketSummaryResponse summary() {
 		return new TicketSummaryResponse(UUID.randomUUID(), "T-1", "Alpha", TicketStatus.TODO, TicketPriority.MEDIUM,
-				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 3, LocalDate.of(2026, 3, 23), Instant.now(),
-				Instant.now());
+				UUID.randomUUID(), "Alice Smith", UUID.randomUUID(), "Engineering", UUID.randomUUID(), 3,
+				LocalDate.of(2026, 3, 23), Instant.now(), Instant.now());
 	}
 
 	private TicketDetailResponse detail() {
 		UUID ticketId = UUID.randomUUID();
 		UUID planId = UUID.randomUUID();
 		return new TicketDetailResponse(ticketId, "T-1", "Alpha", "Desc", TicketStatus.IN_PROGRESS, TicketPriority.HIGH,
-				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), 3,
-				LocalDate.of(2026, 3, 23),
+				UUID.randomUUID(), "Bob Jones", UUID.randomUUID(), "Carol Chen", UUID.randomUUID(), "Engineering",
+				UUID.randomUUID(), 3, LocalDate.of(2026, 3, 23),
 				List.of(new TicketStatusHistoryResponse(UUID.randomUUID(), ticketId, TicketStatus.TODO,
 						TicketStatus.IN_PROGRESS, UUID.randomUUID(), Instant.now(), null)),
 				List.of(new LinkedCommitEntry(UUID.randomUUID(), planId, "Commit", ChessPiece.ROOK, 3,

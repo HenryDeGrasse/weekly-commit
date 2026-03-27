@@ -16,6 +16,8 @@ const Reconcile = lazy(() => import("./routes/Reconcile.js"));
 const TeamWeek = lazy(() => import("./routes/TeamWeek.js"));
 const Tickets = lazy(() => import("./routes/Tickets.js"));
 const Rcdos = lazy(() => import("./routes/Rcdos.js"));
+const Reports = lazy(() => import("./routes/Reports.js"));
+const Admin = lazy(() => import("./routes/Admin.js"));
 
 function RouteFallback() {
   return (
@@ -55,6 +57,8 @@ export default function WeeklyCommitRoutes({
             <Route path="team/:teamId" element={<TeamWeek />} />
             <Route path="tickets" element={<Tickets />} />
             <Route path="rcdos" element={<Rcdos />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="admin" element={<Admin />} />
           </Routes>
         </Suspense>
       </AppShell>

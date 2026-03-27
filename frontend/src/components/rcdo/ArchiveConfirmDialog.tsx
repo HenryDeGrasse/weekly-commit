@@ -21,7 +21,7 @@ export function ArchiveConfirmDialog({ nodeName, hasActiveChildren, onConfirm, o
       </DialogHeader>
 
       {hasActiveChildren ? (
-        <div data-testid="archive-blocked-message" className="mb-4 flex items-start gap-2 rounded-default border border-red-200 bg-red-50 p-3 text-sm text-danger">
+        <div data-testid="archive-blocked-message" className="mb-4 flex items-start gap-2 rounded-default border border-neutral-300 bg-neutral-100 p-3 text-sm text-foreground font-semibold">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
           <span>
             <strong>Cannot archive.</strong> This node has active child nodes.

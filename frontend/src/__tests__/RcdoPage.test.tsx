@@ -141,6 +141,12 @@ const icBridge = bridgeWithFlags({
   rcdoAdminEnabled: false,
 });
 
+/** Manager bridge — can manage DOs/Outcomes but not Rally Cries */
+const managerBridge = bridgeWithFlags({
+  managerReviewEnabled: true,
+  rcdoAdminEnabled: false,
+});
+
 /** Admin bridge */
 const adminBridge = bridgeWithFlags({
   rcdoAdminEnabled: true,
@@ -336,8 +342,7 @@ describe("Rcdos page — archive dialog", () => {
 
 describe("Rcdos page — permission-based visibility", () => {
   it("shows create buttons for Manager (managerReviewEnabled=true)", () => {
-    // Default mock bridge has managerReviewEnabled: true
-    renderPage(mockHostBridge);
+    renderPage(managerBridge);
     expect(screen.getByTestId("create-do-btn")).toBeInTheDocument();
     expect(screen.getByTestId("create-outcome-btn")).toBeInTheDocument();
   });
@@ -349,7 +354,7 @@ describe("Rcdos page — permission-based visibility", () => {
   });
 
   it("hides Rally Cry create button for Manager (rcdoAdminEnabled=false)", () => {
-    renderPage(mockHostBridge);
+    renderPage(managerBridge);
     expect(screen.queryByTestId("create-rally-cry-btn")).not.toBeInTheDocument();
   });
 
@@ -369,7 +374,7 @@ describe("Rcdos page — permission-based visibility", () => {
   });
 
   it("shows action buttons for Manager when node is selected", () => {
-    renderPage(mockHostBridge);
+    renderPage(managerBridge);
     fireEvent.click(screen.getByTestId("tree-node-rc-1"));
 
     // Manager can see archive and edit buttons (RC edit requires admin, so only archive visible)
@@ -379,7 +384,7 @@ describe("Rcdos page — permission-based visibility", () => {
 
   it("Manager cannot see Edit button for Rally Cry", () => {
     // Edit Rally Cry requires admin
-    renderPage(mockHostBridge);
+    renderPage(managerBridge);
     fireEvent.click(screen.getByTestId("tree-node-rc-1"));
 
     expect(screen.queryByTestId("edit-node-btn")).not.toBeInTheDocument();
@@ -393,7 +398,7 @@ describe("Rcdos page — permission-based visibility", () => {
   });
 
   it("Manager sees Edit button for Defining Objective", () => {
-    renderPage(mockHostBridge);
+    renderPage(managerBridge);
     fireEvent.click(screen.getByRole("button", { name: "Expand all nodes" }));
     fireEvent.click(screen.getByTestId("tree-node-do-1"));
 

@@ -51,7 +51,7 @@ ai:
   provider: ${AI_PROVIDER:openrouter}   # "openrouter" or "stub"
   openrouter:
     api-key: ${OPENROUTER_API_KEY:}
-    model: ${OPENROUTER_MODEL:anthropic/claude-sonnet-4-20250514}
+    model: ${OPENROUTER_MODEL:anthropic/claude-sonnet-4}
     max-tokens: ${OPENROUTER_MAX_TOKENS:1024}
     base-url: https://openrouter.ai/api/v1
   pinecone:

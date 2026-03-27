@@ -8,6 +8,7 @@ import com.weeklycommit.ai.provider.AiSuggestionResult;
 import com.weeklycommit.ai.service.AiSuggestionService;
 import com.weeklycommit.domain.entity.Team;
 import com.weeklycommit.domain.repository.TeamRepository;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +42,7 @@ import org.springframework.stereotype.Service;
 public class SemanticQueryService {
 
 	private static final Logger log = LoggerFactory.getLogger(SemanticQueryService.class);
-	private static final int TOP_K = 5;
+	private static final int TOP_K = 40;
 
 	// ── Inner records ─────────────────────────────────────────────────────
 
@@ -184,8 +185,20 @@ public class SemanticQueryService {
 	 */
 	private IntentResult classifyIntent(String question, UUID teamId, UUID userId) {
 		try {
-			Map<String, Object> additionalCtx = Map.of("question", question, "teamId",
-					teamId != null ? teamId.toString() : "");
+			String today = LocalDate.now().toString();
+			// Last Monday = the previous Monday relative to today
+			LocalDate todayDate = LocalDate.now();
+			LocalDate lastMonday = todayDate.with(java.time.DayOfWeek.MONDAY).minusWeeks(1);
+			String lastWeekFrom = lastMonday.toString();
+			String lastWeekTo = lastMonday.plusDays(6).toString();
+			String thisWeekFrom = todayDate.with(java.time.DayOfWeek.MONDAY).toString();
+			Map<String, Object> additionalCtx = new HashMap<>();
+			additionalCtx.put("question", question);
+			additionalCtx.put("teamId", teamId != null ? teamId.toString() : "");
+			additionalCtx.put("currentDate", today);
+			additionalCtx.put("lastWeekFrom", lastWeekFrom);
+			additionalCtx.put("lastWeekTo", lastWeekTo);
+			additionalCtx.put("thisWeekFrom", thisWeekFrom);
 			AiContext intentContext = new AiContext(AiContext.TYPE_RAG_INTENT, userId, null, null, Map.of(), Map.of(),
 					List.of(), List.of(), additionalCtx);
 			AiSuggestionResult result = aiProviderRegistry.generateSuggestion(intentContext);
@@ -239,20 +252,30 @@ public class SemanticQueryService {
 				&& ("self".equalsIgnoreCase(intent.userFilter()) || "me".equalsIgnoreCase(intent.userFilter()))) {
 			filter.put("userId", userId.toString());
 		}
-		// Entity type filter is advisory — only add when LLM provided specific types
+		// Entity type filter: use $in for multi-type queries.
 		if (intent.entityTypes() != null && !intent.entityTypes().isEmpty()) {
-			// Pinecone $in operator for multi-value filter
-			filter.put("entityType", Map.of("$in", intent.entityTypes()));
+			if (intent.entityTypes().size() == 1) {
+				filter.put("entityType", intent.entityTypes().get(0));
+			} else {
+				filter.put("entityType", Map.of("$in", intent.entityTypes()));
+			}
 		}
+		// Date range filter using the numeric weekStartEpochDay field.
+		// ISO date strings ("YYYY-MM-DD") are not supported by Pinecone's $gte/$lte,
+		// but the equivalent epoch-day long is stored alongside each chunk.
 		Map<String, Object> dateRange = new HashMap<>();
 		if (intent.timeRangeFrom() != null && !intent.timeRangeFrom().isBlank()) {
-			dateRange.put("$gte", intent.timeRangeFrom());
+			Long epochFrom = ChunkBuilder.toEpochDay(intent.timeRangeFrom());
+			if (epochFrom != null)
+				dateRange.put("$gte", epochFrom);
 		}
 		if (intent.timeRangeTo() != null && !intent.timeRangeTo().isBlank()) {
-			dateRange.put("$lte", intent.timeRangeTo());
+			Long epochTo = ChunkBuilder.toEpochDay(intent.timeRangeTo());
+			if (epochTo != null)
+				dateRange.put("$lte", epochTo);
 		}
 		if (!dateRange.isEmpty()) {
-			filter.put("weekStartDate", dateRange);
+			filter.put("weekStartEpochDay", dateRange);
 		}
 		return filter.isEmpty() ? null : filter;
 	}
@@ -284,7 +307,11 @@ public class SemanticQueryService {
 			chunk.put("metadata", m.metadata());
 			return chunk;
 		}).toList();
-		return Map.of("question", question, "retrievedChunks", chunks);
+		Map<String, Object> ctx = new HashMap<>();
+		ctx.put("question", question);
+		ctx.put("currentDate", LocalDate.now().toString());
+		ctx.put("retrievedChunks", chunks);
+		return ctx;
 	}
 
 	private RagAnswer parseRagAnswer(AiSuggestionResult result) {

@@ -27,13 +27,13 @@ describe("AppShell", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders all 5 navigation links", () => {
+  it("renders all 7 navigation links", () => {
     renderShell();
     const nav = screen.getByRole("navigation", {
       name: "Weekly Commit navigation",
     });
     const links = nav.querySelectorAll("a");
-    expect(links).toHaveLength(5);
+    expect(links).toHaveLength(7);
   });
 
   it("navigation links reference the expected paths", () => {

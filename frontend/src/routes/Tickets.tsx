@@ -9,6 +9,7 @@ import { Button } from "../components/ui/Button.js";
 import { useHostBridge } from "../host/HostProvider.js";
 import { useTicketList, useTicketApi, useTicket } from "../api/ticketHooks.js";
 import { useRcdoTree } from "../api/rcdoHooks.js";
+import { useTeamMembers } from "../api/teamHooks.js";
 import { TicketListView, type TicketSortColumn } from "../components/tickets/TicketListView.js";
 import { TicketForm } from "../components/tickets/TicketForm.js";
 import { TicketDetailView } from "../components/tickets/TicketDetailView.js";
@@ -110,6 +111,7 @@ export default function Tickets() {
 
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const { data: ticketDetail, loading: detailLoading, refetch: refetchDetail } = useTicket(selectedTicketId);
+  const { data: teamMembers } = useTeamMembers(currentTeamId ?? null);
   type FormMode = "create" | "create-from-commit" | null;
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [formInitialValues, setFormInitialValues] = useState<Partial<CreateTicketPayload>>({});
@@ -193,6 +195,7 @@ export default function Tickets() {
                 ticket={ticketDetail}
                 onStatusTransition={handleStatusTransition}
                 onAssigneeChange={handleAssigneeChange}
+                teamMembers={teamMembers ?? []}
                 {...(ticketDetail.rcdoNodeId && rcdoLabels[ticketDetail.rcdoNodeId] ? { rcdoPath: rcdoLabels[ticketDetail.rcdoNodeId] } : {})}
                 onClose={() => setSelectedTicketId(null)}
                 onEdit={() => {
@@ -220,6 +223,7 @@ export default function Tickets() {
           initialValues={formInitialValues}
           currentUserId={currentUserId}
           {...(currentTeamId ? { currentTeamId } : {})}
+          rcdoTree={rcdoTreeData ?? []}
           onSubmit={handleCreateTicket}
           onCancel={() => { setFormMode(null); setFormInitialValues({}); }}
         />

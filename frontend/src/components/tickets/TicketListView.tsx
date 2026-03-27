@@ -84,8 +84,8 @@ export function TicketListView({ tickets, total, page, pageSize, sortBy, sortDir
                   <td className={tdCls}><Badge variant={STATUS_BADGE_VARIANT[ticket.status]}>{TICKET_STATUS_LABELS[ticket.status]}</Badge></td>
                   <td className={tdCls}><Badge variant={PRIORITY_BADGE_VARIANT[ticket.priority]}>{TICKET_PRIORITY_LABELS[ticket.priority]}</Badge></td>
                   <td className={cn(tdCls, "text-xs text-muted")}>{new Date(ticket.updatedAt).toLocaleDateString()}</td>
-                  <td className={cn(tdCls, "text-xs")}>{ticket.assigneeUserId ?? <span className="text-muted">—</span>}</td>
-                  <td className={cn(tdCls, "text-xs")}>{ticket.teamId}</td>
+                  <td className={cn(tdCls, "text-xs")}>{ticket.assigneeDisplayName ?? (ticket.assigneeUserId ? ticket.assigneeUserId.slice(0, 8) + "…" : <span className="text-muted">—</span>)}</td>
+                  <td className={cn(tdCls, "text-xs")}>{ticket.teamName ?? ticket.teamId.slice(0, 8) + "…"}</td>
                   <td className={cn(tdCls, "text-xs text-muted")}>{ticket.rcdoNodeId ? (rcdoLabels[ticket.rcdoNodeId] ?? ticket.rcdoNodeId) : "—"}</td>
                   <td className={cn(tdCls, "text-xs")}>{ticket.targetWeekStartDate ?? <span className="text-muted">—</span>}</td>
                 </tr>

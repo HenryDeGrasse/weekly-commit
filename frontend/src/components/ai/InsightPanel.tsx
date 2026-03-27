@@ -35,13 +35,7 @@ function severityLabel(severity: string): string {
 
 // ── Individual card ───────────────────────────────────────────────────────────
 
-function InsightCardItem({
-  card,
-  sourceHrefBase,
-}: {
-  card: InsightCard;
-  sourceHrefBase: string;
-}) {
+function InsightCardItem({ card }: { card: InsightCard }) {
   return (
     <div
       className={cn(
@@ -79,21 +73,7 @@ function InsightCardItem({
         </p>
       )}
 
-      {/* Source entity IDs */}
-      {card.sourceEntityIds.length > 0 && (
-        <div className="flex flex-wrap gap-1" data-testid={`insight-sources-${card.suggestionId}`}>
-          {card.sourceEntityIds.map((id) => (
-            <a
-              key={id}
-              href={`${sourceHrefBase}#${encodeURIComponent(id)}`}
-              className="rounded-sm bg-muted/10 px-1.5 py-0.5 text-[0.6rem] font-mono text-muted hover:underline"
-              data-testid={`insight-source-link-${card.suggestionId}-${id}`}
-            >
-              {id}
-            </a>
-          ))}
-        </div>
-      )}
+      {/* Source entity IDs are internal UUIDs — not surfaced to the user */}
     </div>
   );
 }
@@ -191,11 +171,7 @@ function TeamInsightPanel({
   return (
     <div className="flex flex-col gap-3">
       {data.insights.map((card) => (
-        <InsightCardItem
-          key={card.suggestionId}
-          card={card}
-          sourceHrefBase={teamId ? `/team/${encodeURIComponent(teamId)}` : "/team"}
-        />
+        <InsightCardItem key={card.suggestionId} card={card} />
       ))}
     </div>
   );
@@ -243,11 +219,7 @@ function PersonalInsightPanel({ planId }: { planId?: string }) {
   return (
     <div className="flex flex-col gap-3">
       {data.insights.map((card) => (
-        <InsightCardItem
-          key={card.suggestionId}
-          card={card}
-          sourceHrefBase="/my-week"
-        />
+        <InsightCardItem key={card.suggestionId} card={card} />
       ))}
     </div>
   );

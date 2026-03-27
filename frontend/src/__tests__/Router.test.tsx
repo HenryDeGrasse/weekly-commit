@@ -52,14 +52,14 @@ describe("Router", () => {
     expect(await screen.findByTestId("page-rcdos")).toBeInTheDocument();
   });
 
-  it("renders the navigation sidebar with all 5 links", async () => {
+  it("renders the navigation sidebar with all 7 links", async () => {
     renderAtPath("/my-week");
     const nav = await screen.findByRole("navigation", {
       name: "Weekly Commit navigation",
     });
     expect(nav).toBeInTheDocument();
     const links = nav.querySelectorAll("a");
-    expect(links).toHaveLength(5);
+    expect(links).toHaveLength(7);
   });
 
   it("redirects index to /my-week", async () => {

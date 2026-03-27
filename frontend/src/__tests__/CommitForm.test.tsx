@@ -78,6 +78,7 @@ function renderCreateForm(overrides: CreateFormOverrides = {}) {
   render(
     <CommitForm
       mode="create"
+      planId="00000000-0000-0000-0000-000000000099"
       rcdoTree={overrides.rcdoTree ?? mockRcdoTree}
       existingCommits={overrides.existingCommits ?? []}
       onSubmit={overrides.onSubmit ?? onSubmit}
@@ -468,6 +469,7 @@ describe("CommitForm — submission", () => {
     render(
       <CommitForm
         mode="create"
+        planId="00000000-0000-0000-0000-000000000099"
         rcdoTree={mockRcdoTree}
         existingCommits={[]}
         onSubmit={vi.fn().mockRejectedValue(new Error("Server error")) as unknown as (p: CreateCommitPayload) => Promise<void>}

@@ -2,7 +2,7 @@
  * ByPersonSection — table of direct reports with key weekly plan metrics.
  */
 import { useState, Fragment } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, LockOpen, Clock, RefreshCw } from "lucide-react";
 import { Badge } from "../ui/Badge.js";
 import { cn } from "../../lib/utils.js";
 import type { MemberWeekView, MemberComplianceSummary, ChessPiece, PlanState } from "../../api/teamTypes.js";
@@ -39,15 +39,28 @@ function ChessPieceSummary({ commits }: { commits: MemberWeekView["commits"] }) 
 }
 
 function RiskFlags({ member, compliance }: { member: MemberWeekView; compliance: MemberComplianceSummary | undefined }) {
-  const flags: Array<{ icon: string; title: string; testId: string }> = [];
-  if (compliance && !compliance.lockCompliant) flags.push({ icon: "🔓", title: "Not locked on time", testId: "flag-not-locked" });
-  if (compliance && !compliance.reconcileCompliant && compliance.planState === "RECONCILED") flags.push({ icon: "⏰", title: "Late reconcile", testId: "flag-late-reconcile" });
   const maxStreak = Math.max(0, ...member.commits.map((c) => c.carryForwardStreak));
-  if (maxStreak >= 2) flags.push({ icon: "🔁", title: `Carry-forward streak (${maxStreak})`, testId: "flag-carry-forward" });
-  if (flags.length === 0) return <span className="text-muted text-xs">—</span>;
+  const notLocked = compliance && !compliance.lockCompliant;
+  const lateReconcile = compliance && !compliance.reconcileCompliant && compliance.planState === "RECONCILED";
+  const hasCarryForward = maxStreak >= 2;
+  if (!notLocked && !lateReconcile && !hasCarryForward) return <span className="text-muted text-xs">—</span>;
   return (
-    <span className="inline-flex gap-1">
-      {flags.map((f) => <span key={f.testId} title={f.title} className="text-base">{f.icon}</span>)}
+    <span className="inline-flex items-center gap-1.5">
+      {notLocked && (
+        <span title="Not locked on time" data-testid="flag-not-locked" className="text-foreground">
+          <LockOpen className="h-3.5 w-3.5" />
+        </span>
+      )}
+      {lateReconcile && (
+        <span title="Late reconcile" data-testid="flag-late-reconcile" className="text-foreground">
+          <Clock className="h-3.5 w-3.5" />
+        </span>
+      )}
+      {hasCarryForward && (
+        <span title={`Carry-forward streak (${maxStreak})`} data-testid="flag-carry-forward" className="text-muted">
+          <RefreshCw className="h-3.5 w-3.5" />
+        </span>
+      )}
     </span>
   );
 }
@@ -64,12 +77,12 @@ function ExpandedCommitList({ commits }: { commits: MemberWeekView["commits"] })
           {c.estimatePoints != null && <span className="text-muted">({c.estimatePoints} pt)</span>}
           {c.outcome && (
             <span className={cn("text-[0.65rem] px-1.5 py-px rounded-full font-medium",
-              c.outcome === "ACHIEVED" ? "bg-emerald-100 text-emerald-800" : c.outcome === "PARTIALLY_ACHIEVED" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800",
+              c.outcome === "ACHIEVED" ? "bg-foreground/10 text-foreground font-bold" : c.outcome === "PARTIALLY_ACHIEVED" ? "bg-neutral-200 text-neutral-600" : "bg-neutral-300 text-foreground font-bold underline",
             )}>
               {c.outcome}
             </span>
           )}
-          {c.carryForwardStreak >= 1 && <span className="text-[0.65rem] text-blue-700" title={`Carried forward ${c.carryForwardStreak}×`}>🔁{c.carryForwardStreak}</span>}
+          {c.carryForwardStreak >= 1 && <span className="text-[0.65rem] text-muted" title={`Carried forward ${c.carryForwardStreak}×`}>🔁{c.carryForwardStreak}</span>}
         </li>
       ))}
     </ol>
@@ -132,7 +145,7 @@ export function ByPersonSection({ memberViews, complianceSummary, onViewMemberPl
                           <span className="font-semibold">{member.displayName}</span>
                         )}
                         {maxStreak >= 1 && (
-                          <span data-testid={`cf-streak-${member.userId}`} title={`Max carry-forward streak: ${maxStreak}`} className={cn("text-[0.65rem] px-1.5 py-px rounded-full font-bold", maxStreak >= 2 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800")}>
+                          <span data-testid={`cf-streak-${member.userId}`} title={`Max carry-forward streak: ${maxStreak}`} className={cn("text-[0.65rem] px-1.5 py-px rounded-full font-bold", maxStreak >= 2 ? "bg-foreground/10 text-foreground" : "bg-neutral-200 text-neutral-600")}>
                             🔁{maxStreak}
                           </span>
                         )}
@@ -142,7 +155,7 @@ export function ByPersonSection({ memberViews, complianceSummary, onViewMemberPl
                       {member.planState ? <Badge variant={STATE_VARIANT[member.planState]}>{member.planState}</Badge> : <span className="text-muted text-xs">No plan</span>}
                     </td>
                     <td className="px-3 py-2.5 text-right">
-                      <span data-testid={`member-points-${member.userId}`} className={cn("font-semibold", member.totalCommittedPoints > member.capacityBudgetPoints ? "text-danger" : "text-foreground")}>
+                      <span data-testid={`member-points-${member.userId}`} className={cn("font-semibold", member.totalCommittedPoints > member.capacityBudgetPoints ? "text-foreground underline" : "text-foreground")}>
                         {member.totalCommittedPoints}/{member.capacityBudgetPoints}
                       </span>
                     </td>
