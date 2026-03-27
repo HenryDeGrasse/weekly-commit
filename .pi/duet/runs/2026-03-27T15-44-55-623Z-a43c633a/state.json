@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "phase": "plan_approved",
-  "updatedAt": "2026-03-27T17:17:35.613Z",
+  "phase": "completed",
+  "updatedAt": "2026-03-27T17:19:58.406Z",
   "runId": "2026-03-27T15-44-55-623Z-a43c633a",
   "handoffMode": "full",
   "postPlanMode": "review",
@@ -146,12 +146,11 @@
       }
     ]
   },
-  "stepIndex": 6,
-  "round": 2,
-  "resumeAction": "run",
+  "stepIndex": 7,
+  "round": 1,
   "activeSummary": {
-    "stepId": "step-5",
-    "stepTitle": "Surface proactive risk signal banners on My Week page",
+    "stepId": "step-6",
+    "stepTitle": "Final integration verification — build check",
     "gateResults": [
       {
         "id": "lint",
@@ -163,6 +162,10 @@
       },
       {
         "id": "unit",
+        "passed": true
+      },
+      {
+        "id": "build",
         "passed": true
       },
       {
