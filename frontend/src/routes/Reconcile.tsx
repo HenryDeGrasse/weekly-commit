@@ -2,9 +2,9 @@
  * ReconcilePage — post-lock outcome recording and scope-change review.
  * Route: /weekly/reconcile/:planId?
  */
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Check, Lock } from "lucide-react";
+import { Check, Lock, Sparkles } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card, CardHeader, CardContent } from "../components/ui/Card.js";
@@ -13,12 +13,15 @@ import { cn } from "../lib/utils.js";
 import { usePlanApi, useCurrentPlan } from "../api/planHooks.js";
 import { useRcdoTree } from "../api/rcdoHooks.js";
 import { useQuery } from "../api/hooks.js";
+import { useAutoReconcileAssist } from "../api/aiHooks.js";
+import { useHostBridge } from "../host/HostProvider.js";
 import type { ReconciliationViewResponse, ReconcileCommitView, CommitOutcome, ChessPiece, CarryForwardReason } from "../api/planTypes.js";
 import type { RcdoTreeNode } from "../api/rcdoTypes.js";
 import { OutcomeSelector } from "../components/reconcile/OutcomeSelector.js";
 import { CarryForwardDialog } from "../components/reconcile/CarryForwardDialog.js";
 import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
-import { ReconcileAssistPanel } from "../components/ai/ReconcileAssistPanel.js";
+import { AiSuggestedBadge } from "../components/ai/AiSuggestedBadge.js";
+import { AiFeedbackButtons } from "../components/ai/AiFeedbackButtons.js";
 
 const CHESS_PIECE_ICONS: Record<ChessPiece, string> = { KING: "♔", QUEEN: "♕", ROOK: "♖", BISHOP: "♗", KNIGHT: "♘", PAWN: "♙" };
 
@@ -135,12 +138,14 @@ interface ReconcileCommitRowProps {
   readonly notesError: string | null;
   readonly isReadOnly: boolean;
   readonly rcdoLabels: Record<string, string>;
+  /** True when this outcome was pre-filled by AI and not yet explicitly confirmed. */
+  readonly isAiSuggested?: boolean;
   readonly onOutcomeChange: (outcome: CommitOutcome) => void;
   readonly onNotesChange: (notes: string) => void;
   readonly onCarryForwardChange: (checked: boolean) => void;
 }
 
-function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesError, isReadOnly, rcdoLabels, onOutcomeChange, onNotesChange, onCarryForwardChange }: ReconcileCommitRowProps) {
+function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesError, isReadOnly, rcdoLabels, isAiSuggested, onOutcomeChange, onNotesChange, onCarryForwardChange }: ReconcileCommitRowProps) {
   const needsNotes = outcome != null && NOTES_REQUIRED.has(outcome);
   const canCarryForward = !isReadOnly && outcome != null && CARRY_FORWARD_ELIGIBLE.has(outcome);
   const isAutoAchieved = commitView.linkedTicketStatus === "DONE" && outcome === "ACHIEVED" && commitView.currentOutcome === "ACHIEVED";
@@ -169,9 +174,14 @@ function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesErr
         </div>
       </div>
 
-      {/* Outcome selector */}
+      {/* Outcome selector + AI-suggested badge */}
       <div className={cn("px-3 py-2.5", (needsNotes || canCarryForward) && "border-b border-border")}>
-        <OutcomeSelector commitId={commitView.commitId} value={outcome} onChange={onOutcomeChange} disabled={isReadOnly} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <OutcomeSelector commitId={commitView.commitId} value={outcome} onChange={onOutcomeChange} disabled={isReadOnly} />
+          {isAiSuggested && outcome != null && (
+            <AiSuggestedBadge data-testid={`ai-suggested-badge-${commitView.commitId}`} />
+          )}
+        </div>
       </div>
 
       {/* Notes textarea */}
@@ -257,6 +267,9 @@ export default function ReconcilePage() {
   const discoveredPlanId = isReconcilable ? currentPlan?.id : undefined;
   const planId = planIdParam ?? discoveredPlanId;
   const planApi = usePlanApi();
+  const bridge = useHostBridge();
+  const userId = bridge.context.authenticatedUser.id;
+  const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
   const { data, loading, error, refetch } = useReconcileView(planId);
   const { data: rcdoTreeData } = useRcdoTree();
   const rcdoLabels = useMemo(() => buildRcdoLabels(rcdoTreeData), [rcdoTreeData]);
@@ -273,6 +286,66 @@ export default function ReconcilePage() {
   const [carryForwardLoading, setCarryForwardLoading] = useState(false);
   const [openingReconcile, setOpeningReconcile] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
+
+  // ── AI pre-fill state ─────────────────────────────────────────────────────
+  /** Tracks which commitIds have AI-suggested outcomes not yet user-confirmed. */
+  const [aiSuggestedOutcomes, setAiSuggestedOutcomes] = useState<Record<string, CommitOutcome>>({});
+  /** True once AI pre-fill has been applied (prevents re-applying on re-renders). */
+  const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
+  const [aiSuggestionId, setAiSuggestionId] = useState<string | undefined>(undefined);
+  const [aiDraftSummary, setAiDraftSummary] = useState<string | null>(null);
+
+  const isReconciling = data?.plan.state === "RECONCILING";
+  const { data: aiAssistData } = useAutoReconcileAssist(
+    aiAssistanceEnabled ? planId : null,
+    userId,
+    isReconciling ?? false,
+  );
+
+  // Apply AI pre-fill once, after both page data and AI data are ready.
+  useEffect(() => {
+    if (!data || !aiAssistData || aiPrefillApplied) return;
+
+    const newOutcomes: Record<string, CommitOutcome> = {};
+    const newNotes: Record<string, string> = {};
+    const newAiSuggested: Record<string, CommitOutcome> = {};
+
+    for (const suggestion of aiAssistData.likelyOutcomes) {
+      const commitExists = data.commits.some((cv) => cv.commitId === suggestion.commitId);
+      if (commitExists) {
+        const suggestedOutcome = suggestion.suggestedOutcome as CommitOutcome;
+        newOutcomes[suggestion.commitId] = suggestedOutcome;
+        newAiSuggested[suggestion.commitId] = suggestedOutcome;
+        if (NOTES_REQUIRED.has(suggestedOutcome) && suggestion.rationale.trim()) {
+          newNotes[suggestion.commitId] = suggestion.rationale;
+        }
+      }
+    }
+
+    if (Object.keys(newOutcomes).length > 0) {
+      setLocalOutcomes((prev) => ({ ...prev, ...newOutcomes }));
+      setAiSuggestedOutcomes(newAiSuggested);
+    }
+    if (Object.keys(newNotes).length > 0) {
+      setLocalNotes((prev) => ({ ...prev, ...newNotes }));
+    }
+
+    // Pre-check carry-forward recommendations (checkboxes appear pre-checked).
+    const eligibleCfIds = aiAssistData.carryForwardRecommendations
+      .filter((r) => data.commits.some((cv) => cv.commitId === r.commitId))
+      .map((r) => r.commitId);
+    if (eligibleCfIds.length > 0) {
+      setCarryForwardSet((prev) => {
+        const next = new Set(prev);
+        for (const id of eligibleCfIds) next.add(id);
+        return next;
+      });
+    }
+
+    setAiSuggestionId(aiAssistData.suggestionId);
+    setAiDraftSummary(aiAssistData.draftSummary ?? null);
+    setAiPrefillApplied(true);
+  }, [data, aiAssistData, aiPrefillApplied]);
 
   const isPlanLocked = error !== null && (error.message.includes("LOCKED") || (error as { status?: number }).status === 400);
   const isReadOnly = data?.plan.state === "RECONCILED";
@@ -309,6 +382,13 @@ export default function ReconcilePage() {
     setNotesErrors((prev) => { const next = { ...prev }; delete next[commitId]; return next; });
     if (!NOTES_REQUIRED.has(outcome)) setLocalNotes((prev) => ({ ...prev, [commitId]: "" }));
     if (!CARRY_FORWARD_ELIGIBLE.has(outcome)) { setCarryForwardSet((prev) => { const next = new Set(prev); next.delete(commitId); return next; }); }
+    // When the user explicitly selects an outcome, remove the AI-suggested indicator.
+    setAiSuggestedOutcomes((prev) => {
+      if (!(commitId in prev)) return prev;
+      const next = { ...prev };
+      delete next[commitId];
+      return next;
+    });
     if (!NOTES_REQUIRED.has(outcome)) {
       setSavingOutcome(commitId);
       try { await planApi.setCommitOutcome(data.plan.id, commitId, { outcome }); refetch(); }
@@ -350,7 +430,14 @@ export default function ReconcilePage() {
         const outcome = effectiveOutcomes[cv.commitId];
         if (!outcome) continue;
         const notes = effectiveNotes[cv.commitId] ?? "";
-        if (NOTES_REQUIRED.has(outcome) && notes.trim()) await planApi.setCommitOutcome(data.plan.id, cv.commitId, { outcome, notes });
+        if (NOTES_REQUIRED.has(outcome)) {
+          // Notes-required outcomes: save with notes (validated before submit).
+          if (notes.trim()) await planApi.setCommitOutcome(data.plan.id, cv.commitId, { outcome, notes });
+        } else if (outcome !== cv.currentOutcome) {
+          // Non-notes outcomes: save if they differ from server state.
+          // This handles AI-prefilled outcomes that were never explicitly clicked.
+          await planApi.setCommitOutcome(data.plan.id, cv.commitId, { outcome });
+        }
       }
       await planApi.submitReconciliation(data.plan.id);
       setShowSubmitDialog(false); refetch();
@@ -465,15 +552,43 @@ export default function ReconcilePage() {
         </CardContent>
       </Card>
 
-      {/* AI Reconciliation Assist */}
-      {!isReadOnly && data.plan.state === "RECONCILING" && (
-        <ReconcileAssistPanel
-          planId={data.plan.id}
-          onAcceptOutcome={(commitId: string, outcome: CommitOutcome) => void handleOutcomeChange(commitId, outcome)}
-          onAcceptCarryForward={(commitId: string) => {
-            setCarryForwardSet((prev) => new Set(prev).add(commitId));
-          }}
-        />
+      {/* AI pre-fill banner — shown when AI has pre-populated outcomes */}
+      {aiPrefillApplied && !isReadOnly && Object.keys(aiSuggestedOutcomes).length > 0 && (
+        <div
+          data-testid="ai-prefill-banner"
+          className="flex items-start gap-2.5 rounded-default border border-primary/20 bg-primary/5 px-4 py-3"
+        >
+          <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <p className="m-0 text-sm font-semibold text-foreground">
+              AI has pre-filled likely outcomes based on your ticket data and commit history
+            </p>
+            <p className="m-0 mt-0.5 text-xs text-muted">
+              Review and confirm each outcome below. Change any that don&apos;t look right.
+            </p>
+          </div>
+          {aiSuggestionId && (
+            <AiFeedbackButtons suggestionId={aiSuggestionId} className="shrink-0" />
+          )}
+        </div>
+      )}
+
+      {/* AI draft summary */}
+      {aiDraftSummary && !isReadOnly && (
+        <div
+          data-testid="ai-draft-summary"
+          className="rounded-default border border-border bg-background px-4 py-3"
+        >
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="m-0 text-[0.65rem] font-semibold uppercase tracking-wider text-muted">
+              AI Week Summary
+            </p>
+            {aiSuggestionId && Object.keys(aiSuggestedOutcomes).length === 0 && (
+              <AiFeedbackButtons suggestionId={aiSuggestionId} className="shrink-0" />
+            )}
+          </div>
+          <p className="m-0 text-sm text-foreground leading-relaxed">{aiDraftSummary}</p>
+        </div>
       )}
 
       {submitError && (
@@ -505,6 +620,7 @@ export default function ReconcilePage() {
                 notesError={notesErrors[commitId] ?? null}
                 isReadOnly={isReadOnly}
                 rcdoLabels={rcdoLabels}
+                isAiSuggested={commitId in aiSuggestedOutcomes}
                 onOutcomeChange={(o) => void handleOutcomeChange(commitId, o)}
                 onNotesChange={(n) => setLocalNotes((prev) => ({ ...prev, [commitId]: n }))}
                 onCarryForwardChange={(checked) => {

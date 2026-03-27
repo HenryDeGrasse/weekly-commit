@@ -46,7 +46,17 @@ vi.mock("../api/rcdoHooks.js", () => ({
   useRcdoApi: vi.fn(),
 }));
 
+// Mock the AI hooks so tests don't make real network calls.
+// Default: AI unavailable (data: undefined). Override in specific tests.
+vi.mock("../api/aiHooks.js", () => ({
+  useAutoReconcileAssist: vi.fn().mockReturnValue({ data: undefined, loading: false, error: null }),
+  useAiApi: vi.fn(),
+  useAiStatus: vi.fn().mockReturnValue({ data: { available: false }, loading: false, error: null }),
+  useRiskSignals: vi.fn().mockReturnValue({ data: undefined, loading: false, error: null }),
+}));
+
 import { usePlanApi } from "../api/planHooks.js";
+import { useAutoReconcileAssist } from "../api/aiHooks.js";
 import ReconcilePage from "../routes/Reconcile.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -146,6 +156,8 @@ beforeEach(() => {
     makeReconcileData(RECONCILED_PLAN),
   );
   mockPlanApi.carryForward.mockResolvedValue({});
+  // Default: AI unavailable (silent fallback).
+  vi.mocked(useAutoReconcileAssist).mockReturnValue({ data: undefined, loading: false, error: null });
 });
 
 function renderReconcile(planId = "plan-1") {
@@ -514,5 +526,234 @@ describe("ReconcilePage — scope changes", () => {
     await waitFor(() =>
       expect(screen.getByTestId("scope-change-timeline")).toBeInTheDocument(),
     );
+  });
+});
+
+// ── AI pre-fill tests ─────────────────────────────────────────────────────────
+
+describe("ReconcilePage — AI pre-fill", () => {
+  const AI_SUGGEST_DATA = {
+    aiAvailable: true,
+    suggestionId: "sug-ai-1",
+    likelyOutcomes: [
+      {
+        commitId: "c-1",
+        commitTitle: "Alpha",
+        suggestedOutcome: "ACHIEVED",
+        rationale: "Linked ticket is Done",
+      },
+      {
+        commitId: "c-2",
+        commitTitle: "Bravo",
+        suggestedOutcome: "NOT_ACHIEVED",
+        rationale: "No linked ticket completed",
+      },
+    ],
+    carryForwardRecommendations: [
+      {
+        commitId: "c-2",
+        commitTitle: "Bravo",
+        rationale: "Work is still in progress",
+      },
+    ],
+    draftSummary: "Strong week — one commit achieved, one needs carry-forward.",
+  };
+
+  it("shows AI pre-fill banner when AI suggestions load", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: AI_SUGGEST_DATA,
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-prefill-banner")).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("ai-prefill-banner")).toHaveTextContent(
+      "AI has pre-filled likely outcomes",
+    );
+  });
+
+  it("pre-populates outcomes from AI suggestions", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: AI_SUGGEST_DATA,
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("outcome-selector-c-1")).toBeInTheDocument(),
+    );
+    // c-1 should have ACHIEVED pre-selected — OutcomeSelector adds bg-foreground/10
+    // (its selectedCls) only when that outcome is selected.
+    await waitFor(() =>
+      expect(screen.getByTestId("outcome-option-c-1-achieved")).toHaveClass(
+        "bg-foreground/10",
+      ),
+    );
+  });
+
+  it("pre-populates notes from AI rationale for notes-required outcomes", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: AI_SUGGEST_DATA,
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("outcome-notes-c-2")).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("outcome-notes-c-2")).toHaveValue(
+      "No linked ticket completed",
+    );
+  });
+
+  it("shows AI-suggested badge on pre-filled outcome rows", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: AI_SUGGEST_DATA,
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("reconcile-commit-list")).toBeInTheDocument(),
+    );
+    // Both commits should have AI-suggested badges (they both have suggestions)
+    const badges = screen.getAllByTestId("ai-suggested-badge");
+    expect(badges.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT show AI pre-fill banner when AI is unavailable", async () => {
+    // Default mock returns data: undefined — banner should not appear
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: undefined,
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("reconcile-commit-list")).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId("ai-prefill-banner")).not.toBeInTheDocument();
+  });
+
+  it("shows AI draft summary when provided", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: AI_SUGGEST_DATA,
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-draft-summary")).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("ai-draft-summary")).toHaveTextContent(
+      "Strong week",
+    );
+  });
+
+  it("keeps feedback buttons available when AI only provides a summary", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: {
+        aiAvailable: true,
+        suggestionId: "sug-ai-summary-only",
+        likelyOutcomes: [],
+        carryForwardRecommendations: [],
+        draftSummary: "Summary-only suggestion",
+      },
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-draft-summary")).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("ai-feedback-accept")).toBeInTheDocument();
+    expect(screen.getByTestId("ai-feedback-dismiss")).toBeInTheDocument();
+  });
+
+  it("does NOT show AI draft summary when AI unavailable", async () => {
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("reconcile-commit-list")).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId("ai-draft-summary")).not.toBeInTheDocument();
+  });
+
+  it("clears AI-suggested badge when user explicitly changes outcome", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: {
+        ...AI_SUGGEST_DATA,
+        likelyOutcomes: [
+          {
+            commitId: "c-1",
+            commitTitle: "Alpha",
+            suggestedOutcome: "ACHIEVED",
+            rationale: "ticket done",
+          },
+        ],
+        carryForwardRecommendations: [],
+        draftSummary: null,
+      },
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("reconcile-commit-list")).toBeInTheDocument(),
+    );
+    // Badge should be present initially
+    expect(screen.getAllByTestId("ai-suggested-badge").length).toBeGreaterThan(0);
+
+    // User explicitly changes outcome — badge should disappear for c-1
+    fireEvent.click(screen.getByTestId("outcome-option-c-1-partially_achieved"));
+    await waitFor(() => {
+      // After user interaction, AI badge on c-1 should be gone
+      // (outcome changed to PARTIALLY_ACHIEVED which requires notes — badge cleared)
+      const badges = screen.queryAllByTestId("ai-suggested-badge");
+      // c-1's AI badge should be cleared; there are no other AI-suggested commits
+      expect(badges.length).toBe(0);
+    });
+  });
+
+  it("pre-checks carry-forward checkbox for AI-recommended commits", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: AI_SUGGEST_DATA,
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("reconcile-commit-list")).toBeInTheDocument(),
+    );
+    // c-2 is NOT_ACHIEVED (AI suggested) — carry-forward checkbox should be pre-checked
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("carry-forward-checkbox-c-2"),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("carry-forward-checkbox-c-2")).toBeChecked();
+  });
+
+  it("does not show AI pre-fill banner on RECONCILED (read-only) plans", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: AI_SUGGEST_DATA,
+      loading: false,
+      error: null,
+    });
+    mockPlanApi.getReconciliationView.mockResolvedValue(
+      makeReconcileData(
+        RECONCILED_PLAN,
+        twoCommitViews.map((c) => ({
+          ...c,
+          currentOutcome: "ACHIEVED" as const,
+        })),
+      ),
+    );
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("reconcile-readonly-banner")).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId("ai-prefill-banner")).not.toBeInTheDocument();
   });
 });

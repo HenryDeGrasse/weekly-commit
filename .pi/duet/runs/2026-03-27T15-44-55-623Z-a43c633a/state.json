@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-27T16:16:47.195Z",
+  "updatedAt": "2026-03-27T16:34:03.549Z",
   "runId": "2026-03-27T15-44-55-623Z-a43c633a",
   "handoffMode": "full",
   "postPlanMode": "review",
@@ -146,12 +146,12 @@
       }
     ]
   },
-  "stepIndex": 1,
-  "round": 7,
+  "stepIndex": 2,
+  "round": 3,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-1",
-    "stepTitle": "Auto-run AI lint on commit save instead of manual button click",
+    "stepId": "step-2",
+    "stepTitle": "Pre-fill reconciliation page with AI-suggested outcomes by default",
     "gateResults": [
       {
         "id": "lint",

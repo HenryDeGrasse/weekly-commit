@@ -1,0 +1,43 @@
+Zero lint errors (same 12 pre-existing warnings as before, all unrelated to this step).
+
+---
+
+## Summary
+
+**What I reviewed:**
+- Current `aiHooks.ts` — had `useAiApi`, `useAiStatus`, `useRiskSignals` but no auto-loading reconcile hook
+- Current `Reconcile.tsx` — `ReconcileAssistPanel` was a button requiring user click, outcomes were empty on mount
+- `OutcomeSelector` — confirmed selected-state class is `bg-foreground/10` (not `font-bold`, which `tailwind-merge` removes)
+- `ReconcilePage.test.tsx` — existing 25 tests all passing, needed mock for `aiHooks.js`
+
+**What I changed:**
+
+1. **`frontend/src/components/ai/AiSuggestedBadge.tsx`** — New reusable badge with sparkle icon + "AI suggested" text
+
+2. **`frontend/src/api/aiHooks.ts`** — Added `useAutoReconcileAssist` hook:
+   - Fetches reconcile assist on mount when plan is RECONCILING
+   - Fires once per planId (ref-guarded), cancels on unmount
+   - Silent fallback when AI unavailable
+
+3. **`frontend/src/routes/Reconcile.tsx`** — Key UX inversion:
+   - Removed the `ReconcileAssistPanel` button-click approach
+   - Added `useHostBridge` for userId + `aiAssistanceEnabled` flag
+   - Added `useAutoReconcileAssist` call (auto-triggers when RECONCILING)
+   - Added `useEffect` that applies AI pre-fill when data arrives: seeds `localOutcomes`, tracks `aiSuggestedOutcomes`, pre-checks carry-forward
+   - `handleOutcomeChange` now clears `aiSuggestedOutcomes[commitId]` on explicit user selection
+   - `handleSubmit` now saves non-notes outcomes that differ from server state (handles AI-prefilled outcomes not explicitly clicked)
+   - `ReconcileCommitRow` accepts `isAiSuggested` prop — renders `AiSuggestedBadge` next to outcome selector
+   - Prominent banner shown when AI suggestions are pre-filled
+   - Draft summary card shown at top of page
+
+4. **`frontend/src/__tests__/ReconcilePage.test.tsx`** — Added:
+   - Mock for `../api/aiHooks.js` (default: AI unavailable, silent)
+   - `beforeEach` reset of the mock
+   - 9 new test cases covering: banner shown/hidden, outcomes pre-populated, AI badge appears/clears, draft summary, carry-forward pre-checked, read-only page behavior
+
+Verdict: changes_made
+
+```observations
+- [low] frontend/src/routes/Reconcile.tsx: The act(...) warnings in existing tests ("An update to ReconcilePage inside a test was not wrapped in act") come from async state updates in useCurrentPlan's useQuery. These are pre-existing warnings (not new to this step) and don't cause test failures.
+- [low] frontend/src/api/aiHooks.ts: useAutoReconcileAssist has eslint-disable on the exhaustive-deps for aiApi — this is intentional and documented in the comment, but future maintainers should know aiApi is stable (memoised by authToken in useAiApi).
+```
