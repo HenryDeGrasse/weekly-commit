@@ -67,6 +67,8 @@ interface CreateModeProps {
   readonly existingCommits: CommitResponse[];
   readonly onSubmit: (payload: CreateCommitPayload) => Promise<void>;
   readonly onCancel: () => void;
+  /** Optional initial values pre-filled from AI suggestions or other sources. */
+  readonly initialValues?: Partial<CreateCommitPayload> | undefined;
 }
 interface EditModeProps {
   readonly mode: "edit";
@@ -84,13 +86,16 @@ export function CommitForm(props: CommitFormProps) {
   const editCommit = props.mode === "edit" ? props.commit : null;
   const resolvedPlanId = props.mode === "edit" ? props.commit.planId : props.planId;
 
+  // For create mode, seed from optional pre-filled values (e.g. from AI composer).
+  const iv = props.mode === "create" ? (props.initialValues ?? {}) : {} as Partial<CreateCommitPayload>;
+
   const [values, setValues] = useState<FormValues>({
-    title: editCommit?.title ?? "",
-    description: editCommit?.description ?? "",
-    chessPiece: (editCommit?.chessPiece ?? "") as ChessPiece | "",
-    estimatePoints: (editCommit?.estimatePoints ?? "") as EstimatePoints | "",
-    rcdoNodeId: editCommit?.rcdoNodeId ?? "",
-    successCriteria: editCommit?.successCriteria ?? "",
+    title: editCommit?.title ?? iv.title ?? "",
+    description: editCommit?.description ?? iv.description ?? "",
+    chessPiece: (editCommit?.chessPiece ?? iv.chessPiece ?? "") as ChessPiece | "",
+    estimatePoints: (editCommit?.estimatePoints ?? iv.estimatePoints ?? "") as EstimatePoints | "",
+    rcdoNodeId: editCommit?.rcdoNodeId ?? iv.rcdoNodeId ?? "",
+    successCriteria: editCommit?.successCriteria ?? iv.successCriteria ?? "",
     workItemId: editCommit?.workItemId ?? "",
   });
   const [errors, setErrors] = useState<FormErrors>({});

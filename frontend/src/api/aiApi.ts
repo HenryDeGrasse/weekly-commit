@@ -97,6 +97,33 @@ export interface ReconcileAssistResponse {
   carryForwardRecommendations: CarryForwardRecommendation[];
 }
 
+// ── RCDO Suggest types ────────────────────────────────────────────────────────
+
+export interface RcdoSuggestRequest {
+  planId: string;
+  userId: string;
+  /** Commit title used for semantic matching (required). */
+  title: string;
+  description?: string | undefined;
+  chessPiece?: string | undefined;
+}
+
+export interface RcdoSuggestResponse {
+  aiAvailable: boolean;
+  /** True when a high-confidence (≥ 0.7) match was found. */
+  suggestionAvailable: boolean;
+  /** Stored suggestion id (null when unavailable or below threshold). */
+  suggestionId?: string | null;
+  /** Suggested RCDO node id. */
+  suggestedRcdoNodeId?: string | null;
+  /** Display title of the suggested node. */
+  rcdoTitle?: string | null;
+  /** Confidence score [0.0, 1.0]. */
+  confidence?: number;
+  /** Human-readable rationale for the suggestion. */
+  rationale?: string | null;
+}
+
 export type FeedbackAction = "ACCEPTED" | "DISMISSED" | "EDITED";
 
 export interface AiFeedbackRequest {
@@ -143,6 +170,22 @@ export function createAiApi(client: ApiClient, actorUserId: string) {
     ): Promise<CommitDraftAssistResponse> =>
       client.post("/ai/commit-draft-assist", request),
 
+    /**
+     * Convenience helper for freeform "describe → structure" commit creation.
+     * Sends the freeform text as currentTitle and omits chessPiece so the backend
+     * can infer suggestedChessPiece.
+     */
+    commitFromFreeform: (
+      planId: string,
+      userId: string,
+      freeformText: string,
+    ): Promise<CommitDraftAssistResponse> =>
+      client.post("/ai/commit-draft-assist", {
+        planId,
+        userId,
+        currentTitle: freeformText,
+      }),
+
     /** POST /api/ai/commit-lint — run commit quality lint on a plan. */
     commitLint: (request: CommitLintRequest): Promise<CommitLintResponse> =>
       client.post("/ai/commit-lint", request),
@@ -162,6 +205,14 @@ export function createAiApi(client: ApiClient, actorUserId: string) {
     /** POST /api/ai/feedback — record thumbs up/down on a suggestion. */
     recordFeedback: (request: AiFeedbackRequest): Promise<void> =>
       client.post("/ai/feedback", request),
+
+    /**
+     * POST /api/ai/rcdo-suggest — suggest a primary RCDO node for a commit
+     * being authored. Only returns a suggestion when confidence ≥ 0.7.
+     * Never auto-links — caller must present and allow user to accept/dismiss.
+     */
+    rcdoSuggest: (request: RcdoSuggestRequest): Promise<RcdoSuggestResponse> =>
+      client.post("/ai/rcdo-suggest", request),
 
     /**
      * GET /api/teams/{id}/week/{weekStart}/ai-summary —

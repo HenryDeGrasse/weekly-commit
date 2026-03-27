@@ -322,6 +322,57 @@
       "costCacheWrite": 0.38928750000000006,
       "costTotal": 0.6904986000000001,
       "timestamp": "2026-03-27T16:47:26.312Z"
+    },
+    {
+      "phase": 4,
+      "role": "relay-a",
+      "round": 1,
+      "model": "anthropic/claude-sonnet-4-6",
+      "inputTokens": 53,
+      "outputTokens": 52555,
+      "cacheReadTokens": 7996921,
+      "cacheWriteTokens": 189671,
+      "totalTokens": 8239200,
+      "costInput": 0.000159,
+      "costOutput": 0.7883249999999999,
+      "costCacheRead": 2.3990763000000004,
+      "costCacheWrite": 0.7112662500000001,
+      "costTotal": 3.8988265499999994,
+      "timestamp": "2026-03-27T17:03:20.624Z"
+    },
+    {
+      "phase": 4,
+      "role": "relay-b",
+      "round": 2,
+      "model": "openai-codex/gpt-5.4",
+      "inputTokens": 571150,
+      "outputTokens": 9161,
+      "cacheReadTokens": 7149312,
+      "cacheWriteTokens": 0,
+      "totalTokens": 7729623,
+      "costInput": 1.4278750000000002,
+      "costOutput": 0.13741499999999998,
+      "costCacheRead": 1.7873280000000002,
+      "costCacheWrite": 0,
+      "costTotal": 3.352618,
+      "timestamp": "2026-03-27T17:09:51.465Z"
+    },
+    {
+      "phase": 4,
+      "role": "relay-a",
+      "round": 3,
+      "model": "anthropic/claude-sonnet-4-6",
+      "inputTokens": 13,
+      "outputTokens": 2798,
+      "cacheReadTokens": 1066556,
+      "cacheWriteTokens": 117549,
+      "totalTokens": 1186916,
+      "costInput": 0.00003899999999999999,
+      "costOutput": 0.04197,
+      "costCacheRead": 0.3199668,
+      "costCacheWrite": 0.44080875000000014,
+      "costTotal": 0.8027845499999999,
+      "timestamp": "2026-03-27T17:11:47.751Z"
     }
   ]
 }

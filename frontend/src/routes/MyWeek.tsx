@@ -4,7 +4,7 @@
  */
 import { useState, useCallback, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Lock, AlertTriangle, Check, X, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, AlertTriangle, Check, X, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card.js";
@@ -28,6 +28,8 @@ import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
 import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js";
 import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { AiLintPanel } from "../components/ai/AiLintPanel.js";
+import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
+import { useAiStatus } from "../api/aiHooks.js";
 import type {
   CommitResponse, PlanState, LockValidationError,
   ScopeChangeEventResponse, UpdateCommitPayload, CreateCommitPayload,
@@ -141,6 +143,15 @@ export default function MyWeek() {
   const [showTimeline, setShowTimeline] = useState(false);
 
   const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
+  const { data: aiStatus } = useAiStatus();
+  /** True when the feature flag is on AND the provider is reachable. */
+  const aiComposerEnabled = aiAssistanceEnabled && (aiStatus?.available ?? false);
+
+  const [showAiComposer, setShowAiComposer] = useState(false);
+  /** Pre-filled values passed from AI composer → CommitForm when user switches to manual. */
+  const [commitFormInitialValues, setCommitFormInitialValues] = useState<
+    Partial<CreateCommitPayload>
+  >({});
 
   const plan = planData?.plan;
   const commits = useMemo(() => planData?.commits ?? [], [planData]);
@@ -150,17 +161,39 @@ export default function MyWeek() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
+  /** Open AI composer (when AI is available) or CommitForm directly. */
   const handleOpenCreate = useCallback(() => {
-    if (isLocked) { setScopeChangeMode("add"); setScopeChangeTargetCommit(null); setPendingCreatePayload(null); }
-    else { setFormMode("create"); setEditingCommit(null); }
+    if (isLocked) {
+      setScopeChangeMode("add");
+      setScopeChangeTargetCommit(null);
+      setPendingCreatePayload(null);
+    } else if (aiComposerEnabled) {
+      setShowAiComposer(true);
+      setCommitFormInitialValues({});
+    } else {
+      setFormMode("create");
+      setEditingCommit(null);
+    }
     setActionError(null);
-  }, [isLocked]);
+  }, [isLocked, aiComposerEnabled]);
+
+  /** Always open the manual CommitForm, bypassing the AI composer. */
+  const handleOpenManualCreate = useCallback(() => {
+    setCommitFormInitialValues({});
+    setFormMode("create");
+    setEditingCommit(null);
+    setActionError(null);
+  }, []);
 
   const handleOpenEdit = useCallback((commit: CommitResponse) => {
     setFormMode("edit"); setEditingCommit(commit); setActionError(null);
   }, []);
 
-  const handleFormCancel = useCallback(() => { setFormMode(null); setEditingCommit(null); }, []);
+  const handleFormCancel = useCallback(() => {
+    setFormMode(null);
+    setEditingCommit(null);
+    setCommitFormInitialValues({});
+  }, []);
 
   const handleCreateCommit = useCallback(async (payload: CreateCommitPayload) => {
     if (!plan) return;
@@ -284,7 +317,32 @@ export default function MyWeek() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="m-0 text-xl font-bold">My Week</h2>
         {isDraft && (
-          <Button variant="primary" onClick={handleOpenCreate} data-testid="add-commit-btn">+ Add Commit</Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              onClick={handleOpenCreate}
+              data-testid="add-commit-btn"
+            >
+              {aiComposerEnabled ? (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                  Add Commit
+                </>
+              ) : (
+                "+ Add Commit"
+              )}
+            </Button>
+            {aiComposerEnabled && (
+              <button
+                type="button"
+                onClick={handleOpenManualCreate}
+                className="text-xs text-muted hover:text-foreground underline cursor-pointer bg-transparent border-none p-0"
+                data-testid="add-commit-manually-btn"
+              >
+                + Add manually
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -425,9 +483,38 @@ export default function MyWeek() {
         </Button>
       )}
 
+      {/* AI Commit Composer */}
+      {showAiComposer && plan && isDraft && (
+        <AiErrorBoundary>
+          <AiCommitComposer
+            planId={plan.id}
+            existingCommits={commits}
+            onSubmit={async (payload) => {
+              await handleCreateCommit(payload);
+              setShowAiComposer(false);
+            }}
+            onSwitchToManual={(preFilled) => {
+              setShowAiComposer(false);
+              setCommitFormInitialValues(preFilled);
+              setFormMode("create");
+              setEditingCommit(null);
+            }}
+            onCancel={() => setShowAiComposer(false)}
+          />
+        </AiErrorBoundary>
+      )}
+
       {/* CommitForm modals */}
       {formMode === "create" && plan && !isLocked && (
-        <CommitForm mode="create" planId={plan.id} rcdoTree={rcdoTree ?? []} existingCommits={commits} onSubmit={handleCreateCommit} onCancel={handleFormCancel} />
+        <CommitForm
+          mode="create"
+          planId={plan.id}
+          rcdoTree={rcdoTree ?? []}
+          existingCommits={commits}
+          onSubmit={handleCreateCommit}
+          onCancel={handleFormCancel}
+          initialValues={commitFormInitialValues}
+        />
       )}
       {formMode === "edit" && plan && editingCommit && (
         <CommitForm mode="edit" commit={editingCommit} rcdoTree={rcdoTree ?? []} existingCommits={commits} onSubmit={handleUpdateCommit} onCancel={handleFormCancel} />

@@ -43,8 +43,16 @@ vi.mock("../api/ragHooks.js", () => ({
 }));
 
 vi.mock("../api/aiHooks.js", () => ({
-  useAiApi: vi.fn(() => ({ recordFeedback: vi.fn() })),
+  useAiApi: vi.fn(() => ({
+    recordFeedback: vi.fn(),
+    commitDraftAssist: vi.fn(),
+    commitFromFreeform: vi.fn(),
+    rcdoSuggest: vi.fn(),
+  })),
+  // Default: AI not available → "Add Commit" falls back to direct CommitForm
   useAiStatus: vi.fn(() => ({ data: { available: false }, loading: false, error: null })),
+  useAutoReconcileAssist: vi.fn(() => ({ data: undefined, loading: false, error: null })),
+  useManagerAiSummary: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 vi.mock("../api/ticketHooks.js", () => ({
@@ -56,6 +64,7 @@ vi.mock("../api/ticketHooks.js", () => ({
 import { useCurrentPlan, usePlanApi } from "../api/planHooks.js";
 import { useRcdoTree } from "../api/rcdoHooks.js";
 import { usePlanHistory } from "../api/ticketHooks.js";
+import * as aiHooks from "../api/aiHooks.js";
 import MyWeek from "../routes/MyWeek.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -392,7 +401,9 @@ describe("MyWeekPage — add commit button", () => {
     expect(screen.queryByTestId("add-commit-btn")).not.toBeInTheDocument();
   });
 
-  it("opens CommitForm modal when + Add Commit is clicked", () => {
+  it("opens CommitForm modal when + Add Commit is clicked (AI unavailable — direct form)", () => {
+    // Default mock: useAiStatus returns { available: false }
+    // aiComposerEnabled = false → Add Commit opens CommitForm directly
     renderPage();
     fireEvent.click(screen.getByTestId("add-commit-btn"));
     expect(screen.getByTestId("commit-form-modal")).toBeInTheDocument();
@@ -404,6 +415,12 @@ describe("MyWeekPage — add commit button", () => {
     expect(screen.getByTestId("commit-form-modal")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByTestId("commit-form-modal")).not.toBeInTheDocument();
+  });
+
+  it("does NOT show 'Add manually' link when AI is unavailable", () => {
+    // With available: false, composer is disabled → no secondary link needed
+    renderPage();
+    expect(screen.queryByTestId("add-commit-manually-btn")).not.toBeInTheDocument();
   });
 });
 
@@ -631,5 +648,71 @@ describe("MyWeekPage — inline AI lint panel", () => {
     vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(DRAFT_PLAN, []));
     renderPage();
     expect(screen.queryByTestId("inline-ai-lint-panel")).not.toBeInTheDocument();
+  });
+});
+
+// ── Tests: AI Commit Composer integration (step 5) ────────────────────────────
+
+describe("MyWeekPage — AI commit composer", () => {
+  beforeEach(() => {
+    // Override AI status to be available for this describe block.
+    vi.mocked(aiHooks.useAiStatus).mockReturnValue({
+      data: {
+        available: true,
+        aiEnabled: true,
+        providerName: "openrouter",
+        providerVersion: "1",
+      },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(aiHooks.useAiApi).mockReturnValue({
+      recordFeedback: vi.fn(),
+      commitDraftAssist: vi.fn(),
+      commitFromFreeform: vi.fn(),
+      rcdoSuggest: vi.fn(),
+      getStatus: vi.fn(),
+      commitLint: vi.fn(),
+      getRiskSignals: vi.fn(),
+      reconcileAssist: vi.fn(),
+      getTeamAiSummary: vi.fn(),
+    } as ReturnType<typeof aiHooks.useAiApi>);
+  });
+
+  it("opens AI commit composer when AI is available and + Add Commit is clicked", () => {
+    renderPage();
+    fireEvent.click(screen.getByTestId("add-commit-btn"));
+    expect(screen.getByTestId("ai-commit-composer")).toBeInTheDocument();
+  });
+
+  it("shows 'Add manually' link when AI composer is enabled", () => {
+    renderPage();
+    expect(screen.getByTestId("add-commit-manually-btn")).toBeInTheDocument();
+  });
+
+  it("opens CommitForm directly when 'Add manually' is clicked", () => {
+    renderPage();
+    fireEvent.click(screen.getByTestId("add-commit-manually-btn"));
+    expect(screen.getByTestId("commit-form-modal")).toBeInTheDocument();
+    expect(screen.queryByTestId("ai-commit-composer")).not.toBeInTheDocument();
+  });
+
+  it("closes the AI commit composer when Close button is clicked", () => {
+    renderPage();
+    fireEvent.click(screen.getByTestId("add-commit-btn"));
+    expect(screen.getByTestId("ai-commit-composer")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("ai-composer-close-btn"));
+    expect(screen.queryByTestId("ai-commit-composer")).not.toBeInTheDocument();
+  });
+
+  it("switching to manual form from AI composer opens CommitForm", () => {
+    renderPage();
+    fireEvent.click(screen.getByTestId("add-commit-btn"));
+    expect(screen.getByTestId("ai-commit-composer")).toBeInTheDocument();
+    // Click the 'Switch to manual form' link in Phase 1
+    fireEvent.click(screen.getByTestId("ai-composer-switch-manual-link"));
+    expect(screen.queryByTestId("ai-commit-composer")).not.toBeInTheDocument();
+    expect(screen.getByTestId("commit-form-modal")).toBeInTheDocument();
   });
 });
