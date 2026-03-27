@@ -217,7 +217,7 @@ describe("AiLintPanel — autoRun=true (automatic mode)", () => {
     });
 
     const { useAiApi } = await import("../api/aiHooks.js");
-    vi.mocked(useAiApi).mockReturnValue({ commitLint: mockCommitLint, getRiskSignals: vi.fn(), getStatus: vi.fn(), commitDraftAssist: vi.fn(), reconcileAssist: vi.fn(), recordFeedback: vi.fn() });
+    vi.mocked(useAiApi).mockReturnValue({ commitLint: mockCommitLint, getRiskSignals: vi.fn(), getStatus: vi.fn(), commitDraftAssist: vi.fn(), reconcileAssist: vi.fn(), recordFeedback: vi.fn(), getTeamAiSummary: vi.fn() });
 
     render(
       <MockHostProvider>

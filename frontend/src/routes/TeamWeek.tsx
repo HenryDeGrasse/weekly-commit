@@ -21,6 +21,7 @@ import { useTeamHistory } from "../api/ticketHooks.js";
 import type { ResolveExceptionPayload, AddCommentPayload } from "../api/teamTypes.js";
 import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { SemanticSearchInput } from "../components/ai/SemanticSearchInput.js";
+import { ManagerAiSummaryCard } from "../components/ai/ManagerAiSummaryCard.js";
 
 function getWeekStartDate(offsetWeeks = 0): string {
   const now = new Date();
@@ -58,7 +59,7 @@ export default function TeamWeek() {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStartDate = getWeekStartDate(weekOffset);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [insightsExpanded, setInsightsExpanded] = useState(false);
+  const [insightsExpanded, setInsightsExpanded] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { data: teamWeekData, loading: teamLoading, error: teamError, refetch: refetchTeamWeek } = useTeamWeekView(teamId, weekStartDate);
@@ -132,7 +133,12 @@ export default function TeamWeek() {
 
       {teamWeekData && (
         <>
-          {/* AI insights (collapsible) */}
+          {/* Manager AI summary — expanded by default; the first thing managers see */}
+          {aiAssistanceEnabled && teamId && (
+            <ManagerAiSummaryCard teamId={teamId} weekStart={weekStartDate} />
+          )}
+
+          {/* AI insights (collapsible, open by default) */}
           {aiAssistanceEnabled && teamId && (
             <div data-testid="team-insights-section">
               <button

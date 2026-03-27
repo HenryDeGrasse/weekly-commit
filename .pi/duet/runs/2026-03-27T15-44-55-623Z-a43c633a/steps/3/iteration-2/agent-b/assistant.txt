@@ -1,0 +1,33 @@
+Reviewed the step-3 diff in:
+- `frontend/src/api/aiApi.ts`
+- `frontend/src/api/aiHooks.ts`
+- `frontend/src/components/ai/ManagerAiSummaryCard.tsx`
+- `frontend/src/routes/TeamWeek.tsx`
+- `frontend/src/__tests__/ManagerAiSummaryCard.test.tsx`
+- `frontend/src/__tests__/TeamWeekPage.test.tsx`
+- `frontend/src/__tests__/PreLockValidation.test.tsx`
+
+What I verified:
+- `getTeamAiSummary()` was added to the AI client and matches the backend endpoint
+- `useManagerAiSummary()` was added and uses the normal query pattern
+- `ManagerAiSummaryCard` covers loading / error / unavailable / populated states and includes feedback controls
+- `TeamWeek` now defaults `insightsExpanded` to `true`
+- `ManagerAiSummaryCard` is rendered above the tab navigation, below semantic search
+- tests cover the new card plus “insights expanded by default”
+
+Checks run:
+- `npm run lint -w frontend` ✅ (warnings only, no errors)
+- `npm run typecheck -w frontend` ✅
+- `npm run test -w frontend -- --run src/__tests__/ManagerAiSummaryCard.test.tsx src/__tests__/TeamWeekPage.test.tsx src/__tests__/PreLockValidation.test.tsx` ✅
+- `npm run unit` ✅
+
+Assessment:
+- The step requirements are met.
+- I did not find a material defect requiring code changes.
+
+Verdict: approve
+
+```observations
+- [low] frontend/src/__tests__/ManagerAiSummaryCard.test.tsx:236: Contains an unused `eslint-disable` directive, which adds a new lint warning but does not fail lint.
+- [low] frontend/src/__tests__/TeamWeekPage.test.tsx: Pre-existing React `act(...)` warnings still appear during async test updates; they do not fail the suite.
+```

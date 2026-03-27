@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useHostBridge } from "../host/HostProvider.js";
 import { createApiClient } from "./client.js";
 import { useQuery, type QueryState } from "./hooks.js";
-import { createAiApi, type AiApi, type AiStatusResponse, type PlanRiskSignalsResponse, type ReconcileAssistResponse } from "./aiApi.js";
+import { createAiApi, type AiApi, type AiStatusResponse, type PlanRiskSignalsResponse, type ReconcileAssistResponse, type ManagerAiSummaryResponse } from "./aiApi.js";
 
 /** Returns a stable AiApi instance bound to the current user's auth token. */
 export function useAiApi(): AiApi {
@@ -39,6 +39,27 @@ export function useRiskSignals(
       return api.getRiskSignals(planId);
     },
     { enabled: planId != null },
+  );
+}
+
+/**
+ * Fetches the AI-generated manager team summary for the given team and week.
+ *
+ * @param teamId    team UUID string, or `null` to skip fetching
+ * @param weekStart ISO date string (YYYY-MM-DD)
+ */
+export function useManagerAiSummary(
+  teamId: string | null,
+  weekStart: string,
+): QueryState<ManagerAiSummaryResponse> {
+  const api = useAiApi();
+  return useQuery<ManagerAiSummaryResponse>(
+    `manager-ai-summary-${teamId ?? "none"}-${weekStart}`,
+    () => {
+      if (!teamId) return Promise.reject(new Error("No team ID"));
+      return api.getTeamAiSummary(teamId, weekStart);
+    },
+    { enabled: teamId != null },
   );
 }
 

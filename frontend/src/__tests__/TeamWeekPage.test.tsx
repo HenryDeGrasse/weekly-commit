@@ -45,6 +45,7 @@ vi.mock("../api/ragHooks.js", () => ({
 vi.mock("../api/aiHooks.js", () => ({
   useAiApi: vi.fn(() => ({ recordFeedback: vi.fn() })),
   useAiStatus: vi.fn(() => ({ data: { available: false }, loading: false, error: null })),
+  useManagerAiSummary: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
 }));
 
 vi.mock("../api/rcdoHooks.js", () => ({
@@ -381,6 +382,27 @@ describe("TeamWeekPage — rendering", () => {
       </MemoryRouter>,
     );
     expect(screen.getByTestId("no-team-selected")).toBeInTheDocument();
+  });
+});
+
+// ── Tests: AI insights and manager summary ────────────────────────────────────
+
+describe("TeamWeekPage — AI summary and insights", () => {
+  it("AI insights are expanded by default (insightsExpanded=true)", () => {
+    renderPage("team-1");
+    // The toggle button should show "▾" (expanded indicator) by default
+    const toggle = screen.getByTestId("team-insights-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveTextContent("▾");
+  });
+
+  it("collapses AI insights when toggle is clicked", () => {
+    renderPage("team-1");
+    const toggle = screen.getByTestId("team-insights-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveTextContent("▸");
   });
 });
 

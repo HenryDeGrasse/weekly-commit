@@ -104,6 +104,27 @@ export interface AiFeedbackRequest {
   notes?: string;
 }
 
+// ── Manager AI Summary types ──────────────────────────────────────────────────
+
+export interface ManagerAiSummaryResponse {
+  aiAvailable: boolean;
+  /** Stored suggestion id for feedback (null when unavailable). */
+  suggestionId?: string | null;
+  teamId: string;
+  weekStart: string;
+  /** Prose summary of the team week. Null when aiAvailable=false. */
+  summaryText?: string | null;
+  /** RCDO branch titles with highest planned commitment this week. */
+  topRcdoBranches: string[];
+  /** Unresolved exception ids (cited objects). */
+  unresolvedExceptionIds: string[];
+  /** Textual carry-forward patterns (cited from plan data). */
+  carryForwardPatterns: string[];
+  /** Work item ids for King/Queen commits currently BLOCKED (cited objects). */
+  criticalBlockedItemIds: string[];
+  modelVersion?: string | null;
+}
+
 // ── API factory ───────────────────────────────────────────────────────────────
 
 export function createAiApi(client: ApiClient, actorUserId: string) {
@@ -139,6 +160,22 @@ export function createAiApi(client: ApiClient, actorUserId: string) {
     /** POST /api/ai/feedback — record thumbs up/down on a suggestion. */
     recordFeedback: (request: AiFeedbackRequest): Promise<void> =>
       client.post("/ai/feedback", request),
+
+    /**
+     * GET /api/teams/{id}/week/{weekStart}/ai-summary —
+     * AI-generated manager team summary for the given team and week.
+     *
+     * @param teamId    team UUID string
+     * @param weekStart ISO date string (YYYY-MM-DD) for the Monday of the week
+     */
+    getTeamAiSummary: (
+      teamId: string,
+      weekStart: string,
+    ): Promise<ManagerAiSummaryResponse> =>
+      client.get(
+        `/teams/${encodeURIComponent(teamId)}/week/${encodeURIComponent(weekStart)}/ai-summary`,
+        { headers: actorHeader },
+      ),
   };
 }
 
