@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-27T17:11:55.541Z",
+  "updatedAt": "2026-03-27T17:17:35.613Z",
   "runId": "2026-03-27T15-44-55-623Z-a43c633a",
   "handoffMode": "full",
   "postPlanMode": "review",
@@ -146,12 +146,12 @@
       }
     ]
   },
-  "stepIndex": 5,
-  "round": 3,
+  "stepIndex": 6,
+  "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-4b",
-    "stepTitle": "Add freeform 'describe → structure' AI commit creation mode (frontend)",
+    "stepId": "step-5",
+    "stepTitle": "Surface proactive risk signal banners on My Week page",
     "gateResults": [
       {
         "id": "lint",

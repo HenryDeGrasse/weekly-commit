@@ -53,6 +53,8 @@ vi.mock("../api/aiHooks.js", () => ({
   useAiStatus: vi.fn(() => ({ data: { available: false }, loading: false, error: null })),
   useAutoReconcileAssist: vi.fn(() => ({ data: undefined, loading: false, error: null })),
   useManagerAiSummary: vi.fn(() => ({ data: undefined, loading: false, error: null })),
+  // Default: no risk signals (banner renders nothing)
+  useRiskSignals: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
 }));
 
 vi.mock("../api/ticketHooks.js", () => ({
@@ -714,5 +716,83 @@ describe("MyWeekPage — AI commit composer", () => {
     fireEvent.click(screen.getByTestId("ai-composer-switch-manual-link"));
     expect(screen.queryByTestId("ai-commit-composer")).not.toBeInTheDocument();
     expect(screen.getByTestId("commit-form-modal")).toBeInTheDocument();
+  });
+});
+
+// ── Tests: ProactiveRiskBanner integration ────────────────────────────────────
+
+describe("MyWeekPage — ProactiveRiskBanner", () => {
+  it("renders risk banners for a LOCKED plan when critical signals exist", () => {
+    vi.mocked(aiHooks.useRiskSignals).mockReturnValue({
+      data: {
+        aiAvailable: true,
+        planId: "plan-1",
+        signals: [
+          {
+            id: "sig-1",
+            signalType: "OVERCOMMIT",
+            rationale: "You are over budget.",
+            planId: "plan-1",
+            createdAt: "2026-03-27T10:00:00Z",
+          },
+        ],
+      },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(LOCKED_PLAN, twoCommits));
+    renderPage();
+    expect(screen.getByTestId("proactive-risk-banners")).toBeInTheDocument();
+    expect(screen.getByTestId("risk-banner-sig-1")).toBeInTheDocument();
+  });
+
+  it("does NOT render risk banners for a DRAFT plan", () => {
+    vi.mocked(aiHooks.useRiskSignals).mockReturnValue({
+      data: {
+        aiAvailable: true,
+        planId: "plan-1",
+        signals: [
+          {
+            id: "sig-1",
+            signalType: "OVERCOMMIT",
+            rationale: "You are over budget.",
+            planId: "plan-1",
+            createdAt: "2026-03-27T10:00:00Z",
+          },
+        ],
+      },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    // DRAFT plan — ProactiveRiskBanner must not render
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(DRAFT_PLAN, twoCommits));
+    renderPage();
+    expect(screen.queryByTestId("proactive-risk-banners")).not.toBeInTheDocument();
+  });
+
+  it("does NOT render risk banners when signals are only non-critical types", () => {
+    vi.mocked(aiHooks.useRiskSignals).mockReturnValue({
+      data: {
+        aiAvailable: true,
+        planId: "plan-1",
+        signals: [
+          {
+            id: "sig-4",
+            signalType: "UNDERCOMMIT",
+            rationale: "Under budget.",
+            planId: "plan-1",
+            createdAt: "2026-03-27T10:00:00Z",
+          },
+        ],
+      },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(LOCKED_PLAN, twoCommits));
+    renderPage();
+    expect(screen.queryByTestId("proactive-risk-banners")).not.toBeInTheDocument();
   });
 });

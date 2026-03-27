@@ -29,6 +29,7 @@ import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js"
 import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { AiLintPanel } from "../components/ai/AiLintPanel.js";
 import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
+import { ProactiveRiskBanner } from "../components/ai/ProactiveRiskBanner.js";
 import { useAiStatus } from "../api/aiHooks.js";
 import type {
   CommitResponse, PlanState, LockValidationError,
@@ -404,6 +405,13 @@ export default function MyWeek() {
             </div>
           </CardHeader>
         </Card>
+      )}
+
+      {/* Proactive risk banners — shown only while LOCKED so critical signals are immediately visible */}
+      {aiAssistanceEnabled && isLocked && plan && (
+        <AiErrorBoundary>
+          <ProactiveRiskBanner planId={plan.id} />
+        </AiErrorBoundary>
       )}
 
       {/* Personal AI insights */}
