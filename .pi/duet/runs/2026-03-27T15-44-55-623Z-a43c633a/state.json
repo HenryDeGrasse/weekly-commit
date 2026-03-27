@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-27T16:40:24.448Z",
+  "updatedAt": "2026-03-27T16:47:36.430Z",
   "runId": "2026-03-27T15-44-55-623Z-a43c633a",
   "handoffMode": "full",
   "postPlanMode": "review",
@@ -146,12 +146,12 @@
       }
     ]
   },
-  "stepIndex": 3,
-  "round": 2,
+  "stepIndex": 4,
+  "round": 3,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-3",
-    "stepTitle": "Expand team insights by default and add AI summary header to Team Week",
+    "stepId": "step-4a",
+    "stepTitle": "Extend backend CommitDraftAssist to return suggestedChessPiece",
     "gateResults": [
       {
         "id": "lint",
@@ -163,6 +163,10 @@
       },
       {
         "id": "unit",
+        "passed": true
+      },
+      {
+        "id": "build",
         "passed": true
       },
       {

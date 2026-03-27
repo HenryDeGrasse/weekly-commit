@@ -1,5 +1,6 @@
 package com.weeklycommit.ai.dto;
 
+import com.weeklycommit.domain.enums.ChessPiece;
 import java.util.UUID;
 
 /**
@@ -22,11 +23,16 @@ public record CommitDraftAssistResponse(
 		String suggestedSuccessCriteria,
 		/** Proposed estimate in story points. */
 		Integer suggestedEstimatePoints,
+		/**
+		 * Suggested chess piece classification. Null when the current chess piece is
+		 * already appropriate or when chessPiece was already specified in the request.
+		 */
+		ChessPiece suggestedChessPiece,
 		/** Explanation of why these suggestions were generated. */
 		String rationale) {
 
 	/** Convenience factory for the unavailable case. */
 	public static CommitDraftAssistResponse unavailable() {
-		return new CommitDraftAssistResponse(false, null, null, null, null, null, null);
+		return new CommitDraftAssistResponse(false, null, null, null, null, null, null, null);
 	}
 }

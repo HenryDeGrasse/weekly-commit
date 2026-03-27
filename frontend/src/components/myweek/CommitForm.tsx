@@ -209,6 +209,7 @@ export function CommitForm(props: CommitFormProps) {
                 onAcceptDescription={(d) => handleChange("description", d)}
                 onAcceptSuccessCriteria={(c) => handleChange("successCriteria", c)}
                 onAcceptEstimatePoints={(p) => handleChange("estimatePoints", String(p))}
+                onAcceptChessPiece={(p) => handleChange("chessPiece", p)}
                 className="mb-4"
               />
             </AiErrorBoundary>

@@ -20,26 +20,34 @@ You will receive a JSON object with:
 - Success criteria must be measurable and verifiable within one week.
 - Estimate points should reflect realistic effort. Check historicalCommits for calibration — if similar past commits with the same chess piece typically used N points, suggest similarly.
 - If chessPiece is KING or QUEEN and successCriteria is empty, always suggest criteria.
+- If chessPiece is null or absent in the input, infer the appropriate chess piece from the title and description using the taxonomy above. Return the inferred value as suggestedChessPiece.
+- If chessPiece is already specified in the input, return null for suggestedChessPiece (do not second-guess the user's explicit choice).
 
-## Example 1 — Vague KING with missing criteria:
+## Example 1 — Vague KING with missing criteria (chess piece already set):
 Input commitData: {"title": "Do API stuff", "chessPiece": "KING", "estimatePoints": null, "successCriteria": "", "description": ""}
 Output:
-{"suggestedTitle": "Deploy payment API v2 to staging with load test validation", "suggestedDescription": "Migrate payment endpoints from v1 to v2, deploy to staging environment, and validate under load", "suggestedSuccessCriteria": "Payment API v2 deployed to staging, handles 100 req/s with <200ms p95 latency, zero errors on smoke test suite", "suggestedEstimatePoints": 5}
+{"suggestedTitle": "Deploy payment API v2 to staging with load test validation", "suggestedDescription": "Migrate payment endpoints from v1 to v2, deploy to staging environment, and validate under load", "suggestedSuccessCriteria": "Payment API v2 deployed to staging, handles 100 req/s with <200ms p95 latency, zero errors on smoke test suite", "suggestedEstimatePoints": 5, "suggestedChessPiece": null}
 
-## Example 2 — Already good commit, return nulls:
+## Example 2 — Already good commit, return nulls (chess piece already set):
 Input commitData: {"title": "Migrate user auth from JWT to session tokens", "chessPiece": "ROOK", "estimatePoints": 3, "successCriteria": "", "description": "Replace JWT-based auth with server-side session tokens across all API endpoints"}
 Output:
-{"suggestedTitle": null, "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": null}
+{"suggestedTitle": null, "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": null, "suggestedChessPiece": null}
 
-## Example 3 — Activity-focused title, unrealistic estimate:
+## Example 3 — Activity-focused title, unrealistic estimate (chess piece already set):
 Input commitData: {"title": "Work on bugs", "chessPiece": "PAWN", "estimatePoints": 8, "successCriteria": "", "description": ""}
 Output:
-{"suggestedTitle": "Triage and fix top-3 P1 bugs from customer escalation queue", "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": 2}
+{"suggestedTitle": "Triage and fix top-3 P1 bugs from customer escalation queue", "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": 2, "suggestedChessPiece": null}
+
+## Example 4 — No chess piece provided (freeform mode — infer from context):
+Input commitData: {"title": "set up Pinecone vector index for planning data", "chessPiece": null, "estimatePoints": null, "successCriteria": "", "description": "Configure Pinecone, define index schema, and run initial data ingestion pipeline"}
+Output:
+{"suggestedTitle": "Configure Pinecone index and run initial planning-data ingestion", "suggestedDescription": null, "suggestedSuccessCriteria": "Pinecone index created, all historical commit data ingested, semantic query returns relevant results", "suggestedEstimatePoints": 3, "suggestedChessPiece": "BISHOP"}
 
 Respond with ONLY a JSON object (no markdown fences, no explanation outside the JSON):
 {
   "suggestedTitle": "improved title or null if current is good",
   "suggestedDescription": "improved description or null",
   "suggestedSuccessCriteria": "improved success criteria or null",
-  "suggestedEstimatePoints": 3
+  "suggestedEstimatePoints": 3,
+  "suggestedChessPiece": "BISHOP or null"
 }

@@ -11,6 +11,7 @@ import com.weeklycommit.ai.provider.AiSuggestionResult;
 import com.weeklycommit.domain.entity.AiSuggestion;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
+import com.weeklycommit.domain.enums.ChessPiece;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
@@ -117,10 +118,22 @@ public class CommitDraftAssistService {
 					node.has("suggestedEstimatePoints") && !node.get("suggestedEstimatePoints").isNull()
 							? node.get("suggestedEstimatePoints").asInt()
 							: null,
-					result.rationale());
+					parseChessPiece(node, "suggestedChessPiece"), result.rationale());
 		} catch (JsonProcessingException e) {
 			log.warn("Failed to parse AI draft assist payload: {}", e.getMessage());
 			return CommitDraftAssistResponse.unavailable();
+		}
+	}
+
+	private static ChessPiece parseChessPiece(JsonNode node, String field) {
+		JsonNode child = node.get(field);
+		if (child == null || child.isNull() || child.asText().isBlank()) {
+			return null;
+		}
+		try {
+			return ChessPiece.valueOf(child.asText().trim().toUpperCase());
+		} catch (IllegalArgumentException e) {
+			return null;
 		}
 	}
 

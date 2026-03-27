@@ -1,0 +1,36 @@
+Reviewed the step-4 diff in:
+- `backend/src/main/java/com/weeklycommit/ai/dto/CommitDraftAssistResponse.java`
+- `backend/src/main/java/com/weeklycommit/ai/service/CommitDraftAssistService.java`
+- `backend/src/main/resources/prompts/commit-draft-assist.txt`
+- `backend/src/test/java/com/weeklycommit/ai/service/CommitDraftAssistServiceTest.java`
+- `frontend/src/api/aiApi.ts`
+- `frontend/src/components/ai/CommitDraftAssistButton.tsx`
+
+What I found:
+- Backend DTO/service/prompt/test changes were correct.
+- Checks were already passing.
+- I did find one material frontend wiring defect:
+  - `frontend/src/components/myweek/CommitForm.tsx` was not passing `onAcceptChessPiece` into `CommitDraftAssistButton`.
+  - Result: a backend `suggestedChessPiece` could be silently dropped in the existing commit form, and in the chess-piece-only case the UI could incorrectly show “Looks good! No suggestions.”
+
+What I changed:
+- `frontend/src/components/myweek/CommitForm.tsx`
+  - wired `onAcceptChessPiece={(p) => handleChange("chessPiece", p)}` into `CommitDraftAssistButton`
+
+Checks run after the fix:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm run unit` ✅
+- `npm run build` ✅
+
+Assessment:
+- Step 4 is now complete and verified.
+- The backend extension is present.
+- The frontend now actually surfaces/applies the new chess-piece suggestion in the existing commit form.
+
+```observations
+- [low] frontend/src/__tests__/TeamWeekPage.test.tsx: Pre-existing React `act(...)` warnings still appear during unit runs; they do not fail the suite.
+- [low] frontend/src/__tests__/ManagerAiSummaryCard.test.tsx:236: Unused `eslint-disable` directive still produces a warning but not a lint failure.
+```
+
+Verdict: changes_made

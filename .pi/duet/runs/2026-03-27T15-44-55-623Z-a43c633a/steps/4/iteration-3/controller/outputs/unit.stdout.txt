@@ -1,0 +1,83 @@
+
+> weekly-commit-monorepo@1.0.0 test
+> npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test
+
+
+> frontend@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend
+
+ ✓ src/__tests__/CapacityMeter.test.tsx (16 tests) 88ms
+ ✓ src/__tests__/ManagerAiSummaryCard.test.tsx (16 tests) 53ms
+ ✓ src/__tests__/FilterBar.test.tsx (22 tests) 97ms
+ ✓ src/__tests__/InsightPanel.test.tsx (19 tests) 54ms
+ ✓ src/__tests__/PreLockValidation.test.tsx (13 tests) 55ms
+ ✓ src/__tests__/SemanticSearchInput.test.tsx (17 tests) 83ms
+ ✓ src/__tests__/QueryAnswerCard.test.tsx (24 tests) 226ms
+ ✓ src/__tests__/RcdoTreeView.test.tsx (20 tests) 307ms
+ ✓ src/__tests__/RcdoNodeForm.test.tsx (23 tests) 342ms
+ ✓ src/__tests__/CommitList.test.tsx (29 tests) 325ms
+ ✓ src/__tests__/TicketsPage.test.tsx (30 tests) 553ms
+ ✓ src/__tests__/RcdoPage.test.tsx (27 tests) 629ms
+ ✓ src/__tests__/ReconcilePage.test.tsx (36 tests) 600ms
+ ✓ src/__tests__/CommitForm.test.tsx (33 tests) 768ms
+ ✓ src/__tests__/CarryForwardLineageView.test.tsx (13 tests) 83ms
+ ✓ src/__tests__/TeamHistoryView.test.tsx (13 tests) 106ms
+ ✓ src/__tests__/ApiClient.test.ts (8 tests) 4ms
+ ✓ src/__tests__/LockConfirmDialog.test.tsx (8 tests) 108ms
+ ✓ src/__tests__/ScopeChangeDialog.test.tsx (12 tests) 222ms
+ ✓ src/__tests__/PlanHistoryView.test.tsx (16 tests) 190ms
+ ✓ src/__tests__/MoveNodeDialog.test.tsx (8 tests) 295ms
+ ✓ src/__tests__/ui/Toast.test.tsx (9 tests) 107ms
+ ✓ src/__tests__/ui/Button.test.tsx (17 tests) 249ms
+ ✓ src/__tests__/MyWeekPage.test.tsx (45 tests) 1121ms
+ ✓ src/__tests__/Flows.test.tsx (41 tests) 1058ms
+ ✓ src/__tests__/Header.test.tsx (13 tests) 315ms
+ ✓ src/__tests__/ui/Input.test.tsx (15 tests) 184ms
+ ✓ src/__tests__/ui/Card.test.tsx (10 tests) 137ms
+ ✓ src/__tests__/ui/Dialog.test.tsx (9 tests) 134ms
+ ✓ src/__tests__/Navigation.test.tsx (9 tests) 194ms
+ ✓ src/__tests__/TeamWeekPage.test.tsx (76 tests) 1465ms
+ ✓ src/__tests__/ui/Badge.test.tsx (13 tests) 36ms
+ ✓ src/__tests__/HostProvider.test.tsx (4 tests) 28ms
+ ✓ src/__tests__/QueryHooks.test.tsx (1 test) 17ms
+ ✓ src/__tests__/ui/Skeleton.test.tsx (4 tests) 20ms
+ ✓ src/__tests__/Breadcrumb.test.tsx (8 tests) 96ms
+ ✓ src/__tests__/ui/Select.test.tsx (7 tests) 110ms
+ ✓ src/__tests__/AppShell.test.tsx (9 tests) 187ms
+ ✓ src/App.test.tsx (1 test) 97ms
+ ✓ src/__tests__/Router.test.tsx (9 tests) 277ms
+
+ Test Files  40 passed (40)
+      Tests  703 passed (703)
+   Start at  11:47:30
+   Duration  2.90s (transform 2.25s, setup 2.28s, collect 6.83s, tests 11.02s, environment 17.83s, prepare 2.11s)
+
+
+> @weekly-commit/shared@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/packages/shared
+
+ ✓ src/index.test.ts (5 tests) 1ms
+ ✓ src/validators.test.ts (15 tests) 2ms
+
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  11:47:33
+   Duration  145ms (transform 31ms, setup 0ms, collect 39ms, tests 3ms, environment 0ms, prepare 61ms)
+
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :compileTestJava UP-TO-DATE
+> Task :processTestResources UP-TO-DATE
+> Task :testClasses UP-TO-DATE
+> Task :test UP-TO-DATE
+
+BUILD SUCCESSFUL in 337ms
+5 actionable tasks: 5 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.3.1/userguide/configuration_cache_enabling.html

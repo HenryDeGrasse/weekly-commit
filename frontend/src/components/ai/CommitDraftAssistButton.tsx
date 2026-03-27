@@ -28,6 +28,7 @@ interface CommitDraftAssistButtonProps {
   onAcceptDescription?: ((description: string) => void) | undefined;
   onAcceptSuccessCriteria?: ((criteria: string) => void) | undefined;
   onAcceptEstimatePoints?: ((points: number) => void) | undefined;
+  onAcceptChessPiece?: ((piece: string) => void) | undefined;
   className?: string | undefined;
 }
 
@@ -50,6 +51,7 @@ export function CommitDraftAssistButton({
   onAcceptDescription,
   onAcceptSuccessCriteria,
   onAcceptEstimatePoints,
+  onAcceptChessPiece,
   className,
 }: CommitDraftAssistButtonProps) {
   const aiApi = useAiApi();
@@ -132,6 +134,14 @@ export function CommitDraftAssistButton({
         current: currentEstimatePoints != null ? `${currentEstimatePoints} pts` : "not set",
         suggested: `${result.suggestedEstimatePoints} pts`,
         onAccept: () => onAcceptEstimatePoints(result.suggestedEstimatePoints!),
+      });
+    }
+    if (result.suggestedChessPiece && onAcceptChessPiece) {
+      suggestions.push({
+        label: "Chess Piece",
+        current: chessPiece ?? "not set",
+        suggested: result.suggestedChessPiece,
+        onAccept: () => onAcceptChessPiece(result.suggestedChessPiece!),
       });
     }
   }

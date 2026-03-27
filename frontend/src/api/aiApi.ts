@@ -30,6 +30,8 @@ export interface CommitDraftAssistResponse {
   suggestedDescription?: string | null;
   suggestedSuccessCriteria?: string | null;
   suggestedEstimatePoints?: number | null;
+  /** Suggested chess piece. Non-null only when chessPiece was absent in the request. */
+  suggestedChessPiece?: string | null;
   rationale?: string;
 }
 

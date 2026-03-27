@@ -1,0 +1,48 @@
+Everything looks correct. Let me summarize what was done:
+
+---
+
+## What I reviewed and changed
+
+### Backend changes
+
+**1. `CommitDraftAssistResponse.java`**
+- Added `ChessPiece suggestedChessPiece` field (nullable) between `suggestedEstimatePoints` and `rationale`.
+- Added `import com.weeklycommit.domain.enums.ChessPiece`.
+- Updated `unavailable()` factory to include a `null` for the new field (now 8 args).
+
+**2. `commit-draft-assist.txt` (prompt template)**
+- Added `suggestedChessPiece` to the output JSON schema (final example in the output format).
+- Added two new rules: infer chess piece when null in input; return null when chess piece is already specified.
+- Updated all three existing examples to include `"suggestedChessPiece": null`.
+- Added a 4th example demonstrating freeform mode where chess piece is inferred (`"suggestedChessPiece": "BISHOP"`).
+
+**3. `CommitDraftAssistService.java`**
+- Added `import com.weeklycommit.domain.enums.ChessPiece`.
+- Added `parseChessPiece()` private helper that safely converts the AI response string to a `ChessPiece` enum, returning `null` on invalid values (instead of throwing).
+- Updated `parseResponse()` to call `parseChessPiece()` and pass the result to the record constructor.
+
+**4. `CommitDraftAssistServiceTest.java`**
+- Updated existing `assist_whenAiAvailable_returnsStructuredSuggestions` to include `"suggestedChessPiece": null` in the payload and assert `resp.suggestedChessPiece()` is null.
+- Added `assist_whenChessPieceInferred_returnsSuggestedChessPiece`: verifies `BISHOP` is correctly parsed when AI returns a chess piece.
+- Added `assist_whenChessPieceInvalidInPayload_returnsNullChessPiece`: verifies graceful null-return on invalid enum strings.
+
+### Frontend changes
+
+**5. `aiApi.ts`**
+- Added `suggestedChessPiece?: string | null` to `CommitDraftAssistResponse` interface with JSDoc comment.
+
+**6. `CommitDraftAssistButton.tsx`**
+- Added `onAcceptChessPiece?: ((piece: string) => void) | undefined` prop.
+- Destructured and used `onAcceptChessPiece` in the component body.
+- Added chess piece to the suggestion fields list when `suggestedChessPiece` is non-null and `onAcceptChessPiece` is provided.
+
+### Checks
+- `typecheck`: ✅ clean
+- `unit`: ✅ 703 frontend + 20 shared + all backend tests pass
+- `lint`: ✅ 0 errors (13 pre-existing warnings, all pre-existing)
+- `build`: ✅ frontend vite build + backend bootJar both succeed
+
+The prior observation about `FaithfulnessEvaluator.java` blocking spotlessCheck is no longer an issue — `spotlessCheck` passes cleanly in this run.
+
+Verdict: changes_made

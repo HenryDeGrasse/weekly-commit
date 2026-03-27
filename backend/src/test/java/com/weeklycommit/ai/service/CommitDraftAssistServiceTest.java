@@ -87,7 +87,8 @@ class CommitDraftAssistServiceTest {
 		when(commitRepo.findByOwnerUserId(userId)).thenReturn(List.of());
 
 		String payload = "{\"suggestedTitle\":\"Better Title\"," + "\"suggestedDescription\":\"Better desc\","
-				+ "\"suggestedSuccessCriteria\":\"Criteria\"," + "\"suggestedEstimatePoints\":3}";
+				+ "\"suggestedSuccessCriteria\":\"Criteria\"," + "\"suggestedEstimatePoints\":3,"
+				+ "\"suggestedChessPiece\":null}";
 		AiSuggestionResult result = new AiSuggestionResult(true, payload, "test rationale", 0.85, "stub-v1");
 		when(registry.generateSuggestion(any())).thenReturn(result);
 
@@ -107,7 +108,60 @@ class CommitDraftAssistServiceTest {
 		assertThat(resp.suggestedDescription()).isEqualTo("Better desc");
 		assertThat(resp.suggestedSuccessCriteria()).isEqualTo("Criteria");
 		assertThat(resp.suggestedEstimatePoints()).isEqualTo(3);
+		assertThat(resp.suggestedChessPiece()).isNull();
 		assertThat(resp.rationale()).isEqualTo("test rationale");
+	}
+
+	@Test
+	void assist_whenChessPieceInferred_returnsSuggestedChessPiece() throws Exception {
+		when(registry.isAiEnabled()).thenReturn(true);
+		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
+		when(commitRepo.findByOwnerUserId(userId)).thenReturn(List.of());
+
+		String payload = "{\"suggestedTitle\":\"Configure Pinecone index and run initial ingestion\","
+				+ "\"suggestedDescription\":null," + "\"suggestedSuccessCriteria\":\"Pinecone index created\","
+				+ "\"suggestedEstimatePoints\":3," + "\"suggestedChessPiece\":\"BISHOP\"}";
+		AiSuggestionResult result = new AiSuggestionResult(true, payload, "inferred from description", 0.8, "stub-v1");
+		when(registry.generateSuggestion(any())).thenReturn(result);
+
+		AiSuggestion stored = new AiSuggestion();
+		stored.setId(UUID.randomUUID());
+		when(suggestionService.storeSuggestion(anyString(), any(), any(), any(), anyString(), any()))
+				.thenReturn(stored);
+
+		// chessPiece is null — freeform mode
+		CommitDraftAssistRequest req = new CommitDraftAssistRequest(planId, userId, null,
+				"set up Pinecone vector index for planning data", null, null, null, null);
+		CommitDraftAssistResponse resp = service.assist(req);
+
+		assertThat(resp.aiAvailable()).isTrue();
+		assertThat(resp.suggestedChessPiece()).isEqualTo(ChessPiece.BISHOP);
+		assertThat(resp.suggestedTitle()).isEqualTo("Configure Pinecone index and run initial ingestion");
+	}
+
+	@Test
+	void assist_whenChessPieceInvalidInPayload_returnsNullChessPiece() throws Exception {
+		when(registry.isAiEnabled()).thenReturn(true);
+		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
+		when(commitRepo.findByOwnerUserId(userId)).thenReturn(List.of());
+
+		String payload = "{\"suggestedTitle\":\"T\",\"suggestedDescription\":null,"
+				+ "\"suggestedSuccessCriteria\":null,\"suggestedEstimatePoints\":null,"
+				+ "\"suggestedChessPiece\":\"INVALID_PIECE\"}";
+		AiSuggestionResult result = new AiSuggestionResult(true, payload, "rationale", 0.7, "stub-v1");
+		when(registry.generateSuggestion(any())).thenReturn(result);
+
+		AiSuggestion stored = new AiSuggestion();
+		stored.setId(UUID.randomUUID());
+		when(suggestionService.storeSuggestion(anyString(), any(), any(), any(), anyString(), any()))
+				.thenReturn(stored);
+
+		CommitDraftAssistRequest req = new CommitDraftAssistRequest(planId, userId, null, "T", null, null, null, null);
+		CommitDraftAssistResponse resp = service.assist(req);
+
+		assertThat(resp.aiAvailable()).isTrue();
+		// Invalid enum value must default to null, not throw
+		assertThat(resp.suggestedChessPiece()).isNull();
 	}
 
 	@Test
