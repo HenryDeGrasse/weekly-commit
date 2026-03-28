@@ -1,6 +1,0 @@
-The fix addresses the blocking critique by splitting the CI pipeline into two jobs:
-
-1. **`eval:llm-judge`** — stays `manual` + `allow_failure: true` (the LLM call can flake without blocking the pipeline)
-2. **`eval:threshold-check`** (new) — uses `node:20-bookworm` image, `needs: ["eval:llm-judge"]`, and critically does **not** set `allow_failure: true`. This means when the threshold enforcement script exits with code 1 (deterministic threshold violated), it actually hard-gates the pipeline.
-
-This two-job architecture cleanly separates concerns: LLM flakiness is tolerated, but once eval results exist, quality thresholds are enforced.

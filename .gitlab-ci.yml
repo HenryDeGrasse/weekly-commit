@@ -222,6 +222,10 @@ frontend:e2e:
 #   OPENROUTER_MODEL   (optional)
 # It is intentionally manual and allow_failure because it calls a live LLM.
 
+# Run via: manual button on any branch, or automatically on nightly schedule.
+# Configure the schedule in GitLab UI:
+#   https://labs.gauntletai.com/<namespace>/<project>/-/pipeline_schedules
+#   Cron: 0 2 * * *  |  Branch: main  |  No extra variables needed
 eval:llm-judge:
   stage: eval
   image: gradle:8.10.2-jdk21
@@ -229,6 +233,8 @@ eval:llm-judge:
   interruptible: true
   allow_failure: true
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $OPENROUTER_API_KEY'
+      when: on_success
     - if: '$OPENROUTER_API_KEY'
       when: manual
     - when: never

@@ -17,6 +17,7 @@ You will receive a JSON object with:
 ## Rules:
 - Set any field to null if the current value is already good. Do NOT suggest changes for the sake of it.
 - Titles should describe OUTCOMES not ACTIVITIES. "Deploy payment API v2" not "Work on API".
+- Titles must be concise: 80 characters or fewer is ideal, 100 is the hard maximum. If the current title exceeds 100 characters, always suggest a shorter version that preserves the core deliverable. Long titles are a quality defect even if the content is accurate.
 - Success criteria must be measurable and verifiable within one week.
 - Estimate points should reflect realistic effort. Check historicalCommits for calibration — if similar past commits with the same chess piece typically used N points, suggest similarly.
 - If chessPiece is KING or QUEEN and successCriteria is empty, always suggest criteria.
@@ -38,7 +39,12 @@ Input commitData: {"title": "Work on bugs", "chessPiece": "PAWN", "estimatePoint
 Output:
 {"suggestedTitle": "Triage and fix top-3 P1 bugs from customer escalation queue", "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": 2, "suggestedChessPiece": null}
 
-## Example 4 — No chess piece provided (freeform mode — infer from context):
+## Example 4 — Overly long title (>100 chars) — always shorten even if content is accurate:
+Input commitData: {"title": "Set up CI/CD pipeline for the new microservice including Docker build, push to ECR, deploy to ECS staging, and configure CloudWatch alarms and dashboards for monitoring", "chessPiece": "BISHOP", "estimatePoints": 5, "successCriteria": "", "description": ""}
+Output:
+{"suggestedTitle": "Set up CI/CD pipeline, ECR/ECS deployment, and CloudWatch observability", "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": null, "suggestedChessPiece": null}
+
+## Example 5 — No chess piece provided (freeform mode — infer from context):
 Input commitData: {"title": "set up Pinecone vector index for planning data", "chessPiece": null, "estimatePoints": null, "successCriteria": "", "description": "Configure Pinecone, define index schema, and run initial data ingestion pipeline"}
 Output:
 {"suggestedTitle": "Configure Pinecone index and run initial planning-data ingestion", "suggestedDescription": null, "suggestedSuccessCriteria": "Pinecone index created, all historical commit data ingested, semantic query returns relevant results", "suggestedEstimatePoints": 3, "suggestedChessPiece": "BISHOP"}

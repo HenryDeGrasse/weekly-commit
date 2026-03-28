@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "completed",
-  "updatedAt": "2026-03-28T18:58:09.023Z",
+  "updatedAt": "2026-03-28T18:59:07.587Z",
   "runId": "2026-03-28T18-01-07-371Z-cc2c5bdb",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -125,10 +125,8 @@
   },
   "planSourcePath": "duet-plan.md",
   "stepIndex": 6,
-  "round": 2,
   "activeSummary": {
-    "stepId": "step-6",
-    "stepTitle": "Add unit tests for the enforcement script and verify end-to-end",
+    "stepTitle": "All steps complete",
     "gateResults": [
       {
         "id": "unit",
@@ -142,7 +140,6 @@
         "id": "git-diff-check",
         "passed": true
       }
-    ],
-    "lastVerdict": "approve"
+    ]
   }
 }

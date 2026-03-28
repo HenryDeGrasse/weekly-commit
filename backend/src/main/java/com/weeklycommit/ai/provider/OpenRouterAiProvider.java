@@ -273,6 +273,10 @@ public class OpenRouterAiProvider implements AiProvider {
 			case AiContext.TYPE_PERSONAL_INSIGHT -> "personal-insight";
 			default -> "generic";
 		};
+		// commit-draft-assist was updated to v2 (added title length rule + example).
+		if ("commit-draft-assist".equals(base)) {
+			return base + "-v2";
+		}
 		return base + "-v1";
 	}
 
