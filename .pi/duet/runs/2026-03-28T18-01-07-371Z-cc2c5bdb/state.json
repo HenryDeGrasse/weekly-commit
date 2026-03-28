@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-28T18:37:00.555Z",
+  "updatedAt": "2026-03-28T18:40:53.913Z",
   "runId": "2026-03-28T18-01-07-371Z-cc2c5bdb",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -124,12 +124,12 @@
     ]
   },
   "planSourcePath": "duet-plan.md",
-  "stepIndex": 1,
+  "stepIndex": 2,
   "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-1",
-    "stepTitle": "Add `critical` field to EvalCase/EvalResult and mark critical cases in fixture JSON",
+    "stepId": "step-2",
+    "stepTitle": "Wire title-quality and criteria-quality LLM judges into PromptEvalRunner for draft-assist cases",
     "gateResults": [
       {
         "id": "build",

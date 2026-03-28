@@ -10,6 +10,11 @@ import com.weeklycommit.ai.provider.AiSuggestionResult;
 import com.weeklycommit.ai.provider.OpenRouterAiProvider;
 import java.io.File;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -112,6 +117,44 @@ class PromptEvalRunner {
 		if (schemaValid && output != null) {
 			// Automated checks against expected behavior
 			evaluateDraftAssistOutput(output, expected, evalResult);
+			// LLM judge scoring — optional, failures are non-fatal
+			if (output.has("suggestedTitle") && !output.get("suggestedTitle").isNull()
+					&& !output.get("suggestedTitle").asText("").isBlank()) {
+				try {
+					String titlePrompt = loadJudgePrompt("eval/judge-prompts/title-quality-judge.txt");
+					titlePrompt = titlePrompt.replace("{originalTitle}", input.path("title").asText(""))
+							.replace("{suggestedTitle}", output.get("suggestedTitle").asText(""))
+							.replace("{chessPiece}", input.path("chessPiece").asText(""));
+					JsonNode titleScores = callJudge(titlePrompt);
+					evalResult.addScore("titleJudge_clarity", titleScores.path("clarity").asDouble(0.0));
+					evalResult.addScore("titleJudge_specificity", titleScores.path("specificity").asDouble(0.0));
+					evalResult.addScore("titleJudge_appropriate_scope",
+							titleScores.path("appropriate_scope").asDouble(0.0));
+					evalResult.addScore("titleJudge_improvement", titleScores.path("improvement").asDouble(0.0));
+					evalResult.addScore("titleJudge_professional_tone",
+							titleScores.path("professional_tone").asDouble(0.0));
+				} catch (Exception e) {
+					log.warn("Case {}: title judge failed — {}", evalCase.id(), e.getMessage());
+				}
+			}
+			if (output.has("suggestedSuccessCriteria") && !output.get("suggestedSuccessCriteria").isNull()
+					&& !output.get("suggestedSuccessCriteria").asText("").isBlank()) {
+				try {
+					String criteriaPrompt = loadJudgePrompt("eval/judge-prompts/criteria-quality-judge.txt");
+					criteriaPrompt = criteriaPrompt.replace("{commitTitle}", input.path("title").asText(""))
+							.replace("{chessPiece}", input.path("chessPiece").asText(""))
+							.replace("{suggestedCriteria}", output.get("suggestedSuccessCriteria").asText(""));
+					JsonNode criteriaScores = callJudge(criteriaPrompt);
+					evalResult.addScore("criteriaJudge_measurable", criteriaScores.path("measurable").asDouble(0.0));
+					evalResult.addScore("criteriaJudge_completeness",
+							criteriaScores.path("completeness").asDouble(0.0));
+					evalResult.addScore("criteriaJudge_achievable_in_one_week",
+							criteriaScores.path("achievable_in_one_week").asDouble(0.0));
+					evalResult.addScore("criteriaJudge_testable", criteriaScores.path("testable").asDouble(0.0));
+				} catch (Exception e) {
+					log.warn("Case {}: criteria judge failed — {}", evalCase.id(), e.getMessage());
+				}
+			}
 		}
 
 		evalResult.addNote("rawPayload", result.payload());
@@ -721,6 +764,45 @@ class PromptEvalRunner {
 	}
 
 	// ── Helpers ───────────────────────────────────────────────────────────
+
+	private String loadJudgePrompt(String resourcePath) throws Exception {
+		InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath);
+		if (is == null) {
+			throw new IllegalArgumentException("Judge prompt not found: " + resourcePath);
+		}
+		return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+	}
+
+	private JsonNode callJudge(String filledPrompt) throws Exception {
+		String apiKey = System.getenv("OPENROUTER_API_KEY");
+		String model = System.getenv().getOrDefault("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-20250514");
+		Map<String, Object> body = new LinkedHashMap<>();
+		body.put("model", model);
+		List<Map<String, Object>> messages = new ArrayList<>();
+		Map<String, Object> userMsg = new LinkedHashMap<>();
+		userMsg.put("role", "user");
+		userMsg.put("content", filledPrompt);
+		messages.add(userMsg);
+		body.put("messages", messages);
+		body.put("max_tokens", 256);
+		String requestJson = objectMapper.writeValueAsString(body);
+		HttpClient client = HttpClient.newHttpClient();
+		HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://openrouter.ai/api/v1/chat/completions"))
+				.header("Content-Type", "application/json").header("Authorization", "Bearer " + apiKey)
+				.POST(HttpRequest.BodyPublishers.ofString(requestJson)).build();
+		HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+		JsonNode responseNode = objectMapper.readTree(response.body());
+		String content = responseNode.path("choices").path(0).path("message").path("content").asText("");
+		content = content.trim();
+		if (content.startsWith("```")) {
+			int firstNewline = content.indexOf('\n');
+			int lastFence = content.lastIndexOf("```");
+			if (firstNewline != -1 && lastFence > firstNewline) {
+				content = content.substring(firstNewline + 1, lastFence).trim();
+			}
+		}
+		return objectMapper.readTree(content);
+	}
 
 	private Stream<EvalCase> loadCases(String resourcePath) throws Exception {
 		InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath);

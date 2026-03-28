@@ -1,0 +1,25 @@
+## Summary
+
+**What I implemented for Step 2:**
+
+1. **New imports** — Added `java.net.URI`, `java.net.http.HttpClient`, `java.net.http.HttpRequest`, `java.net.http.HttpResponse`, and `java.nio.charset.StandardCharsets` to the import section.
+
+2. **LLM judge calls inside `evaluateCommitDraftAssist()`** — Inserted two guarded judge-call blocks inside the existing `if (schemaValid && output != null)` block (so they automatically inherit the `providerAvailable` guard via early return at method top):
+   - **Title judge**: fires when `suggestedTitle` is present and non-blank; substitutes `{originalTitle}`, `{suggestedTitle}`, `{chessPiece}` from the case input; stores 5 scores prefixed `titleJudge_`
+   - **Criteria judge**: fires when `suggestedSuccessCriteria` is present and non-blank; substitutes `{commitTitle}`, `{chessPiece}`, `{suggestedCriteria}`; stores 4 scores prefixed `criteriaJudge_`
+   - Both are wrapped in `try/catch` so failures log a warning and never fail the test
+
+3. **`loadJudgePrompt(String)` helper** — Reads a classpath resource as UTF-8 text; throws `IllegalArgumentException` if not found.
+
+4. **`callJudge(String)` helper** — Direct HTTP POST to `https://openrouter.ai/api/v1/chat/completions` using `java.net.http.HttpClient`; reads `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` from env; strips markdown fences from the response content before JSON parsing.
+
+5. **`spotlessApply` run** — Build passes with no formatting violations.
+
+**Scope respected**: Only `backend/src/test/java/com/weeklycommit/ai/eval/PromptEvalRunner.java` was modified. No `src/main/` or `frontend/` files were touched.
+
+```observations
+- [medium] callJudge() creates a new HttpClient instance per invocation. For the eval runner this is fine (low call volume), but if call frequency increased it would be better to reuse a single instance. Out of scope for this step.
+- [low] The title judge is called whenever suggestedTitle is non-null/non-blank in the output, even for cases where shouldSuggestTitle=false. This is intentional per the step description but means judge scores will be collected for cases like draft-002 where the original title was already good and the model may suggest nothing (or null). The guard on `!output.get("suggestedTitle").isNull() && !...isBlank()` correctly handles the null/blank cases.
+```
+
+Verdict: changes_made
