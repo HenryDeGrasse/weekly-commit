@@ -240,3 +240,17 @@ eval:llm-judge:
     paths:
       - backend/build/eval-results/
       - backend/build/reports/tests/
+
+eval:threshold-check:
+  stage: eval
+  image: node:20-bookworm
+  interruptible: true
+  needs:
+    - job: eval:llm-judge
+      artifacts: true
+  rules:
+    - if: '$OPENROUTER_API_KEY'
+      when: on_success
+    - when: never
+  script:
+    - node scripts/eval-threshold-check.js

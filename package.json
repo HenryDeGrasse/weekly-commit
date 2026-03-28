@@ -18,7 +18,9 @@
     "generate:api-types": "./scripts/generate-api-types.sh",
     "docker:up": "docker compose up -d",
     "docker:up:full": "docker compose --profile observability up -d",
-    "docker:down": "docker compose --profile observability down"
+    "docker:down": "docker compose --profile observability down",
+    "eval:run": "cd backend && ./gradlew evalTest",
+    "eval:check": "node scripts/eval-threshold-check.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

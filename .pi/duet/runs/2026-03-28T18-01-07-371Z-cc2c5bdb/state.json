@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-28T18:52:01.603Z",
+  "updatedAt": "2026-03-28T18:54:00.801Z",
   "runId": "2026-03-28T18-01-07-371Z-cc2c5bdb",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -124,12 +124,12 @@
     ]
   },
   "planSourcePath": "duet-plan.md",
-  "stepIndex": 4,
-  "round": 3,
+  "stepIndex": 5,
+  "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-4",
-    "stepTitle": "Build the threshold enforcement script",
+    "stepId": "step-5",
+    "stepTitle": "Split CI into two jobs: eval run (manual/allow_failure) + threshold check (hard-gate), and add npm scripts",
     "gateResults": [
       {
         "id": "build",
