@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-28T18:43:34.676Z",
+  "updatedAt": "2026-03-28T18:52:01.603Z",
   "runId": "2026-03-28T18-01-07-371Z-cc2c5bdb",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -124,12 +124,12 @@
     ]
   },
   "planSourcePath": "duet-plan.md",
-  "stepIndex": 3,
-  "round": 2,
+  "stepIndex": 4,
+  "round": 3,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-3",
-    "stepTitle": "Commit the most recent eval run as baseline and create eval-thresholds.json",
+    "stepId": "step-4",
+    "stepTitle": "Build the threshold enforcement script",
     "gateResults": [
       {
         "id": "build",

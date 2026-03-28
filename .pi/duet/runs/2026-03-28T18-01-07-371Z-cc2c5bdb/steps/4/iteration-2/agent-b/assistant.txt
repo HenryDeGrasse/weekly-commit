@@ -1,0 +1,35 @@
+Reviewed `scripts/eval-threshold-check.js` against the step requirements and ran the required check.
+
+What I reviewed:
+- Exported API: `computeMetrics`, `checkThresholds`, `checkRegression`
+- CommonJS + `require.main === module` guard
+- Type inference from `promptVersion`
+- Deterministic, judge, and regression handling
+- CLI behavior and exit code
+- Health-check relevance for this step
+
+Material defect found:
+- The script was silently skipping missing judge-score checks.
+- Step 4 explicitly requires: missing judge scores should be skipped **and noted** as `"judge scores unavailable"`.
+- In the current baseline-only run, no judge note was printed, so the implementation was incomplete.
+
+What I changed:
+- Updated `computeMetrics()` to track `resultCountsByType`
+- Updated `checkThresholds()` to emit soft informational checks when a type has results but required judge scores are unavailable:
+  - full unavailable: `judge scores unavailable — checks skipped`
+  - partial unavailable: `some judge scores unavailable — N judge check(s) skipped`
+
+Verification:
+- `node scripts/eval-threshold-check.js` now prints judge-score-unavailable notes
+- `cd backend && ./gradlew build` ✅ passed
+
+Assessment:
+- The step is now correctly implemented.
+- The health-check concern relevant to this step (judge-score handling visibility) is addressed.
+
+```observations
+- [low] eval-thresholds.json / eval-baseline.json: The current baseline still hard-fails `overall_case_pass_rate` at 94.4% vs required 95.0%. That appears intentional for now, but CI will block once this script is wired in unless the baseline, thresholds, or failing case behavior changes.
+- [medium] package.json / future step 6: The health-check warning about `cd backend && ./gradlew test && node --test ...` still appears valid and should be fixed when step 6 is implemented.
+```
+
+Verdict: changes_made
