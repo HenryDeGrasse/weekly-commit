@@ -22,6 +22,7 @@ import type { ResolveExceptionPayload, AddCommentPayload } from "../api/teamType
 import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { SemanticSearchInput } from "../components/ai/SemanticSearchInput.js";
 import { ManagerAiSummaryCard } from "../components/ai/ManagerAiSummaryCard.js";
+import { TeamRiskSummaryBanner } from "../components/ai/TeamRiskSummaryBanner.js";
 
 function getWeekStartDate(offsetWeeks = 0): string {
   const now = new Date();
@@ -136,6 +137,15 @@ export default function TeamWeek() {
           {/* Manager AI summary — expanded by default; the first thing managers see */}
           {aiAssistanceEnabled && teamId && (
             <ManagerAiSummaryCard teamId={teamId} weekStart={weekStartDate} />
+          )}
+
+          {/* Team-level risk signals — aggregated across all locked member plans */}
+          {aiAssistanceEnabled && teamWeekData.memberViews.some((m) => m.planId && m.planState === "LOCKED") && (
+            <TeamRiskSummaryBanner
+              memberPlans={teamWeekData.memberViews
+                .filter((m): m is typeof m & { planId: string } => m.planId != null && m.planState === "LOCKED")
+                .map((m) => ({ planId: m.planId, displayName: m.displayName }))}
+            />
           )}
 
           {/* AI insights (collapsible, open by default) */}

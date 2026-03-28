@@ -2,6 +2,7 @@
   {
     "id": "lint-001",
     "description": "Plan with KING missing success criteria and a vague title",
+    "critical": true,
     "edgeCaseType": "hard_validation_issues",
     "input": {
       "commits": [
@@ -37,6 +38,7 @@
   {
     "id": "lint-003",
     "description": "Plan with 2 KING commits — should hard-fail",
+    "critical": true,
     "edgeCaseType": "chess_piece_violation",
     "input": {
       "commits": [
@@ -53,6 +55,7 @@
   {
     "id": "lint-004",
     "description": "Plan with 3 QUEEN commits — should hard-fail",
+    "critical": true,
     "edgeCaseType": "chess_piece_violation",
     "input": {
       "commits": [

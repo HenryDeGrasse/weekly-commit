@@ -4,7 +4,7 @@
  */
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Check, Lock, Sparkles } from "lucide-react";
+import { Check, Lock, Sparkles, Bot } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card, CardHeader, CardContent } from "../components/ui/Card.js";
@@ -573,22 +573,22 @@ export default function ReconcilePage() {
         </div>
       )}
 
-      {/* AI draft summary */}
-      {aiDraftSummary && !isReadOnly && (
-        <div
-          data-testid="ai-draft-summary"
-          className="rounded-default border border-border bg-background px-4 py-3"
-        >
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <p className="m-0 text-[0.65rem] font-semibold uppercase tracking-wider text-muted">
-              AI Week Summary
-            </p>
-            {aiSuggestionId && Object.keys(aiSuggestedOutcomes).length === 0 && (
+      {/* AI draft summary — auto-generated week summary displayed as the header context */}
+      {aiDraftSummary && (
+        <Card data-testid="ai-draft-summary">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Bot className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
+              <span className="text-sm font-semibold text-foreground">AI Week Summary</span>
+            </div>
+            {aiSuggestionId && (
               <AiFeedbackButtons suggestionId={aiSuggestionId} className="shrink-0" />
             )}
-          </div>
-          <p className="m-0 text-sm text-foreground leading-relaxed">{aiDraftSummary}</p>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <p className="m-0 text-sm text-foreground leading-relaxed">{aiDraftSummary}</p>
+          </CardContent>
+        </Card>
       )}
 
       {submitError && (

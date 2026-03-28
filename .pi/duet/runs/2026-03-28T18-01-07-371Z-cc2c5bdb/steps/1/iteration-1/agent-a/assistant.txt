@@ -1,0 +1,27 @@
+Exactly the right 6 cases are marked critical (draft-001, draft-004, draft-008, lint-001, lint-003, lint-004). All other cases default to `false` (not present in JSON, handled by `@JsonIgnoreProperties` + Jackson's record deserialization).
+
+## Summary
+
+**What I implemented for Step 1:**
+
+1. **`EvalCase.java`** — Added `boolean critical` as the 6th component of the record. Jackson 2.18+ record deserialization defaults missing primitive fields to `false`, so no annotation needed beyond the existing `@JsonIgnoreProperties(ignoreUnknown = true)`.
+
+2. **`EvalResult.java`** — Added `boolean critical` field, updated the constructor to accept it as 6th parameter, added `isCritical()` getter, and included `critical=` in `toString()`. Jackson will serialize `isCritical()` as the `critical` property automatically.
+
+3. **`PromptEvalRunner.java`** — Updated all 6 `new EvalResult(...)` call sites (commitDraftAssist, commitLint, rcdoSuggest, riskSignal, reconcileAssist, ragQuery) to pass `evalCase.critical()` as the 6th argument.
+
+4. **`commit-draft-assist/cases.json`** — Added `"critical": true` to `draft-001`, `draft-004`, `draft-008`.
+
+5. **`commit-lint/cases.json`** — Added `"critical": true` to `lint-001`, `lint-003`, `lint-004`.
+
+6. **Ran `spotlessApply`** to fix formatting violations (including pre-existing ones in the working tree). Build now passes cleanly.
+
+**Build result:** `BUILD SUCCESSFUL`
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/ai/evidence/LineageQueryService.java, StructuredEvidenceService.java: Untracked files in working directory (from a previous session), not committed to git. These caused pre-existing spotless violations that I fixed via spotlessApply.
+- [medium] backend/src/main/java/com/weeklycommit/ai/controller/AiController.java, backend/src/main/java/com/weeklycommit/domain/repository/UserWeekFactRepository.java: These are modified in the working tree relative to HEAD but aren't part of any current step. They should be committed in the appropriate step.
+- [low] The working tree's PromptEvalRunner.java (all 6 eval types) is not committed to HEAD — HEAD only has the first 2 eval types. The working tree contains the full implementation that includes rcdo-suggest, risk-signal, reconcile-assist, and rag-query methods. These are likely from a prior session and need to be committed.
+```
+
+Verdict: changes_made

@@ -1,0 +1,2513 @@
+diff --git a/.pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/draft-plan.json b/.pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/draft-plan.json
+deleted file mode 100644
+index 9bb317c..0000000
+--- a/.pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/draft-plan.json
++++ /dev/null
+@@ -1,47 +0,0 @@
+-{
+-  "goal": "Reposition AI from opt-in sidebar to core workflow spine across 5 concrete UX shifts: (1) auto-run AI lint on save, (2) pre-fill reconciliation with AI suggestions by default, (3) expand team insights by default with manager AI summary header, (4) add freeform 'describe → structure' commit creation mode, (5) surface proactive risk signal banners on My Week. Steps 1-3 and 5 are pure frontend UX repositioning of existing backend capabilities. Step 4 requires a targeted backend extension: adding `suggestedChessPiece` to the existing `CommitDraftAssistResponse` DTO, prompt template, and service parser — no new endpoints, just one field added to an existing response.",
+-  "steps": [
+-    {
+-      "id": "step-1",
+-      "title": "Auto-run AI lint on commit save instead of manual button click",
+-      "description": "Today AiLintPanel requires users to click 'Run AI Quality Check'. This step makes lint run automatically.\n\n1. **Refactor AiLintPanel to accept an `autoRun` prop** (`frontend/src/components/ai/AiLintPanel.tsx`):\n   - Add `autoRun?: boolean` prop (default `false` for backward compat).\n   - When `autoRun` is `true`, trigger the lint API call on mount and whenever `planId` changes (using a `useEffect`).\n   - Remove the 'Run AI Quality Check' button when `autoRun` is true; show results directly.\n   - Keep the manual refresh button so users can re-run after edits.\n   - Keep all existing error/unavailable/loading states.\n\n2. **Update PreLockValidationPanel** (`frontend/src/components/lock/PreLockValidationPanel.tsx`):\n   - Pass `autoRun={true}` to `<AiLintPanel>` so it fires immediately when the pre-lock panel opens.\n\n3. **Add inline AiLintPanel to MyWeek page** (`frontend/src/routes/MyWeek.tsx`):\n   - Below the SoftWarningsPanel, render `<AiLintPanel planId={plan.id} userId={currentUserId} autoRun />` when the plan is in DRAFT state and `aiAssistanceEnabled` is true.\n   - Wrap in the existing AiErrorBoundary pattern.\n   - This means AI quality feedback appears as soon as commits exist — no button needed.\n\n4. **Update tests** (`frontend/src/__tests__/PreLockValidation.test.tsx` and add test cases to `MyWeekPage.test.tsx`):\n   - Verify AiLintPanel renders results without user clicking a button when `autoRun` is true.\n   - Verify the manual button still works when `autoRun` is false.",
+-      "requiredChecks": ["lint", "typecheck", "unit"]
+-    },
+-    {
+-      "id": "step-2",
+-      "title": "Pre-fill reconciliation page with AI-suggested outcomes by default",
+-      "description": "Today users see empty outcome dropdowns and must click 'AI Assist Reconciliation' to get suggestions. This step auto-loads AI suggestions when the reconcile page opens.\n\n1. **Create a new hook `useAutoReconcileAssist`** in `frontend/src/api/aiHooks.ts`:\n   - Accepts `planId` and `userId`.\n   - On mount (when plan state is RECONCILING), automatically calls `aiApi.reconcileAssist({ planId, userId })`.\n   - Returns `{ data: ReconcileAssistResponse | undefined, loading: boolean, error: string | null }`.\n   - Gracefully handles AI unavailability (returns undefined data).\n\n2. **Update ReconcilePage** (`frontend/src/routes/Reconcile.tsx`):\n   - Call `useAutoReconcileAssist(planId, userId)` when the plan is in RECONCILING state.\n   - When AI suggestions load, pre-populate `localOutcomes` and `localNotes` from `likelyOutcomes` — but mark them visually as 'AI-suggested' (not yet confirmed).\n   - Show a prominent banner at the top: 'AI has pre-filled likely outcomes based on your ticket data and commit history. Review and confirm each outcome below.'\n   - Each AI-prefilled outcome gets a subtle visual indicator (a small ✨ sparkle icon or 'AI suggested' badge next to the outcome selector).\n   - The existing ReconcileAssistPanel button is replaced by the auto-loaded results integrated directly into the commit rows.\n   - Carry-forward recommendations from AI appear as pre-checked checkboxes (user can uncheck).\n   - Draft summary appears at the top of the page.\n   - Keep AiFeedbackButtons on the overall suggestion.\n   - If AI is unavailable, fall back silently to the current empty-state behavior.\n\n3. **Create `AiSuggestedBadge` component** in `frontend/src/components/ai/AiSuggestedBadge.tsx`:\n   - A small inline badge: sparkle icon + 'AI suggested' text.\n   - Reusable across reconcile and future features.\n\n4. **Update ReconcilePage tests** (`frontend/src/__tests__/ReconcilePage.test.tsx`):\n   - Add tests verifying outcomes are pre-populated when AI data loads.\n   - Add tests verifying fallback when AI is unavailable.\n   - Add test verifying 'AI suggested' badge appears on prefilled outcomes.",
+-      "requiredChecks": ["lint", "typecheck", "unit"]
+-    },
+-    {
+-      "id": "step-3",
+-      "title": "Expand team insights by default and add AI summary header to Team Week",
+-      "description": "Today team insights are collapsed behind a disclosure triangle (`insightsExpanded` starts `false`) and the manager AI summary endpoint exists but has no frontend consumer. This step makes AI the first thing managers see.\n\n1. **Create `ManagerAiSummaryCard` component** in `frontend/src/components/ai/ManagerAiSummaryCard.tsx`:\n   - Displays the AI-generated team summary as a prominent card at the top of Team Week.\n   - Shows: `summaryText` as the main prose, `topRcdoBranches` as small badges, `unresolvedExceptionIds` count, `carryForwardPatterns` as bullet list, `criticalBlockedItemIds` count with warning styling.\n   - Has a loading skeleton state, error state, and unavailable state.\n   - Has AiFeedbackButtons on the suggestion.\n   - Data shape matches `ManagerAiSummaryResponse` from the backend.\n\n2. **Add `useManagerAiSummary` hook** in `frontend/src/api/aiHooks.ts`:\n   - Calls `GET /api/teams/{id}/week/{weekStart}/ai-summary` via the AI API.\n   - Add the `getTeamAiSummary` method to `createAiApi` in `frontend/src/api/aiApi.ts` (the backend endpoint already exists).\n\n3. **Update Team Week page** (`frontend/src/routes/TeamWeek.tsx`):\n   - Change `insightsExpanded` default from `false` to `true`.\n   - Add `<ManagerAiSummaryCard>` above the tab navigation, below the semantic search.\n   - This makes the AI summary the first data managers see, with detailed tabs below for drill-down.\n\n4. **Add tests** for `ManagerAiSummaryCard` and update `TeamWeekPage.test.tsx`:\n   - Test rendering with sample summary data.\n   - Test loading/error/unavailable states.\n   - Test that insights are expanded by default.",
+-      "requiredChecks": ["lint", "typecheck", "unit"]
+-    },
+-    {
+-      "id": "step-4a",
+-      "title": "Extend backend CommitDraftAssist to return suggestedChessPiece",
+-      "description": "The existing `CommitDraftAssistResponse` returns `suggestedTitle`, `suggestedDescription`, `suggestedSuccessCriteria`, and `suggestedEstimatePoints` but NOT a suggested chess piece. The freeform 'describe → structure' flow (step 4b) needs the AI to propose a chess piece classification from the freeform text. This step adds that capability to the existing endpoint — no new endpoint needed.\n\n1. **Update `CommitDraftAssistResponse.java`** (`backend/src/main/java/com/weeklycommit/ai/dto/CommitDraftAssistResponse.java`):\n   - Add field `ChessPiece suggestedChessPiece` (nullable) to the record.\n   - Update the `unavailable()` factory to include `null` for the new field.\n\n2. **Update the prompt template** (`backend/src/main/resources/prompts/commit-draft-assist.txt`):\n   - Add `suggestedChessPiece` to the output JSON schema.\n   - Add guidance: 'If chessPiece is null or absent in the input, infer the appropriate chess piece from the title and description. Return null if the current chess piece is already appropriate.'\n   - Update all three examples to include the `suggestedChessPiece` field (null when chess piece is already set and appropriate).\n\n3. **Update `CommitDraftAssistService.parseResponse()`** (`backend/src/main/java/com/weeklycommit/ai/service/CommitDraftAssistService.java`):\n   - Parse the `suggestedChessPiece` string from the AI response JSON.\n   - Convert to `ChessPiece` enum via `ChessPiece.valueOf()`, defaulting to `null` on parse failure.\n   - Pass it into the `CommitDraftAssistResponse` constructor.\n\n4. **Update frontend type** (`frontend/src/api/aiApi.ts`):\n   - Add `suggestedChessPiece?: string | null` to `CommitDraftAssistResponse` interface.\n\n5. **Update existing `CommitDraftAssistButton`** (`frontend/src/components/ai/CommitDraftAssistButton.tsx`):\n   - If the response includes `suggestedChessPiece`, add it to the suggestions list with an accept callback (add `onAcceptChessPiece` prop).\n\n6. **Update backend test** (`backend/src/test/java/com/weeklycommit/ai/service/CommitDraftAssistServiceTest.java`):\n   - Verify that when the AI response JSON includes `suggestedChessPiece`, it's correctly parsed into the response.\n   - Verify that when `suggestedChessPiece` is absent/null, the field is null.\n\n7. **Update frontend test** for `CommitDraftAssistButton` if needed.",
+-      "requiredChecks": ["lint", "typecheck", "unit", "build"]
+-    },
+-    {
+-      "id": "step-4b",
+-      "title": "Add freeform 'describe → structure' AI commit creation mode (frontend)",
+-      "description": "Today commit creation is a manual form (title, chess piece, RCDO, estimate, success criteria) with an optional AI Suggest button. This step adds a freeform text-first entry point where AI structures the commit. Depends on step 4a for `suggestedChessPiece`.\n\n1. **Create `AiCommitComposer` component** in `frontend/src/components/ai/AiCommitComposer.tsx`:\n   - A modal/panel with a large textarea: 'Describe what you're working on this week...'\n   - A 'Generate Commit' button that sends the freeform text to `commitDraftAssist` with the freeform text as `currentTitle` and all other fields empty/null (no `chessPiece` input — letting the AI infer it via step 4a).\n   - On response, displays the AI-proposed structured commit: suggested title, suggested chess piece (from `suggestedChessPiece`), RCDO match (from parallel `rcdoSuggest` call), estimate points, and success criteria — each as an editable field with `AiSuggestedBadge` (from step 2).\n   - User can accept the whole thing (creates the commit) or switch to the manual form with AI values pre-filled.\n   - Has a 'Switch to manual form' link for users who prefer the traditional approach.\n\n2. **Add `commitFromFreeform` convenience method** to AI API (`frontend/src/api/aiApi.ts`):\n   - Calls `POST /api/ai/commit-draft-assist` with `currentTitle` set to the freeform text, `chessPiece` set to `undefined`, and all other current fields empty.\n   - This signals the backend to infer everything including chess piece.\n\n3. **Add RCDO suggestion integration** to `AiCommitComposer`:\n   - Also call `POST /api/ai/rcdo-suggest` with the freeform text as `title` to get an RCDO recommendation.\n   - Add `rcdoSuggest` method to `createAiApi` in `frontend/src/api/aiApi.ts` (the backend endpoint `POST /api/ai/rcdo-suggest` already exists).\n   - Display the suggested RCDO with rationale and confidence.\n\n4. **Add `RcdoSuggestRequest` and `RcdoSuggestResponse` types** to `frontend/src/api/aiApi.ts`:\n   - Request: `{ planId: string, userId: string, title: string, description?: string, chessPiece?: string }`\n   - Response: `{ aiAvailable: boolean, suggestionAvailable: boolean, suggestedRcdoNodeId?: string, rcdoTitle?: string, confidence?: number, rationale?: string, suggestionId?: string }`\n\n5. **Update MyWeek page** (`frontend/src/routes/MyWeek.tsx`):\n   - Change the '+ Add Commit' button behavior: clicking it now opens `AiCommitComposer` by default (when `aiAssistanceEnabled`).\n   - Add a secondary action '+ Add manually' that opens the classic CommitForm directly.\n   - When AI is unavailable, fall back to CommitForm.\n\n6. **Add `AiCommitComposer` tests** (`frontend/src/__tests__/AiCommitComposer.test.tsx`):\n   - Test freeform text entry and AI response display including chess piece.\n   - Test accept-all creating a commit with all AI-suggested values.\n   - Test switch to manual form with pre-filled values.\n   - Test AI unavailable fallback.",
+-      "requiredChecks": ["lint", "typecheck", "unit"]
+-    },
+-    {
+-      "id": "step-5",
+-      "title": "Surface proactive risk signal banners on My Week page",
+-      "description": "Today risk signals only show on the Team Week page when a manager selects a member's plan. This step pushes critical risk signals to the IC on their own My Week page as proactive banners.\n\n1. **Create `ProactiveRiskBanner` component** in `frontend/src/components/ai/ProactiveRiskBanner.tsx`:\n   - Takes `planId` as prop.\n   - Uses the existing `useRiskSignals(planId)` hook from `frontend/src/api/aiHooks.ts`.\n   - Filters signals to only show HIGH severity or specific critical types: `OVERCOMMIT`, `BLOCKED_CRITICAL`, `REPEATED_CARRY_FORWARD`.\n   - Renders as prominent alert banners (not a collapsible panel) with:\n     - Risk type icon (reuse from RiskSignalsPanel).\n     - Rationale text.\n     - Actionable suggestion (e.g., 'Consider reducing scope' or 'Unblock ticket X').\n   - Only renders when the plan is LOCKED (risk signals run at lock and daily while locked).\n   - Shows nothing when AI is unavailable or no critical signals exist.\n   - Includes AiFeedbackButtons for each signal.\n\n2. **Update My Week page** (`frontend/src/routes/MyWeek.tsx`):\n   - Add `<ProactiveRiskBanner planId={plan.id} />` between the plan header card and the InsightPanel, only when plan is LOCKED and `aiAssistanceEnabled`.\n   - This means critical risks are immediately visible without the user having to navigate elsewhere.\n\n3. **Add tests** (`frontend/src/__tests__/ProactiveRiskBanner.test.tsx`):\n   - Test rendering critical signals as banners.\n   - Test filtering out LOW severity signals.\n   - Test empty state (no critical signals = nothing rendered).\n   - Test AI unavailable state.\n\n4. **Update MyWeekPage.test.tsx**:\n   - Verify ProactiveRiskBanner renders for locked plans.\n   - Verify it doesn't render for draft plans.",
+-      "requiredChecks": ["lint", "typecheck", "unit"]
+-    },
+-    {
+-      "id": "step-6",
+-      "title": "Final integration verification — build check",
+-      "description": "Run the full build to verify all 5 AI-core shifts integrate correctly:\n- All new components are properly exported and imported.\n- No circular dependencies.\n- All TypeScript types are consistent across the new AI API additions.\n- Frontend builds successfully with Vite.\n- Backend builds successfully with Gradle.\n- All existing tests still pass with the modified components.",
+-      "requiredChecks": ["lint", "typecheck", "unit", "build"]
+-    }
+-  ]
+-}
+diff --git a/.pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/handoff-source.txt b/.pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/handoff-source.txt
+deleted file mode 100644
+index 3105623..0000000
+--- a/.pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/handoff-source.txt
++++ /dev/null
+@@ -1,4991 +0,0 @@
+-## 1. user
+-Okay this feels like a decent product. This is the description of the company this is for:
+-
+-ST6 partners with top-tier private equity firms (Insight Partners, TA Associates, Hg, Genstar) to build category-leading enterprise software companies, rapidly scaling them from $100M to $500M+. We've built six platform companies to date with multi-billion-dollar outcomes. Fundamentally, we're builders. We embed inside portfolio companies and aggressively transform how these businesses run. Increasingly, that means building building custom software and systems where humans and AI work in tandem; reimagining entire workflows with AI at their core, not bolting it on as an afterthought.
+-
+-How can we elevate the product so AI is at the core, and not an afterthought?
+-
+-Or do we already cover that?
+-
+-## 2. assistant
+-{
+-  "type": "thinking",
+-  "thinking": "The user is asking me to review their product (ST6V2) and evaluate whether AI is truly at the core of the product or just bolted on as an afterthought. Let me first understand what the product is by looking at the codebase.",
+-  "thinkingSignature": "EpsDClkIDBgCKkAK5lmf91l+6jukxBs0gEWIEssnXHOxnkmbq0lZji1N/Ja1sLbtfzUbkYcKk1jUip2hykGB3kmJwYkVSOdxYrgUMg9jbGF1ZGUtb3B1cy00LTY4ABIMgcevWlLJGSBO26ibGgxKT35/tmu0ogzvL9MiMBwSUS30PtSgHrfRpDNJAWdks1tuim/MRNOixLlNWMWoCljFJzhp9qSXfypic8lBgyrvARwO+a6x+Mzovb9F/OO9/5sSyNEeaYK68ZK9PWdMmjwNV8vZVPrfaDAxSNytShCFuP9huMmSrprJOh8dyRPCbNKd/5P8MDqu/CcvGQnJfvUnH8OsqWEt+c/iW5WHjlq7SYVIsczyFrk/puLxBhw0I5zu6Uu6tRvN2i/X7IKOEXegq1hDO64XAlhSjxSZ/+CiC+GePlQXs7e307SkKeDXTOKuGnj3nVO5eATj7aNYAxvxoSLBVtxKcTodStX3rMjOWC+uSeMm+7RIstPmVZQIh6QuoiXCS3Xz7EYN5lx0jXeIKdwKTqleJTFmIe6ux0H9GAE="
+-}
+-Let me review the current product to give you an informed answer.
+-{
+-  "type": "toolCall",
+-  "id": "toolu_017JGNeFTGidinjMvJD5ZSds",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "find /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2 -type f -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.js\" -o -name \"*.jsx\" -o -name \"*.json\" -o -name \"*.md\" -o -name \"*.css\" | head -80"
+-  }
+-}
+-{
+-  "type": "toolCall",
+-  "id": "toolu_017SQVqdzePNW4JtfC2CZdN7",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "ls -la /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/"
+-  }
+-}
+-
+-## 3. toolResult
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/infra/grafana/provisioning/dashboards/json/service-health.json
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/target-W_cuWrzs.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/chevron-right-BGIF8W8g.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/rotate-ccw--3fX_vxo.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/__federation_shared_react-dom-BN8Au471.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Card-BtqHKGok.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/index-COvqqES_.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/__federation_shared_react-BCcI129A.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Tickets-BF7a2pXo.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/check-DvSM6vDY.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/index-B5-1gI8M.css
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Admin-_FnldjkZ.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/index-Dm_EQZZA.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Reports-CXMsEVxg.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/arrow-right-left-MVF6YQ1y.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/ticketHooks-ClO6pCje.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/x-BzYnlHeS.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/index-K2sZjI7z.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/__federation_fn_import-V3PcEd2o.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Input-D7dCzwYB.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/users-D9bcxjZN.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/TicketForm-BIZsEvqL.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/ticket-o18Ox8aF.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/TeamWeek-BeUwY1WY.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Rcdos-DjYrs6T5.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/InsightPanel-DjVvyo8o.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/rcdoHooks-Csl9QmRD.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/chevron-up-BTbCw2zq.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/teamHooks-CMUcWFpY.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/__federation_shared_react-router-dom-CjVYdbMu.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Select-BQGiE6nE.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/AiFeedbackButtons-BjkYWnTG.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/MyWeek-DH64QfsD.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Dialog-Dk5On17T.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/clock-C0mCrUOF.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/Reconcile-DJMuyDJv.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/client-D0bvUW8s.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/triangle-alert-BBkYawSe.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/chevron-left--IKdKh4r.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/chart-column-Y3CqWGks.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/ScopeChangeTimeline-86QLxnbe.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/remoteEntry.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/RcdoTreeView-j7FlLeFC.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/dist/assets/__federation_expose_Routes-8xrCGR33.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/bin/cli.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/types/index.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/types/src/suffix-trie.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/types/src/data/trie.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/index.cjs.min.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/index.esm.min.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/es6/index.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/es6/src/suffix-trie.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/es6/src/data/trie.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/index.umd.min.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/cjs/index.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/cjs/src/suffix-trie.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/dist/cjs/src/data/trie.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/README.md
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/package.json
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/index.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/src/suffix-trie.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts/src/data/trie.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/html-encoding-sniffer/README.md
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/html-encoding-sniffer/package.json
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/html-encoding-sniffer/lib/html-encoding-sniffer.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/index.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/domain.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/extract-hostname.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/is-ip.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/options.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/is-valid.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/lookup/fast-path.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/lookup/interface.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/domain-without-suffix.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/subdomain.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/types/src/factory.d.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/es6/index.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/es6/src/factory.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/es6/src/subdomain.js
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/node_modules/tldts-core/dist/es6/src/is-valid.js
+-
+-## 4. toolResult
+-total 512
+-drwxr-xr-x   20 henrydegrasse  staff     640 Mar 25 21:31 .
+-drwxr-xr-x   13 henrydegrasse  staff     416 Mar 25 12:17 ..
+--rw-r--r--    1 henrydegrasse  staff      64 Mar 24 20:54 .dockerignore
+--rw-r--r--    1 henrydegrasse  staff    1057 Mar 26 10:36 .env
+-drwxr-xr-x   14 henrydegrasse  staff     448 Mar 26 12:05 .git
+-drwxr-xr-x    3 henrydegrasse  staff      96 Mar 25 21:01 .github
+--rw-r--r--    1 henrydegrasse  staff     487 Mar 23 23:29 .gitignore
+-drwxr-xr-x    4 henrydegrasse  staff     128 Mar 23 22:48 .pi
+-drwxr-xr-x   12 henrydegrasse  staff     384 Mar 26 12:05 backend
+--rw-r--r--    1 henrydegrasse  staff    3095 Mar 25 21:00 docker-compose.yml
+-drwxr-xr-x    5 henrydegrasse  staff     160 Mar 26 11:06 docs
+-drwxr-xr-x    8 henrydegrasse  staff     256 Mar 25 20:55 e2e
+-drwxr-xr-x   14 henrydegrasse  staff     448 Mar 27 10:18 frontend
+-drwxr-xr-x    5 henrydegrasse  staff     160 Mar 25 21:00 infra
+--rw-r--r--    1 henrydegrasse  staff    8339 Mar 26 23:52 Makefile
+-drwxr-xr-x  281 henrydegrasse  staff    8992 Mar 25 20:56 node_modules
+--rw-r--r--    1 henrydegrasse  staff  229330 Mar 25 20:56 package-lock.json
+--rw-r--r--    1 henrydegrasse  staff    1506 Mar 25 21:02 package.json
+-drwxr-xr-x    3 henrydegrasse  staff      96 Mar 23 23:29 packages
+-drwxr-xr-x    4 henrydegrasse  staff     128 Mar 26 23:41 scripts
+-
+-## 5. assistant
+-{
+-  "type": "toolCall",
+-  "id": "toolu_017x78kiDnSgwpfSMa26kzpM",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "find /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src -type f -name \"*.tsx\" -o -name \"*.ts\" | grep -v node_modules | sort"
+-  }
+-}
+-{
+-  "type": "toolCall",
+-  "id": "toolu_01M2cVJ4X1Xjy3eA65MkpHD1",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "find /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/backend -type f -name \"*.ts\" -o -name \"*.py\" | grep -v node_modules | sort"
+-  }
+-}
+-{
+-  "type": "toolCall",
+-  "id": "toolu_01WgbVUP52FgmFHFYF3ahUNc",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "cat /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/docs/*.md 2>/dev/null || ls /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/docs/"
+-  }
+-}
+-
+-## 6. toolResult
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ApiClient.test.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/AppShell.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/Breadcrumb.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/CapacityMeter.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/CarryForwardLineageView.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/CommitForm.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/CommitList.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/FilterBar.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/Flows.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/Header.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/HostProvider.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/InsightPanel.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/LockConfirmDialog.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/MoveNodeDialog.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/MyWeekPage.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/Navigation.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/PlanHistoryView.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/PreLockValidation.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/QueryAnswerCard.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/QueryHooks.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/RcdoNodeForm.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/RcdoPage.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/RcdoTreeView.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ReconcilePage.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/Router.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ScopeChangeDialog.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/SemanticSearchInput.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/TeamHistoryView.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/TeamWeekPage.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/TicketsPage.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ui/Badge.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ui/Button.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ui/Card.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ui/Dialog.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ui/Input.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ui/Select.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ui/Skeleton.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/__tests__/ui/Toast.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/aiApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/aiHooks.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/client.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/configApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/hooks.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/notificationApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/planApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/planHooks.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/planTypes.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/ragApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/ragHooks.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/rcdoApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/rcdoHooks.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/rcdoTypes.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/reportApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/teamApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/teamHooks.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/teamTypes.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/ticketApi.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/ticketHooks.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/api/ticketTypes.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/App.test.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/App.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/AiFeedbackButtons.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/AiLintPanel.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/AnswerRenderer.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/CommitDraftAssistButton.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/InsightPanel.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/QueryAnswerCard.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/ReconcileAssistPanel.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/RiskSignalsPanel.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/SemanticSearchInput.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/AppShell.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/Breadcrumb.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/Header.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/lock/LockConfirmDialog.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/lock/lockValidation.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/lock/PreLockValidationPanel.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/lock/ScopeChangeDialog.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/lock/ScopeChangeTimeline.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/myweek/CapacityMeter.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/myweek/CarryForwardLineageView.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/myweek/CommitForm.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/myweek/CommitList.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/myweek/PlanHistoryView.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/myweek/SoftWarningsPanel.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/Navigation.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/notifications/NotificationPanel.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/rcdo/ArchiveConfirmDialog.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/rcdo/MoveNodeDialog.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/rcdo/RcdoBreadcrumb.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/rcdo/RcdoNodeForm.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/rcdo/RcdoTreeView.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/reconcile/CarryForwardDialog.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/reconcile/OutcomeSelector.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/shared/FilterBar.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/teamweek/ByPersonSection.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/teamweek/ByRcdoSection.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/teamweek/ChessDistributionSection.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/teamweek/ExceptionQueueSection.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/teamweek/OverviewSection.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/teamweek/TeamHistoryView.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/teamweek/UncommittedWorkSection.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/tickets/TicketDetailView.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/tickets/TicketForm.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/tickets/TicketListView.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Badge.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Button.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Card.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Dialog.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/index.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Input.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Select.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Skeleton.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Toast.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ui/Tooltip.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/HostProvider.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/host/MockHostProvider.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/lib/theme.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/lib/useTheme.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/lib/utils.ts
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/main.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/Routes.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Admin.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/MyWeek.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Rcdos.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Reconcile.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Reports.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/TeamWeek.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/routes/Tickets.tsx
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/test-setup.ts
+-
+-## 7. toolResult
+-(no output)
+-
+-## 8. toolResult
+-3. **No structured reconciliation.** Managers and individuals cannot reliably compare planned vs. actual. Silent carry-forward hides repeated misses and reduces learning quality.
+-
+-4. **No operational data foundation for AI.** Without structured work objects, lifecycle states, linkage, and historical lineage, AI cannot provide high-signal drafting, alignment, or risk assistance.
+-
+-The result is late detection of misalignment, poor weekly discipline, weak managerial visibility, and no trustworthy data model for assistive intelligence.
+-
+----
+-
+-## 3. Product Vision
+-
+-Weekly Commit Module should function as the organization’s system of record for weekly work contracts and their connection to strategy.
+-
+-The product vision is:
+-
+-* lightweight enough that users complete weekly planning and reconciliation as a normal ritual
+-* structured enough that lock and reconciliation create durable historical records
+-* operational enough that managers can see risk and misalignment early
+-* AI-native enough that the system improves clarity, linkage quality, and exception detection without feeling invasive or authoritarian
+-
+-In practice, this means a user should be able to answer three questions quickly every week:
+-
+-* What am I committing to this week?
+-* Why does it matter strategically?
+-* What actually happened compared with the plan?
+-
+-A manager should be able to answer three parallel questions:
+-
+-* What is my team actually committing to this week?
+-* Which RCDOs are receiving effort, and which are not?
+-* Where do I need to intervene before the week is lost?
+-
+----
+-
+-## 4. Goals
+-
+-1. **Enforce strategy linkage.** Every locked weekly commit must have one valid primary RCDO link.
+-2. **Create a versioned weekly contract.** Lock creates an immutable baseline; reconciliation creates an immutable actual snapshot.
+-3. **Make scope change explicit.** Work added, changed, or dropped after lock must be visible as structured events.
+-4. **Make carry-forward explicit.** Incomplete work must not silently persist into the next week.
+-5. **Provide manager visibility without heavy process.** Managers should see team alignment, exception queues, and rollover trends without approving every user plan.
+-6. **Establish a credible AI foundation.** The data model must support conservative assistance for drafting, linkage, and risk detection in v1.
+-
+----
+-
+-## 5. Non-Goals
+-
+-1. Formal performance evaluation, compensation, or ranking of employees.
+-2. A composite “productivity score” or hidden employee scoring.
+-3. Detailed time tracking or surveillance-style monitoring.
+-4. A full Jira replacement for portfolio, dependency, or release management.
+-5. Many-to-many commit-to-RCDO mapping in v1.
+-6. A separate team planning object with its own lifecycle in v1.
+-7. Autonomous AI edits or automatic submission of plans/reconciliations.
+-8. Broad external integrations as a dependency for v1.
+-
+----
+-
+-## 6. Personas
+-
+-### Individual Contributor (IC)
+-
+-Owns a weekly plan. Needs to commit to a focused set of work, link it to strategy, and reconcile quickly without writing a weekly essay.
+-
+-### Manager
+-
+-Owns a team and is accountable for weekly alignment, capacity realism, and exception handling. Needs a team roll-up, not a pile of individual check-ins.
+-
+-### Admin / Strategy Owner
+-
+-Owns org configuration, RCDO health, and rollout governance. Needs to manage hierarchy integrity, permissions, and cadence settings.
+-
+----
+-
+-## 7. Jobs to Be Done
+-
+-### IC
+-
+-* When I start the week, I want to create a small, prioritized set of commitments tied to strategy so I can focus and my manager can see what matters.
+-* When priorities change mid-week, I want to record the change without rewriting history so my plan remains honest.
+-* When the week ends, I want to reconcile quickly and carry unfinished work forward explicitly.
+-
+-### Manager
+-
+-* When my team starts the week, I want to see what each person committed to and how those commitments roll up to RCDOs.
+-* When scope changes or people overcommit, I want to detect it early enough to intervene.
+-* When the week ends, I want to see which work moved strategy forward and where carry-forward is becoming a pattern.
+-
+-### Admin / Strategy Owner
+-
+-* When strategy changes, I want to update the RCDO tree without breaking historical reporting.
+-* When the organization adopts the module, I want one consistent cadence, permission model, and audit trail.
+-
+----
+-
+-## 8. Product Principles
+-
+-1. **Weekly plans are contracts, not notes.** They must be structured, lockable, and reconcilable.
+-2. **Link strategy explicitly.** RCDO linkage is a required field, not narrative text.
+-3. **Keep the ritual short.** Users should enter commitments, not every micro-task. Small operational work can be grouped into a single Pawn commit.
+-4. **History should be truthful.** After lock, work can change, but only through explicit change events.
+-5. **Managers handle exceptions, not routine approvals.** The workflow should not create a managerial bottleneck.
+-6. **AI must be visible, explainable, and ignorable.** Every suggestion needs a rationale and an audit trail.
+-7. **Use structure to help, not to police.** The system should improve focus and alignment without becoming a performance surveillance tool.
+-
+----
+-
+-## 9. Core Concepts and Domain Model
+-
+-### Weekly Plan
+-
+-A weekly plan is a user-owned, week-scoped planning object. There is exactly one weekly plan per user per planning week in v1.
+-
+-Fields include:
+-
+-* owner user
+-* home team snapshot
+-* week start date
+-* state
+-* lock and reconcile deadlines
+-* capacity budget snapshot
+-* compliance flags
+-* lock snapshot reference
+-* reconcile snapshot reference
+-
+-### Commit
+-
+-A commit is the core weekly work object. It is a weekly promise owned by one user and attached to one weekly plan.
+-
+-Commit fields in v1:
+-
+-* title (required)
+-* description (optional)
+-* chess piece (required)
+-* priority order (required)
+-* primary RCDO link (required at lock)
+-* optional native ticket link
+-* estimate points (required at lock)
+-* success criteria (required for King and Queen; recommended otherwise)
+-* current status metadata
+-* provenance metadata if carried forward
+-
+-### Baseline Snapshot
+-
+-When a plan is locked, the system captures an immutable snapshot of the plan and all commits as the baseline contract for the week.
+-
+-### Scope Change Event
+-
+-Any commit add, remove, reprioritization, or material field edit after lock is stored as an append-only scope change event. No silent edits are allowed after lock.
+-
+-### Reconciliation Snapshot
+-
+-When a plan is reconciled, the system captures an immutable actual snapshot including outcomes, linked ticket status snapshots, change-event summary, and carry-forward decisions.
+-
+-### Carry-Forward Link
+-
+-Carry-forward creates a new commit object in a later plan and stores lineage to the source commit. It does not mutate the original commit into a new week.
+-
+-### Ticket / Work Item
+-
+-A ticket is a durable execution object that may or may not be represented in a weekly plan. It can exist before, during, or after a commit.
+-
+-### RCDO Node
+-
+-The hierarchy has three node types:
+-
+-* Rally Cry
+-* Defining Objective
+-* Outcome
+-
+-Commits link directly to Outcomes by default. If a Defining Objective has no active child Outcomes, commits may link directly to that objective. Commits do not link directly to Rally Cries in v1.
+-
+-### Team Weekly View
+-
+-The team weekly view is a derived read model over:
+-
+-* all weekly commits for users on the team for the selected week
+-* week-targeted tickets with no linked commit, including unassigned tickets
+-
+-This is not a separate persisted planning object.
+-
+-### Home Team
+-
+-Each user has one home team for weekly planning and capacity in v1. A user may work on tickets or RCDOs outside the home team, but weekly plan ownership and manager accountability follow the home team.
+-
+-### AI Suggestion / Risk Signal
+-
+-An AI output is a stored suggestion or risk signal tied to a user action or review surface. Every AI output must store rationale, model version, timestamp, and accept/dismiss feedback.
+-
+----
+-
+-## 10. User Experience Overview
+-
+-The module will ship with five primary surfaces.
+-
+-### My Week
+-
+-Default user landing page. Shows current week plan or upcoming draft, commit list, capacity meter, AI lint panel, and lock/reconcile actions.
+-
+-### Reconcile
+-
+-A comparison view that shows baseline vs. actual, linked ticket evidence, scope changes, outcome entry, and carry-forward actions.
+-
+-### Team Week
+-
+-Manager-focused roll-up showing:
+-
+-* lock and reconcile compliance
+-* commits by person
+-* roll-up by RCDO
+-* chess distribution
+-* uncommitted assigned/unassigned work
+-* risk flags and exception queue
+-
+-### Tickets
+-
+-A minimal native work item experience: list view, detail view, status updates, assignment, filters, and create-from-commit. Full sprint/board functionality is not required in v1.
+-
+-### RCDOs
+-
+-Hierarchy management UI for admins and managers within their authorized branches.
+-
+-The dominant interaction model should be list/table based rather than canvas-heavy. The module should feel operational and compact, not reflective or essay-based.
+-
+----
+-
+-## 11. Primary User Flows
+-
+-### Flow 1: Create and Lock Weekly Plan
+-
+-1. Draft opens for next week.
+-2. User creates or edits commits.
+-3. System validates required fields and shows AI lint/suggestions.
+-4. User locks the plan manually.
+-5. Baseline snapshot is captured and the plan becomes LOCKED.
+-
+-If the user does not lock by cutoff, the system auto-locks the draft as-is and flags the plan as non-compliant.
+-
+-### Flow 2: Modify Scope After Lock
+-
+-1. User edits a locked plan.
+-2. Instead of in-place silent mutation, the system creates a structured scope change event.
+-3. User must provide a reason for material changes.
+-4. Managers see the change in the exception feed if it crosses configured thresholds.
+-
+-### Flow 3: Reconcile Weekly Plan
+-
+-1. Plan enters RECONCILING at week end.
+-2. User sees baseline commits, post-lock changes, linked ticket statuses, and outcome inputs.
+-3. Done tickets auto-mark linked commits as Achieved.
+-4. User manually reconciles non-ticket work and linked-ticket work that is not done.
+-5. User submits reconciliation.
+-6. Immutable reconciliation snapshot is created.
+-
+-### Flow 4: Carry Forward Incomplete Work
+-
+-1. During reconciliation, the user selects incomplete commits to carry forward.
+-2. User provides a carry-forward reason.
+-3. System creates a new commit in the next week’s draft plan with provenance.
+-4. New commit is inserted at the bottom of the next week’s priority order and must be re-ranked before lock.
+-
+-If the next week is already locked, the carry-forward is added as a post-lock scope change event in that week.
+-
+-### Flow 5: Manager Weekly Review
+-
+-1. Manager opens Team Week.
+-2. Sees compliance cards, risks, and RCDO coverage.
+-3. Reviews exception queue.
+-4. Comments, adjusts capacity overrides if needed, assigns unassigned tickets, or follows up on repeated carry-forward.
+-5. No per-user signoff is required for routine weekly plans.
+-
+-### Flow 6: RCDO Maintenance
+-
+-1. Admin or authorized manager creates or updates RCDO nodes.
+-2. Active nodes become selectable in commit creation.
+-3. Archived nodes remain in history but cannot be used for new commits.
+-
+----
+-
+-## 12. Weekly Lifecycle State Machine
+-
+-The weekly lifecycle applies to the **weekly plan**, not to the ticket.
+-
+-| State       | Meaning                                            | Allowed Actions                                                                           | Entry Trigger                                                | Exit Trigger                                |
+-| ----------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------- |
+-| DRAFT       | Editable plan for a specific upcoming/current week | Commit CRUD, reorder, set capacity note, link tickets, accept AI suggestions              | Draft window opens or plan is lazily created on first access | Manual lock or auto-lock at cutoff          |
+-| LOCKED      | Baseline contract exists                           | View plan, add structured scope changes, view manager comments, continue ticket execution | Lock action captures baseline snapshot                       | Automatic transition at reconcile open time |
+-| RECONCILING | User compares baseline vs. actual                  | View linked ticket evidence, set outcomes, add reconcile notes, choose carry-forward      | Automatic at reconcile open time                             | User submits reconciliation                 |
+-| RECONCILED  | Immutable actual snapshot exists                   | View history, manager review, analytics/reporting                                         | Reconcile submission captures actual snapshot                | Terminal for the source plan                |
+-
+-**Carry Forward** is implemented as a post-reconciliation action, not as a durable state on the original plan. The original plan remains RECONCILED. Carry-forward creates a new commit object with lineage into a future plan.
+-
+-### Default cadence in v1
+-
+-The cadence is configurable at the org or team level. The recommended default is:
+-
+-* planning week: Monday 00:00 to Friday 17:00, team local time
+-* next week draft opens: prior Friday 12:00
+-* reconciliation opens: Friday 17:00
+-* reconciliation due: Monday 10:00
+-* lock due: Monday 12:00
+-
+-Rationale:
+-
+-* Monday lock preserves a start-of-week planning ritual.
+-* Monday reconcile due allows users to reflect after the week closes.
+-* A two-hour gap between reconcile due and lock due allows explicit carry-forward before the new week is locked.
+-* Teams with weekend operations can configure alternative cutoffs.
+-
+-### Compliance rules
+-
+-* Manual lock by deadline counts as compliant.
+-* Auto-lock counts as locked but non-compliant.
+-* Reconciliation submitted by deadline counts as compliant.
+-* Late reconciliation remains allowed, but the plan is marked overdue.
+-
+----
+-
+-## 13. Functional Requirements
+-
+-### FR-1: Weekly Plan Creation
+-
+-* The system must create a DRAFT plan for each active eligible user for each week when the draft window opens, or lazily on first access if pre-creation fails.
+-* A user must have exactly one plan per week in v1.
+-* The system must snapshot the user’s home team and configured capacity budget onto the plan.
+-
+-### FR-2: Commit CRUD
+-
+-* Users must be able to create, edit, delete, and reorder commits in DRAFT.
+-* Title, chess piece, priority order, primary RCDO link, and estimate points are required for manual lock.
+-* Success criteria are required for King and Queen commits.
+-* The UI must support drag/drop or explicit reorder controls for priority rank.
+-
+-### FR-3: Validation and Lock
+-
+-* Manual lock must enforce hard validation rules.
+-* Hard validation errors must block manual lock.
+-* The system must auto-lock at the configured cutoff even if the draft contains validation issues; such plans are marked `system_locked_with_errors`.
+-* Lock must create an immutable baseline snapshot.
+-
+-### FR-4: Post-Lock Scope Change
+-
+-* After lock, users may not silently edit or delete baseline commits.
+-* All changes after lock must be represented as structured change events.
+-* A reason category is required for:
+-
+-  * adding a commit
+-  * removing/canceling a commit
+-  * changing estimate points
+-  * changing chess piece
+-  * changing primary RCDO
+-* The system must show an in-week change timeline in plan and manager views.
+-
+-### FR-5: Reconciliation
+-
+-* Reconciliation must show baseline values and current values side by side.
+-* Reconciliation must display linked ticket status and ticket history summary where available.
+-* The system must support actual outcomes:
+-
+-  * Achieved
+-  * Partially Achieved
+-  * Not Achieved
+-  * Canceled / De-scoped
+-* Reconcile notes are required for Partially Achieved, Not Achieved, and Canceled outcomes.
+-
+-### FR-6: Carry Forward
+-
+-* Carry-forward must be explicit per commit.
+-* Carry-forward must create a new commit object, not mutate the existing one into the next week.
+-* The new commit must retain provenance to the source commit and increment carry-forward streak metadata.
+-* Carry-forward reason is required from a controlled list plus optional text.
+-
+-### FR-7: Team Weekly View
+-
+-* The system must provide a team aggregate view for a selected week.
+-* The view must include:
+-
+-  * team members’ weekly commits
+-  * assigned tickets with no linked commit
+-  * unassigned tickets targeted to the selected week
+-* Linked tickets must not be double-counted as both committed work and separate uncommitted work.
+-
+-### FR-8: Manager Review
+-
+-* Managers must have an exception queue showing:
+-
+-  * missed/auto locks
+-  * missed reconciliation
+-  * over-budget plans
+-  * repeated carry-forward
+-  * post-lock major scope increases
+-  * added/changed King commits after lock
+-* Managers must be able to add plan-level and commit-level comments for direct reports.
+-
+-### FR-9: Search, Filters, and History
+-
+-* Users and managers must be able to filter by week, user, team, RCDO, chess piece, state, and risk flag.
+-* Users must be able to view their plan history and carry-forward lineage.
+-* Managers must be able to view team history and trend summaries.
+-
+-### FR-10: Configuration
+-
+-* Org/admin must be able to configure default week cadence and deadlines.
+-* Teams must be able to override org defaults.
+-* Managers/admins must be able to set per-user weekly capacity overrides.
+-
+-### FR-11: Auditability
+-
+-* Lock, reconcile, carry-forward, RCDO edits, ticket status changes, capacity overrides, and AI suggestions must all be auditable.
+-* Historical snapshots must remain immutable.
+-
+-### FR-12: Failure Handling
+-
+-* If AI is unavailable, the core planning workflow must continue with no loss of functionality.
+-* If scheduled lifecycle jobs fail, retries must be idempotent and must not create duplicate transitions or snapshots.
+-
+----
+-
+-## 14. Native Ticket / Work Item Model
+-
+-### Purpose
+-
+-Tickets are the durable execution objects inside the module. Commits are week-scoped promises. Tickets and commits are related but not interchangeable.
+-
+-### Exact distinction
+-
+-**Commit**
+-
+-* scoped to one user and one week
+-* answers: “What am I committing to this week, in what order, and why?”
+-* participates in lock, reconciliation, and carry-forward
+-* required for weekly reporting
+-
+-**Ticket**
+-
+-* durable execution artifact
+-* answers: “What work item exists, who owns it, and what is its execution status?”
+-* may span multiple weeks
+-* does not participate in the weekly plan state machine
+-
+-### Ticket fields in v1
+-
+-* key / id
+-* title
+-* description
+-* status
+-* assignee
+-* reporter
+-* team
+-* priority
+-* optional estimate points
+-* optional primary RCDO link
+-* optional target week
+-* created/updated timestamps
+-
+-### Ticket workflow in v1
+-
+-Required statuses:
+-
+-* Backlog
+-* Ready
+-* In Progress
+-* Blocked
+-* Done
+-* Canceled
+-
+-Status transitions must be timestamped and retained in history to support duration-in-status reporting and future AI features.
+-
+-### Relationship rules
+-
+-* A commit may link to zero or one ticket.
+-* A ticket may be linked by many commits over time.
+-* In the same week, a ticket should not be linked to more than one active commit for the same assignee.
+-* A ticket may exist without a weekly commit.
+-* A weekly commit may exist without a ticket.
+-
+-### Completion semantics
+-
+-* If a linked ticket is `Done` at reconciliation snapshot time, the linked commit is auto-marked `Achieved`.
+-* If the linked ticket is not `Done`, the user reconciles manually against the commit’s success criteria.
+-* If users intend to commit to a partial milestone on a large ticket, they should either create a smaller ticket or use manual actuals. Ticket completion is treated as authoritative evidence of done when it exists.
+-
+-### Ticket and RCDO linkage
+-
+-Tickets may also have an optional primary RCDO link. When a ticket is linked to a commit:
+-
+-* the commit RCDO defaults from the ticket if the commit is blank
+-* the commit still stores its own explicit RCDO
+-* if ticket and commit RCDO differ, the UI warns; weekly reporting uses the commit’s RCDO
+-
+-### Unassigned work in team view
+-
+-Week-targeted tickets without a linked commit appear as uncommitted work in the team weekly view. This is how v1 handles team-level assigned and unassigned work without creating a separate team plan object.
+-
+----
+-
+-## 15. RCDO Management Model
+-
+-### Hierarchy
+-
+-The module is the system of record for the RCDO hierarchy:
+-
+-* Rally Cry
+-* Defining Objective
+-* Outcome
+-
+-Parent-child relationships are enforced in that order.
+-
+-### Ownership
+-
+-* **Admins** can create, update, archive, and move any RCDO node.
+-* **Managers** can create and update Defining Objectives and Outcomes within branches owned by their team.
+-* **Rally Cries** are admin-managed in v1.
+-
+-Each node should have:
+-
+-* title
+-* description
+-* owner team
+-* owner user (optional)
+-* status
+-* created/updated metadata
+-
+-Outcomes may additionally store a short target metric or success statement, but v1 does not require full KPI tracking.
+-
+-### Node statuses
+-
+-* Draft
+-* Active
+-* Archived
+-
+-Only Active nodes can be linked to new commits.
+-
+-### Commit linkage rules
+-
+-* Commits must link directly to an Outcome when one exists.
+-* A commit may link to a Defining Objective only if that objective has no active Outcomes.
+-* Commits may not link directly to Rally Cries in v1.
+-
+-This keeps strategy linkage specific enough for real reporting without blocking teams whose hierarchy is not fully matured.
+-
+-### History behavior
+-
+-RCDO edits must not rewrite historical meaning. Lock and reconciliation snapshots must store the denormalized RCDO path and labels as they existed at that time.
+-
+-### Archival rules
+-
+-* Archived nodes remain visible in historical plans and reports.
+-* Archived nodes cannot be selected on new commits.
+-* A node with active child nodes cannot be archived until children are resolved or moved.
+-
+----
+-
+-## 16. Chess Layer and Prioritization Rules
+-
+-The chess layer is a required internal prioritization taxonomy on every commit. It affects attention, rollups, notification priority, and risk detection. It is not a score.
+-
+-| Piece  | Meaning                                                                               | v1 Guardrails                                      | Operational Effect                                                       |
+-| ------ | ------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
+-| King   | Must not fail; critical compliance, production stability, or mission-critical blocker | Max 1 per user per week; success criteria required | Highest alerting; post-lock changes always enter manager exception queue |
+-| Queen  | Highest leverage strategic progress directly tied to RCDO movement                    | Max 2 per user per week; success criteria required | High rollup weight; elevated risk signaling                              |
+-| Rook   | Major deliverable with clear edges                                                    | No hard cap                                        | Standard deliverable rollup                                              |
+-| Bishop | Enabling/platform/process work supporting multiple outcomes                           | No hard cap                                        | Highlighted in enabling-work rollups                                     |
+-| Knight | Exploratory or high-uncertainty work                                                  | No hard cap; success criteria recommended          | Elevated uncertainty flag in risk model                                  |
+-| Pawn   | Small but necessary hygiene/ops/admin work                                            | No hard cap                                        | Lowest notification priority                                             |
+-
+-### Additional rules
+-
+-* Priority order is separate from chess piece and must be explicit.
+-* The UI should warn if a user creates more than 8 total active commits in a week.
+-* The UI should warn if more than 40% of total points are Pawns.
+-* The system should sort manager exceptions first by King/Queen, then by risk level.
+-
+-### Why this model
+-
+-The chess layer gives v1 a lightweight but meaningful taxonomy for reporting and AI without introducing numeric scoring or false precision.
+-
+----
+-
+-## 17. AI Capabilities
+-
+-### AI design constraints
+-
+-All AI capabilities in v1 must follow these rules:
+-
+-* assistive, not authoritarian
+-* no hidden edits
+-* no autonomous submission
+-* no punitive or composite scoring
+-* explainable rationale on every suggestion
+-* auditable storage of suggestion and response
+-* conservative thresholds with a bias toward silence over noise
+-
+-### v1 AI capabilities
+-
+-#### 1. Commit drafting assistance
+-
+-Available on demand while writing a commit.
+-
+-Capabilities:
+-
+-* improve title clarity
+-* suggest concise description wording
+-* suggest success criteria for King/Queen commits
+-* suggest estimate points based on similar past commits and linked tickets
+-
+-Output behavior:
+-
+-* shown as editable suggestion
+-* never applied automatically
+-
+-#### 2. Commit quality linting
+-
+-Runs at save and pre-lock.
+-
+-Checks include:
+-
+-* vague titles
+-* missing success criteria for King/Queen
+-* parent-level RCDO linkage when leaf linkage is available
+-* duplicate or near-duplicate commit titles
+-* estimate inconsistency
+-* likely over-fragmented plan
+-
+-Lint must clearly distinguish between hard validation and soft AI guidance.
+-
+-#### 3. RCDO link suggestions
+-
+-Uses commit text, linked ticket data, and prior similar commits to suggest a primary RCDO.
+-
+-Requirements:
+-
+-* only show when confidence clears a threshold
+-* always show rationale such as keyword match, linked ticket RCDO, or historical analog
+-* never auto-link
+-
+-#### 4. Risk detection
+-
+-Runs when a plan is locked and daily while LOCKED.
+-
+-v1 risk signals:
+-
+-* overcommit risk
+-* undercommit risk
+-* repeated carry-forward risk
+-* blocked critical work risk
+-* scope volatility risk
+-
+-Rationale examples:
+-
+-* current points exceed budget and exceed historical completed points
+-* two consecutive weeks of carry-forward on the same lineage
+-* King/Queen linked to blocked ticket for more than two business days
+-
+-#### 5. Reconciliation assistance
+-
+-At reconciliation start, AI may propose:
+-
+-* likely outcome for unlinked commits based on notes and linked artifacts
+-* a draft summary of what changed after lock
+-* carry-forward recommendation with rationale
+-
+-These are suggestions only and require user acceptance or editing.
+-
+-#### 6. Manager summary
+-
+-Managers may receive a short, generated team summary for the selected week:
+-
+-* top strategic branches receiving effort
+-* unresolved exceptions
+-* repeated carry-forward patterns
+-* critical blocked items
+-
+-This summary must cite the underlying objects in-product, not act as a black box narrative.
+-
+-### Later-phase AI, not v1
+-
+-The following are post-v1:
+-
+-* personalized notification timing
+-* proactive decomposition of large commits into smaller tickets
+-* richer contextual retrieval across tickets, documents, and prior weeks
+-* cross-team dependency inference
+-* more advanced historical planning-pattern coaching
+-* conversational manager copilot
+-
+----
+-
+-## 18. Notifications and Nudges
+-
+-Notifications in v1 are primarily rules-based. AI may affect prioritization and wording, but not the existence of the core reminder schedule.
+-
+-### Channels
+-
+-* in-app notifications: required
+-* email digest: supported in v1
+-* host app notification center: supported if the host bridge exposes it
+-
+-### Default events
+-
+-* draft window opened
+-* lock due reminder
+-* auto-lock occurred
+-* reconciliation opened
+-* reconciliation due reminder
+-* repeated carry-forward reminder
+-* manager exception digest
+-* unassigned week-targeted ticket created
+-* critical linked ticket became blocked
+-
+-### Priority behavior
+-
+-* King-related exceptions: immediate in-app plus same-day email
+-* Queen/Rook exceptions: same-day digest
+-* Bishop/Knight/Pawn reminders: daily digest only
+-
+-### Frequency controls
+-
+-* no more than 2 direct reminders per user per task per day
+-* low-priority notifications must be batched
+-* notifications should respect team local time and business-hour defaults
+-
+-### Missed-action data
+-
+-Notification deliveries, opens, and outcomes should be stored because missed lock/reconcile patterns are relevant to manager reporting and future AI.
+-
+----
+-
+-## 19. Permissions and Privacy Model
+-
+-### Role model
+-
+-#### IC
+-
+-May:
+-
+-* create/edit/lock/reconcile own plan
+-* create/edit own commits
+-* create tickets where they are reporter or assignee
+-* view basic current/next-week commit detail for peers on the same home team
+-* view full detail of own AI suggestions and historical patterns
+-
+-May not:
+-
+-* edit others’ plans
+-* view others’ private AI risk history
+-* edit RCDOs unless also a manager/admin
+-
+-#### Manager
+-
+-May:
+-
+-* do everything an IC can do for their own plan
+-* view full detail for direct reports’ weekly plans and history
+-* view aggregate rollups for indirect reports
+-* comment on direct reports’ plans/commits
+-* manage capacity overrides for reports
+-* create/edit team-owned Defining Objectives and Outcomes
+-* create and assign team tickets
+-* view and resolve exception queues
+-
+-May not:
+-
+-* view detailed personal AI history for employees outside their direct reporting line
+-* see peer-level named data outside authorized team scope
+-
+-#### Admin
+-
+-May:
+-
+-* manage org-wide settings and cadence
+-* manage all RCDOs
+-* access all team-level reporting
+-* perform data correction actions
+-* manage role assignments and feature flags
+-
+-### Privacy defaults
+-
+-The v1 privacy posture is intentionally conservative.
+-
+-1. **Peer visibility within team**
+-
+-   * visible: title, owner, priority, chess piece, primary RCDO, linked ticket, current state
+-   * hidden: AI risk flags, historical completion patterns, manager comments, detailed reconcile notes
+-
+-2. **Historical visibility**
+-
+-   * peers can see only current and next week basic detail
+-   * direct managers can see detailed historical plans for direct reports
+-   * skip-level leaders get aggregate summaries by default, not person-level detail
+-
+-3. **Org-level reporting**
+-
+-   * outside the management chain, reports default to aggregate team/RCDO views only
+-   * no individual leaderboards
+-
+-4. **Time and duration data**
+-
+-   * ticket status durations may be stored and used in risk logic
+-   * raw duration-in-status must not be presented as a person-level productivity metric
+-
+-5. **Sensitive content**
+-
+-   * no private-commit mode in v1
+-   * the module is not intended for HR-sensitive or medical notes; the UI should make that clear
+-
+-### Recommended privacy default
+-
+-This model optimizes for team coordination and manager usefulness while minimizing peer-level surveillance and cross-org personal visibility.
+-
+----
+-
+-## 20. Manager Experience
+-
+-The manager experience is centered on one weekly operating surface, not a stack of approvals.
+-
+-### Team Week dashboard sections
+-
+-1. **Overview**
+-
+-   * lock compliance
+-   * reconcile compliance
+-   * total planned points
+-   * total achieved points
+-   * number of open exceptions
+-
+-2. **By Person**
+-
+-   * direct report plans
+-   * points vs budget
+-   * current risk flags
+-   * carry-forward streaks
+-   * major post-lock changes
+-
+-3. **By RCDO**
+-
+-   * points and commit counts by Rally Cry / DO / Outcome
+-   * planned vs achieved by branch
+-   * branch coverage gaps
+-
+-4. **Chess Distribution**
+-
+-   * team mix of King/Queen/Rook/Bishop/Knight/Pawn
+-   * concentration of critical work
+-
+-5. **Uncommitted Work**
+-
+-   * assigned tickets with no linked weekly commit
+-   * unassigned tickets targeted to the week
+-
+-6. **Exceptions**
+-
+-   * missed lock
+-   * missed reconcile
+-   * over-budget plan
+-   * added/changed King after lock
+-   * repeated carry-forward
+-   * high scope volatility
+-
+-### Minimum manager actions required in v1
+-
+-Managers are not required to approve every plan. The minimum expected actions are:
+-
+-1. Review the team exception queue once per week by Tuesday 12:00 local time.
+-2. Resolve capacity override and critical scope-change exceptions within one business day.
+-3. Maintain team-owned RCDOs in an active, usable state.
+-
+-Optional but encouraged:
+-
+-* add comments on important plans
+-* rebalance unassigned week-targeted work
+-* follow up on repeated carry-forward
+-
+-### Approval policy
+-
+-V1 does **not** require manager approval for routine weekly plan lock or reconciliation.
+-
+-V1 uses **exception review**, not blanket approval:
+-
+-* initial weekly plans do not require approval
+-* over-budget plans at lock require user rationale and manager notification, not a blocking gate
+-* post-lock material changes generate manager review items, not silent edits
+-* added or materially changed King work always enters the manager exception queue
+-
+-This is the recommended policy because true approval gates would create bottlenecks and damage adoption.
+-
+----
+-
+-## 21. Reporting and Success Metrics
+-
+-### Operational reporting in v1
+-
+-The product must support the following reports:
+-
+-* lock compliance by team and week
+-* reconcile compliance by team and week
+-* planned vs achieved points
+-* explicit carry-forward rate
+-* repeated carry-forward streaks
+-* points and commit counts by RCDO branch
+-* chess distribution by team and week
+-* post-lock scope change volume
+-* uncommitted assigned/unassigned weekly work
+-* AI suggestion acceptance rates
+-* manager exception aging
+-
+-### v1 success metrics
+-
+-#### Adoption and workflow health
+-
+-* **85%** of eligible users have a locked plan each week by week 8 of rollout.
+-* **70%** of eligible users manually lock before cutoff by week 12.
+-* **80%** of locked plans are reconciled by the due time by week 12.
+-
+-#### Alignment quality
+-
+-* **90%** of locked commits are linked to an active Outcome or valid Defining Objective.
+-* **95%** of incomplete work appearing in the next week is created through explicit carry-forward lineage rather than copy/paste duplication.
+-
+-#### Manager usefulness
+-
+-* **75%** of managers with direct reports are weekly active in Team Week by week 8.
+-* Manager survey score on “I can see how my team’s weekly work maps to strategy” averages **4.0/5** or better in pilot.
+-
+-#### User efficiency
+-
+-* Median IC time to complete weekly planning is **under 10 minutes**.
+-* Median IC time to reconcile a week is **under 7 minutes**.
+-* Median manager time to review a team week is **under 15 minutes**.
+-
+-#### AI usefulness
+-
+-* At least **25%** of active users accept at least one AI suggestion per month.
+-* High-risk overcommit/carry-forward flags achieve **60% precision** or better, defined as the flagged condition materially appearing in reconciliation outcomes.
+-* Negative user feedback on AI suggestions remains below **10%** of suggestion impressions.
+-
+-### What will not be reported
+-
+-* no employee leaderboard
+-* no composite completion score
+-* no cross-team named ranking of individuals
+-
+----
+-
+-## 22. Technical Architecture Considerations
+-
+-### Micro-frontend integration assumption
+-
+-The recommended assumption is a standard internal enterprise SPA host that can load route-level remotes. The Weekly Commit Module should follow a pragmatic remote pattern:
+-
+-* route-level micro-frontend remote mounted under the PA host app
+-* TypeScript strict mode
+-* host provides SSO identity, navigation, design tokens, feature flags, telemetry hooks, and notification bridge
+-* remote owns domain routing, page composition, API client, and local state
+-
+-A Module Federation-style remote is the most practical assumption for v1. If the host uses a different remote loading mechanism, the integration contract should remain the same.
+-
+-### Backend shape
+-
+-Recommended backend architecture:
+-
+-* Java 21 service
+-* modular monolith for v1 rather than multiple distributed services
+-* REST/JSON APIs with OpenAPI contract
+-* background job workers for lifecycle transitions, rollups, notifications, and AI tasks
+-* relational SQL database, with PostgreSQL as the recommended implementation
+-
+-### Why a modular monolith
+-
+-This product’s complexity is in workflow, data integrity, and read models, not service decomposition. A modular monolith reduces coordination cost while still allowing clear bounded modules:
+-
+-* weekly planning
+-* reconciliation
+-* RCDOs
+-* tickets
+-* notifications
+-* AI suggestions
+-* reporting/read models
+-
+-### Host/remote contract
+-
+-The host should pass:
+-
+-* authenticated user identity
+-* team and manager chain context
+-* environment and feature flags
+-* telemetry callback or SDK access
+-* theme/design tokens
+-* notification center bridge
+-
+-The remote should expose:
+-
+-* full page routes
+-* optional summary widgets for host dashboards
+-* typed events for deep-link navigation and telemetry
+-
+-### AI architecture boundary
+-
+-AI must be behind a provider abstraction. The core workflow cannot depend on a single model vendor. If AI fails or is disabled, the module must remain fully usable.
+-
+-### Read model strategy
+-
+-Manager dashboards and RCDO rollups should not run large live joins against transactional tables on every request. Use derived SQL read models/materialized tables refreshed by events/jobs.
+-
+----
+-
+-## 23. Data Model and Storage Strategy
+-
+-### Transactional records
+-
+-These should be stored as source-of-truth transactional tables:
+-
+-* organization, team, user, membership, home team
+-* weekly_plan
+-* commit
+-* lock_snapshot_header
+-* lock_snapshot_commit
+-* scope_change_event
+-* reconcile_snapshot_header
+-* reconcile_snapshot_commit
+-* carry_forward_link
+-* work_item
+-* work_item_status_history
+-* work_item_comment
+-* rcdo_node
+-* rcdo_change_log
+-* manager_comment
+-* capacity_override
+-* notification
+-* notification_delivery
+-* ai_suggestion
+-* ai_feedback
+-* audit_log
+-
+-### Derived / aggregated records
+-
+-These should be stored as derived tables or materialized read models:
+-
+-* user_week_fact
+-* team_week_rollup
+-* rcdo_week_rollup
+-* compliance_fact
+-* carry_forward_fact
+-* risk_feature tables
+-* dashboard summary tables
+-
+-### Snapshot strategy
+-
+-Lock and reconcile should each store:
+-
+-* normalized snapshot rows for queryability
+-* denormalized JSON payload for exact historical replay and audit
+-
+-This dual storage is justified because the product needs both reliable analytics and immutable historical truth.
+-
+-### Storage decisions for AI and analytics
+-
+-AI and reporting should rely primarily on derived feature tables, not direct request-path scans of raw historical events.
+-
+-Examples of derived fields:
+-
+-* points planned vs achieved
+-* repeated carry-forward count
+-* lock lateness
+-* reconcile lateness
+-* status-duration metrics for linked tickets
+-* unplanned added work points
+-* RCDO coverage distribution
+-* manager exception backlog
+-
+-### History and retention
+-
+-Recommended retention target:
+-
+-* weekly plans, snapshots, change events, and carry-forward lineage: 24 months online minimum
+-* audit logs: per corporate audit policy, ideally 24 months online minimum
+-* AI suggestion and feedback logs: 12 months minimum
+-
+-If corporate policy differs, policy wins.
+-
+-### Consistency guarantees
+-
+-* lifecycle jobs must be idempotent
+-* lock/reconcile snapshot writes must be transactional
+-* derived rollups may be eventually consistent, but should update within 5 minutes for current-week views
+-
+----
+-
+-## 24. Non-Functional Requirements
+-
+-### Performance
+-
+-* P95 initial page load for My Week and Team Week: under 2.5 seconds on the corporate network
+-* P95 commit create/edit/save interaction: under 500 ms server time
+-* P95 manager dashboard query: under 1.5 seconds from derived read model
+-
+-### Availability
+-
+-* 99.9% monthly availability during business hours
+-* lifecycle jobs must retry safely after failure
+-
+-### Scale
+-
+-The system should support, at minimum:
+-
+-* 10,000 active eligible users
+-* 1,000 concurrent users during Monday peak
+-* 250,000+ commits per year
+-* millions of ticket status history rows without dashboard degradation
+-
+-### Security
+-
+-* SSO-based authentication via host app
+-* backend-enforced RBAC
+-* encryption in transit and at rest
+-* audit logging for privileged actions
+-
+-### Accessibility
+-
+-* WCAG 2.1 AA target
+-* keyboard-accessible drag/reorder alternative required
+-* readable state and priority indicators without color dependence
+-
+-### Observability
+-
+-* structured logs
+-* metrics for job success/failure
+-* audit trail for lifecycle transitions
+-* tracing across remote and backend
+-* feature flag support for staged rollout
+-
+-### Reliability
+-
+-* no duplicate snapshots
+-* no duplicate carry-forward links from retry behavior
+-* no partial lock/reconcile writes
+-
+-### Privacy
+-
+-* row-level filtering enforced in backend, not only frontend
+-* AI requests must respect user/team authorization boundaries
+-
+----
+-
+-## 25. Risks, Abuse Cases, and Safeguards
+-
+-### Risk 1: The product is used as de facto performance surveillance
+-
+-**Safeguards**
+-
+-* no productivity score
+-* no employee ranking
+-* no public individual history outside management chain
+-* direct policy language in-product and in rollout training
+-
+-### Risk 2: Users game chess pieces or estimates
+-
+-**Safeguards**
+-
+-* max 1 King, max 2 Queens
+-* explicit rationale for major post-lock changes
+-* manager rollups show unusual distributions
+-* AI can flag suspicious overuse patterns, but not score them
+-
+-### Risk 3: Users dump every tiny task into the system
+-
+-**Safeguards**
+-
+-* soft warning above 8 commits
+-* guidance to group small work into Pawns
+-* capacity meter based on points, not count alone
+-
+-### Risk 4: RCDO quality decays and linkage becomes meaningless
+-
+-**Safeguards**
+-
+-* hierarchy ownership rules
+-* archived nodes blocked for new work
+-* managers accountable for team branches
+-* parent-level linking restricted
+-
+-### Risk 5: AI becomes noisy and loses trust
+-
+-**Safeguards**
+-
+-* show only above confidence threshold
+-* separate hard validation from AI suggestions
+-* store accept/dismiss feedback
+-* disable low-performing suggestion types independently
+-
+-### Risk 6: Auto-lock creates bad historical baselines
+-
+-**Safeguards**
+-
+-* manual lock remains the compliance standard
+-* auto-lock records validation errors clearly
+-* manager exception queue highlights bad auto-locks
+-* post-lock change events preserve honest correction without rewriting history
+-
+-### Risk 7: Unassigned work becomes a shadow backlog with no owner
+-
+-**Safeguards**
+-
+-* separate uncommitted-work section on team dashboard
+-* age and target-week filters
+-* manager reminders for aging unassigned weekly work
+-
+-### Risk 8: Sensitive personal details are entered into reconcile notes
+-
+-**Safeguards**
+-
+-* UI warning not to store HR/medical/sensitive personal detail
+-* no private notes feature in v1
+-* admin correction process for improper content
+-
+----
+-
+-## 26. v1 Scope
+-
+-### In scope
+-
+-* user weekly plan creation and commit CRUD
+-* one plan per user per week
+-* required primary RCDO linkage
+-* chess taxonomy and priority ordering
+-* capacity points and budget meter
+-* manual lock with baseline capture
+-* auto-lock at cutoff
+-* structured post-lock scope change events
+-* reconciliation view with planned vs actual
+-* explicit carry-forward with lineage
+-* minimal native tickets/work items with status workflow and history
+-* manager team dashboard and exception queue
+-* RCDO hierarchy management
+-* rules-based notifications
+-* AI v1:
+-
+-  * drafting assistance
+-  * commit quality linting
+-  * RCDO suggestions
+-  * conservative risk flags
+-  * reconciliation assistance
+-* route-level micro-frontend integration into PA host app
+-* audit logs and derived rollups
+-
+-### Explicit v1 limits
+-
+-* no many-to-many commit-to-RCDO
+-* no separate team plan object
+-* no advanced dependency graph
+-* no mobile-first experience requirement
+-* no external Jira/OKR integration dependency
+-* no full sprint board or advanced backlog planning
+-* no autonomous AI agent behavior
+-
+----
+-
+-## 27. Post-v1 / Future Scope
+-
+-* Jira, GitHub, or other external work-system integrations
+-* many-to-many commit-to-RCDO support
+-* dependency tracking across users and teams
+-* richer ticket boards and sprint planning
+-* calendar and PTO integration for automatic capacity adjustment
+-* more advanced AI context retrieval
+-* personalized AI coaching on planning patterns
+-* cross-team risk and dependency summaries
+-* conversational search over plans, tickets, and RCDOs
+-* configurable custom chess policies by org
+-
+----
+-
+-## 28. Open Questions
+-
+-These are the remaining questions that should be validated, but they do not block writing or building v1.
+-
+-1. **Host integration detail:** confirm the exact remote-loading mechanism and shell contract with the PA platform team.
+-2. **Org directory source of truth:** confirm whether home team and manager chain are provided by the host/identity layer or a separate internal service.
+-3. **Historical migration:** decide whether any 15Five historical data needs read-only migration, or whether rollout begins with fresh history.
+-4. **Nonstandard workweeks:** validate whether pilot teams need non-Monday/Friday defaults on day one, or whether team-level overrides are sufficient after pilot.
+-
+----
+-
+-## 29. Acceptance Criteria
+-
+-1. A DRAFT weekly plan exists or is created on first access for every active eligible user once the draft window opens.
+-2. A user can create, edit, delete, and reorder commits in DRAFT.
+-3. Manual lock is blocked if required fields are missing or chess-piece hard limits are violated.
+-4. Auto-lock occurs at the configured cutoff and creates a baseline snapshot even if the draft is incomplete.
+-5. A locked plan cannot be silently edited; all post-lock changes create append-only scope change events.
+-6. Reconciliation presents baseline values, scope changes, linked ticket evidence, and outcome inputs in one view.
+-7. A linked ticket in `Done` auto-marks the commit `Achieved` at reconciliation snapshot time.
+-8. Unlinked work and linked work with incomplete tickets can be reconciled manually.
+-9. Carry-forward creates a new commit object with provenance and does not mutate the original week’s commit.
+-10. If carry-forward occurs after the destination week is already locked, the new commit is added as a post-lock scope change event in that week.
+-11. Team Week shows committed work, assigned-but-uncommitted tickets, and unassigned week-targeted tickets without double counting.
+-12. Managers can view full detail for direct reports and only aggregate detail for indirect reports by default.
+-13. Peers on the same team can see current and next week basic commit detail, but not AI risk flags, manager comments, or detailed reconcile notes.
+-14. Admins and authorized managers can create, edit, activate, archive, and move RCDO nodes within their allowed scope.
+-15. Archived RCDO nodes remain visible historically but cannot be linked to new commits.
+-16. Every AI suggestion shows rationale, can be accepted or dismissed, and stores model version and response outcome.
+-17. AI downtime does not prevent planning, locking, reconciling, or carry-forward.
+-18. Manager dashboard loads from derived read models and meets the stated performance targets.
+-19. Lifecycle jobs are idempotent and do not create duplicate lock snapshots, reconcile snapshots, or carry-forward links.
+-20. All lifecycle transitions, RCDO edits, privileged actions, and AI suggestions are auditable.
+-
+----
+-
+-## 30. Critical Review of the Proposed PRD
+-
+-### The 5 biggest delivery risks
+-
+-1. **This v1 is still broad.** Weekly planning, RCDO authoring, native tickets, manager dashboards, and AI assistance are each meaningful workstreams. Delivering all five together will pressure scope, QA, and rollout readiness.
+-
+-2. **Historical snapshot integrity is easy to get wrong.** Lock snapshots, scope change events, reconciliation snapshots, and carry-forward lineage need careful transactional design. If that model is unstable, reporting and trust collapse.
+-
+-3. **Permissions are subtle.** The distinction between peers, direct managers, skip-level leaders, and admins is simple on paper but easy to misimplement in APIs and derived rollups.
+-
+-4. **Micro-frontend host uncertainty is real.** The PRD makes a sensible remote-pattern assumption, but if the PA host shell lacks stable auth, navigation, or notification contracts, the frontend team will absorb unexpected platform work.
+-
+-5. **Dashboard performance depends on read models from the start.** If the team tries to build manager views directly off transactional joins first and optimize later, Monday peak performance will likely be poor and hard to recover.
+-
+-### The 5 biggest product risks
+-
+-1. **Users may resist required structure.** Mandatory RCDO linkage, chess piece selection, and estimate points add friction. If the UX is not very tight, adoption will lag.
+-
+-2. **RCDO quality may be too weak for the feature to pay off.** If managers do not maintain Outcomes or if branches are too coarse, the product will technically enforce linkage while still producing weak alignment data.
+-
+-3. **The native ticket stance may conflict with existing behavior.** Even though the PRD scopes ticketing modestly, teams already using Jira-like systems may not want to duplicate work item management internally.
+-
+-4. **Exception review may still feel managerial.** The PRD avoids approval gates, but users can still interpret exception queues and carry-forward tracking as surveillance if rollout framing is poor.
+-
+-5. **AI may underdeliver at launch.** Conservative AI is the right posture, but conservative AI can also feel underwhelming unless the first few suggestion types are very accurate and clearly useful.
+-
+-### Areas likely over-scoped for v1
+-
+-1. **Native ticketing could sprawl quickly.** Minimal CRUD and status workflow are reasonable; anything beyond that should be resisted in v1.
+-2. **Manager-generated AI summaries may be optional for first release.** They are useful but not essential to prove the core workflow.
+-3. **Unassigned-work handling is valuable, but it adds a second planning surface.** If schedule tightens, keep it simple and list-based.
+-4. **Flexible cadence configuration at both org and team level increases edge cases.** A fixed pilot cadence may be safer before broad configurability.
+-5. **Detailed derived analytics may outpace adoption needs.** Core compliance, alignment, and carry-forward reports matter more than a wide set of trend views in the first release.
+-
+-### Assumptions that should be validated in discovery or pilot rollout
+-
+-1. **Capacity model:** users will accept a required 1/2/3/5/8 points field and managers will find a default 10-point budget intuitive.
+-2. **Cadence:** Monday 10:00 reconcile due and Monday 12:00 lock due is acceptable for most teams.
+-3. **Privacy default:** same-team visibility of current and next week basic commits will feel useful rather than intrusive.
+-4. **RCDO target rule:** forcing direct linkage to Outcomes when available will be practical, not overly rigid.
+-5. **Single home-team plan:** one weekly plan per user, tied to a primary team, is sufficient for matrixed organizations during the pilot.
+-
+-Overall, the PRD is coherent and buildable, but the highest-risk mistake would be trying to launch the full ticketing surface, full manager analytics set, and broad AI layer at the same time. The core weekly contract workflow should remain the center of gravity.
+-
+-
+-
+-[Showing lines 443-1795 of 1795 (50.0KB limit). Full output: /var/folders/26/7kx_4jvx6951yzfvf9k6_5k00000gn/T/pi-bash-f351e0ce67499776.log]
+-
+-## 9. assistant
+-{
+-  "type": "thinking",
+-  "thinking": "Let me look deeper at the AI-specific components and backend to understand what AI integration currently exists.",
+-  "thinkingSignature": "EqwCClkIDBgCKkALMZu2MfiOsYHNVutErteZQv0Rp61EAR7CLYcZpwyDWRH+/3R1woqbrJv7cj/2fTGoSOd27fHTH5l6XiKeGhsCMg9jbGF1ZGUtb3B1cy00LTY4ABIMm2vaxeRDdMQY/hBCGgym2cAcL/DA+5NASBciMCBwVa74SUCUc6+JWK94DcYIH2ZK14fO40Vels69ejXrgBLsMfkz+ho8CqnYZZinMSqAAfzIwi8PkNc7iTrO4BO9Ob2WViBCSZ6FbpxpRL3uZ7nrztblP3GMiw91LvHG/nNandvlN6rRaMxxq0WAEYIzC/jTL66rXq6oa8YfhIkgmH0tV2X19LsrrI2RI5//z7jeiQOGKmziyOhspPzaHgB2ZoMp1I1v17lhQ2KUDZFmQqZfGAE="
+-}
+-{
+-  "type": "toolCall",
+-  "id": "toolu_01LjgTxWR5rMYYEP3iSA5DRA",
+-  "name": "read",
+-  "arguments": {
+-    "path": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/InsightPanel.tsx"
+-  }
+-}
+-{
+-  "type": "toolCall",
+-  "id": "toolu_01CWQM3ZGVuF6rFKiJ1nNiYv",
+-  "name": "read",
+-  "arguments": {
+-    "path": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/AiLintPanel.tsx"
+-  }
+-}
+-{
+-  "type": "toolCall",
+-  "id": "toolu_017gGum5ZfBEyWnzDEkEjeRE",
+-  "name": "read",
+-  "arguments": {
+-    "path": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/RiskSignalsPanel.tsx"
+-  }
+-}
+-
+-## 10. toolResult
+-/**
+- * InsightPanel — displays AI-generated insight cards for a team week
+- * (mode='team') or a personal plan (mode='personal').
+- */
+-import { Bot } from "lucide-react";
+-import { Badge } from "../ui/Badge.js";
+-import { Skeleton } from "../ui/Skeleton.js";
+-import { cn } from "../../lib/utils.js";
+-import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
+-import { useTeamInsights, usePlanInsights } from "../../api/ragHooks.js";
+-import type { InsightCard } from "../../api/ragApi.js";
+-
+-// ── Severity helpers ──────────────────────────────────────────────────────────
+-
+-type SeverityLevel = "HIGH" | "MEDIUM" | "LOW";
+-
+-function severityBadgeVariant(
+-  severity: string,
+-): "danger" | "warning" | "primary" | "default" {
+-  switch (severity.toUpperCase() as SeverityLevel) {
+-    case "HIGH":
+-      return "danger";
+-    case "MEDIUM":
+-      return "warning";
+-    case "LOW":
+-      return "primary";
+-    default:
+-      return "default";
+-  }
+-}
+-
+-function severityLabel(severity: string): string {
+-  return severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase();
+-}
+-
+-// ── Individual card ───────────────────────────────────────────────────────────
+-
+-function InsightCardItem({ card }: { card: InsightCard }) {
+-  return (
+-    <div
+-      className={cn(
+-        "rounded-default border border-border bg-surface px-4 py-3 flex flex-col gap-2",
+-      )}
+-      data-testid={`insight-card-${card.suggestionId}`}
+-    >
+-      {/* Header row: severity + feedback buttons */}
+-      <div className="flex items-center justify-between gap-2">
+-        <Badge
+-          variant={severityBadgeVariant(card.severity)}
+-          className="text-[0.65rem] capitalize"
+-          data-testid={`insight-severity-${card.suggestionId}`}
+-        >
+-          {severityLabel(card.severity)}
+-        </Badge>
+-        <AiFeedbackButtons suggestionId={card.suggestionId} />
+-      </div>
+-
+-      {/* Insight text */}
+-      <p
+-        className="m-0 text-sm text-foreground leading-relaxed"
+-        data-testid={`insight-text-${card.suggestionId}`}
+-      >
+-        {card.insightText}
+-      </p>
+-
+-      {/* Action suggestion */}
+-      {card.actionSuggestion && (
+-        <p
+-          className="m-0 text-xs text-muted italic"
+-          data-testid={`insight-action-${card.suggestionId}`}
+-        >
+-          → {card.actionSuggestion}
+-        </p>
+-      )}
+-
+-      {/* Source entity IDs are internal UUIDs — not surfaced to the user */}
+-    </div>
+-  );
+-}
+-
+-// ── Skeleton loading cards ────────────────────────────────────────────────────
+-
+-function InsightSkeletons() {
+-  return (
+-    <div
+-      className="flex flex-col gap-3"
+-      data-testid="insight-panel-loading"
+-      aria-busy="true"
+-    >
+-      {[0, 1, 2].map((i) => (
+-        <div
+-          key={i}
+-          className="rounded-default border border-border px-4 py-3 flex flex-col gap-2"
+-        >
+-          <Skeleton className="h-4 w-16" />
+-          <Skeleton className="h-3.5 w-full" />
+-          <Skeleton className="h-3.5 w-4/5" />
+-          <Skeleton className="h-3 w-2/3" />
+-        </div>
+-      ))}
+-    </div>
+-  );
+-}
+-
+-// ── Main component ────────────���───────────────────────────────────────────────
+-
+-interface InsightPanelTeamProps {
+-  mode: "team";
+-  teamId?: string;
+-  weekStart?: string;
+-  planId?: never;
+-}
+-
+-interface InsightPanelPersonalProps {
+-  mode: "personal";
+-  planId?: string;
+-  teamId?: never;
+-  weekStart?: never;
+-}
+-
+-type InsightPanelProps = InsightPanelTeamProps | InsightPanelPersonalProps;
+-
+-function TeamInsightPanel({
+-  teamId,
+-  weekStart,
+-}: {
+-  teamId?: string;
+-  weekStart?: string;
+-}) {
+-  const { data, loading, error } = useTeamInsights(
+-    teamId ?? null,
+-    weekStart ?? "",
+-  );
+-
+-  if (loading) return <InsightSkeletons />;
+-
+-  if (error) {
+-    return (
+-      <p
+-        className="text-sm text-danger"
+-        data-testid="insight-panel-error"
+-      >
+-        Failed to load insights: {error.message}
+-      </p>
+-    );
+-  }
+-
+-  if (!data?.aiAvailable) {
+-    return (
+-      <div
+-        className="flex items-center gap-2 rounded-default border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs text-muted italic"
+-        data-testid="insight-panel-unavailable"
+-      >
+-        <Bot className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+-        AI insights are currently unavailable.
+-      </div>
+-    );
+-  }
+-
+-  if (data.insights.length === 0) {
+-    return (
+-      <p
+-        className="text-sm text-muted"
+-        data-testid="insight-panel-empty"
+-      >
+-        No AI insights available for this period.
+-      </p>
+-    );
+-  }
+-
+-  return (
+-    <div className="flex flex-col gap-3">
+-      {data.insights.map((card) => (
+-        <InsightCardItem key={card.suggestionId} card={card} />
+-      ))}
+-    </div>
+-  );
+-}
+-
+-function PersonalInsightPanel({ planId }: { planId?: string }) {
+-  const { data, loading, error } = usePlanInsights(planId ?? null);
+-
+-  if (loading) return <InsightSkeletons />;
+-
+-  if (error) {
+-    return (
+-      <p
+-        className="text-sm text-danger"
+-        data-testid="insight-panel-error"
+-      >
+-        Failed to load insights: {error.message}
+-      </p>
+-    );
+-  }
+-
+-  if (!data?.aiAvailable) {
+-    return (
+-      <div
+-        className="flex items-center gap-2 rounded-default border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs text-muted italic"
+-        data-testid="insight-panel-unavailable"
+-      >
+-        <Bot className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+-        AI insights are currently unavailable.
+-      </div>
+-    );
+-  }
+-
+-  if (data.insights.length === 0) {
+-    return (
+-      <p
+-        className="text-sm text-muted"
+-        data-testid="insight-panel-empty"
+-      >
+-        No AI insights available for this period.
+-      </p>
+-    );
+-  }
+-
+-  return (
+-    <div className="flex flex-col gap-3">
+-      {data.insights.map((card) => (
+-        <InsightCardItem key={card.suggestionId} card={card} />
+-      ))}
+-    </div>
+-  );
+-}
+-
+-/**
+- * InsightPanel renders AI-generated insight cards.
+- *
+- * Set `mode="team"` with `teamId` + `weekStart` for team-level insights, or
+- * `mode="personal"` with `planId` for plan-level personal insights.
+- */
+-export function InsightPanel(props: InsightPanelProps) {
+-  return (
+-    <div data-testid="insight-panel">
+-      {props.mode === "team" ? (
+-        <TeamInsightPanel
+-          {...(props.teamId !== undefined && { teamId: props.teamId })}
+-          {...(props.weekStart !== undefined && { weekStart: props.weekStart })}
+-        />
+-      ) : (
+-        <PersonalInsightPanel
+-          {...(props.planId !== undefined && { planId: props.planId })}
+-        />
+-      )}
+-    </div>
+-  );
+-}
+-
+-## 11. toolResult
+-/**
+- * AI commit lint panel — replaces the placeholder in PreLockValidationPanel.
+- * Calls POST /api/ai/commit-lint and displays hard + soft lint messages
+- * with feedback buttons on each.
+- */
+-import { useState, useCallback } from "react";
+-import { Bot, RefreshCw } from "lucide-react";
+-import { Button } from "../ui/Button.js";
+-import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
+-import { useAiApi, useAiStatus } from "../../api/aiHooks.js";
+-import type { CommitLintResponse } from "../../api/aiApi.js";
+-
+-interface AiLintPanelProps {
+-  planId: string;
+-  userId: string;
+-}
+-
+-export function AiLintPanel({ planId, userId }: AiLintPanelProps) {
+-  const aiApi = useAiApi();
+-  const { data: status } = useAiStatus();
+-  const [lintResult, setLintResult] = useState<CommitLintResponse | null>(null);
+-  const [loading, setLoading] = useState(false);
+-  const [error, setError] = useState<string | null>(null);
+-
+-  const runLint = useCallback(async () => {
+-    setLoading(true);
+-    setError(null);
+-    try {
+-      const result = await aiApi.commitLint({ userId, planId });
+-      setLintResult(result);
+-    } catch (err) {
+-      setError(err instanceof Error ? err.message : "Lint failed");
+-    } finally {
+-      setLoading(false);
+-    }
+-  }, [aiApi, planId, userId]);
+-
+-  // AI not available — show disabled state
+-  if (status && !status.available) {
+-    return (
+-      <div className="flex items-center gap-2 rounded-default border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs text-muted italic" data-testid="ai-lint-unavailable">
+-        <Bot className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+-        AI commit quality hints unavailable ({status.providerName})
+-      </div>
+-    );
+-  }
+-
+-  // Not yet run
+-  if (!lintResult && !loading) {
+-    return (
+-      <div className="flex items-center gap-2" data-testid="ai-lint-ready">
+-        <Button variant="ghost" size="sm" onClick={() => void runLint()} className="h-7 text-xs border border-dashed border-border" data-testid="ai-lint-run-btn">
+-          <Bot className="h-3.5 w-3.5" />
+-          Run AI Quality Check
+-        </Button>
+-      </div>
+-    );
+-  }
+-
+-  // Loading
+-  if (loading) {
+-    return (
+-      <div className="flex items-center gap-2 text-xs text-muted animate-pulse" data-testid="ai-lint-loading">
+-        <Bot className="h-3.5 w-3.5 shrink-0" />
+-        Analyzing commit quality…
+-      </div>
+-    );
+-  }
+-
+-  // Error
+-  if (error) {
+-    return (
+-      <div className="flex items-center gap-2 text-xs text-danger" data-testid="ai-lint-error">
+-        <Bot className="h-3.5 w-3.5 shrink-0" />
+-        {error}
+-        <Button variant="ghost" size="sm" onClick={() => void runLint()} className="h-6 text-xs">
+-          <RefreshCw className="h-3 w-3" />Retry
+-        </Button>
+-      </div>
+-    );
+-  }
+-
+-  // Results
+-  if (!lintResult?.aiAvailable) {
+-    return (
+-      <div className="text-xs text-muted italic" data-testid="ai-lint-unavailable">
+-        <Bot className="h-3.5 w-3.5 inline mr-1" />AI lint unavailable
+-      </div>
+-    );
+-  }
+-
+-  const hasHard = lintResult.hardValidation.length > 0;
+-  const hasSoft = lintResult.softGuidance.length > 0;
+-
+-  return (
+-    <div className="flex flex-col gap-2" data-testid="ai-lint-results">
+-      {/* Header with refresh */}
+-      <div className="flex items-center justify-between">
+-        <span className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+-          <Bot className="h-3.5 w-3.5" />AI Quality Check
+-        </span>
+-        <div className="flex items-center gap-1.5">
+-          {lintResult.suggestionId && <AiFeedbackButtons suggestionId={lintResult.suggestionId} />}
+-          <Button variant="ghost" size="sm" onClick={() => void runLint()} className="h-6 text-xs" data-testid="ai-lint-refresh">
+-            <RefreshCw className="h-3 w-3" />
+-          </Button>
+-        </div>
+-      </div>
+-
+-      {/* Hard validations */}
+-      {hasHard && (
+-        <div className="rounded-sm border border-neutral-300 bg-neutral-100 px-3 py-2" data-testid="ai-lint-hard">
+-          <p className="m-0 mb-1 text-xs font-bold text-foreground underline">Hard Issues</p>
+-          <ul className="m-0 pl-4 flex flex-col gap-0.5">
+-            {lintResult.hardValidation.map((msg, i) => (
+-              <li key={i} className="text-xs text-foreground">{msg.message}</li>
+-            ))}
+-          </ul>
+-        </div>
+-      )}
+-
+-      {/* Soft guidance */}
+-      {hasSoft && (
+-        <div className="rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2" data-testid="ai-lint-soft">
+-          <p className="m-0 mb-1 text-xs font-semibold text-muted">Suggestions</p>
+-          <ul className="m-0 pl-4 flex flex-col gap-0.5">
+-            {lintResult.softGuidance.map((msg, i) => (
+-              <li key={i} className="text-xs text-muted">{msg.message}</li>
+-            ))}
+-          </ul>
+-        </div>
+-      )}
+-
+-      {/* All clear */}
+-      {!hasHard && !hasSoft && (
+-        <div className="text-xs text-foreground flex items-center gap-1" data-testid="ai-lint-clear">
+-          ✓ No quality issues detected
+-        </div>
+-      )}
+-    </div>
+-  );
+-}
+-
+-## 12. toolResult
+-/**
+- * Risk signals panel — displays AI-detected and rules-based risk signals
+- * for a plan. Used on the Team Week page's risk tab.
+- */
+-import { AlertTriangle, ShieldAlert, TrendingDown, RotateCcw, Zap, Activity } from "lucide-react";
+-import { Badge } from "../ui/Badge.js";
+-import { Skeleton } from "../ui/Skeleton.js";
+-import { cn } from "../../lib/utils.js";
+-import { useRiskSignals } from "../../api/aiHooks.js";
+-import type { RiskSignal } from "../../api/aiApi.js";
+-
+-const SIGNAL_ICONS: Record<string, typeof AlertTriangle> = {
+-  OVERCOMMIT: TrendingDown,
+-  UNDERCOMMIT: TrendingDown,
+-  REPEATED_CARRY_FORWARD: RotateCcw,
+-  BLOCKED_CRITICAL: ShieldAlert,
+-  SCOPE_VOLATILITY: Zap,
+-};
+-
+-const SIGNAL_CLS: Record<string, string> = {
+-  OVERCOMMIT: "border-neutral-300 bg-neutral-100 text-foreground",
+-  UNDERCOMMIT: "border-neutral-200 bg-neutral-50 text-foreground",
+-  REPEATED_CARRY_FORWARD: "border-neutral-200 bg-neutral-50 text-foreground",
+-  BLOCKED_CRITICAL: "border-neutral-300 bg-neutral-100 text-foreground",
+-  SCOPE_VOLATILITY: "border-neutral-200 bg-neutral-50 text-foreground",
+-};
+-
+-function SignalCard({ signal }: { signal: RiskSignal }) {
+-  const Icon = SIGNAL_ICONS[signal.signalType] ?? Activity;
+-  const cls = SIGNAL_CLS[signal.signalType] ?? "border-border bg-background text-foreground";
+-
+-  return (
+-    <div className={cn("rounded-default border px-3 py-2.5 flex items-start gap-2.5", cls)} data-testid={`risk-signal-${signal.id}`}>
+-      <Icon className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
+-      <div className="flex-1 min-w-0">
+-        <div className="flex items-center gap-2 mb-1">
+-          <Badge variant="default" className="text-[0.6rem]">{signal.signalType}</Badge>
+-          <span className="text-[0.65rem] text-muted">
+-            {new Date(signal.createdAt).toLocaleDateString()}
+-          </span>
+-        </div>
+-        <p className="m-0 text-xs">{signal.rationale}</p>
+-      </div>
+-    </div>
+-  );
+-}
+-
+-interface RiskSignalsPanelProps {
+-  planId: string | null;
+-}
+-
+-export function RiskSignalsPanel({ planId }: RiskSignalsPanelProps) {
+-  const { data, loading, error } = useRiskSignals(planId);
+-
+-  if (!planId) {
+-    return (
+-      <div className="text-sm text-muted py-4 text-center" data-testid="risk-signals-no-plan">
+-        Select a member's plan to view risk signals.
+-      </div>
+-    );
+-  }
+-
+-  if (loading) {
+-    return (
+-      <div className="flex flex-col gap-2" data-testid="risk-signals-loading">
+-        <Skeleton className="h-16 w-full" />
+-        <Skeleton className="h-16 w-full" />
+-      </div>
+-    );
+-  }
+-
+-  if (error) {
+-    return (
+-      <div className="text-sm text-danger" data-testid="risk-signals-error">
+-        Failed to load risk signals: {error.message}
+-      </div>
+-    );
+-  }
+-
+-  if (!data?.aiAvailable) {
+-    return (
+-      <div className="text-sm text-muted italic" data-testid="risk-signals-unavailable">
+-        Risk detection is currently unavailable.
+-      </div>
+-    );
+-  }
+-
+-  if (data.signals.length === 0) {
+-    return (
+-      <div className="flex items-center gap-2 text-sm text-foreground py-4" data-testid="risk-signals-clear">
+-        <ShieldAlert className="h-4 w-4" />
+-        No risk signals detected for this plan.
+-      </div>
+-    );
+-  }
+-
+-  return (
+-    <div className="flex flex-col gap-2" data-testid="risk-signals-list">
+-      <div className="flex items-center justify-between">
+-        <span className="text-xs font-semibold text-muted uppercase tracking-wider">
+-          {data.signals.length} Risk Signal{data.signals.length !== 1 ? "s" : ""}
+-        </span>
+-      </div>
+-      {data.signals.map((signal) => (
+-        <SignalCard key={signal.id} signal={signal} />
+-      ))}
+-    </div>
+-  );
+-}
+-
+-## 13. assistant
+-{
+-  "type": "toolCall",
+-  "id": "toolu_0136w1MkPuPn46T6BGBmr4QR",
+-  "name": "read",
+-  "arguments": {
+-    "path": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/CommitDraftAssistButton.tsx"
+-  }
+-}
+-{
+-  "type": "toolCall",
+-  "id": "toolu_017wgA3PzV9jSfQeLJRrjXSK",
+-  "name": "read",
+-  "arguments": {
+-    "path": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/ReconcileAssistPanel.tsx"
+-  }
+-}
+-{
+-  "type": "toolCall",
+-  "id": "toolu_01D4ZrFtMRLjaGh2JZGBtzhy",
+-  "name": "read",
+-  "arguments": {
+-    "path": "/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend/src/components/ai/SemanticSearchInput.tsx"
+-  }
+-}
+-
+-## 14. toolResult
+-/**
+- * CommitDraftAssistButton — "✨ AI Suggest" button that calls the existing
+- * CommitDraftAssistService backend and renders inline suggestions.
+- *
+- * SOTA note: Completes the wiring of an existing backend capability to the
+- * frontend (ai-eval-roadmap Phase 3a). Every suggestion shows rationale and
+- * is accept/dismiss-able per PRD §17 ("assistive, not authoritarian").
+- */
+-import { useState, useCallback } from "react";
+-import { Sparkles, Check, Loader2 } from "lucide-react";
+-import { Button } from "../ui/Button.js";
+-import { Badge } from "../ui/Badge.js";
+-import { cn } from "../../lib/utils.js";
+-import { useAiApi, useAiStatus } from "../../api/aiHooks.js";
+-import { useHostBridge } from "../../host/HostProvider.js";
+-import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
+-import type { CommitDraftAssistResponse } from "../../api/aiApi.js";
+-
+-interface CommitDraftAssistButtonProps {
+-  planId: string;
+-  commitId?: string | undefined;
+-  currentTitle: string;
+-  currentDescription?: string | undefined;
+-  currentSuccessCriteria?: string | undefined;
+-  currentEstimatePoints?: number | undefined;
+-  chessPiece?: string | undefined;
+-  onAcceptTitle?: ((title: string) => void) | undefined;
+-  onAcceptDescription?: ((description: string) => void) | undefined;
+-  onAcceptSuccessCriteria?: ((criteria: string) => void) | undefined;
+-  onAcceptEstimatePoints?: ((points: number) => void) | undefined;
+-  className?: string | undefined;
+-}
+-
+-interface SuggestionField {
+-  label: string;
+-  current: string;
+-  suggested: string;
+-  onAccept: () => void;
+-}
+-
+-export function CommitDraftAssistButton({
+-  planId,
+-  commitId,
+-  currentTitle,
+-  currentDescription,
+-  currentSuccessCriteria,
+-  currentEstimatePoints,
+-  chessPiece,
+-  onAcceptTitle,
+-  onAcceptDescription,
+-  onAcceptSuccessCriteria,
+-  onAcceptEstimatePoints,
+-  className,
+-}: CommitDraftAssistButtonProps) {
+-  const aiApi = useAiApi();
+-  const bridge = useHostBridge();
+-  const userId = bridge.context.authenticatedUser.id;
+-  const { data: aiStatus } = useAiStatus();
+-  const [loading, setLoading] = useState(false);
+-  const [result, setResult] = useState<CommitDraftAssistResponse | null>(null);
+-  const [accepted, setAccepted] = useState<Set<string>>(new Set());
+-  const [error, setError] = useState<string | null>(null);
+-
+-  const isAvailable = aiStatus?.available ?? false;
+-
+-  const handleRequest = useCallback(async () => {
+-    setLoading(true);
+-    setError(null);
+-    setResult(null);
+-    setAccepted(new Set());
+-    try {
+-      const response = await aiApi.commitDraftAssist({
+-        userId,
+-        planId,
+-        commitId,
+-        currentTitle,
+-        currentDescription,
+-        currentSuccessCriteria,
+-        currentEstimatePoints,
+-        chessPiece,
+-      });
+-      if (!response.aiAvailable) {
+-        setError("AI is currently unavailable. Try again later.");
+-        return;
+-      }
+-      setResult(response);
+-    } catch {
+-      setError("Failed to get AI suggestions.");
+-    } finally {
+-      setLoading(false);
+-    }
+-  }, [
+-    aiApi, userId, planId, commitId, currentTitle,
+-    currentDescription, currentSuccessCriteria, currentEstimatePoints, chessPiece,
+-  ]);
+-
+-  const handleAccept = useCallback((field: string, acceptFn: () => void) => {
+-    acceptFn();
+-    setAccepted((prev) => new Set(prev).add(field));
+-  }, []);
+-
+-  // Build suggestion fields from the response
+-  const suggestions: SuggestionField[] = [];
+-  if (result) {
+-    if (result.suggestedTitle && onAcceptTitle) {
+-      suggestions.push({
+-        label: "Title",
+-        current: currentTitle,
+-        suggested: result.suggestedTitle,
+-        onAccept: () => onAcceptTitle(result.suggestedTitle!),
+-      });
+-    }
+-    if (result.suggestedDescription && onAcceptDescription) {
+-      suggestions.push({
+-        label: "Description",
+-        current: currentDescription ?? "",
+-        suggested: result.suggestedDescription,
+-        onAccept: () => onAcceptDescription(result.suggestedDescription!),
+-      });
+-    }
+-    if (result.suggestedSuccessCriteria && onAcceptSuccessCriteria) {
+-      suggestions.push({
+-        label: "Success Criteria",
+-        current: currentSuccessCriteria ?? "",
+-        suggested: result.suggestedSuccessCriteria,
+-        onAccept: () => onAcceptSuccessCriteria(result.suggestedSuccessCriteria!),
+-      });
+-    }
+-    if (result.suggestedEstimatePoints != null && onAcceptEstimatePoints) {
+-      suggestions.push({
+-        label: "Estimate",
+-        current: currentEstimatePoints != null ? `${currentEstimatePoints} pts` : "not set",
+-        suggested: `${result.suggestedEstimatePoints} pts`,
+-        onAccept: () => onAcceptEstimatePoints(result.suggestedEstimatePoints!),
+-      });
+-    }
+-  }
+-
+-  const allGood = result && suggestions.length === 0;
+-
+-  return (
+-    <div className={cn("flex flex-col gap-2", className)}>
+-      {/* Trigger button */}
+-      <Button
+-        type="button"
+-        variant="ghost"
+-        size="sm"
+-        onClick={() => void handleRequest()}
+-        disabled={loading || !isAvailable || !currentTitle.trim()}
+-        data-testid="ai-draft-assist-btn"
+-        className="self-start text-primary hover:text-primary/80"
+-        title={!isAvailable ? "AI unavailable" : "Get AI suggestions for this commit"}
+-      >
+-        {loading ? (
+-          <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+-        ) : (
+-          <Sparkles className="h-3.5 w-3.5 mr-1" />
+-        )}
+-        {loading ? "Thinking…" : "AI Suggest"}
+-      </Button>
+-
+-      {/* Error */}
+-      {error && (
+-        <p className="text-xs text-danger" data-testid="ai-draft-assist-error">{error}</p>
+-      )}
+-
+-      {/* All good */}
+-      {allGood && (
+-        <div
+-          className="flex items-center gap-1.5 text-xs text-foreground bg-foreground/5 rounded-default px-2.5 py-1.5"
+-          data-testid="ai-draft-assist-good"
+-        >
+-          <Check className="h-3.5 w-3.5" />
+-          Looks good! No suggestions.
+-          {result.suggestionId && (
+-            <AiFeedbackButtons suggestionId={result.suggestionId} className="ml-auto" />
+-          )}
+-        </div>
+-      )}
+-
+-      {/* Suggestions */}
+-      {suggestions.length > 0 && (
+-        <div
+-          className="rounded-default border border-primary/20 bg-primary/5 p-3 flex flex-col gap-2.5"
+-          data-testid="ai-draft-assist-suggestions"
+-        >
+-          <div className="flex items-center justify-between">
+-            <span className="text-xs font-semibold text-primary flex items-center gap-1">
+-              <Sparkles className="h-3 w-3" /> AI Suggestions
+-            </span>
+-            {result?.suggestionId && (
+-              <AiFeedbackButtons suggestionId={result.suggestionId} />
+-            )}
+-          </div>
+-
+-          {suggestions.map((s) => {
+-            const isAccepted = accepted.has(s.label);
+-            return (
+-              <div
+-                key={s.label}
+-                className={cn(
+-                  "rounded-sm border px-2.5 py-2 text-xs",
+-                  isAccepted
+-                    ? "border-foreground/20 bg-foreground/5"
+-                    : "border-neutral-200 bg-white",
+-                )}
+-                data-testid={`ai-suggestion-${s.label.toLowerCase().replace(/\s/g, "-")}`}
+-              >
+-                <div className="flex items-start justify-between gap-2">
+-                  <div className="flex-1">
+-                    <Badge variant="default" className="mb-1 text-[0.6rem]">
+-                      {s.label}
+-                    </Badge>
+-                    {s.current && (
+-                      <p className="m-0 text-muted line-through">{s.current}</p>
+-                    )}
+-                    <p className="m-0 font-medium text-foreground">{s.suggested}</p>
+-                  </div>
+-                  {!isAccepted && (
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      size="icon"
+-                      onClick={() => handleAccept(s.label, s.onAccept)}
+-                      className="h-6 w-6 text-foreground hover:bg-neutral-100 shrink-0"
+-                      aria-label={`Accept ${s.label} suggestion`}
+-                      data-testid={`ai-accept-${s.label.toLowerCase().replace(/\s/g, "-")}`}
+-                    >
+-                      <Check className="h-3.5 w-3.5" />
+-                    </Button>
+-                  )}
+-                  {isAccepted && (
+-                    <span className="text-[0.6rem] text-foreground font-semibold">✓ Applied</span>
+-                  )}
+-       
+...[diff truncated at 120000 chars to control duet artifact size]

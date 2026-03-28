@@ -46,6 +46,7 @@ vi.mock("../api/aiHooks.js", () => ({
   useAiApi: vi.fn(() => ({ recordFeedback: vi.fn() })),
   useAiStatus: vi.fn(() => ({ data: { available: false }, loading: false, error: null })),
   useManagerAiSummary: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
+  useRiskSignals: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
 }));
 
 vi.mock("../api/rcdoHooks.js", () => ({

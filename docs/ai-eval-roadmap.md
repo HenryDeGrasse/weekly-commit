@@ -1,17 +1,22 @@
 # AI Evaluation & Quality Roadmap
 
 **Created:** 2026-03-26
-**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 10 prompt templates, 7 AI service types, 6 frontend AI components. Evaluation gaps identified via code audit and validated against Manus RAG evaluation research report (see `docs/rag-eval-research.md`).
+**Updated:** 2026-03-28
+**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 10 prompt templates, 7 AI service types, 6 frontend AI components. Evaluation gaps identified via code audit.
+
+> **Status key:** ✅ Implemented · 🔨 In progress · 📋 Planned
 
 ---
 
-## Phase 1: Eval Foundation
+## Phase 1: Eval Foundation ✅
 
 **Goal:** Build the infrastructure to scientifically validate AI output quality, enable A/B testing of prompts, and measure the metrics that the Manus research identifies as critical (Faithfulness ≥ 0.90, Context Recall ≥ 0.85).
 
-### 1a. Golden Test Dataset
+### 1a. Golden Test Dataset ✅ (partial — expanding)
 
 **What:** 15-20 realistic test cases per AI capability, stored as JSON fixtures under `backend/src/test/resources/eval/`. Not synthetic — hand-crafted from realistic scenarios matching our seed data patterns.
+
+**Status:** Implemented for `commit-draft-assist` (12 cases) and `commit-lint` (6 cases). Remaining capabilities (`rcdo-suggest`, `risk-signal`, `reconcile-assist`, `rag-query`) are in progress.
 
 **Why:** Every AI test currently mocks the LLM response. We test "does the code handle JSON correctly" but never "does the prompt produce good suggestions." A golden dataset is the foundation for all eval work.
 
@@ -56,9 +61,11 @@ backend/src/test/resources/eval/
     └── cases.json
 ```
 
-### 1b. Eval Runner
+### 1b. Eval Runner ✅
 
 **What:** A JUnit test class that calls the real LLM (not mocked) with actual prompts, scores output against the golden dataset using automated + LLM-as-judge scoring, and writes results to a JSON report.
+
+**Status:** Implemented as `PromptEvalRunner.java` with parameterized tests for `commit-draft-assist` and `commit-lint`. Tagged `@Tag("eval")`, excluded from normal test runs, runs via `./gradlew evalTest`.
 
 **Scoring dimensions per capability:**
 
@@ -83,15 +90,11 @@ backend/src/test/resources/eval/
 - `faithfulness-judge.txt` — scores whether every claim is attributable to retrieved context (per Manus §2.1)
 - `relevancy-judge.txt` — scores whether output directly addresses the input query
 
-### 1c. Prompt Version Tracking
+### 1c. Prompt Version Tracking ✅
 
 **What:** Add `prompt_version TEXT` column to `ai_suggestion` table. Populate it in `OpenRouterAiProvider` from the prompt template filename + a version suffix. Enables A/B analysis using existing `ai_feedback` data.
 
-**Implementation:**
-1. Flyway migration: `ALTER TABLE ai_suggestion ADD COLUMN prompt_version TEXT;`
-2. `AiSuggestionResult` record: add `promptVersion` field
-3. `OpenRouterAiProvider.generateSuggestion()`: read prompt version from template metadata or filename convention (`commit-draft-assist-v2.txt` → version `v2`)
-4. `AiSuggestionService.storeSuggestion()`: persist prompt version
+**Status:** Implemented. `V12__add_prompt_version_and_eval_scores.sql` adds the column + indexes. `OpenRouterAiProvider.resolvePromptVersion()` generates version identifiers (e.g., `commit-draft-assist-v1`). `AiSuggestionService.storeSuggestion()` persists the version.
 
 **A/B analysis query (once data accumulates):**
 ```sql
@@ -105,33 +108,23 @@ WHERE prompt_version IS NOT NULL
 GROUP BY prompt_version, suggestion_type;
 ```
 
-### 1d. Faithfulness Scoring
+### 1d. Faithfulness Scoring ✅
 
-**What:** Implement the RAGAS faithfulness metric as an LLM-as-judge call specifically for RAG query answers and risk signals. Per Manus §2.1: decompose the answer into atomic claims, verify each against retrieved context, score = supported/total.
+**What:** Implement the RAGAS faithfulness metric as an LLM-as-judge call specifically for RAG query answers and risk signals. Decompose the answer into atomic claims, verify each against retrieved context, score = supported/total.
 
-**Implementation:**
-- New service: `FaithfulnessEvaluator` in `ai/eval/` package
-- Judge prompt: given an answer + retrieved chunks, extract claims, mark each as SUPPORTED or UNSUPPORTED
-- Store faithfulness score on `ai_suggestion` (new column `eval_faithfulness_score REAL`)
-- Run asynchronously after suggestion storage (sample 10% of production suggestions)
-- Target: ≥ 0.90 (Manus §8 staging gate)
-
-**Context from Manus report:**
-> "Faithfulness is the single most important metric for enterprise risk-signal generation, where a fabricated risk can trigger unnecessary escalation and erode stakeholder trust." — Manus §2.1
->
-> The metric is computed by decomposing the answer into atomic statements, then verifying each against the retrieved context. Formula: Faithfulness = (claims supported by context) / (total claims). — Manus §2.1
+**Status:** Implemented as `FaithfulnessEvaluator.java`. Runs asynchronously via `maybeScopeAsync()` after suggestion storage. High-stakes types (RISK_SIGNAL, TEAM_INSIGHT, PERSONAL_INSIGHT, RAG_QUERY) are always scored; lower-stakes types sampled at 10%. Scores written back to `ai_suggestion.eval_faithfulness_score` and `eval_relevancy_score`. Judge prompt at `prompts/faithfulness-eval.txt`.
 
 ---
 
-## Phase 2: Prompt Quality
+## Phase 2: Prompt Quality ✅
 
 **Goal:** Improve actual LLM output quality through prompt engineering. This is the highest-ROI code change — better prompts produce better outputs immediately, before any eval infrastructure is needed.
 
-### 2a. Add Few-Shot Examples to All Prompts
+### 2a. Add Few-Shot Examples to All Prompts ✅
 
 **What:** Add 1-2 good examples and 1 bad example to each of the 10 prompt templates in `backend/src/main/resources/prompts/`.
 
-**Current problem:** Every prompt says "respond with ONLY a JSON object" but gives zero examples of good vs bad output. The model has no reference for what quality looks like in our domain.
+**Status:** Implemented. All 10 prompt templates now contain few-shot examples.
 
 **Example improvement for `commit-draft-assist.txt`:**
 ```
@@ -156,9 +149,11 @@ Output: {"suggestedTitle": null, "suggestedDescription": null, "suggestedSuccess
 - `rag-intent.txt`
 - `rag-query.txt`
 
-### 2b. Add Field-Level Context Descriptions
+### 2b. Add Field-Level Context Descriptions ✅
 
-**What:** The system prompts don't explain the data structure the model receives. The user message is a raw JSON blob from `buildUserMessage()` in `OpenRouterAiProvider`:
+**What:** The system prompts don't explain the data structure the model receives. The user message is a raw JSON blob from `buildUserMessage()` in `OpenRouterAiProvider`.
+
+**Status:** Implemented. All prompts now document their input data structure.
 
 ```json
 {"suggestionType":"COMMIT_DRAFT_ASSIST","commitData":{"title":"Do stuff"},"planData":{},"historicalCommits":[],"rcdoTree":[],"additionalContext":{}}
@@ -175,9 +170,11 @@ The model has no instructions about what `historicalCommits` contains, what `rcd
 - rcdoTree: [{id, title, type, parentId, status}] — the active RCDO hierarchy nodes
 ```
 
-### 2c. Deduplicate Risk Signal Prompt vs Rules Engine
+### 2c. Deduplicate Risk Signal Prompt vs Rules Engine ✅
 
 **What:** `risk-signal.txt` asks the LLM for risks but doesn't tell it what rules already exist. The `RiskDetectionService` already computes:
+
+**Status:** Implemented. The prompt explicitly lists the 5 rules-based signals and instructs the LLM to find additional risks they miss.
 - OVERCOMMIT: total points > capacity budget
 - UNDERCOMMIT: total points < 60% of budget
 - REPEATED_CARRY_FORWARD: any commit with carryForwardStreak ≥ 2
@@ -199,9 +196,11 @@ Your job is to find ADDITIONAL risks that these rules miss. Focus on:
 ...
 ```
 
-### 2d. Enrich ChunkBuilder with RCDO Context
+### 2d. Enrich ChunkBuilder with RCDO Context ✅
 
 **What:** Commit chunks in Pinecone are thin — a commit with no description embeds as:
+
+**Status:** Implemented. `ChunkBuilder` now uses `EnrichmentContext` with RCDO path, team name, owner display name, carry-forward lineage, linked ticket summary, and cross-team RCDO overlap. `SemanticIndexService.indexCommitDirect()` resolves all enrichment context from DB lookups before building chunks.
 ```
 "Deploy new API" — QUEEN, 5pts. Description: . Success criteria: . Outcome: . Notes:
 ```
@@ -229,47 +228,23 @@ This requires passing RCDO node and team data into the chunk builder, which mean
 
 ---
 
-## Phase 3: Wire Missing Frontend AI Features
+## Phase 3: Wire Missing Frontend AI Features ✅
 
-**Goal:** Three AI backend capabilities exist but have no frontend component calling them. Wiring these up completes the user-facing AI story.
+**Goal:** Three AI backend capabilities existed without frontend components. All three are now wired up.
 
-### 3a. Commit Draft Assist Button in CommitForm
+### 3a. Commit Draft Assist Button in CommitForm ✅
 
-**What:** `CommitDraftAssistService` (backend) and `aiApi.commitDraftAssist()` (frontend API client) exist and work. No UI component calls them.
+**Status:** Implemented as `frontend/src/components/ai/CommitDraftAssistButton.tsx`. Shows "✨ AI Suggest" button in commit form, renders inline diff-style suggestions with Accept/Dismiss per field, uses `AiFeedbackButtons` for thumbs up/down, degrades when AI unavailable.
 
-**Build:** An "✨ AI Suggest" button in the commit creation/edit form that:
-1. Calls `aiApi.commitDraftAssist()` with current form values
-2. Shows suggestions inline (highlighted diff-style: "Current: X → Suggested: Y")
-3. Each suggestion has Accept / Dismiss buttons (using existing `AiFeedbackButtons`)
-4. Accepting a suggestion fills the form field
-5. Disabled when AI is unavailable (check `useAiStatus()`)
+### 3b. Reconcile Assist in ReconcilePage ✅
 
-**Location:** New component `frontend/src/components/ai/CommitDraftAssistButton.tsx`, used inside the commit form on the MyWeek page.
+**Status:** Implemented as `frontend/src/components/ai/ReconcileAssistPanel.tsx`. Shows "AI Assist Reconciliation" button on Reconcile page, suggests likely outcomes, draft week summary, and carry-forward recommendations. All suggestions are accept/dismiss-able.
 
-**UX notes:**
-- Don't auto-run on every keystroke — trigger on explicit button click
-- Show loading spinner while waiting
-- If all suggestions are null (current values are already good), show "✓ Looks good!"
-- Show rationale text in a tooltip or collapsed section
+### 3c. Suggested Questions in SemanticSearchInput ✅
 
-### 3b. Reconcile Assist in ReconcilePage
+**Status:** Implemented in `frontend/src/components/ai/SemanticSearchInput.tsx`. Shows clickable example question pills when the search input is empty. Clicking fills and auto-submits.
 
-**What:** `ReconcileAssistService` (backend) exists. No frontend component calls it.
-
-**Build:** An "AI Assist Reconciliation" button on the Reconcile page that:
-1. Calls the reconcile assist endpoint with the plan's commits + scope changes
-2. Pre-fills likely outcomes (ACHIEVED/PARTIALLY_ACHIEVED/NOT_ACHIEVED/CANCELED) in the `OutcomeSelector` components
-3. Shows a draft week summary
-4. Suggests which commits to carry forward with reasons
-5. All suggestions are editable — user must explicitly accept
-
-**Location:** New component `frontend/src/components/ai/ReconcileAssistPanel.tsx`, used in `frontend/src/routes/Reconcile.tsx`.
-
-### 3c. Suggested Questions in SemanticSearchInput
-
-**What:** When the search input is empty, show 3-4 clickable example questions as pills/chips below the input.
-
-**Build:** Add to `SemanticSearchInput.tsx`:
+Previously planned implementation:
 ```tsx
 const SUGGESTED_QUESTIONS = [
   "What did the team commit to last week?",
@@ -283,48 +258,34 @@ Show these as clickable badges when `question` is empty and no result is display
 
 ---
 
-## Phase 4: Production Monitoring
+## Phase 4: Production Monitoring ✅ (mostly)
 
 **Goal:** Continuously validate AI quality in production, detect degradation early, and provide observability into the AI layer's health.
 
-### 4a. Async Eval Sampling
+### 4a. Async Eval Sampling ✅
 
-**What:** After each AI suggestion is stored, sample 5-10% and run faithfulness + relevancy scoring asynchronously. Store scores on the `ai_suggestion` row.
+**Status:** Implemented. `FaithfulnessEvaluator.maybeScopeAsync()` is called from `AiSuggestionService.storeSuggestion()`. High-stakes types (RISK_SIGNAL, TEAM_INSIGHT, PERSONAL_INSIGHT, RAG_QUERY) always scored; lower-stakes types sampled at 10%. Scores stored on `ai_suggestion` via V12 migration columns.
 
-**Implementation:**
-1. Add columns to `ai_suggestion`: `eval_faithfulness_score REAL`, `eval_relevancy_score REAL`, `eval_scored_at TIMESTAMPTZ`
-2. New service: `ProductionEvalService` — after `AiSuggestionService.storeSuggestion()`, probabilistically enqueue an eval job
-3. Eval job: call `FaithfulnessEvaluator` (from Phase 1d) + a relevancy judge on the stored suggestion
-4. Results written back to the suggestion row
+### 4b. Prometheus Metrics for AI Quality ✅
 
-**Sampling strategy:** Score 100% of RISK_SIGNAL and TEAM_INSIGHT suggestions (high-stakes), 10% of COMMIT_DRAFT and COMMIT_LINT (high-volume, lower stakes).
+**Status:** Implemented as `AiQualityMetrics.java`. Exposes:
+- `weekly_commit_ai_faithfulness_score` — rolling 7-day average by suggestion type
+- `weekly_commit_ai_acceptance_rate` — accepted / (accepted + dismissed) by type
+- `weekly_commit_ai_provider_available` — 1/0 gauge
+- `weekly_commit_ai_tokens_total` — cumulative tokens
+- `weekly_commit_ai_requests_total` — cumulative requests
 
-### 4b. Prometheus Metrics for AI Quality
+Refreshed every 5 minutes from DB queries.
 
-**What:** Expose Prometheus gauges for rolling AI quality metrics. Wire into the existing Grafana setup (provisioning already exists at `infra/grafana/provisioning/`).
+**Remaining:** Grafana dashboard JSON (`infra/grafana/provisioning/dashboards/ai-quality.json`) not yet created. Metrics are available at `/actuator/prometheus` but no pre-built Grafana panels.
 
-**Metrics to expose:**
-- `weekly_commit_ai_faithfulness_score` (gauge, labeled by suggestion_type) — rolling 7-day average
-- `weekly_commit_ai_acceptance_rate` (gauge, labeled by suggestion_type) — accepted / (accepted + dismissed)
-- `weekly_commit_ai_suggestion_latency_seconds` (histogram, labeled by suggestion_type)
-- `weekly_commit_ai_provider_availability` (gauge) — 1 if available, 0 if not
-- `weekly_commit_ai_total_tokens_used` (counter) — from `OpenRouterAiProvider.getTotalTokensUsed()`
+### 4c. Drift Alerting ✅
 
-**Grafana dashboard:** Create `infra/grafana/provisioning/dashboards/ai-quality.json` with panels for each metric.
-
-### 4c. Drift Alerting
-
-**What:** Alert when AI quality degrades below Manus-recommended production thresholds.
-
-**Alert rules (add to `infra/prometheus/alerts.yml`):**
+**Status:** Implemented in `infra/prometheus/alerts.yml`:
 - `AiFaithfulnessLow`: rolling 7-day faithfulness < 0.88 → warning
 - `AiFaithfulnessCritical`: rolling 7-day faithfulness < 0.85 → critical
 - `AiAcceptanceRateLow`: rolling 7-day acceptance rate < 0.20 → warning
-- `AiProviderDown`: provider unavailable for > 5 minutes → critical
-- `AiLatencyHigh`: p95 suggestion latency > 8 seconds → warning
-
-**Context from Manus report (§8):**
-> Production alert thresholds: Faithfulness < 0.88, Context Recall < 0.82, Answer Relevancy < 0.78, P95 Latency > 8s
+- `AiProviderDown`: provider unavailable > 5 minutes → critical
 
 ---
 
@@ -365,17 +326,21 @@ AI Services (10 types):
   TEAM_INSIGHT         → InsightGenerationService    → prompt: team-insight.txt
   PERSONAL_INSIGHT     → InsightGenerationService    → prompt: personal-insight.txt
 
-Frontend AI Components:
+Frontend AI Components (all wired):
   AiLintPanel            — commit quality lint (calls COMMIT_LINT)
   RiskSignalsPanel       — risk signal display (reads RISK_SIGNAL)
   InsightPanel           — team + personal insights (reads TEAM_INSIGHT, PERSONAL_INSIGHT)
-  SemanticSearchInput    — RAG query interface (calls RAG_INTENT + RAG_QUERY)
+  SemanticSearchInput    — RAG query interface (calls RAG_INTENT + RAG_QUERY) + suggested questions
   QueryAnswerCard        — RAG answer display with source citations
   AiFeedbackButtons      — thumbs up/down on every AI output
-
-  MISSING: CommitDraftAssist UI (backend exists, no frontend component)
-  MISSING: ReconcileAssist UI (backend exists, no frontend component)
-  MISSING: Suggested questions in SemanticSearchInput
+  CommitDraftAssistButton — ✨ AI Suggest in commit form (calls COMMIT_DRAFT_ASSIST)
+  ReconcileAssistPanel   — AI reconciliation assistant (calls RECONCILE_ASSIST)
+  AiCommitComposer       — AI-guided commit creation flow
+  ProactiveRiskBanner    — critical risk signal banner
+  TeamRiskSummaryBanner  — team-level risk overview
+  ManagerAiSummaryCard   — AI-generated team summary (calls TEAM_SUMMARY)
+  RcdoSuggestionInline   — RCDO link suggestion (calls RCDO_SUGGEST)
+  AiSuggestedBadge       — visual indicator for AI-suggested content
 ```
 
 ## Reference: Key Manus Report Thresholds

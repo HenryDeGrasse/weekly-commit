@@ -149,6 +149,8 @@ export default function MyWeek() {
   const aiComposerEnabled = aiAssistanceEnabled && (aiStatus?.available ?? false);
 
   const [showAiComposer, setShowAiComposer] = useState(false);
+  /** Monotonically increasing counter — bumped after every commit CRUD to trigger lint re-run. */
+  const [lintRefreshKey, setLintRefreshKey] = useState(0);
   /** Pre-filled values passed from AI composer → CommitForm when user switches to manual. */
   const [commitFormInitialValues, setCommitFormInitialValues] = useState<
     Partial<CreateCommitPayload>
@@ -165,9 +167,16 @@ export default function MyWeek() {
   /** Open AI composer (when AI is available) or CommitForm directly. */
   const handleOpenCreate = useCallback(() => {
     if (isLocked) {
-      setScopeChangeMode("add");
-      setScopeChangeTargetCommit(null);
-      setPendingCreatePayload(null);
+      if (aiComposerEnabled) {
+        // Post-lock: open AI composer first; the payload will flow through
+        // handleCreateCommit which triggers the scope-change dialog.
+        setShowAiComposer(true);
+        setCommitFormInitialValues({});
+      } else {
+        setScopeChangeMode("add");
+        setScopeChangeTargetCommit(null);
+        setPendingCreatePayload(null);
+      }
     } else if (aiComposerEnabled) {
       setShowAiComposer(true);
       setCommitFormInitialValues({});
@@ -200,14 +209,14 @@ export default function MyWeek() {
     if (!plan) return;
     if (isLocked) { setPendingCreatePayload(payload); setScopeChangeMode("add"); setScopeChangeTargetCommit(null); setFormMode(null); return; }
     await planApi.createCommit(plan.id, payload);
-    refetchPlan(); setFormMode(null);
+    refetchPlan(); setFormMode(null); setLintRefreshKey((k) => k + 1);
   }, [plan, isLocked, planApi, refetchPlan]);
 
   const handleUpdateCommit = useCallback(async (payload: UpdateCommitPayload) => {
     if (!plan || !editingCommit) return;
     if (isLocked) { setPendingEditPayload(payload); setScopeChangeMode("edit"); setScopeChangeTargetCommit(editingCommit); setFormMode(null); setEditingCommit(null); return; }
     await planApi.updateCommit(plan.id, editingCommit.id, payload);
-    refetchPlan(); setFormMode(null); setEditingCommit(null);
+    refetchPlan(); setFormMode(null); setEditingCommit(null); setLintRefreshKey((k) => k + 1);
   }, [plan, editingCommit, isLocked, planApi, refetchPlan]);
 
   const handleDeleteRequest = useCallback((commitId: string) => {
@@ -219,14 +228,14 @@ export default function MyWeek() {
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!plan || !deleteTarget) return;
-    try { await planApi.deleteCommit(plan.id, deleteTarget.id); refetchPlan(); }
+    try { await planApi.deleteCommit(plan.id, deleteTarget.id); refetchPlan(); setLintRefreshKey((k) => k + 1); }
     catch (err) { setActionError(err instanceof Error ? err.message : "Delete failed"); }
     finally { setDeleteTarget(null); }
   }, [plan, deleteTarget, planApi, refetchPlan]);
 
   const handleReorder = useCallback(async (orderedIds: string[]) => {
     if (!plan) return;
-    try { await planApi.reorderCommits(plan.id, orderedIds); refetchPlan(); }
+    try { await planApi.reorderCommits(plan.id, orderedIds); refetchPlan(); setLintRefreshKey((k) => k + 1); }
     catch (err) { setActionError(err instanceof Error ? err.message : "Reorder failed"); }
   }, [plan, planApi, refetchPlan]);
 
@@ -392,7 +401,10 @@ export default function MyWeek() {
                 </Button>
               )}
               {isLocked && (
-                <Button variant="primary" size="sm" onClick={handleOpenCreate} data-testid="post-lock-add-commit-btn">+ Add Commit</Button>
+                <Button variant="primary" size="sm" onClick={handleOpenCreate} data-testid="post-lock-add-commit-btn">
+                  {aiComposerEnabled && <Sparkles className="h-3.5 w-3.5 mr-1" aria-hidden="true" />}
+                  + Add Commit
+                </Button>
               )}
               {(plan.state === "LOCKED" || plan.state === "RECONCILING") && (
                 <Link to={`/weekly/reconcile/${plan.id}`} data-testid="reconcile-hint">
@@ -459,7 +471,7 @@ export default function MyWeek() {
       {aiAssistanceEnabled && isDraft && plan && commits.length > 0 && (
         <div data-testid="inline-ai-lint-panel">
           <AiErrorBoundary>
-            <AiLintPanel planId={plan.id} userId={currentUserId} autoRun />
+            <AiLintPanel planId={plan.id} userId={currentUserId} autoRun refreshKey={lintRefreshKey} />
           </AiErrorBoundary>
         </div>
       )}
@@ -491,8 +503,8 @@ export default function MyWeek() {
         </Button>
       )}
 
-      {/* AI Commit Composer */}
-      {showAiComposer && plan && isDraft && (
+      {/* AI Commit Composer — works for both DRAFT (direct create) and LOCKED (flows through scope-change) */}
+      {showAiComposer && plan && (isDraft || isLocked) && (
         <AiErrorBoundary>
           <AiCommitComposer
             planId={plan.id}

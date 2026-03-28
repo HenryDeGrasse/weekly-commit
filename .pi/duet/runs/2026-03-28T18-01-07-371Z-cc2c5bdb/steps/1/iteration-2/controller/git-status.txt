@@ -1,0 +1,229 @@
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/draft-plan.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/handoff-source.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/handoff.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/handoff.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/lock.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/plan.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/review.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-a/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-b/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-b/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-b/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-b/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-1/side-b/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/plan.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/review.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-a/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-b/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-b/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-b/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-b/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/planning/round-2/side-b/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/sessions/continuous/relay-a/2026-03-27T15-59-03-493Z_dd4d41b6-526d-4a1b-82b7-79264a6d7270.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/sessions/continuous/relay-b/2026-03-27T16-08-05-893Z_96b311df-37c6-45f8-8a23-0a90855798cd.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/sessions/planning/critic/2026-03-27T15-47-41-708Z_e4d41948-c91f-455f-a151-27df4bf3a650.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/sessions/planning/planner/2026-03-27T15-45-00-254Z_65abd2e9-decd-4014-880a-99a425e8ce24.jsonl
+ M .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/state.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-1/agent-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-1/agent-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-1/agent-a/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-1/agent-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-1/agent-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-1/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/agent-b/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/agent-b/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/agent-b/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/agent-b/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/agent-b/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/diff-name-only.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/diff.patch
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/gate-evidence.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/git-diff-check.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/git-status.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/outputs/lint.stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/outputs/lint.stdout.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/outputs/typecheck.stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/outputs/typecheck.stdout.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/outputs/unit.stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/controller/outputs/unit.stdout.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-2/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/agent-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/agent-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/agent-a/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/agent-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/agent-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/controller/diff-name-only.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/controller/diff.patch
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/controller/gate-evidence.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/controller/git-status.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-3/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/agent-b/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/agent-b/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/agent-b/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/agent-b/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/agent-b/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/diff-name-only.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/diff.patch
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/gate-evidence.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/git-diff-check.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/git-status.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/outputs/lint.stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/outputs/lint.stdout.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/outputs/typecheck.stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/outputs/typecheck.stdout.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/outputs/unit.stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/controller/outputs/unit.stdout.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-4/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/retry/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/retry/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/retry/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/retry/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/retry/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/agent-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/controller/diff-name-only.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/controller/diff.patch
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/controller/gate-evidence.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/controller/git-status.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-5/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/agent-b/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/agent-b/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/agent-b/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/agent-b/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/agent-b/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/controller/diff-name-only.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/controller/diff.patch
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/controller/gate-evidence.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/controller/git-status.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/1/iteration-6/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/retry/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/retry/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/retry/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/retry/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/retry/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/agent-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-1/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/agent-b/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/agent-b/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/agent-b/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/agent-b/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/agent-b/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/controller/diff-name-only.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/controller/diff.patch
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/controller/gate-evidence.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/controller/git-status.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/2/iteration-2/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/retry/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/retry/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/retry/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/retry/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/retry/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/agent-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/3/iteration-1/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/retry/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/retry/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/retry/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/retry/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/retry/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/agent-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-1/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/agent-b/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/agent-b/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/agent-b/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/agent-b/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/agent-b/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/controller/diff-name-only.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/controller/diff.patch
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/controller/gate-evidence.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/controller/git-status.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/4/iteration-2/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/retry/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/retry/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/retry/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/retry/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/retry/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/agent-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-1/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/agent-b/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/agent-b/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/agent-b/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/agent-b/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/agent-b/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/controller/diff-name-only.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/controller/diff.patch
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/controller/gate-evidence.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/controller/git-status.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/5/iteration-2/relay-result.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/retry/assistant.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/retry/events.jsonl
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/retry/parsed.json
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/retry/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/retry/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/stderr.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/agent-a/system-prompt.txt
+ D .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/steps/6/iteration-1/relay-result.json
+ M backend/src/main/java/com/weeklycommit/ai/controller/AiController.java
+ M backend/src/main/java/com/weeklycommit/domain/repository/UserWeekFactRepository.java
+ M backend/src/test/java/com/weeklycommit/ai/controller/AiControllerTest.java
+ M backend/src/test/java/com/weeklycommit/ai/eval/EvalCase.java
+ M backend/src/test/java/com/weeklycommit/ai/eval/EvalResult.java
+ M backend/src/test/java/com/weeklycommit/ai/eval/PromptEvalRunner.java
+ M backend/src/test/resources/eval/commit-draft-assist/cases.json
+ M backend/src/test/resources/eval/commit-lint/cases.json
+ M docs/ai-eval-roadmap.md
+ M frontend/src/__tests__/TeamWeekPage.test.tsx
+ M frontend/src/components/ai/AiLintPanel.tsx
+ M frontend/src/components/myweek/CommitForm.tsx
+ M frontend/src/routes/MyWeek.tsx
+ M frontend/src/routes/Reconcile.tsx
+ M frontend/src/routes/TeamWeek.tsx
+?? .gitlab-ci.yml
+?? .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/closeout.json
+?? .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/run-report.md
+?? .pi/duet/runs/2026-03-27T15-44-55-623Z-a43c633a/run-summary.md
+?? .pi/duet/runs/2026-03-28T18-01-07-371Z-cc2c5bdb/
+?? .pi/todos/682f3ecb.md
+?? .pi/todos/7bcd8752.md
+?? .pi/todos/bb947a52.md
+?? .pi/todos/c47b6f7d.md
+?? .pi/todos/f25ed268.md
+?? .pi/todos/f82f4da3.md
+?? README.md
+?? backend/src/main/java/com/weeklycommit/ai/dto/StructuredEvidenceResponse.java
+?? backend/src/main/java/com/weeklycommit/ai/evidence/
+?? backend/src/test/resources/eval/rag-query/
+?? backend/src/test/resources/eval/rcdo-suggest/
+?? backend/src/test/resources/eval/reconcile-assist/
+?? backend/src/test/resources/eval/risk-signal/
+?? docs/ai-thoughts.md
+?? docs/architecture.md
+?? duet-plan-whatif.md
+?? duet-plan.md
+?? e2e/ai-flows.spec.ts
+?? frontend/src/components/ai/EvidenceDrawer.tsx
+?? frontend/src/components/ai/RcdoSuggestionInline.tsx
+?? frontend/src/components/ai/TeamRiskSummaryBanner.tsx

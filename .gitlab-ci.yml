@@ -1,0 +1,242 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
+stages:
+  - lint
+  - test
+  - build
+  - e2e
+  - eval
+
+variables:
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+  PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.cache/ms-playwright"
+
+# ── Shared cache templates ────────────────────────────────────────────────────
+
+.node_cache: &node_cache
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+
+.gradle_cache: &gradle_cache
+  cache:
+    key:
+      files:
+        - backend/gradle/wrapper/gradle-wrapper.properties
+        - backend/build.gradle.kts
+        - backend/settings.gradle.kts
+    paths:
+      - .gradle/
+      - backend/.gradle/
+
+# ── Lint / Typecheck ──────────────────────────────────────────────────────────
+
+frontend:lint-typecheck:
+  stage: lint
+  image: node:20-bookworm
+  <<: *node_cache
+  interruptible: true
+  before_script:
+    - npm ci
+    - npm run build -w @weekly-commit/shared
+  script:
+    - npm run lint -w frontend
+    - npm run typecheck -w frontend
+    - npm run lint -w @weekly-commit/shared
+    - npm run typecheck -w @weekly-commit/shared
+
+backend:spotless:
+  stage: lint
+  image: gradle:8.10.2-jdk21
+  <<: *gradle_cache
+  interruptible: true
+  script:
+    - cd backend && ./gradlew --no-daemon spotlessCheck
+
+# ── Unit / Integration Tests ─────────────────────────────────────────────────
+
+frontend:test:
+  stage: test
+  image: node:20-bookworm
+  <<: *node_cache
+  interruptible: true
+  before_script:
+    - npm ci
+    - npm run build -w @weekly-commit/shared
+  script:
+    - cd frontend && npx vitest run --coverage --coverage.reporter=text --coverage.reporter=lcov
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - frontend/coverage/
+
+backend:test:
+  stage: test
+  image: gradle:8.10.2-jdk21
+  <<: *gradle_cache
+  interruptible: true
+  script:
+    - cd backend && ./gradlew --no-daemon test
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - backend/build/reports/tests/
+      - backend/build/test-results/
+
+# ── Build Artifacts ──────────────────────────────────────────────────────────
+
+frontend:build:
+  stage: build
+  image: node:20-bookworm
+  <<: *node_cache
+  interruptible: true
+  needs:
+    - frontend:lint-typecheck
+    - frontend:test
+  before_script:
+    - npm ci
+  script:
+    - npm run build -w @weekly-commit/shared
+    - npm run build -w frontend
+  artifacts:
+    expire_in: 7 days
+    paths:
+      - frontend/dist/
+      - packages/shared/dist/
+
+backend:build:
+  stage: build
+  image: gradle:8.10.2-jdk21
+  <<: *gradle_cache
+  interruptible: true
+  needs:
+    - backend:spotless
+    - backend:test
+  script:
+    - cd backend && ./gradlew --no-daemon build -x test
+  artifacts:
+    expire_in: 7 days
+    paths:
+      - backend/build/libs/
+
+# ── OpenAPI contract verification ────────────────────────────────────────────
+
+api:contract:
+  stage: build
+  image: mcr.microsoft.com/playwright:v1.58.2-noble
+  <<: *node_cache
+  interruptible: true
+  needs:
+    - backend:test
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    POSTGRES_DB: weekly_commit
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/weekly_commit
+    SPRING_DATASOURCE_USERNAME: postgres
+    SPRING_DATASOURCE_PASSWORD: postgres
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends openjdk-21-jdk curl
+    - npm ci
+  script:
+    - mkdir -p build/api-contract
+    - |
+      cd backend && ./gradlew --no-daemon bootRun &
+      for i in $(seq 1 45); do
+        curl -sf http://localhost:8080/api-docs && break
+        sleep 2
+      done
+      curl -sf http://localhost:8080/api-docs > ../build/api-contract/openapi.json
+    - npx openapi-typescript build/api-contract/openapi.json -o build/api-contract/api-types.ts
+    - npx tsc --noEmit build/api-contract/api-types.ts --esModuleInterop --moduleResolution node
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - build/api-contract/openapi.json
+      - build/api-contract/api-types.ts
+
+# ── E2E ──────────────────────────────────────────────────────────────────────
+
+frontend:e2e:
+  stage: e2e
+  image: mcr.microsoft.com/playwright:v1.58.2-noble
+  <<: *node_cache
+  interruptible: true
+  needs:
+    - frontend:build
+    - backend:build
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    POSTGRES_DB: weekly_commit
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/weekly_commit
+    SPRING_DATASOURCE_USERNAME: postgres
+    SPRING_DATASOURCE_PASSWORD: postgres
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends openjdk-21-jdk curl
+    - npm ci
+    - npx playwright install --with-deps chromium
+  script:
+    - npm run build -w @weekly-commit/shared
+    - npm run build -w frontend
+    - |
+      cd backend && ./gradlew --no-daemon bootRun &
+      for i in $(seq 1 45); do
+        curl -sf http://localhost:8080/health && break
+        sleep 2
+      done
+    - |
+      cd frontend && npx vite preview --host 0.0.0.0 --port 5173 &
+      for i in $(seq 1 20); do
+        curl -sf http://localhost:5173 && break
+        sleep 2
+      done
+    - npm run e2e
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - e2e/test-results/
+      - playwright-report/
+
+# ── LLM evals / judge-backed prompt tests ────────────────────────────────────
+# This job uses the existing backend `evalTest` task and should be run manually
+# with masked GitLab CI variables configured:
+#   OPENROUTER_API_KEY
+#   OPENROUTER_MODEL   (optional)
+# It is intentionally manual and allow_failure because it calls a live LLM.
+
+eval:llm-judge:
+  stage: eval
+  image: gradle:8.10.2-jdk21
+  <<: *gradle_cache
+  interruptible: true
+  allow_failure: true
+  rules:
+    - if: '$OPENROUTER_API_KEY'
+      when: manual
+    - when: never
+  script:
+    - cd backend && ./gradlew --no-daemon evalTest
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - backend/build/eval-results/
+      - backend/build/reports/tests/

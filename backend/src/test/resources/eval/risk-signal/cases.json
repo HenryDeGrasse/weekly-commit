@@ -1,0 +1,158 @@
+[
+  {
+    "id": "risk-001",
+    "description": "Hidden sequential dependency between two commits",
+    "edgeCaseType": "hidden_dependency",
+    "input": {
+      "planData": {"state": "LOCKED", "capacityBudgetPoints": 10, "totalPlannedPoints": 8},
+      "commits": [
+        {"commitId": "c-1", "title": "Deploy new auth service to production", "chessPiece": "QUEEN", "estimatePoints": 5, "carryForwardStreak": 0, "description": "Deploy the auth microservice"},
+        {"commitId": "c-2", "title": "Migrate all users to new auth service", "chessPiece": "ROOK", "estimatePoints": 3, "carryForwardStreak": 0, "description": "Switch user base to new auth"}
+      ],
+      "scopeChanges": []
+    },
+    "expectedBehavior": {
+      "minSignals": 1,
+      "maxSignals": 3,
+      "shouldDetectDependency": true,
+      "shouldNotDuplicateRules": true
+    }
+  },
+  {
+    "id": "risk-002",
+    "description": "Clean plan with no additional risks beyond rules",
+    "edgeCaseType": "no_risk",
+    "input": {
+      "planData": {"state": "LOCKED", "capacityBudgetPoints": 10, "totalPlannedPoints": 8},
+      "commits": [
+        {"commitId": "c-1", "title": "Implement user search API endpoint", "chessPiece": "ROOK", "estimatePoints": 3, "carryForwardStreak": 0},
+        {"commitId": "c-2", "title": "Write unit tests for search API", "chessPiece": "PAWN", "estimatePoints": 2, "carryForwardStreak": 0},
+        {"commitId": "c-3", "title": "Update API documentation", "chessPiece": "PAWN", "estimatePoints": 1, "carryForwardStreak": 0}
+      ],
+      "scopeChanges": []
+    },
+    "expectedBehavior": {
+      "maxSignals": 1,
+      "shouldNotDuplicateRules": true
+    }
+  },
+  {
+    "id": "risk-003",
+    "description": "Concentration risk — all high-priority work on same system",
+    "edgeCaseType": "concentration_risk",
+    "input": {
+      "planData": {"state": "LOCKED", "capacityBudgetPoints": 10, "totalPlannedPoints": 10},
+      "commits": [
+        {"commitId": "c-1", "title": "Refactor payment service database schema", "chessPiece": "KING", "estimatePoints": 5, "carryForwardStreak": 0, "description": "Major schema migration for payments"},
+        {"commitId": "c-2", "title": "Add payment retry logic", "chessPiece": "QUEEN", "estimatePoints": 3, "carryForwardStreak": 0, "description": "Implement retry for failed payment transactions"},
+        {"commitId": "c-3", "title": "Fix payment webhook timeout", "chessPiece": "ROOK", "estimatePoints": 2, "carryForwardStreak": 0, "description": "Handle Stripe webhook timeouts in payment service"}
+      ],
+      "scopeChanges": []
+    },
+    "expectedBehavior": {
+      "minSignals": 1,
+      "maxSignals": 3,
+      "shouldDetectConcentration": true,
+      "shouldNotDuplicateRules": true
+    }
+  },
+  {
+    "id": "risk-004",
+    "description": "KING commit with suspiciously low estimate",
+    "edgeCaseType": "estimate_mismatch",
+    "input": {
+      "planData": {"state": "LOCKED", "capacityBudgetPoints": 10, "totalPlannedPoints": 6},
+      "commits": [
+        {"commitId": "c-1", "title": "Complete production database migration with zero downtime", "chessPiece": "KING", "estimatePoints": 1, "carryForwardStreak": 0, "description": "Migrate 50M rows to new schema with blue-green deployment"},
+        {"commitId": "c-2", "title": "Update monitoring dashboards", "chessPiece": "PAWN", "estimatePoints": 2, "carryForwardStreak": 0},
+        {"commitId": "c-3", "title": "Code review backlog", "chessPiece": "PAWN", "estimatePoints": 1, "carryForwardStreak": 0}
+      ],
+      "scopeChanges": []
+    },
+    "expectedBehavior": {
+      "minSignals": 1,
+      "maxSignals": 3,
+      "shouldDetectEstimateMismatch": true,
+      "shouldNotDuplicateRules": true
+    }
+  },
+  {
+    "id": "risk-005",
+    "description": "Commit description contains blocking language",
+    "edgeCaseType": "blocking_language",
+    "input": {
+      "planData": {"state": "LOCKED", "capacityBudgetPoints": 10, "totalPlannedPoints": 9},
+      "commits": [
+        {"commitId": "c-1", "title": "Integrate payment provider SDK v3", "chessPiece": "QUEEN", "estimatePoints": 5, "carryForwardStreak": 0, "description": "Waiting on vendor to ship SDK v3 — expected Wednesday"},
+        {"commitId": "c-2", "title": "Build notification preferences UI", "chessPiece": "ROOK", "estimatePoints": 3, "carryForwardStreak": 0, "description": "After design review is approved on Tuesday"},
+        {"commitId": "c-3", "title": "Fix typos in error messages", "chessPiece": "PAWN", "estimatePoints": 1, "carryForwardStreak": 0}
+      ],
+      "scopeChanges": []
+    },
+    "expectedBehavior": {
+      "minSignals": 1,
+      "maxSignals": 4,
+      "shouldDetectBlockingLanguage": true,
+      "shouldNotDuplicateRules": true
+    }
+  },
+  {
+    "id": "risk-006",
+    "description": "Two QUEENs competing for limited time — attention split risk",
+    "edgeCaseType": "attention_split",
+    "input": {
+      "planData": {"state": "LOCKED", "capacityBudgetPoints": 10, "totalPlannedPoints": 10},
+      "commits": [
+        {"commitId": "c-1", "title": "Launch new pricing page", "chessPiece": "QUEEN", "estimatePoints": 5, "carryForwardStreak": 0, "successCriteria": "Pricing page live with A/B test running"},
+        {"commitId": "c-2", "title": "Ship onboarding flow redesign", "chessPiece": "QUEEN", "estimatePoints": 5, "carryForwardStreak": 0, "successCriteria": "New onboarding live for 100% of new users"}
+      ],
+      "scopeChanges": []
+    },
+    "expectedBehavior": {
+      "minSignals": 1,
+      "maxSignals": 3,
+      "shouldNotDuplicateRules": true
+    }
+  },
+  {
+    "id": "risk-007",
+    "description": "Scope changes hint at instability — should flag timing risk",
+    "edgeCaseType": "scope_instability",
+    "input": {
+      "planData": {"state": "LOCKED", "capacityBudgetPoints": 10, "totalPlannedPoints": 10},
+      "commits": [
+        {"commitId": "c-1", "title": "Finalize API contract for mobile team", "chessPiece": "ROOK", "estimatePoints": 3, "carryForwardStreak": 0},
+        {"commitId": "c-2", "title": "Implement caching layer", "chessPiece": "BISHOP", "estimatePoints": 3, "carryForwardStreak": 0},
+        {"commitId": "c-3", "title": "Performance testing suite", "chessPiece": "KNIGHT", "estimatePoints": 2, "carryForwardStreak": 0}
+      ],
+      "scopeChanges": [
+        {"category": "COMMIT_ADDED", "reason": "Urgent request from mobile team"},
+        {"category": "ESTIMATE_CHANGED", "reason": "Caching turned out to be more complex"},
+        {"category": "PRIORITY_CHANGED", "reason": "PM re-prioritized after stakeholder meeting"},
+        {"category": "COMMIT_ADDED", "reason": "Another last-minute ask"}
+      ]
+    },
+    "expectedBehavior": {
+      "minSignals": 0,
+      "maxSignals": 3,
+      "shouldNotDuplicateRules": true
+    }
+  },
+  {
+    "id": "risk-008",
+    "description": "Single massive commit consuming entire budget",
+    "edgeCaseType": "single_large_commit",
+    "input": {
+      "planData": {"state": "LOCKED", "capacityBudgetPoints": 10, "totalPlannedPoints": 8},
+      "commits": [
+        {"commitId": "c-1", "title": "Complete full rewrite of billing module", "chessPiece": "KING", "estimatePoints": 8, "carryForwardStreak": 0, "successCriteria": "All billing flows migrated and tested"}
+      ],
+      "scopeChanges": []
+    },
+    "expectedBehavior": {
+      "minSignals": 1,
+      "maxSignals": 3,
+      "shouldNotDuplicateRules": true
+    }
+  }
+]

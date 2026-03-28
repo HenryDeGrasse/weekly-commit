@@ -1,0 +1,26 @@
+Reviewed the step-1 diff in:
+
+- `backend/src/test/java/com/weeklycommit/ai/eval/EvalCase.java`
+- `backend/src/test/java/com/weeklycommit/ai/eval/EvalResult.java`
+- `backend/src/test/java/com/weeklycommit/ai/eval/PromptEvalRunner.java`
+- `backend/src/test/resources/eval/commit-draft-assist/cases.json`
+- `backend/src/test/resources/eval/commit-lint/cases.json`
+
+What I verified:
+- `EvalCase` now includes `boolean critical`.
+- `EvalResult` now stores `critical`, exposes `isCritical()`, and includes it in `toString()`.
+- All 6 `new EvalResult(...)` call sites in `PromptEvalRunner` pass `evalCase.critical()`.
+- Exactly the required cases were marked critical:
+  - draft: `draft-001`, `draft-004`, `draft-008`
+  - lint: `lint-001`, `lint-003`, `lint-004`
+
+Checks run:
+- `cd backend && ./gradlew build` ✅ passed
+
+I did not make any changes. I did also consult the run health-check note; its flagged issue is about a later planned step, not a defect in this step’s implemented diff.
+
+```observations
+- [low] backend/src/test/java/com/weeklycommit/ai/eval/PromptEvalRunner.java: A targeted `./gradlew test --tests 'com.weeklycommit.ai.eval.PromptEvalRunner' -Dinclude.tags=eval` invocation returned “No tests found”; the normal required `build` check still passed, so this looks like an eval-task/filtering setup nuance rather than a step-1 defect.
+```
+
+Verdict: approve

@@ -1,0 +1,18 @@
+I re-read the revised plan from disk and checked it against the repo state.
+
+The previous blocker is addressed:
+- Step 5 now adds a separate `eval:threshold-check` job that is not `allow_failure`, instead of relying on the existing manual `eval:llm-judge` job alone. That fixes the main enforcement gap in the prior version.
+
+The rest of the plan is still workable:
+- Step 1 targets the correct test files and fixture JSON.
+- Step 2 still uses the feasible direct-HTTP approach in `PromptEvalRunner.java` without touching `src/main/`.
+- Step 3 references a real existing baseline file.
+- Step 4’s standalone CommonJS Node script fits the current repo/package setup.
+- Step 6’s Node built-in test runner approach is compatible with the current root `package.json`.
+
+Non-blocking suggestions:
+- In Step 4, consider reading `eval-*.json` rather than all `*.json` under `backend/build/eval-results/`.
+- In Step 5, it would be worth validating GitLab `manual` + `needs` behavior during implementation, since that’s operationally subtle, but it’s not a planning blocker.
+- The script should make the hard/soft distinction explicit in output so deterministic failures are clearly blocking while judge/regression failures are informational.
+
+Verdict: approve

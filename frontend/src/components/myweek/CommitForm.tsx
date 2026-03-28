@@ -8,6 +8,7 @@ import { Input } from "../ui/Input.js";
 import { cn } from "../../lib/utils.js";
 import { RcdoTreeView } from "../rcdo/RcdoTreeView.js";
 import { CommitDraftAssistButton } from "../ai/CommitDraftAssistButton.js";
+import { RcdoSuggestionInline } from "../ai/RcdoSuggestionInline.js";
 import type { RcdoTreeNode } from "../../api/rcdoTypes.js";
 import type { ChessPiece, EstimatePoints, CommitResponse, CreateCommitPayload, UpdateCommitPayload } from "../../api/planTypes.js";
 
@@ -321,6 +322,18 @@ export function CommitForm(props: CommitFormProps) {
               </div>
             )}
             {errors.rcdoNodeId && <span role="alert" className="block mt-1 text-xs text-danger">{errors.rcdoNodeId}</span>}
+
+            {/* AI RCDO suggestion — appears when no RCDO is selected and title has enough text */}
+            <AiErrorBoundary>
+              <RcdoSuggestionInline
+                planId={resolvedPlanId}
+                currentTitle={values.title}
+                currentDescription={values.description || undefined}
+                chessPiece={values.chessPiece || undefined}
+                currentRcdoNodeId={values.rcdoNodeId}
+                onAccept={(rcdoNodeId) => handleChange("rcdoNodeId", rcdoNodeId)}
+              />
+            </AiErrorBoundary>
           </div>
 
           {/* Linked ticket */}

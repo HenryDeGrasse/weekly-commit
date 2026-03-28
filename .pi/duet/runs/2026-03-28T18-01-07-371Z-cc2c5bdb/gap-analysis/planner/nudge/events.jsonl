@@ -1,0 +1,4 @@
+{"t":350,"type":"message_end","role":"user"}
+{"t":2101,"type":"message_end","role":"assistant","stopReason":"stop","textLength":41,"textPreview":"Verdict: approve Blocking issues: - none"}
+{"t":2102,"type":"turn_end","toolCount":0,"thinkingLength":0,"textLength":41}
+{"t":2102,"type":"agent_end","messageCount":2,"toolCount":0,"thinkingLength":0,"textLength":41}

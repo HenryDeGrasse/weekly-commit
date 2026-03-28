@@ -1,0 +1,225 @@
+[
+  {
+    "id": "rcdo-001",
+    "description": "Clear keyword match to a specific Outcome",
+    "edgeCaseType": "strong_match",
+    "input": {
+      "commitData": {
+        "title": "Implement Stripe webhook handler for subscription renewals",
+        "description": "Handle renewal and cancellation events from Stripe"
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Scale Revenue", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "Launch self-serve billing", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-1", "title": "Subscription renewal automation", "type": "OUTCOME", "parentId": "do-1", "status": "Active"},
+        {"id": "out-2", "title": "Invoice generation pipeline", "type": "OUTCOME", "parentId": "do-1", "status": "Active"},
+        {"id": "do-2", "title": "Reduce churn by 15%", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-3", "title": "Proactive cancellation flow", "type": "OUTCOME", "parentId": "do-2", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": true,
+      "expectedNodeId": "out-1",
+      "minConfidence": 0.75,
+      "shouldBeOutcome": true,
+      "shouldNotSuggestRallyCry": true
+    }
+  },
+  {
+    "id": "rcdo-002",
+    "description": "No RCDO matches the commit topic at all",
+    "edgeCaseType": "no_match",
+    "input": {
+      "commitData": {
+        "title": "Update team wiki with onboarding docs",
+        "description": "Write step-by-step onboarding guide for new hires"
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Scale Revenue", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "Launch self-serve billing", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-1", "title": "Subscription renewal automation", "type": "OUTCOME", "parentId": "do-1", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": false,
+      "maxConfidence": 0.5
+    }
+  },
+  {
+    "id": "rcdo-003",
+    "description": "Ambiguous match between two Outcomes — should pick the more specific one",
+    "edgeCaseType": "ambiguous_match",
+    "input": {
+      "commitData": {
+        "title": "Add SSO login support for enterprise customers",
+        "description": "SAML-based SSO integration with Okta"
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Win Enterprise", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "Enterprise authentication", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-1", "title": "SSO integration with major IdPs", "type": "OUTCOME", "parentId": "do-1", "status": "Active"},
+        {"id": "out-2", "title": "Enterprise access controls", "type": "OUTCOME", "parentId": "do-1", "status": "Active"},
+        {"id": "do-2", "title": "Improve security posture", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-3", "title": "SOC 2 certification", "type": "OUTCOME", "parentId": "do-2", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": true,
+      "expectedNodeId": "out-1",
+      "minConfidence": 0.7,
+      "shouldBeOutcome": true
+    }
+  },
+  {
+    "id": "rcdo-004",
+    "description": "Should link to DO when it has no child Outcomes",
+    "edgeCaseType": "do_without_outcomes",
+    "input": {
+      "commitData": {
+        "title": "Design data residency architecture for EMEA",
+        "description": "Multi-region data routing design doc"
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Global Expansion", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "EMEA data residency compliance", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "do-2", "title": "APAC market entry", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-2a", "title": "Japan localization", "type": "OUTCOME", "parentId": "do-2", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": true,
+      "expectedNodeId": "do-1",
+      "minConfidence": 0.7,
+      "shouldNotSuggestRallyCry": true
+    }
+  },
+  {
+    "id": "rcdo-005",
+    "description": "Should never suggest a Rally Cry directly even if keywords match",
+    "edgeCaseType": "rally_cry_trap",
+    "input": {
+      "commitData": {
+        "title": "Revenue reporting dashboard for Q1",
+        "description": "Build exec dashboard showing revenue trends"
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Scale Revenue", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "Improve financial visibility", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-1", "title": "Executive revenue dashboard", "type": "OUTCOME", "parentId": "do-1", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": true,
+      "expectedNodeId": "out-1",
+      "shouldNotSuggestRallyCry": true,
+      "minConfidence": 0.7
+    }
+  },
+  {
+    "id": "rcdo-006",
+    "description": "Should not suggest Archived node even if it matches",
+    "edgeCaseType": "archived_node",
+    "input": {
+      "commitData": {
+        "title": "Fix memory leak in payment processing service",
+        "description": ""
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Operational Excellence", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "Payment system reliability", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-1", "title": "Fix payment processing bugs", "type": "OUTCOME", "parentId": "do-1", "status": "Archived"},
+        {"id": "out-2", "title": "99.9% payment uptime SLA", "type": "OUTCOME", "parentId": "do-1", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": true,
+      "expectedNodeId": "out-2",
+      "shouldNotSuggestNodeId": "out-1",
+      "minConfidence": 0.6
+    }
+  },
+  {
+    "id": "rcdo-007",
+    "description": "Semantic match — no keyword overlap but conceptual alignment",
+    "edgeCaseType": "semantic_match",
+    "input": {
+      "commitData": {
+        "title": "Add Datadog APM instrumentation to checkout flow",
+        "description": "Distributed tracing for the entire checkout pipeline"
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Operational Excellence", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "Improve system observability", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-1", "title": "Full-stack distributed tracing", "type": "OUTCOME", "parentId": "do-1", "status": "Active"},
+        {"id": "out-2", "title": "Alert noise reduction", "type": "OUTCOME", "parentId": "do-1", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": true,
+      "expectedNodeId": "out-1",
+      "minConfidence": 0.7,
+      "shouldBeOutcome": true
+    }
+  },
+  {
+    "id": "rcdo-008",
+    "description": "Empty RCDO tree — should return null gracefully",
+    "edgeCaseType": "empty_tree",
+    "input": {
+      "commitData": {
+        "title": "Refactor database connection pooling",
+        "description": ""
+      },
+      "rcdoTree": []
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": false,
+      "maxConfidence": 0.3
+    }
+  },
+  {
+    "id": "rcdo-009",
+    "description": "Multiple equally valid Outcomes — confidence should be moderate, not high",
+    "edgeCaseType": "multiple_valid",
+    "input": {
+      "commitData": {
+        "title": "Improve API response times by 30%",
+        "description": "Profile and optimize slow endpoints"
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Product Quality", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "Performance optimization", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-1", "title": "API p95 latency under 200ms", "type": "OUTCOME", "parentId": "do-1", "status": "Active"},
+        {"id": "out-2", "title": "Database query optimization", "type": "OUTCOME", "parentId": "do-1", "status": "Active"},
+        {"id": "out-3", "title": "CDN cache hit rate above 90%", "type": "OUTCOME", "parentId": "do-1", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": true,
+      "expectedNodeId": "out-1",
+      "minConfidence": 0.6,
+      "shouldBeOutcome": true
+    }
+  },
+  {
+    "id": "rcdo-010",
+    "description": "Commit with very minimal title — should still attempt matching",
+    "edgeCaseType": "minimal_input",
+    "input": {
+      "commitData": {
+        "title": "SSO",
+        "description": ""
+      },
+      "rcdoTree": [
+        {"id": "rc-1", "title": "Security", "type": "RALLY_CRY", "parentId": null, "status": "Active"},
+        {"id": "do-1", "title": "Enterprise auth", "type": "DEFINING_OBJECTIVE", "parentId": "rc-1", "status": "Active"},
+        {"id": "out-1", "title": "SSO integration", "type": "OUTCOME", "parentId": "do-1", "status": "Active"}
+      ]
+    },
+    "expectedBehavior": {
+      "shouldSuggestNode": true,
+      "expectedNodeId": "out-1",
+      "minConfidence": 0.5
+    }
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "verdict": "changes_requested",
+  "blockingIssues": [
+    "Step 5 does not make CI enforcement real: `.gitlab-ci.yml` still leaves `eval:llm-judge` as manual and `allow_failure: true`, so deterministic threshold failures would not hard-gate the pipeline."
+  ]
+}

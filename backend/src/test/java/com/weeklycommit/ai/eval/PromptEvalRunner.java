@@ -106,7 +106,8 @@ class PromptEvalRunner {
 		}
 
 		EvalResult evalResult = new EvalResult(evalCase.id(), evalCase.description(),
-				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload());
+				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload(),
+				evalCase.critical());
 
 		if (schemaValid && output != null) {
 			// Automated checks against expected behavior
@@ -168,7 +169,8 @@ class PromptEvalRunner {
 		}
 
 		EvalResult evalResult = new EvalResult(evalCase.id(), evalCase.description(),
-				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload());
+				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload(),
+				evalCase.critical());
 
 		if (schemaValid && output != null) {
 			evaluateLintOutput(output, expected, evalResult);
@@ -179,7 +181,393 @@ class PromptEvalRunner {
 		assertThat(schemaValid).as("Schema validation for case %s", evalCase.id()).isTrue();
 	}
 
+	// ── RCDO Suggest Evaluation ───────────────────────────────────────────
+
+	Stream<EvalCase> rcdoSuggestCases() throws Exception {
+		return loadCases("eval/rcdo-suggest/cases.json");
+	}
+
+	@ParameterizedTest(name = "rcdo-suggest: {0}")
+	@MethodSource("rcdoSuggestCases")
+	void evaluateRcdoSuggest(EvalCase evalCase) throws Exception {
+		if (!providerAvailable) {
+			log.info("Skipping eval case {} — provider unavailable", evalCase.id());
+			return;
+		}
+		JsonNode input = evalCase.input();
+		JsonNode expected = evalCase.expectedBehavior();
+
+		Map<String, Object> commitData = objectMapper.convertValue(input.get("commitData"), new TypeReference<>() {
+		});
+		List<Map<String, Object>> rcdoTree = objectMapper.convertValue(input.get("rcdoTree"), new TypeReference<>() {
+		});
+
+		AiContext context = new AiContext(AiContext.TYPE_RCDO_SUGGEST, null, null, null, commitData, Map.of(),
+				List.of(), rcdoTree, Map.of());
+
+		AiSuggestionResult result = provider.generateSuggestion(context);
+
+		boolean schemaValid = false;
+		JsonNode output = null;
+		if (result.available() && result.payload() != null) {
+			try {
+				output = objectMapper.readTree(result.payload());
+				schemaValid = output.has("suggestedRcdoNodeId") && output.has("confidence");
+			} catch (Exception e) {
+				log.warn("Case {}: invalid JSON output: {}", evalCase.id(), e.getMessage());
+			}
+		}
+
+		EvalResult evalResult = new EvalResult(evalCase.id(), evalCase.description(),
+				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload(),
+				evalCase.critical());
+
+		if (schemaValid && output != null) {
+			evaluateRcdoSuggestOutput(output, expected, evalResult);
+		}
+
+		allResults.add(evalResult);
+		log.info("Eval result: {}", evalResult);
+		assertThat(schemaValid).as("Schema validation for case %s", evalCase.id()).isTrue();
+	}
+
+	// ── Risk Signal Evaluation ────────────────────────────────────────────
+
+	Stream<EvalCase> riskSignalCases() throws Exception {
+		return loadCases("eval/risk-signal/cases.json");
+	}
+
+	@ParameterizedTest(name = "risk-signal: {0}")
+	@MethodSource("riskSignalCases")
+	void evaluateRiskSignal(EvalCase evalCase) throws Exception {
+		if (!providerAvailable) {
+			log.info("Skipping eval case {} — provider unavailable", evalCase.id());
+			return;
+		}
+		JsonNode input = evalCase.input();
+		JsonNode expected = evalCase.expectedBehavior();
+
+		List<Map<String, Object>> commits = objectMapper.convertValue(input.get("commits"), new TypeReference<>() {
+		});
+		Map<String, Object> planData = objectMapper.convertValue(input.get("planData"), new TypeReference<>() {
+		});
+		Map<String, Object> additionalContext = new LinkedHashMap<>();
+		if (input.has("scopeChanges")) {
+			additionalContext.put("scopeChanges",
+					objectMapper.convertValue(input.get("scopeChanges"), new TypeReference<List<Object>>() {
+					}));
+		}
+
+		AiContext context = new AiContext(AiContext.TYPE_RISK_SIGNAL, null, null, null, Map.of(), planData, commits,
+				List.of(), additionalContext);
+
+		AiSuggestionResult result = provider.generateSuggestion(context);
+
+		boolean schemaValid = false;
+		JsonNode output = null;
+		if (result.available() && result.payload() != null) {
+			try {
+				output = objectMapper.readTree(result.payload());
+				schemaValid = output.has("signals") && output.get("signals").isArray();
+			} catch (Exception e) {
+				log.warn("Case {}: invalid JSON output: {}", evalCase.id(), e.getMessage());
+			}
+		}
+
+		EvalResult evalResult = new EvalResult(evalCase.id(), evalCase.description(),
+				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload(),
+				evalCase.critical());
+
+		if (schemaValid && output != null) {
+			evaluateRiskSignalOutput(output, expected, evalResult);
+		}
+
+		allResults.add(evalResult);
+		log.info("Eval result: {}", evalResult);
+		assertThat(schemaValid).as("Schema validation for case %s", evalCase.id()).isTrue();
+	}
+
+	// ── Reconcile Assist Evaluation ───────────────────────────────────────
+
+	Stream<EvalCase> reconcileAssistCases() throws Exception {
+		return loadCases("eval/reconcile-assist/cases.json");
+	}
+
+	@ParameterizedTest(name = "reconcile-assist: {0}")
+	@MethodSource("reconcileAssistCases")
+	void evaluateReconcileAssist(EvalCase evalCase) throws Exception {
+		if (!providerAvailable) {
+			log.info("Skipping eval case {} — provider unavailable", evalCase.id());
+			return;
+		}
+		JsonNode input = evalCase.input();
+		JsonNode expected = evalCase.expectedBehavior();
+
+		List<Map<String, Object>> commits = objectMapper.convertValue(input.get("commits"), new TypeReference<>() {
+		});
+		Map<String, Object> planData = objectMapper.convertValue(input.get("planData"), new TypeReference<>() {
+		});
+		Map<String, Object> additionalContext = new LinkedHashMap<>();
+		if (input.has("scopeChanges")) {
+			additionalContext.put("scopeChanges",
+					objectMapper.convertValue(input.get("scopeChanges"), new TypeReference<List<Object>>() {
+					}));
+		}
+
+		AiContext context = new AiContext(AiContext.TYPE_RECONCILE_ASSIST, null, null, null, Map.of(), planData,
+				commits, List.of(), additionalContext);
+
+		AiSuggestionResult result = provider.generateSuggestion(context);
+
+		boolean schemaValid = false;
+		JsonNode output = null;
+		if (result.available() && result.payload() != null) {
+			try {
+				output = objectMapper.readTree(result.payload());
+				schemaValid = output.has("likelyOutcomes") && output.has("draftSummary");
+			} catch (Exception e) {
+				log.warn("Case {}: invalid JSON output: {}", evalCase.id(), e.getMessage());
+			}
+		}
+
+		EvalResult evalResult = new EvalResult(evalCase.id(), evalCase.description(),
+				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload(),
+				evalCase.critical());
+
+		if (schemaValid && output != null) {
+			evaluateReconcileAssistOutput(output, expected, evalResult);
+		}
+
+		allResults.add(evalResult);
+		log.info("Eval result: {}", evalResult);
+		assertThat(schemaValid).as("Schema validation for case %s", evalCase.id()).isTrue();
+	}
+
+	// ── RAG Query Evaluation ──────────────────────────────────────────────
+
+	Stream<EvalCase> ragQueryCases() throws Exception {
+		return loadCases("eval/rag-query/cases.json");
+	}
+
+	@ParameterizedTest(name = "rag-query: {0}")
+	@MethodSource("ragQueryCases")
+	void evaluateRagQuery(EvalCase evalCase) throws Exception {
+		if (!providerAvailable) {
+			log.info("Skipping eval case {} — provider unavailable", evalCase.id());
+			return;
+		}
+		JsonNode input = evalCase.input();
+		JsonNode expected = evalCase.expectedBehavior();
+
+		Map<String, Object> additionalContext = objectMapper.convertValue(input, new TypeReference<>() {
+		});
+
+		AiContext context = new AiContext(AiContext.TYPE_RAG_QUERY, null, null, null, Map.of(), Map.of(), List.of(),
+				List.of(), additionalContext);
+
+		AiSuggestionResult result = provider.generateSuggestion(context);
+
+		boolean schemaValid = false;
+		JsonNode output = null;
+		if (result.available() && result.payload() != null) {
+			try {
+				output = objectMapper.readTree(result.payload());
+				schemaValid = output.has("answer") && output.has("confidence");
+			} catch (Exception e) {
+				log.warn("Case {}: invalid JSON output: {}", evalCase.id(), e.getMessage());
+			}
+		}
+
+		EvalResult evalResult = new EvalResult(evalCase.id(), evalCase.description(),
+				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload(),
+				evalCase.critical());
+
+		if (schemaValid && output != null) {
+			evaluateRagQueryOutput(output, expected, evalResult);
+		}
+
+		allResults.add(evalResult);
+		log.info("Eval result: {}", evalResult);
+		assertThat(schemaValid).as("Schema validation for case %s", evalCase.id()).isTrue();
+	}
+
 	// ── Output evaluation helpers ─────────────────────────────────────────
+
+	private void evaluateRcdoSuggestOutput(JsonNode output, JsonNode expected, EvalResult result) {
+		boolean suggestedNode = output.has("suggestedRcdoNodeId") && !output.get("suggestedRcdoNodeId").isNull()
+				&& !output.get("suggestedRcdoNodeId").asText("").isBlank()
+				&& !"null".equals(output.get("suggestedRcdoNodeId").asText(""));
+		double confidence = output.path("confidence").asDouble(0.0);
+
+		if (expected.has("shouldSuggestNode")) {
+			result.addCheck("shouldSuggestNode", expected.get("shouldSuggestNode").asBoolean() == suggestedNode);
+		}
+		if (expected.has("expectedNodeId") && suggestedNode) {
+			result.addCheck("correctNode",
+					expected.get("expectedNodeId").asText("").equals(output.get("suggestedRcdoNodeId").asText("")));
+		}
+		if (expected.has("shouldNotSuggestNodeId") && suggestedNode) {
+			result.addCheck("avoidedWrongNode", !expected.get("shouldNotSuggestNodeId").asText("")
+					.equals(output.get("suggestedRcdoNodeId").asText("")));
+		}
+		if (expected.has("minConfidence")) {
+			result.addCheck("minConfidence", confidence >= expected.get("minConfidence").asDouble());
+		}
+		if (expected.has("maxConfidence")) {
+			result.addCheck("maxConfidence", confidence <= expected.get("maxConfidence").asDouble());
+		}
+		if (expected.has("shouldNotSuggestRallyCry") && expected.get("shouldNotSuggestRallyCry").asBoolean()) {
+			// Check that rationale doesn't indicate a Rally Cry was suggested
+			String nodeId = suggestedNode ? output.get("suggestedRcdoNodeId").asText("") : "";
+			result.addCheck("notRallyCry", !nodeId.startsWith("rc-"));
+		}
+		if (expected.has("shouldBeOutcome") && expected.get("shouldBeOutcome").asBoolean()) {
+			String nodeId = suggestedNode ? output.get("suggestedRcdoNodeId").asText("") : "";
+			result.addCheck("isOutcome", nodeId.startsWith("out-"));
+		}
+
+		result.addScore("confidence", confidence);
+		if (output.has("rationale") && !output.get("rationale").isNull()) {
+			result.addNote("rationale", output.get("rationale").asText());
+		}
+	}
+
+	private void evaluateRiskSignalOutput(JsonNode output, JsonNode expected, EvalResult result) {
+		JsonNode signals = output.get("signals");
+		int signalCount = signals != null && signals.isArray() ? signals.size() : 0;
+
+		if (expected.has("minSignals")) {
+			result.addCheck("minSignals", signalCount >= expected.get("minSignals").asInt());
+		}
+		if (expected.has("maxSignals")) {
+			result.addCheck("maxSignals", signalCount <= expected.get("maxSignals").asInt());
+		}
+
+		// Check that rules-based signals are not duplicated
+		if (expected.has("shouldNotDuplicateRules") && expected.get("shouldNotDuplicateRules").asBoolean()
+				&& signals != null) {
+			java.util.Set<String> rulesBasedTypes = java.util.Set.of("OVERCOMMIT", "UNDERCOMMIT",
+					"REPEATED_CARRY_FORWARD", "BLOCKED_CRITICAL", "SCOPE_VOLATILITY");
+			boolean duplicated = false;
+			for (JsonNode s : signals) {
+				String signalType = s.path("signalType").asText("").toUpperCase();
+				if (rulesBasedTypes.contains(signalType)) {
+					duplicated = true;
+					result.addNote("duplicatedRulesSignal", signalType);
+				}
+			}
+			result.addCheck("noDuplicateRules", !duplicated);
+		}
+
+		result.addScore("signalCount", signalCount);
+	}
+
+	private void evaluateReconcileAssistOutput(JsonNode output, JsonNode expected, EvalResult result) {
+		JsonNode outcomes = output.get("likelyOutcomes");
+		JsonNode carryForwards = output.get("carryForwardRecommendations");
+		String summary = output.path("draftSummary").asText("");
+		int outcomeCount = outcomes != null && outcomes.isArray() ? outcomes.size() : 0;
+		int cfCount = carryForwards != null && carryForwards.isArray() ? carryForwards.size() : 0;
+
+		if (expected.has("minOutcomes")) {
+			result.addCheck("minOutcomes", outcomeCount >= expected.get("minOutcomes").asInt());
+		}
+		if (expected.has("maxOutcomes")) {
+			result.addCheck("maxOutcomes", outcomeCount <= expected.get("maxOutcomes").asInt());
+		}
+		if (expected.has("shouldHaveSummary")) {
+			result.addCheck("hasSummary", !summary.isBlank());
+		}
+		if (expected.has("minCarryForwards")) {
+			result.addCheck("minCarryForwards", cfCount >= expected.get("minCarryForwards").asInt());
+		}
+		if (expected.has("maxCarryForwards")) {
+			result.addCheck("maxCarryForwards", cfCount <= expected.get("maxCarryForwards").asInt());
+		}
+
+		// Check specific expected outcomes
+		if (expected.has("expectedOutcomes") && outcomes != null) {
+			expected.get("expectedOutcomes").fields().forEachRemaining(entry -> {
+				String commitId = entry.getKey();
+				String expectedOutcome = entry.getValue().asText();
+				boolean found = false;
+				for (JsonNode o : outcomes) {
+					if (commitId.equals(o.path("commitId").asText(""))) {
+						found = o.path("suggestedOutcome").asText("").equalsIgnoreCase(expectedOutcome);
+						break;
+					}
+				}
+				result.addCheck("outcome_" + commitId, found);
+			});
+		}
+
+		// Check carry-forward includes specific commits
+		if (expected.has("carryForwardShouldInclude") && carryForwards != null) {
+			for (JsonNode expectedCf : expected.get("carryForwardShouldInclude")) {
+				String commitId = expectedCf.asText();
+				boolean found = false;
+				for (JsonNode cf : carryForwards) {
+					if (commitId.equals(cf.path("commitId").asText(""))) {
+						found = true;
+						break;
+					}
+				}
+				result.addCheck("carryForward_" + commitId, found);
+			}
+		}
+
+		result.addScore("outcomeCount", outcomeCount);
+		result.addScore("carryForwardCount", cfCount);
+	}
+
+	private void evaluateRagQueryOutput(JsonNode output, JsonNode expected, EvalResult result) {
+		String answer = output.path("answer").asText("");
+		double confidence = output.path("confidence").asDouble(0.0);
+		JsonNode sources = output.get("sources");
+		int sourceCount = sources != null && sources.isArray() ? sources.size() : 0;
+
+		if (expected.has("shouldHaveAnswer")) {
+			result.addCheck("hasAnswer", !answer.isBlank());
+		}
+		if (expected.has("minConfidence")) {
+			result.addCheck("minConfidence", confidence >= expected.get("minConfidence").asDouble());
+		}
+		if (expected.has("maxConfidence")) {
+			result.addCheck("maxConfidence", confidence <= expected.get("maxConfidence").asDouble());
+		}
+		if (expected.has("minSources")) {
+			result.addCheck("minSources", sourceCount >= expected.get("minSources").asInt());
+		}
+		if (expected.has("maxSources")) {
+			result.addCheck("maxSources", sourceCount <= expected.get("maxSources").asInt());
+		}
+
+		// Check answer contains expected keywords
+		if (expected.has("answerShouldMention")) {
+			String lowerAnswer = answer.toLowerCase();
+			for (JsonNode keyword : expected.get("answerShouldMention")) {
+				String kw = keyword.asText("").toLowerCase();
+				result.addCheck("mentions_" + kw.replace(" ", "_"), lowerAnswer.contains(kw));
+			}
+		}
+
+		// Check answer indicates insufficient data
+		if (expected.has("answerShouldIndicateInsufficient")
+				&& expected.get("answerShouldIndicateInsufficient").asBoolean()) {
+			String lowerAnswer = answer.toLowerCase();
+			boolean indicatesInsufficient = lowerAnswer.contains("no data") || lowerAnswer.contains("not found")
+					|| lowerAnswer.contains("insufficient") || lowerAnswer.contains("no information")
+					|| lowerAnswer.contains("don't have") || lowerAnswer.contains("unable to find")
+					|| lowerAnswer.contains("no relevant") || lowerAnswer.contains("cannot find")
+					|| lowerAnswer.contains("not available") || lowerAnswer.contains("no chunks")
+					|| lowerAnswer.contains("doesn't appear");
+			result.addCheck("indicatesInsufficient", indicatesInsufficient);
+		}
+
+		result.addScore("confidence", confidence);
+		result.addScore("sourceCount", sourceCount);
+		result.addNote("answerPreview", answer.substring(0, Math.min(200, answer.length())));
+	}
 
 	private void evaluateDraftAssistOutput(JsonNode output, JsonNode expected, EvalResult result) {
 		// Check shouldSuggestTitle

@@ -3,6 +3,9 @@ package com.weeklycommit.ai.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.dto.AiFeedbackRequest;
+import com.weeklycommit.ai.dto.StructuredEvidenceResponse;
+import com.weeklycommit.ai.evidence.StructuredEvidence;
+import com.weeklycommit.ai.evidence.StructuredEvidenceService;
 import com.weeklycommit.ai.dto.CommitDraftAssistRequest;
 import com.weeklycommit.ai.dto.CommitDraftAssistResponse;
 import com.weeklycommit.ai.dto.CommitLintRequest;
@@ -75,6 +78,7 @@ public class AiController {
 	private final SemanticIndexService semanticIndexService;
 	private final SemanticQueryService semanticQueryService;
 	private final AiSuggestionRepository suggestionRepo;
+	private final StructuredEvidenceService evidenceService;
 	private final ObjectMapper objectMapper;
 
 	public AiController(CommitDraftAssistService draftAssistService, CommitLintService lintService,
@@ -82,7 +86,8 @@ public class AiController {
 			ReconcileAssistService reconcileAssistService, ManagerAiSummaryService managerSummaryService,
 			AiSuggestionService suggestionService, AiProviderRegistry providerRegistry,
 			SemanticIndexService semanticIndexService, SemanticQueryService semanticQueryService,
-			AiSuggestionRepository suggestionRepo, ObjectMapper objectMapper) {
+			AiSuggestionRepository suggestionRepo, StructuredEvidenceService evidenceService,
+			ObjectMapper objectMapper) {
 		this.draftAssistService = draftAssistService;
 		this.lintService = lintService;
 		this.rcdoSuggestService = rcdoSuggestService;
@@ -94,6 +99,7 @@ public class AiController {
 		this.semanticIndexService = semanticIndexService;
 		this.semanticQueryService = semanticQueryService;
 		this.suggestionRepo = suggestionRepo;
+		this.evidenceService = evidenceService;
 		this.objectMapper = objectMapper;
 	}
 
@@ -283,6 +289,43 @@ public class AiController {
 						? "Indexing " + count + " plans in background. Check server logs for completion."
 						: "Pinecone not configured.");
 		return ResponseEntity.ok(result);
+	}
+
+	// -------------------------------------------------------------------------
+	// Structured Evidence
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns a structured evidence bundle for a plan — SQL facts, carry-forward
+	 * lineage, semantic matches, and risk features. Used by the frontend evidence
+	 * drawer to show exactly what the AI used to produce its answers.
+	 */
+	@GetMapping("/api/plans/{planId}/evidence")
+	public ResponseEntity<StructuredEvidenceResponse> getEvidence(@PathVariable UUID planId,
+			@org.springframework.web.bind.annotation.RequestParam(required = false) String question) {
+		try {
+			StructuredEvidence evidence = evidenceService.gatherForPlan(planId, question);
+			return ResponseEntity.ok(StructuredEvidenceResponse.of(evidence));
+		} catch (Exception e) {
+			log.warn("Evidence gathering failed for plan {}: {}", planId, e.getMessage());
+			return ResponseEntity.ok(StructuredEvidenceResponse.unavailable());
+		}
+	}
+
+	/**
+	 * Returns a structured evidence bundle for a specific commit — includes
+	 * carry-forward lineage tracing.
+	 */
+	@GetMapping("/api/commits/{commitId}/evidence")
+	public ResponseEntity<StructuredEvidenceResponse> getCommitEvidence(@PathVariable UUID commitId,
+			@org.springframework.web.bind.annotation.RequestParam(required = false) String question) {
+		try {
+			StructuredEvidence evidence = evidenceService.gatherForCommit(commitId, question);
+			return ResponseEntity.ok(StructuredEvidenceResponse.of(evidence));
+		} catch (Exception e) {
+			log.warn("Evidence gathering failed for commit {}: {}", commitId, e.getMessage());
+			return ResponseEntity.ok(StructuredEvidenceResponse.unavailable());
+		}
 	}
 
 	// -------------------------------------------------------------------------

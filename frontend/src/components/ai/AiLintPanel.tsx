@@ -8,7 +8,7 @@
  * button is still shown inside the results view so users can re-run after
  * editing commits.
  */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Bot, RefreshCw } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
@@ -20,9 +20,15 @@ interface AiLintPanelProps {
   userId: string;
   /** When true, lint fires automatically on mount and on planId change (no button click required). */
   autoRun?: boolean;
+  /**
+   * Monotonically increasing counter. Every time this value changes the lint
+   * re-fires (debounced). Callers should increment it after any commit
+   * create / edit / delete / reorder operation so lint results stay current.
+   */
+  refreshKey?: number;
 }
 
-export function AiLintPanel({ planId, userId, autoRun = false }: AiLintPanelProps) {
+export function AiLintPanel({ planId, userId, autoRun = false, refreshKey = 0 }: AiLintPanelProps) {
   const aiApi = useAiApi();
   const { data: status } = useAiStatus();
   const [lintResult, setLintResult] = useState<CommitLintResponse | null>(null);
@@ -50,6 +56,25 @@ export function AiLintPanel({ planId, userId, autoRun = false }: AiLintPanelProp
     if (!autoRun || !isAvailable) return;
     void runLint();
   }, [autoRun, planId, isAvailable, runLint]);
+
+  // Re-run with debounce when refreshKey changes (after commit CRUD operations).
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevRefreshKeyRef = useRef(refreshKey);
+  useEffect(() => {
+    // Skip the initial mount — the effect above already covers that.
+    if (refreshKey === prevRefreshKeyRef.current) return;
+    prevRefreshKeyRef.current = refreshKey;
+    if (!autoRun || !isAvailable) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      void runLint();
+    }, 800);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [refreshKey, autoRun, isAvailable, runLint]);
 
   // AI not available — show disabled state
   if (status && !status.available) {

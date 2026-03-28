@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "completed",
-  "updatedAt": "2026-03-27T17:19:58.406Z",
+  "updatedAt": "2026-03-27T17:40:46.139Z",
   "runId": "2026-03-27T15-44-55-623Z-a43c633a",
   "handoffMode": "full",
   "postPlanMode": "review",
@@ -147,10 +147,8 @@
     ]
   },
   "stepIndex": 7,
-  "round": 1,
   "activeSummary": {
-    "stepId": "step-6",
-    "stepTitle": "Final integration verification — build check",
+    "stepTitle": "All steps complete",
     "gateResults": [
       {
         "id": "lint",
@@ -172,7 +170,6 @@
         "id": "git-diff-check",
         "passed": true
       }
-    ],
-    "lastVerdict": "approve"
+    ]
   }
 }

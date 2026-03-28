@@ -1,0 +1,9 @@
+All changes applied. Here's a summary of what was addressed from the health check:
+
+| Issue | Severity | Fix |
+|---|---|---|
+| **Step 6: `cd backend` leaves cwd wrong for `node --test`** | 🔴 Critical | Updated description to explicitly warn about the bug and prescribe `&& cd .. && node --test scripts/__tests__/*.test.js` |
+| **Step 4: Type classification underspecified** | 🟡 Warning | Added new item #6 with explicit `promptVersion` → type prefix mapping (`commit-draft-assist-*` → `COMMIT_DRAFT_ASSIST`, etc.) and instructions to match against `applies_to` arrays |
+| **Step 3: Baseline has 18/52 results, population mismatch** | 🟡 Warning | Added note about differing population sizes and instructed Step 4 to use per-case ID matching for `critical_failures_added` regression checks |
+| **Step 2: Spotless formatting risk on large code addition** | 🟡 Warning | Added explicit note to run `./gradlew spotlessApply` after editing |
+| **Step 3: Source baseline file is in gitignored `build/`** | 🟡 Warning | Added note to read from local disk, not from git |

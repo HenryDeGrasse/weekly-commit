@@ -1,0 +1,29 @@
+{
+  "overview": "ST6 is an enterprise software company enabling weekly commit-based planning with AI assistance. The session discussed how to make AI integral to the product (not bolted-on) and reviewed an evaluation pipeline for AI quality. We concluded the next milestone is implementing enforceable AI quality thresholds via: adding a critical field to eval cases, wiring two existing LLM judge prompts (title-quality, criteria-quality) into the PromptEvalRunner, committing the most recent eval run as a regression baseline, creating an eval-thresholds.json config, building a Node.js enforcement script that compares results against thresholds and baseline, and integrating that into CI.",
+  "decisions": [
+    "Judge thresholds must be 3-layer: deterministic gates first (schema+case pass rate), LLM judge absolute thresholds second, regression relative thresholds third.",
+    "Split judge thresholds by risk: high-stakes features (risk signals, insights, RAG) get stricter thresholds (faithfulness >= 0.90) than assistive features (draft, lint, suggestions) which get more permissive thresholds (faithfulness >= 0.85).",
+    "Deterministic thresholds are hard-gates that block CI; judge and regression thresholds initially soft-gate (report but don't block) until stable.",
+    "Use eval-baseline.json as regression anchor committed to the repo. When eval runs, the enforcement script compares the latest results to both the config thresholds and the baseline snapshot.",
+    "Judge scoring in the eval pipeline is optional: if OPENROUTER_API_KEY is not set, judge dimensions are skipped, not failed.",
+    "The enforcement script will be a standalone Node.js script (scripts/eval-threshold-check.js) using only Node 20 built-ins, runnable outside Gradle.",
+    "After step 2, the title-quality and criteria-quality judge prompts will be wired into PromptEvalRunner for draft-assist cases to produce real judge scores for calibration."
+  ],
+  "constraints": [
+    "All work is backend-test-only for steps 1-2; do not modify any main or frontend source files during those steps.",
+    "Java code must pass spotlessCheck (Eclipse JDT formatter).",
+    "PromptEvalRunner parameterized test structure must be preserved, not replaced.",
+    "FaithfulnessEvaluator.java (runtime judge, separate from eval pipeline) must not be modified.",
+    "Eval runner is @Tag(\"eval\") and excluded from normal test runs — preserve that behavior.",
+    "Judge scoring must be optional: skip if provider unavailable (no API key), don't fail.",
+    "Eval results write to backend/build/eval-results/ — keep that path.",
+    "Step 3 requires exactly 6 test cases marked as critical: 3 in draft-assist (draft-001, draft-004, draft-008) and 3 in commit-lint (lint-001, lint-003, lint-004).",
+    "Regression thresholds must be configurable via eval-thresholds.json, not hardcoded in script logic."
+  ],
+  "openQuestions": [
+    "Should the enforcement script exit 0 or 1 when judge scores are unavailable (API key missing)? Currently plan says skip those checks and pass on deterministic, but CI teams may want a clear signal.",
+    "The eval-baseline.json in step 3 references an old run timestamp (2026-03-26). Should we run a fresh eval before committing baseline to ensure the cases are stable?",
+    "How should the enforcement script integrate with existing Gradle eval tasks — should it be invoked inside build.gradle or externally in CI?",
+    "Do we want the threshold config to be versioned per prompt-version (e.g., separate thresholds for commit-draft-assist-v1 vs v2), or single global thresholds for all versions of a suggestion type?"
+  ]
+}

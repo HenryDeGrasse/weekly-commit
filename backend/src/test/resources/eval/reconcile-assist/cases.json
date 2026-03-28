@@ -1,0 +1,172 @@
+[
+  {
+    "id": "recon-001",
+    "description": "All tickets DONE — should suggest all ACHIEVED",
+    "edgeCaseType": "all_done",
+    "input": {
+      "planData": {"state": "RECONCILING", "capacityBudgetPoints": 10, "weekStartDate": "2026-03-16"},
+      "commits": [
+        {"commitId": "c-1", "title": "Deploy auth service", "chessPiece": "QUEEN", "estimatePoints": 5, "ticketStatus": "DONE", "baselineTitle": "Deploy auth service", "baselineEstimate": 5},
+        {"commitId": "c-2", "title": "Add rate limiting", "chessPiece": "ROOK", "estimatePoints": 3, "ticketStatus": "DONE", "baselineTitle": "Add rate limiting", "baselineEstimate": 3},
+        {"commitId": "c-3", "title": "Update docs", "chessPiece": "PAWN", "estimatePoints": 1, "ticketStatus": "DONE", "baselineTitle": "Update docs", "baselineEstimate": 1}
+      ],
+      "scopeChanges": [],
+      "linkedTickets": []
+    },
+    "expectedBehavior": {
+      "minOutcomes": 3,
+      "allShouldBeAchieved": true,
+      "shouldHaveSummary": true,
+      "maxCarryForwards": 0
+    }
+  },
+  {
+    "id": "recon-002",
+    "description": "Mixed outcomes with ticket evidence — DONE, IN_PROGRESS, BLOCKED",
+    "edgeCaseType": "mixed_outcomes",
+    "input": {
+      "planData": {"state": "RECONCILING", "capacityBudgetPoints": 10, "weekStartDate": "2026-03-16"},
+      "commits": [
+        {"commitId": "c-1", "title": "Deploy auth service", "chessPiece": "QUEEN", "estimatePoints": 5, "ticketStatus": "DONE", "baselineTitle": "Deploy auth service", "baselineEstimate": 5},
+        {"commitId": "c-2", "title": "Write integration tests", "chessPiece": "ROOK", "estimatePoints": 3, "ticketStatus": "IN_PROGRESS", "baselineTitle": "Write integration tests", "baselineEstimate": 3},
+        {"commitId": "c-3", "title": "Set up monitoring", "chessPiece": "BISHOP", "estimatePoints": 2, "ticketStatus": "BLOCKED", "baselineTitle": "Set up monitoring", "baselineEstimate": 2}
+      ],
+      "scopeChanges": [],
+      "linkedTickets": []
+    },
+    "expectedBehavior": {
+      "minOutcomes": 3,
+      "expectedOutcomes": {
+        "c-1": "ACHIEVED",
+        "c-2": "PARTIALLY_ACHIEVED",
+        "c-3": "NOT_ACHIEVED"
+      },
+      "shouldHaveSummary": true,
+      "minCarryForwards": 1
+    }
+  },
+  {
+    "id": "recon-003",
+    "description": "Commit was removed via scope change — should suggest CANCELED",
+    "edgeCaseType": "scope_removal",
+    "input": {
+      "planData": {"state": "RECONCILING", "capacityBudgetPoints": 10, "weekStartDate": "2026-03-16"},
+      "commits": [
+        {"commitId": "c-1", "title": "Refactor payment module", "chessPiece": "ROOK", "estimatePoints": 5, "ticketStatus": "DONE", "baselineTitle": "Refactor payment module", "baselineEstimate": 5},
+        {"commitId": "c-2", "title": "Build analytics dashboard", "chessPiece": "ROOK", "estimatePoints": 3, "ticketStatus": null, "baselineTitle": "Build analytics dashboard", "baselineEstimate": 3}
+      ],
+      "scopeChanges": [
+        {"category": "COMMIT_REMOVED", "reason": "Deprioritized after stakeholder review", "commitTitle": "Build analytics dashboard"}
+      ],
+      "linkedTickets": []
+    },
+    "expectedBehavior": {
+      "minOutcomes": 2,
+      "expectedOutcomes": {
+        "c-1": "ACHIEVED",
+        "c-2": "CANCELED"
+      },
+      "shouldHaveSummary": true
+    }
+  },
+  {
+    "id": "recon-004",
+    "description": "Unlinked commits — should infer with lower confidence",
+    "edgeCaseType": "no_ticket_evidence",
+    "input": {
+      "planData": {"state": "RECONCILING", "capacityBudgetPoints": 10, "weekStartDate": "2026-03-16"},
+      "commits": [
+        {"commitId": "c-1", "title": "Research caching strategies", "chessPiece": "KNIGHT", "estimatePoints": 2, "ticketStatus": null, "baselineTitle": "Research caching strategies", "baselineEstimate": 2},
+        {"commitId": "c-2", "title": "1:1 prep and team retro", "chessPiece": "PAWN", "estimatePoints": 1, "ticketStatus": null, "baselineTitle": "1:1 prep and team retro", "baselineEstimate": 1}
+      ],
+      "scopeChanges": [],
+      "linkedTickets": []
+    },
+    "expectedBehavior": {
+      "minOutcomes": 2,
+      "maxConfidenceForUnlinked": 0.7,
+      "shouldHaveSummary": true
+    }
+  },
+  {
+    "id": "recon-005",
+    "description": "High-priority incomplete work should recommend carry-forward",
+    "edgeCaseType": "carry_forward_recommendation",
+    "input": {
+      "planData": {"state": "RECONCILING", "capacityBudgetPoints": 10, "weekStartDate": "2026-03-16"},
+      "commits": [
+        {"commitId": "c-1", "title": "API gateway migration", "chessPiece": "KING", "estimatePoints": 5, "ticketStatus": "IN_PROGRESS", "baselineTitle": "API gateway migration", "baselineEstimate": 5},
+        {"commitId": "c-2", "title": "Update error handling", "chessPiece": "PAWN", "estimatePoints": 1, "ticketStatus": "IN_PROGRESS", "baselineTitle": "Update error handling", "baselineEstimate": 1},
+        {"commitId": "c-3", "title": "Team standup notes", "chessPiece": "PAWN", "estimatePoints": 1, "ticketStatus": null, "baselineTitle": "Team standup notes", "baselineEstimate": 1}
+      ],
+      "scopeChanges": [],
+      "linkedTickets": []
+    },
+    "expectedBehavior": {
+      "minOutcomes": 3,
+      "minCarryForwards": 1,
+      "carryForwardShouldInclude": ["c-1"],
+      "shouldHaveSummary": true
+    }
+  },
+  {
+    "id": "recon-006",
+    "description": "Significant scope changes during the week — summary should mention them",
+    "edgeCaseType": "scope_heavy_week",
+    "input": {
+      "planData": {"state": "RECONCILING", "capacityBudgetPoints": 10, "weekStartDate": "2026-03-16"},
+      "commits": [
+        {"commitId": "c-1", "title": "Ship notification system", "chessPiece": "QUEEN", "estimatePoints": 5, "ticketStatus": "DONE", "baselineTitle": "Ship notification system", "baselineEstimate": 3},
+        {"commitId": "c-2", "title": "Emergency hotfix for login", "chessPiece": "KING", "estimatePoints": 3, "ticketStatus": "DONE", "baselineTitle": null, "baselineEstimate": null}
+      ],
+      "scopeChanges": [
+        {"category": "ESTIMATE_CHANGED", "reason": "Notification system was more complex than estimated", "commitTitle": "Ship notification system"},
+        {"category": "COMMIT_ADDED", "reason": "Production login bug — emergency fix required", "commitTitle": "Emergency hotfix for login"}
+      ],
+      "linkedTickets": []
+    },
+    "expectedBehavior": {
+      "minOutcomes": 2,
+      "shouldHaveSummary": true,
+      "summaryShouldMentionScopeChanges": true
+    }
+  },
+  {
+    "id": "recon-007",
+    "description": "Empty plan — no commits to reconcile",
+    "edgeCaseType": "empty_plan",
+    "input": {
+      "planData": {"state": "RECONCILING", "capacityBudgetPoints": 10, "weekStartDate": "2026-03-16"},
+      "commits": [],
+      "scopeChanges": [],
+      "linkedTickets": []
+    },
+    "expectedBehavior": {
+      "maxOutcomes": 0,
+      "maxCarryForwards": 0,
+      "shouldHaveSummary": true
+    }
+  },
+  {
+    "id": "recon-008",
+    "description": "All work NOT_ACHIEVED — carry-forward should recommend most important ones",
+    "edgeCaseType": "bad_week",
+    "input": {
+      "planData": {"state": "RECONCILING", "capacityBudgetPoints": 10, "weekStartDate": "2026-03-16"},
+      "commits": [
+        {"commitId": "c-1", "title": "Complete API redesign", "chessPiece": "QUEEN", "estimatePoints": 5, "ticketStatus": "BLOCKED", "baselineTitle": "Complete API redesign", "baselineEstimate": 5},
+        {"commitId": "c-2", "title": "Database migration", "chessPiece": "ROOK", "estimatePoints": 3, "ticketStatus": "BLOCKED", "baselineTitle": "Database migration", "baselineEstimate": 3},
+        {"commitId": "c-3", "title": "Update README", "chessPiece": "PAWN", "estimatePoints": 1, "ticketStatus": "BLOCKED", "baselineTitle": "Update README", "baselineEstimate": 1}
+      ],
+      "scopeChanges": [],
+      "linkedTickets": []
+    },
+    "expectedBehavior": {
+      "minOutcomes": 3,
+      "allShouldBeNotAchieved": true,
+      "minCarryForwards": 1,
+      "carryForwardShouldInclude": ["c-1"],
+      "shouldHaveSummary": true
+    }
+  }
+]

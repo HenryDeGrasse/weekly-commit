@@ -2,6 +2,7 @@
   {
     "id": "draft-001",
     "description": "Vague KING commit with no title specificity and missing success criteria",
+    "critical": true,
     "edgeCaseType": "vague_input",
     "input": {
       "title": "Do API stuff",
@@ -56,6 +57,7 @@
   {
     "id": "draft-004",
     "description": "QUEEN commit with good title but missing success criteria",
+    "critical": true,
     "edgeCaseType": "missing_criteria",
     "input": {
       "title": "Launch self-serve billing portal for enterprise customers",
@@ -123,6 +125,7 @@
   {
     "id": "draft-008",
     "description": "KING with existing success criteria — should return all nulls",
+    "critical": true,
     "edgeCaseType": "fully_specified",
     "input": {
       "title": "Zero-downtime database migration from PostgreSQL 14 to 16",

@@ -14,16 +14,19 @@ public class EvalResult {
 	private final String promptVersion;
 	private final boolean schemaValid;
 	private final String rawOutput;
+	private final boolean critical;
 	private final Map<String, Double> scores = new LinkedHashMap<>();
 	private final Map<String, Boolean> checks = new LinkedHashMap<>();
 	private final Map<String, String> notes = new LinkedHashMap<>();
 
-	public EvalResult(String caseId, String description, String promptVersion, boolean schemaValid, String rawOutput) {
+	public EvalResult(String caseId, String description, String promptVersion, boolean schemaValid, String rawOutput,
+			boolean critical) {
 		this.caseId = caseId;
 		this.description = description;
 		this.promptVersion = promptVersion;
 		this.schemaValid = schemaValid;
 		this.rawOutput = rawOutput;
+		this.critical = critical;
 	}
 
 	public void addScore(String dimension, double score) {
@@ -64,6 +67,10 @@ public class EvalResult {
 		return rawOutput;
 	}
 
+	public boolean isCritical() {
+		return critical;
+	}
+
 	public Map<String, Double> getScores() {
 		return scores;
 	}
@@ -78,7 +85,7 @@ public class EvalResult {
 
 	@Override
 	public String toString() {
-		return String.format("[%s] %s — schema=%s passed=%s scores=%s checks=%s", caseId, description, schemaValid,
-				passed(), scores, checks);
+		return String.format("[%s] %s — schema=%s passed=%s critical=%s scores=%s checks=%s", caseId, description,
+				schemaValid, passed(), critical, scores, checks);
 	}
 }

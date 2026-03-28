@@ -67,6 +67,9 @@ class AiControllerTest {
 	@MockBean
 	private AiSuggestionRepository suggestionRepo;
 
+	@MockBean
+	private com.weeklycommit.ai.evidence.StructuredEvidenceService evidenceService;
+
 	@Test
 	void getRiskSignals_requiresActorHeader() throws Exception {
 		mockMvc.perform(get("/api/plans/" + UUID.randomUUID() + "/risk-signals")).andExpect(status().isBadRequest());

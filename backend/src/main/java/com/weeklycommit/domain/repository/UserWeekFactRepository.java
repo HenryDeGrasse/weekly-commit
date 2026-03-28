@@ -15,5 +15,7 @@ public interface UserWeekFactRepository extends JpaRepository<UserWeekFact, UUID
 
 	List<UserWeekFact> findByUserIdInAndWeekStartBetween(List<UUID> userIds, LocalDate from, LocalDate to);
 
+	List<UserWeekFact> findByUserIdAndWeekStartBetween(UUID userId, LocalDate from, LocalDate to);
+
 	List<UserWeekFact> findByUserIdIn(List<UUID> userIds);
 }
