@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "phase": "plan_approved",
-  "updatedAt": "2026-03-28T18:54:00.801Z",
+  "phase": "completed",
+  "updatedAt": "2026-03-28T18:58:09.023Z",
   "runId": "2026-03-28T18-01-07-371Z-cc2c5bdb",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -124,13 +124,16 @@
     ]
   },
   "planSourcePath": "duet-plan.md",
-  "stepIndex": 5,
+  "stepIndex": 6,
   "round": 2,
-  "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-5",
-    "stepTitle": "Split CI into two jobs: eval run (manual/allow_failure) + threshold check (hard-gate), and add npm scripts",
+    "stepId": "step-6",
+    "stepTitle": "Add unit tests for the enforcement script and verify end-to-end",
     "gateResults": [
+      {
+        "id": "unit",
+        "passed": true
+      },
       {
         "id": "build",
         "passed": true
