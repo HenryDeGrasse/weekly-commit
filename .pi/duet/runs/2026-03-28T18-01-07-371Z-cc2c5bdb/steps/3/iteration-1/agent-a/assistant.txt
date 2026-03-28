@@ -1,0 +1,19 @@
+Both files are valid JSON. The baseline correctly has no `critical` field on any result (pre-dates Step 1) — the enforcement script (Step 4) will need to handle this gracefully by falling back to the fixture JSON to determine criticality by `caseId`.
+
+## Summary
+
+**What I created for Step 3:**
+
+1. **`eval-baseline.json`** at repo root — exact copy of `backend/build/eval-results/eval-2026-03-26T16-33-06.574104Z.json`. Contains 18 results (6 lint + 12 draft-assist), timestamp `2026-03-26T16:33:06.574447Z`, 17 passed / 1 failed (draft-007 `suggestTitle` check failed). Results do **not** include a `critical` field (pre-dates Step 1) — the Step 4 script must handle missing `critical` by matching on known critical `caseId` values.
+
+2. **`eval-thresholds.json`** at repo root — the config structure specified in the step, with all four sections: `deterministic` (hard-gate: `schema_valid_rate=1.00`, `overall_case_pass_rate=0.95`, `critical_case_pass_rate=1.00`), `judge_high_stakes`, `judge_assistive`, and `regression` (`critical_failures_added_max=0`).
+
+**Scope respected**: Only created two new files at repo root. No backend or frontend source files were modified.
+
+**Build check**: `BUILD SUCCESSFUL` — no regressions.
+
+```observations
+- [low] eval-baseline.json has draft-007 as the one failing case (suggestTitle=false). The model returned null for suggestedTitle on a case that expected a shortened title suggestion. This is a known LLM limitation — the enforcement script should treat this single failure as a regression anchor, not a green baseline.
+```
+
+Verdict: changes_made

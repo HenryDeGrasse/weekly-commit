@@ -1,0 +1,296 @@
+{
+  "timestamp" : "2026-03-26T16:33:06.574447Z",
+  "totalCases" : 18,
+  "passed" : 17,
+  "failed" : 1,
+  "results" : [ {
+    "caseId" : "lint-001",
+    "description" : "Plan with KING missing success criteria and a vague title",
+    "promptVersion" : "commit-lint-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"hardValidation\": [\n    { \"code\": \"MISSING_SUCCESS_CRITERIA\", \"message\": \"KING commit 'King thing' requires measurable success criteria before lock\", \"commitId\": \"c-001\" },\n    { \"code\": \"VAGUE_TITLE\", \"message\": \"Commit 'stuff' has no meaningful title — describe the deliverable\", \"commitId\": \"c-002\" }\n  ],\n  \"softGuidance\": [\n    { \"code\": \"VAGUE_TITLE\", \"message\": \"Consider making 'King thing' more specific — what exactly must not fail?\", \"commitId\": \"c-001\" }\n  ]\n}",
+    "scores" : {
+      "hardValidationCount" : 2.0,
+      "softGuidanceCount" : 1.0
+    },
+    "checks" : {
+      "minHardValidations" : true,
+      "hardCode_MISSING_SUCCESS_CRITERIA" : true,
+      "hardCode_VAGUE_TITLE" : true
+    },
+    "notes" : { }
+  }, {
+    "caseId" : "lint-002",
+    "description" : "Clean plan with no issues",
+    "promptVersion" : "commit-lint-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"hardValidation\": [],\n  \"softGuidance\": [\n    {\n      \"code\": \"MISSING_SUCCESS_CRITERIA\",\n      \"message\": \"Consider adding success criteria for ROOK commit 'Write integration tests for auth service' — what coverage or test scenarios must be achieved?\",\n      \"commitId\": \"c-011\"\n    }\n  ]\n}",
+    "scores" : {
+      "hardValidationCount" : 0.0,
+      "softGuidanceCount" : 1.0
+    },
+    "checks" : {
+      "maxHardValidations" : true,
+      "maxSoftGuidance" : true
+    },
+    "notes" : { }
+  }, {
+    "caseId" : "lint-003",
+    "description" : "Plan with 2 KING commits — should hard-fail",
+    "promptVersion" : "commit-lint-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"hardValidation\": [\n    { \"code\": \"MULTIPLE_KING_COMMITS\", \"message\": \"Plan has 2 KING commits but only 1 is allowed per week\", \"commitId\": null }\n  ],\n  \"softGuidance\": []\n}",
+    "scores" : {
+      "hardValidationCount" : 1.0,
+      "softGuidanceCount" : 0.0
+    },
+    "checks" : {
+      "minHardValidations" : true,
+      "hardCode_KING_LIMIT_EXCEEDED" : true
+    },
+    "notes" : { }
+  }, {
+    "caseId" : "lint-004",
+    "description" : "Plan with 3 QUEEN commits — should hard-fail",
+    "promptVersion" : "commit-lint-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"hardValidation\": [\n    {\n      \"code\": \"TOO_MANY_QUEEN_COMMITS\",\n      \"message\": \"Plan has 3 QUEEN commits but maximum allowed is 2 — consider downgrading one to KNIGHT or ROOK\",\n      \"commitId\": null\n    }\n  ],\n  \"softGuidance\": []\n}",
+    "scores" : {
+      "hardValidationCount" : 1.0,
+      "softGuidanceCount" : 0.0
+    },
+    "checks" : {
+      "minHardValidations" : true,
+      "hardCode_QUEEN_LIMIT_EXCEEDED" : true
+    },
+    "notes" : { }
+  }, {
+    "caseId" : "lint-005",
+    "description" : "Fragmented plan with 10 tiny commits — should soft-warn",
+    "promptVersion" : "commit-lint-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"hardValidation\": [],\n  \"softGuidance\": [\n    {\n      \"code\": \"TOO_MANY_PAWNS\",\n      \"message\": \"100% of points allocated to PAWN commits — consider grouping maintenance tasks or including higher-impact work\",\n      \"commitId\": null\n    },\n    {\n      \"code\": \"PLAN_FRAGMENTATION\",\n      \"message\": \"10 commits may be too granular — consider batching related maintenance tasks\",\n      \"commitId\": null\n    }\n  ]\n}",
+    "scores" : {
+      "hardValidationCount" : 0.0,
+      "softGuidanceCount" : 2.0
+    },
+    "checks" : {
+      "maxHardValidations" : true,
+      "minSoftGuidance" : true,
+      "softCode_TOO_MANY_COMMITS" : true,
+      "softCode_EXCESSIVE_PAWNS" : true
+    },
+    "notes" : { }
+  }, {
+    "caseId" : "lint-006",
+    "description" : "Near-duplicate commit titles in the same plan",
+    "promptVersion" : "commit-lint-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"hardValidation\": [],\n  \"softGuidance\": [\n    {\n      \"code\": \"NEAR_DUPLICATE_TITLES\",\n      \"message\": \"Two similar commits about writing auth tests — consider combining or clarifying the distinction between 'auth module' and 'auth service'\",\n      \"commitId\": \"c-050\"\n    },\n    {\n      \"code\": \"ACTIVITY_FOCUSED_TITLE\",\n      \"message\": \"Consider outcome-focused phrasing: 'Auth module test coverage complete' instead of 'Write tests for auth module'\",\n      \"commitId\": \"c-050\"\n    },\n    {\n      \"code\": \"ACTIVITY_FOCUSED_TITLE\",\n      \"message\": \"Consider outcome-focused phrasing: 'Auth service test coverage complete' instead of 'Write tests for auth service'\",\n      \"commitId\": \"c-051\"\n    }\n  ]\n}",
+    "scores" : {
+      "hardValidationCount" : 0.0,
+      "softGuidanceCount" : 3.0
+    },
+    "checks" : {
+      "maxHardValidations" : true,
+      "minSoftGuidance" : true
+    },
+    "notes" : { }
+  }, {
+    "caseId" : "draft-001",
+    "description" : "Vague KING commit with no title specificity and missing success criteria",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Deploy critical API endpoint with monitoring and rollback plan\",\n  \"suggestedDescription\": \"Complete deployment of mission-critical API changes with proper monitoring, testing, and rollback procedures in place\",\n  \"suggestedSuccessCriteria\": \"API deployed to production, monitoring alerts configured, smoke tests passing, rollback plan documented and tested\",\n  \"suggestedEstimatePoints\": 5\n}",
+    "scores" : {
+      "estimate" : 5.0
+    },
+    "checks" : {
+      "suggestTitle" : true,
+      "titleClean" : true,
+      "suggestCriteria" : true,
+      "suggestEstimate" : true,
+      "estimateInRange" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Deploy critical API endpoint with monitoring and rollback plan\",\n  \"suggestedDescription\": \"Complete deployment of mission-critical API changes with proper monitoring, testing, and rollback procedures in place\",\n  \"suggestedSuccessCriteria\": \"API deployed to production, monitoring alerts configured, smoke tests passing, rollback plan documented and tested\",\n  \"suggestedEstimatePoints\": 5\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-002",
+    "description" : "Good ROOK commit that needs no changes",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"All /api/v2/* endpoints use session tokens instead of JWT, authentication tests pass, existing user sessions remain valid during migration\",\n  \"suggestedEstimatePoints\": null\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : true,
+      "suggestEstimate" : true,
+      "suggestDescription" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"All /api/v2/* endpoints use session tokens instead of JWT, authentication tests pass, existing user sessions remain valid during migration\",\n  \"suggestedEstimatePoints\": null\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-003",
+    "description" : "Activity-focused title with unrealistic high estimate for a PAWN",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Triage and fix top-3 P1 bugs from customer escalation queue\",\n  \"suggestedDescription\": \"Review high-priority customer-reported issues and resolve the most critical ones affecting user experience\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": 2\n}",
+    "scores" : {
+      "estimate" : 2.0
+    },
+    "checks" : {
+      "suggestTitle" : true,
+      "titleClean" : true,
+      "suggestEstimate" : true,
+      "estimateInRange" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Triage and fix top-3 P1 bugs from customer escalation queue\",\n  \"suggestedDescription\": \"Review high-priority customer-reported issues and resolve the most critical ones affecting user experience\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": 2\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-004",
+    "description" : "QUEEN commit with good title but missing success criteria",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Self-serve billing portal deployed to production, accessible to all enterprise customers, with working invoice history display and payment method CRUD operations, validated by 3 test enterprise accounts\",\n  \"suggestedEstimatePoints\": null\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : true,
+      "suggestCriteria" : true,
+      "suggestEstimate" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Self-serve billing portal deployed to production, accessible to all enterprise customers, with working invoice history display and payment method CRUD operations, validated by 3 test enterprise accounts\",\n  \"suggestedEstimatePoints\": null\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-005",
+    "description" : "Single-word title, completely meaningless",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Define specific deliverable outcome for this major work item\",\n  \"suggestedDescription\": \"Replace 'TBD' with a clear, measurable deliverable that can be completed in one week\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": 5\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : true,
+      "titleMinLength" : true,
+      "suggestEstimate" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Define specific deliverable outcome for this major work item\",\n  \"suggestedDescription\": \"Replace 'TBD' with a clear, measurable deliverable that can be completed in one week\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": 5\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-006",
+    "description" : "KNIGHT (exploratory) with reasonable title, no criteria",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Comparison document delivered with performance benchmarks, implementation complexity analysis, and recommendation for mobile API architecture\",\n  \"suggestedEstimatePoints\": 3\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : true,
+      "suggestCriteria" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Comparison document delivered with performance benchmarks, implementation complexity analysis, and recommendation for mobile API architecture\",\n  \"suggestedEstimatePoints\": 3\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-007",
+    "description" : "BISHOP enabling work with overly long title",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": \"Create automated deployment pipeline for microservice with containerization, staging deployment, and observability setup\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : false
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": \"Create automated deployment pipeline for microservice with containerization, staging deployment, and observability setup\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-008",
+    "description" : "KING with existing success criteria — should return all nulls",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : true,
+      "suggestCriteria" : true,
+      "suggestEstimate" : true,
+      "suggestDescription" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-009",
+    "description" : "PAWN with estimate of 1 that is reasonable — should not change estimate",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": \"Review Q2 OKRs and key initiatives, draft concise channel topic highlighting top 3 priorities\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : true,
+      "suggestEstimate" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": \"Review Q2 OKRs and key initiatives, draft concise channel topic highlighting top 3 priorities\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-010",
+    "description" : "Commit with emoji and special characters in title",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Deploy v2 application to production\",\n  \"suggestedDescription\": \"Complete production deployment of v2 application with all necessary validations and rollback preparation\",\n  \"suggestedSuccessCriteria\": \"v2 application successfully deployed to production, health checks passing, zero critical errors in first 24 hours\",\n  \"suggestedEstimatePoints\": null\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : true,
+      "titleClean" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Deploy v2 application to production\",\n  \"suggestedDescription\": \"Complete production deployment of v2 application with all necessary validations and rollback preparation\",\n  \"suggestedSuccessCriteria\": \"v2 application successfully deployed to production, health checks passing, zero critical errors in first 24 hours\",\n  \"suggestedEstimatePoints\": null\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-011",
+    "description" : "QUEEN underestimated at 1 point — should suggest higher",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Complete mobile checkout flow redesign mockups and user testing\",\n  \"suggestedDescription\": \"Design new 3-step mobile checkout flow with improved UX, create high-fidelity mockups, and conduct user testing with 5+ participants\",\n  \"suggestedSuccessCriteria\": \"High-fidelity mockups for new mobile checkout flow completed, user testing conducted with 5+ participants, key insights documented with recommended next steps\",\n  \"suggestedEstimatePoints\": 5\n}",
+    "scores" : {
+      "estimate" : 5.0
+    },
+    "checks" : {
+      "suggestCriteria" : true,
+      "suggestEstimate" : true,
+      "estimateInRange" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Complete mobile checkout flow redesign mockups and user testing\",\n  \"suggestedDescription\": \"Design new 3-step mobile checkout flow with improved UX, create high-fidelity mockups, and conduct user testing with 5+ participants\",\n  \"suggestedSuccessCriteria\": \"High-fidelity mockups for new mobile checkout flow completed, user testing conducted with 5+ participants, key insights documented with recommended next steps\",\n  \"suggestedEstimatePoints\": 5\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  }, {
+    "caseId" : "draft-012",
+    "description" : "Duplicate-sounding title that matches a common pattern",
+    "promptVersion" : "commit-draft-assist-v1",
+    "schemaValid" : true,
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Complete code reviews for 5 pending PRs in team queue\",\n  \"suggestedDescription\": \"Review and provide feedback on pending pull requests to unblock team members\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null\n}",
+    "scores" : { },
+    "checks" : {
+      "suggestTitle" : true,
+      "titleMinLength" : true
+    },
+    "notes" : {
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Complete code reviews for 5 pending PRs in team queue\",\n  \"suggestedDescription\": \"Review and provide feedback on pending pull requests to unblock team members\",\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null\n}",
+      "rationale" : "AI-generated suggestion"
+    }
+  } ]
+}
