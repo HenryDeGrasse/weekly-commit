@@ -29,7 +29,6 @@ variables:
   cache:
     key:
       files:
-        - backend/gradle/wrapper/gradle-wrapper.properties
         - backend/build.gradle.kts
         - backend/settings.gradle.kts
     paths:
