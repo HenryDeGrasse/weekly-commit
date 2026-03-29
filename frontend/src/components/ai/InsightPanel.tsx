@@ -2,9 +2,9 @@
  * InsightPanel — displays AI-generated insight cards for a team week
  * (mode='team') or a personal plan (mode='personal').
  *
- * Uses @chenglou/pretext for balanced text layout: each card's paragraph
- * is shrinkwrapped to the tightest width that doesn't add extra lines,
- * so line lengths are roughly equal instead of ragged-right.
+ * Uses balanced text layout: each card's paragraph is shrinkwrapped to
+ * the tightest width that doesn't add extra lines, so line lengths are
+ * roughly equal instead of ragged-right. See lib/useBalancedText.ts.
  */
 import { useMemo } from "react";
 import { Bot } from "lucide-react";
@@ -18,9 +18,8 @@ import type { InsightCard } from "../../api/ragApi.js";
 
 // ── Balanced text config ──────────────────────────────────────────────────────
 // Must be a named font (not system-ui) for accurate canvas measurement.
-// Matches the `text-sm leading-relaxed` class on the insight text <p>.
+// Matches the `text-sm` class on the insight text <p> (14px Inter).
 const INSIGHT_FONT = '14px "Inter", sans-serif';
-const INSIGHT_LINE_HEIGHT = 22.4; // 14px × 1.6 (leading-relaxed)
 
 // ── Severity helpers ──────────────────────────────────────────────────────────
 
@@ -134,11 +133,7 @@ function BalancedInsightCardList({ insights }: { insights: InsightCard[] }) {
     [insights],
   );
 
-  const { ref, widths } = useBalancedText(
-    insightTexts,
-    INSIGHT_FONT,
-    INSIGHT_LINE_HEIGHT,
-  );
+  const { ref, widths } = useBalancedText(insightTexts, INSIGHT_FONT);
 
   return (
     <div ref={ref} className="flex flex-col gap-3">
@@ -267,7 +262,7 @@ function PersonalInsightPanel({ planId }: { planId?: string }) {
 /**
  * InsightPanel renders AI-generated insight cards with balanced text layout.
  *
- * Uses @chenglou/pretext to measure each card's text and compute a
+ * Uses canvas-based text measurement (lib/useBalancedText.ts) to compute a
  * shrinkwrapped max-width that distributes words evenly across lines,
  * eliminating the short trailing "orphan" line typical of ragged-right text.
  *

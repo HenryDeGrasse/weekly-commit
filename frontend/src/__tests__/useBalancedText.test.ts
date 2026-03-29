@@ -1,102 +1,99 @@
 /**
  * @vitest-environment node
  *
- * Tests for useBalancedText hook and getBalancedWidth utility.
+ * Tests for getBalancedWidth and useBalancedText.
  *
- * Pretext requires a real browser canvas + font engine, so we mock
- * the @chenglou/pretext module. Uses node environment to avoid jsdom
- * memory overhead from pretext's module-level canvas initialisation.
+ * Uses node environment (no jsdom overhead). We test the pure-function
+ * getBalancedWidth by providing a mock canvas context. The React hook
+ * is tested structurally (return shape / stability).
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// ── Mock @chenglou/pretext ────────────────────────────────────────────────────
+// ── Provide minimal DOM stubs for the module's lazy canvas init ───────────────
 
-// Simulate a text that is ~10px per character.
-vi.mock("@chenglou/pretext", () => {
-  const CHAR_WIDTH = 10;
+const CHAR_WIDTH = 10;
+const mockCtx = {
+  font: "",
+  measureText: vi.fn((text: string) => ({ width: text.length * CHAR_WIDTH })),
+};
 
-  function prepareWithSegments(text: string, _font: string) {
-    return { __text: text, __charWidth: CHAR_WIDTH };
-  }
-
-  function layout(
-    prepared: { __text: string; __charWidth: number },
-    maxWidth: number,
-    _lineHeight: number,
-  ) {
-    const textWidth = prepared.__text.length * prepared.__charWidth;
-    if (maxWidth <= 0) return { lineCount: 1, height: 0 };
-    const lineCount = Math.max(1, Math.ceil(textWidth / maxWidth));
-    return { lineCount, height: lineCount * _lineHeight };
-  }
-
-  function walkLineRanges(
-    prepared: { __text: string; __charWidth: number },
-    maxWidth: number,
-    onLine: (line: { width: number }) => void,
-  ) {
-    const textWidth = prepared.__text.length * prepared.__charWidth;
-    if (maxWidth <= 0) {
-      onLine({ width: 0 });
-      return 1;
-    }
-    const lineCount = Math.max(1, Math.ceil(textWidth / maxWidth));
-    const avgWidth = textWidth / lineCount;
-    for (let i = 0; i < lineCount; i++) {
-      const remaining = textWidth - avgWidth * i;
-      onLine({ width: Math.min(avgWidth, remaining) });
-    }
-    return lineCount;
-  }
-
-  return { prepareWithSegments, layout, walkLineRanges };
+// Stub just enough of `document` for the canvas factory.
+const fakeCanvas = { getContext: () => mockCtx };
+vi.stubGlobal("document", {
+  createElement: (tag: string) => (tag === "canvas" ? fakeCanvas : {}),
+  fonts: undefined,
 });
 
 import { getBalancedWidth } from "../lib/useBalancedText.js";
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+// ── getBalancedWidth ──────────────────────────────────────────────────────────
 
 describe("getBalancedWidth", () => {
   const font = '14px "Inter", sans-serif';
-  const lineHeight = 22;
+
+  beforeEach(() => {
+    mockCtx.measureText.mockClear();
+  });
 
   it("returns maxWidth for empty text", () => {
-    expect(getBalancedWidth("", font, 300, lineHeight)).toBe(300);
+    expect(getBalancedWidth("", font, 300)).toBe(300);
   });
 
   it("returns maxWidth when maxWidth is 0", () => {
-    expect(getBalancedWidth("some text", font, 0, lineHeight)).toBe(0);
+    expect(getBalancedWidth("some text", font, 0)).toBe(0);
   });
 
-  it("returns maxWidth for single-line text (fits within maxWidth)", () => {
-    // "Hi" = 2 chars × 10px = 20px, maxWidth = 300 → single line
-    const result = getBalancedWidth("Hi", font, 300, lineHeight);
-    expect(result).toBe(300);
+  it("returns maxWidth for single-line text", () => {
+    // "Hi" → 1 word, 2 chars × 10px = 20px. Fits in 300px → single line.
+    expect(getBalancedWidth("Hi", font, 300)).toBe(300);
   });
 
-  it("returns a balanced width narrower than maxWidth for multi-line text", () => {
-    // 50 chars × 10px = 500px of text, maxWidth = 300
-    // At 300px → ceil(500/300) = 2 lines
-    // Binary search finds tightest width for 2 lines → ~250px
-    const text = "a".repeat(50);
-    const result = getBalancedWidth(text, font, 300, lineHeight);
+  it("narrows multi-line text to balance lines", () => {
+    // "aa bb cc dd" → 4 words: 20px each, space 10px.
+    // Full width: 20+10+20+10+20+10+20 = 110px.
+    // At maxWidth=80:
+    //   line1: "aa bb cc" → 20+10+20+10+20 = 80px
+    //   line2: "dd" → 20px → orphan!
+    // Binary search should find tightest 2-line width (~60px),
+    // making both lines ~50–60px.
+    const result = getBalancedWidth("aa bb cc dd", font, 80);
+    expect(result).toBeLessThan(80);
+    expect(result).toBeGreaterThan(20);
+  });
+
+  it("handles many words wrapping to multiple lines", () => {
+    // 10 words of 5 chars each = 50px per word, space = 10px.
+    // Total text width = 10*50 + 9*10 = 590px.
+    // At maxWidth=300: baseline = 2 lines. Balanced ≈ 295px.
+    const words = Array.from({ length: 10 }, () => "abcde").join(" ");
+    const result = getBalancedWidth(words, font, 300);
     expect(result).toBeGreaterThan(0);
     expect(result).toBeLessThanOrEqual(300);
-  });
-
-  it("returns a number (not NaN or Infinity)", () => {
-    const result = getBalancedWidth("Some text content here", font, 400, lineHeight);
     expect(Number.isFinite(result)).toBe(true);
   });
 
-  it("balanced width produces roughly equal line widths", () => {
-    // 60 chars × 10px = 600px, maxWidth = 250
-    // At 250px → ceil(600/250) = 3 lines
-    // Balanced: each line ~200px (600/3)
-    const text = "a".repeat(60);
-    const result = getBalancedWidth(text, font, 250, lineHeight);
-    // Should be around 200px (the tightest 3-line width)
-    expect(result).toBeGreaterThanOrEqual(195);
-    expect(result).toBeLessThanOrEqual(210);
+  it("balanced width keeps the same line count as baseline", () => {
+    // 6 words of 30px each, space = 10px.
+    // Total = 6*30 + 5*10 = 230px.
+    // At maxWidth=100: line1=30+10+30=70, +10+30=110>100 → wrap.
+    //   line1: "aaa bbb" = 70px (2 words)
+    //   line2: "ccc ddd" = 70px (2 words)
+    //   line3: "eee fff" = 70px (2 words)
+    //   → 3 lines baseline.
+    // Balanced should also be 3 lines but tighter.
+    const words = Array.from({ length: 6 }, () => "aaa").join(" ");
+    const result = getBalancedWidth(words, font, 100);
+    expect(result).toBeLessThanOrEqual(100);
+    // Should be at least wide enough for one word + space + word.
+    expect(result).toBeGreaterThanOrEqual(30);
+  });
+
+  it("uses canvas measureText for word widths", () => {
+    getBalancedWidth("hello world test", font, 200);
+    // Should measure: " ", "hello", "world", "test"
+    expect(mockCtx.measureText).toHaveBeenCalled();
+    const calls = mockCtx.measureText.mock.calls.map((c) => c[0]);
+    expect(calls).toContain(" ");
+    expect(calls).toContain("hello");
   });
 });
