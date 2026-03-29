@@ -60,13 +60,16 @@ class SemanticQueryServiceTest {
 	@Mock
 	private TeamRepository teamRepo;
 
+	@Mock
+	private RerankService rerankService;
+
 	private SemanticQueryService service;
 
 	@BeforeEach
 	void setUp() {
 		// SparseEncoder is pure computation — use the real instance (no mock needed)
 		service = new SemanticQueryService(pineconeClient, embeddingService, aiProviderRegistry, aiSuggestionService,
-				objectMapper, teamRepo, new SparseEncoder());
+				objectMapper, teamRepo, new SparseEncoder(), rerankService);
 	}
 
 	// ── Availability guards ───────────────────────────────────────────────
@@ -193,7 +196,7 @@ class SemanticQueryServiceTest {
 		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
 
 		// Pinecone is still called (with default/empty filter)
-		verify(pineconeClient).query(anyString(), any(), eq(40), any(), any());
+		verify(pineconeClient).query(anyString(), any(), eq(80), any(), any());
 		assertThat(result.available()).isTrue();
 	}
 
@@ -261,6 +264,7 @@ class SemanticQueryServiceTest {
 		mockIntentResponse(intentPayload("general_query", null, null, null, List.of()));
 		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
 		when(pineconeClient.query(anyString(), any(), anyInt(), any(), any())).thenReturn(List.of());
+		stubRerankerPassThrough(List.of());
 		mockRagAnswer("Answer.", 0.5);
 		stubSuggestionStore(UUID.randomUUID());
 
@@ -279,13 +283,14 @@ class SemanticQueryServiceTest {
 		mockIntentResponse(intentPayload("general_query", "self", "2025-01-06", "2025-01-31", List.of("commit")));
 		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
 		when(pineconeClient.query(anyString(), any(), anyInt(), any(), any())).thenReturn(List.of());
+		stubRerankerPassThrough(List.of());
 		mockRagAnswer("Answer.", 0.5);
 		stubSuggestionStore(UUID.randomUUID());
 
 		service.query(QUESTION, TEAM_ID, USER_ID);
 
 		ArgumentCaptor<Map<String, Object>> filterCaptor = ArgumentCaptor.forClass(Map.class);
-		verify(pineconeClient).query(anyString(), any(), eq(40), filterCaptor.capture(), any());
+		verify(pineconeClient).query(anyString(), any(), eq(80), filterCaptor.capture(), any());
 		Map<String, Object> filter = filterCaptor.getValue();
 		assertThat(filter.get("teamId")).isEqualTo(TEAM_ID.toString());
 		assertThat(filter.get("userId")).isEqualTo(USER_ID.toString());
@@ -332,6 +337,20 @@ class SemanticQueryServiceTest {
 		}
 		// SemanticQueryService calls the 5-arg hybrid query overload
 		when(pineconeClient.query(anyString(), any(), anyInt(), any(), any())).thenReturn(matches);
+		// Stub reranker to pass through (default test behaviour)
+		stubRerankerPassThrough(matches);
+	}
+
+	/**
+	 * Stubs the reranker to pass through the given matches as-is (no reordering).
+	 * Call this in tests that use a direct Pinecone stub instead of
+	 * {@link #mockPineconeMatches}.
+	 */
+	private void stubRerankerPassThrough(List<PineconeClient.PineconeMatch> matches) {
+		when(rerankService.getTopN()).thenReturn(20);
+		List<RerankService.RankedChunk> reranked = matches.stream()
+				.map(m -> new RerankService.RankedChunk(m.id(), m.score(), m.metadata(), m.score())).toList();
+		when(rerankService.rerank(anyString(), any(), anyInt())).thenReturn(reranked);
 	}
 
 	private void stubSuggestionStore(UUID suggestionId) {

@@ -42,7 +42,10 @@ import org.springframework.stereotype.Service;
 public class SemanticQueryService {
 
 	private static final Logger log = LoggerFactory.getLogger(SemanticQueryService.class);
-	private static final int TOP_K = 40;
+	/**
+	 * Retrieve more candidates from Pinecone; the reranker filters down to top-N.
+	 */
+	private static final int TOP_K = 80;
 
 	// ── Inner records ─────────────────────────────────────────────────────
 
@@ -95,10 +98,11 @@ public class SemanticQueryService {
 	private final ObjectMapper objectMapper;
 	private final TeamRepository teamRepo;
 	private final SparseEncoder sparseEncoder;
+	private final RerankService rerankService;
 
 	public SemanticQueryService(PineconeClient pineconeClient, EmbeddingService embeddingService,
 			AiProviderRegistry aiProviderRegistry, AiSuggestionService aiSuggestionService, ObjectMapper objectMapper,
-			TeamRepository teamRepo, SparseEncoder sparseEncoder) {
+			TeamRepository teamRepo, SparseEncoder sparseEncoder, RerankService rerankService) {
 		this.pineconeClient = pineconeClient;
 		this.embeddingService = embeddingService;
 		this.aiProviderRegistry = aiProviderRegistry;
@@ -106,6 +110,7 @@ public class SemanticQueryService {
 		this.objectMapper = objectMapper;
 		this.teamRepo = teamRepo;
 		this.sparseEncoder = sparseEncoder;
+		this.rerankService = rerankService;
 	}
 
 	// ── Public API ────────────────────────────────────────────────────────
@@ -161,10 +166,14 @@ public class SemanticQueryService {
 			List<PineconeClient.PineconeMatch> matches = pineconeClient.query(namespace, vector, TOP_K, filter,
 					sparseVector);
 
-			// Step 6 & 7: build RAG prompt context and generate answer
+			// Step 5b: rerank candidates to find the most relevant top-N
+			List<RerankService.RankedChunk> reranked = rerankService.rerank(question, matches, rerankService.getTopN());
+
+			// Step 6 & 7: build RAG prompt context from reranked results and generate
+			// answer
 			String contextString = buildContextString(question, matches);
 			AiContext ragContext = new AiContext(AiContext.TYPE_RAG_QUERY, userId, null, null, Map.of(), Map.of(),
-					List.of(), List.of(), buildRagAdditionalContext(question, matches));
+					List.of(), List.of(), buildRagAdditionalContextReranked(question, reranked));
 			AiSuggestionResult llmResult = aiProviderRegistry.generateSuggestion(ragContext);
 
 			// Step 7: parse the answer
@@ -323,6 +332,28 @@ public class SemanticQueryService {
 		Map<String, Object> ctx = new HashMap<>();
 		ctx.put("question", question);
 		ctx.put("currentDate", LocalDate.now().toString());
+		ctx.put("retrievedChunks", chunks);
+		return ctx;
+	}
+
+	/**
+	 * Builds the additional context map for the RAG prompt using the reranked top-N
+	 * chunks. Includes the rerank score so the LLM can see which chunks were most
+	 * relevant.
+	 */
+	private Map<String, Object> buildRagAdditionalContextReranked(String question,
+			List<RerankService.RankedChunk> reranked) {
+		List<Map<String, Object>> chunks = reranked.stream().map(rc -> {
+			Map<String, Object> chunk = new HashMap<>();
+			chunk.put("id", rc.id());
+			chunk.put("score", rc.score());
+			chunk.put("rerankScore", rc.rerankScore());
+			chunk.put("metadata", rc.metadata());
+			return chunk;
+		}).toList();
+		Map<String, Object> ctx = new HashMap<>();
+		ctx.put("question", question);
+		ctx.put("currentDate", java.time.LocalDate.now().toString());
 		ctx.put("retrievedChunks", chunks);
 		return ctx;
 	}
