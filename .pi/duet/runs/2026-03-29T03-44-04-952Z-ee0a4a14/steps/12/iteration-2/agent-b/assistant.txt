@@ -1,0 +1,30 @@
+Reviewed the Step 12 diff in `frontend/src/routes/Reports.tsx` and reran the required checks.
+
+I found one material gap: the migrated Recharts charts did not provide explicit ARIA labeling, even though the step requires proper ARIA labels and screen reader support for each migrated chart.
+
+What I changed:
+- `frontend/src/routes/Reports.tsx`
+  - Added `role="img"` + descriptive `aria-label` wrappers around all migrated chart-library visualizations in Reports:
+    - `VelocityTrendChart`
+    - `PlannedVsAchievedChart`
+    - `AchievementRateChart`
+    - `ScopeChangeChart`
+    - `CarryForwardChart`
+    - `ComplianceChart`
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm run build` ✅
+
+Assessment:
+- The remaining charts are migrated as required.
+- The step now better satisfies the explicit accessibility requirement for chart labeling.
+
+Verdict: changes_made
+
+```observations
+- [low] frontend/src/routes/Reports.tsx: The top file comment still says charts are rendered as pure CSS, which is now stale after the Recharts migrations.
+- [low] frontend/src/routes/Reports.tsx: Reports remains a very large lazy-loaded chunk (~239 KB gzip), but build passes and this was already accepted as an implementation tradeoff.
+- [low] frontend/src/routes/Reports.tsx: The existing `react-hooks/exhaustive-deps` warning on the reports API memo remains pre-existing/noise.
+```

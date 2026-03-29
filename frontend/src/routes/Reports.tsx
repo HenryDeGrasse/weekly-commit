@@ -9,6 +9,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ComposedChart,
+  BarChart,
   Bar,
   Line,
   XAxis,
@@ -17,6 +18,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
+  Cell,
 } from "recharts";
 import { ReportChartSkeleton } from "../components/shared/skeletons/ReportChartSkeleton.js";
 import { EmptyState } from "../components/shared/EmptyState.js";
@@ -324,80 +327,109 @@ function VelocityTrendChart({ data }: { readonly data: PlannedVsAchievedEntry[] 
         {chartData.length === 0 ? (
           <p className="text-sm text-muted">No data for this period.</p>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="var(--color-border)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="week"
-                tick={{ fontSize: 9, fontFamily: "var(--font-family-mono)", fill: "var(--color-muted)" }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 9, fontFamily: "var(--font-family-mono)", fill: "var(--color-muted)" }}
-                tickLine={false}
-                axisLine={false}
-                width={28}
-              />
-              <Tooltip
-                formatter={(value) => [`${value} pts`]}
-                contentStyle={{
-                  fontSize: 11,
-                  fontFamily: "var(--font-family-mono)",
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: 2,
-                  padding: "6px 10px",
-                }}
-                labelStyle={{ fontWeight: 600, marginBottom: 4 }}
-                itemStyle={{ color: "var(--color-foreground)" }}
-              />
-              <Legend
-                iconSize={8}
-                wrapperStyle={{ fontSize: 10, color: "var(--color-muted)" }}
-              />
-              {/* Achieved points bars */}
-              <Bar
-                dataKey="Achieved"
-                fill="var(--color-foreground)"
-                fillOpacity={0.2}
-                radius={[2, 2, 0, 0]}
-                maxBarSize={40}
-              />
-              {/* Rolling 4-week average line */}
-              <Line
-                dataKey="4-wk avg"
-                type="monotone"
-                stroke="var(--color-foreground)"
-                strokeWidth={1.5}
-                dot={{ r: 3, fill: "var(--color-foreground)", stroke: "var(--color-surface)", strokeWidth: 1 }}
-                activeDot={{ r: 4 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <div role="img" aria-label="Weekly achieved points with 4-week rolling average trend">
+            <ResponsiveContainer width="100%" height={200}>
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--color-border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="week"
+                  tick={{ fontSize: 9, fontFamily: "var(--font-family-mono)", fill: "var(--color-muted)" }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 9, fontFamily: "var(--font-family-mono)", fill: "var(--color-muted)" }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={28}
+                />
+                <Tooltip
+                  formatter={(value) => [`${value} pts`]}
+                  contentStyle={{
+                    fontSize: 11,
+                    fontFamily: "var(--font-family-mono)",
+                    background: "var(--color-surface)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: 2,
+                    padding: "6px 10px",
+                  }}
+                  labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                  itemStyle={{ color: "var(--color-foreground)" }}
+                />
+                <Legend
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 10, color: "var(--color-muted)" }}
+                />
+                {/* Achieved points bars */}
+                <Bar
+                  dataKey="Achieved"
+                  fill="var(--color-foreground)"
+                  fillOpacity={0.2}
+                  radius={[2, 2, 0, 0]}
+                  maxBarSize={40}
+                />
+                {/* Rolling 4-week average line */}
+                <Line
+                  dataKey="4-wk avg"
+                  type="monotone"
+                  stroke="var(--color-foreground)"
+                  strokeWidth={1.5}
+                  dot={{ r: 3, fill: "var(--color-foreground)", stroke: "var(--color-surface)", strokeWidth: 1 }}
+                  activeDot={{ r: 4 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>
   );
 }
 
+// ─── Shared tooltip style (reused by all migrated charts) ────────────────────
+const TOOLTIP_STYLE = {
+  contentStyle: {
+    fontSize: 11,
+    fontFamily: "var(--font-family-mono)",
+    background: "var(--color-surface)",
+    border: "1px solid var(--color-border)",
+    borderRadius: 2,
+    padding: "6px 10px",
+  },
+  labelStyle: { fontWeight: 600, marginBottom: 2 },
+  itemStyle: { color: "var(--color-foreground)" },
+  formatter: (v: unknown) => [`${v} pts`],
+} as const;
+
+const AXIS_TICK = {
+  fontSize: 9,
+  fontFamily: "var(--font-family-mono)",
+  fill: "var(--color-muted)",
+} as const;
+
 // ═══════════════════════════════════════════════════════════════════════════
 // ── Planned vs Achieved ─────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════
 
 function PlannedVsAchievedChart({ data }: { readonly data: PlannedVsAchievedEntry[] }) {
-  const sorted = useMemo(
-    () => [...data].sort((a, b) => a.weekStart.localeCompare(b.weekStart)),
+  const chartData = useMemo(
+    () =>
+      [...data]
+        .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
+        .map((row) => ({
+          week: shortWeek(row.weekStart),
+          Planned: row.totalPlannedPoints,
+          Achieved: row.totalAchievedPoints,
+        })),
     [data],
   );
-  const maxPts = Math.max(...sorted.map((d) => Math.max(d.totalPlannedPoints, d.totalAchievedPoints)), 1);
 
   return (
     <Card data-testid="pva-chart">
@@ -408,34 +440,21 @@ function PlannedVsAchievedChart({ data }: { readonly data: PlannedVsAchievedEntr
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {sorted.length === 0 ? (
+        {chartData.length === 0 ? (
           <p className="text-sm text-muted">No data for this period.</p>
         ) : (
-          <div className="space-y-2">
-            <div className="flex items-center gap-4 text-[10px] text-muted mb-2">
-              <span className="flex items-center gap-1"><span className="inline-block h-2 w-4 rounded bg-primary/30" /> Planned</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-2 w-4 rounded bg-primary" /> Achieved</span>
-            </div>
-            {sorted.map((row) => (
-              <div key={row.weekStart} className="flex items-center gap-2">
-                <span className="w-16 text-[10px] font-mono text-muted shrink-0">{shortWeek(row.weekStart)}</span>
-                <div className="flex-1 space-y-0.5">
-                  <div
-                    className="h-3 rounded bg-primary/30 transition-all"
-                    style={{ width: `${pct(row.totalPlannedPoints, maxPts)}%` }}
-                    title={`Planned: ${row.totalPlannedPoints}pts`}
-                  />
-                  <div
-                    className="h-3 rounded bg-primary transition-all"
-                    style={{ width: `${pct(row.totalAchievedPoints, maxPts)}%` }}
-                    title={`Achieved: ${row.totalAchievedPoints}pts`}
-                  />
-                </div>
-                <span className="w-20 text-right text-[10px] font-mono text-muted shrink-0">
-                  {row.totalAchievedPoints}/{row.totalPlannedPoints}pts
-                </span>
-              </div>
-            ))}
+          <div role="img" aria-label="Grouped bar chart comparing planned and achieved points by week">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="week" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={28} />
+                <Tooltip {...TOOLTIP_STYLE} />
+                <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: "var(--color-muted)" }} />
+                <Bar dataKey="Planned" fill="var(--color-primary)" fillOpacity={0.3} radius={[2, 2, 0, 0]} maxBarSize={20} />
+                <Bar dataKey="Achieved" fill="var(--color-primary)" radius={[2, 2, 0, 0]} maxBarSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>
@@ -448,23 +467,17 @@ function PlannedVsAchievedChart({ data }: { readonly data: PlannedVsAchievedEntr
 // ═══════════════════════════════════════════════════════════════════════════
 
 function AchievementRateChart({ data }: { readonly data: PlannedVsAchievedEntry[] }) {
-  const sorted = useMemo(
-    () => [...data].sort((a, b) => a.weekStart.localeCompare(b.weekStart)),
-    [data],
-  );
-
-  const rates = useMemo(
-    () => sorted.map((r) => ({ week: r.weekStart, rate: pct(r.totalAchievedPoints, r.totalPlannedPoints) })),
-    [sorted],
-  );
-
-  const avgRate = useMemo(() => {
-    if (rates.length === 0) return 0;
-    return Math.round(rates.reduce((s, r) => s + r.rate, 0) / rates.length);
-  }, [rates]);
-
   const TARGET = 80;
-  const chartH = 120;
+
+  const { chartData, avgRate } = useMemo(() => {
+    const sorted = [...data].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+    const rows = sorted.map((r) => ({
+      week: shortWeek(r.weekStart),
+      Rate: pct(r.totalAchievedPoints, r.totalPlannedPoints),
+    }));
+    const avg = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.Rate, 0) / rows.length) : 0;
+    return { chartData: rows, avgRate: avg };
+  }, [data]);
 
   return (
     <Card data-testid="achievement-rate-chart">
@@ -478,48 +491,38 @@ function AchievementRateChart({ data }: { readonly data: PlannedVsAchievedEntry[
         </Badge>
       </CardHeader>
       <CardContent>
-        {rates.length === 0 ? (
+        {chartData.length === 0 ? (
           <p className="text-sm text-muted">No data for this period.</p>
         ) : (
-          <div className="relative" style={{ height: chartH + 24 }}>
-            {/* Target line */}
-            <div
-              className="absolute left-0 right-0 border-t border-dashed border-foreground/25 z-10"
-              style={{ top: chartH * (1 - TARGET / 100) }}
-            >
-              <span className="absolute -top-3 right-0 text-[9px] font-mono text-muted">{TARGET}% target</span>
-            </div>
-
-            {/* Bars */}
-            <div className="absolute inset-0 flex items-end gap-1" style={{ height: chartH }}>
-              {rates.map((r) => {
-                const barH = (r.rate / 100) * chartH;
-                const ok = r.rate >= TARGET;
-                return (
-                  <div
-                    key={r.week}
-                    className="flex-1 flex flex-col items-center justify-end"
-                    style={{ height: chartH }}
-                  >
-                    <div
-                      className={`w-full transition-all ${ok ? "bg-foreground/20" : "bg-foreground/10 border border-dashed border-foreground/20"}`}
-                      style={{ height: barH, minHeight: r.rate > 0 ? 2 : 0 }}
-                      title={`${shortWeek(r.week)}: ${r.rate}%`}
+          <div role="img" aria-label="Weekly achievement rate bar chart with an 80 percent target line">
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="week" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <YAxis domain={[0, 100]} tick={AXIS_TICK} tickLine={false} axisLine={false} width={28} tickFormatter={(v) => `${v}%`} />
+                <Tooltip
+                  formatter={(v) => [`${v}%`]}
+                  contentStyle={TOOLTIP_STYLE.contentStyle}
+                  labelStyle={TOOLTIP_STYLE.labelStyle}
+                  itemStyle={TOOLTIP_STYLE.itemStyle}
+                />
+                <ReferenceLine
+                  y={TARGET}
+                  stroke="var(--color-muted)"
+                  strokeDasharray="4 4"
+                  label={{ value: `${TARGET}% target`, position: "insideTopRight", fontSize: 9, fontFamily: "var(--font-family-mono)", fill: "var(--color-muted)" }}
+                />
+                <Bar dataKey="Rate" radius={[2, 2, 0, 0]} maxBarSize={28}>
+                  {chartData.map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill="var(--color-foreground)"
+                      fillOpacity={entry.Rate >= TARGET ? 0.2 : 0.1}
                     />
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Labels */}
-            <div className="absolute bottom-0 flex gap-1" style={{ left: 0, right: 0, height: 24 }}>
-              {rates.map((r) => (
-                <div key={r.week} className="flex-1 text-center">
-                  <span className="text-[9px] font-mono font-bold block">{r.rate}%</span>
-                  <span className="text-[8px] font-mono text-muted block">{shortWeek(r.week)}</span>
-                </div>
-              ))}
-            </div>
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>
@@ -626,19 +629,17 @@ function ChessDistributionChart({
 // ═══════════════════════════════════════════════════════════════════════════
 
 function ScopeChangeChart({ data }: { readonly data: ScopeChangeReportEntry[] }) {
-  const byWeek = useMemo(() => {
+  const { chartData, avgChanges } = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of data) {
       map.set(row.weekStart, (map.get(row.weekStart) ?? 0) + row.scopeChangeCount);
     }
-    return [...map.entries()]
+    const rows = [...map.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, count]) => ({ week, count }));
+      .map(([week, count]) => ({ week: shortWeek(week), Changes: count }));
+    const avg = rows.length > 0 ? rows.reduce((s, r) => s + r.Changes, 0) / rows.length : 0;
+    return { chartData: rows, avgChanges: Math.round(avg) };
   }, [data]);
-
-  const maxCount = Math.max(...byWeek.map((r) => r.count), 1);
-  const totalChanges = byWeek.reduce((s, r) => s + r.count, 0);
-  const avgChanges = byWeek.length > 0 ? Math.round(totalChanges / byWeek.length) : 0;
 
   return (
     <Card data-testid="scope-change-chart">
@@ -647,36 +648,45 @@ function ScopeChangeChart({ data }: { readonly data: ScopeChangeReportEntry[] })
           <Zap className="h-4 w-4 text-foreground" />
           Scope Changes
         </CardTitle>
-        {byWeek.length > 0 && (
-          <span className="text-[10px] text-muted">avg {avgChanges}/wk</span>
+        {chartData.length > 0 && (
+          <span className="text-[10px] font-mono text-muted">avg {avgChanges}/wk</span>
         )}
       </CardHeader>
       <CardContent>
-        {byWeek.length === 0 ? (
+        {chartData.length === 0 ? (
           <p className="text-sm text-muted">No data for this period.</p>
         ) : (
-          <div className="space-y-1.5">
-            {byWeek.map((row) => {
-              const w = pct(row.count, maxCount);
-              const isHigh = row.count > avgChanges * 1.5;
-              return (
-                <div key={row.week} className="flex items-center gap-2">
-                  <span className="w-16 text-[10px] font-mono text-muted shrink-0">{shortWeek(row.week)}</span>
-                  <div className="flex-1 bg-surface-raised h-5 overflow-hidden relative">
-                    <div
-                      className={`h-full transition-all ${isHigh ? "bg-foreground/30" : "bg-foreground/15"}`}
-                      style={{ width: `${Math.max(w, 3)}%` }}
+          <div role="img" aria-label="Weekly scope change counts with a high threshold reference line">
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="week" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
+                <Tooltip
+                  formatter={(v) => [`${v} changes`]}
+                  contentStyle={TOOLTIP_STYLE.contentStyle}
+                  labelStyle={TOOLTIP_STYLE.labelStyle}
+                  itemStyle={TOOLTIP_STYLE.itemStyle}
+                />
+                {avgChanges > 0 && (
+                  <ReferenceLine
+                    y={avgChanges * 1.5}
+                    stroke="var(--color-warning)"
+                    strokeDasharray="4 4"
+                    label={{ value: "HIGH threshold", position: "insideTopRight", fontSize: 8, fontFamily: "var(--font-family-mono)", fill: "var(--color-warning)" }}
+                  />
+                )}
+                <Bar dataKey="Changes" radius={[2, 2, 0, 0]} maxBarSize={32}>
+                  {chartData.map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill="var(--color-foreground)"
+                      fillOpacity={entry.Changes > avgChanges * 1.5 ? 0.3 : 0.15}
                     />
-                    {isHigh && (
-                      <span className="absolute right-1.5 top-0.5 text-[8px] font-bold text-foreground/60">
-                        HIGH
-                      </span>
-                    )}
-                  </div>
-                  <span className="w-8 text-right text-[10px] font-mono font-bold shrink-0">{row.count}</span>
-                </div>
-              );
-            })}
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>
@@ -689,7 +699,7 @@ function ScopeChangeChart({ data }: { readonly data: ScopeChangeReportEntry[] })
 // ═══════════════════════════════════════════════════════════════════════════
 
 function CarryForwardChart({ data }: { readonly data: CarryForwardReportEntry[] }) {
-  const byWeek = useMemo(() => {
+  const chartData = useMemo(() => {
     const map = new Map<string, { commits: number; carried: number }>();
     for (const row of data) {
       const existing = map.get(row.weekStart) ?? { commits: 0, carried: 0 };
@@ -699,7 +709,10 @@ function CarryForwardChart({ data }: { readonly data: CarryForwardReportEntry[] 
     }
     return [...map.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, vals]) => ({ week, ...vals, rate: pct(vals.carried, vals.commits) }));
+      .map(([week, vals]) => ({
+        week: shortWeek(week),
+        "CF Rate %": pct(vals.carried, vals.commits),
+      }));
   }, [data]);
 
   return (
@@ -711,26 +724,24 @@ function CarryForwardChart({ data }: { readonly data: CarryForwardReportEntry[] 
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {byWeek.length === 0 ? (
+        {chartData.length === 0 ? (
           <p className="text-sm text-muted">No data for this period.</p>
         ) : (
-          <div className="space-y-2">
-            {byWeek.map((row) => (
-              <div key={row.week} className="flex items-center gap-2">
-                <span className="w-16 text-[10px] font-mono text-muted shrink-0">{shortWeek(row.week)}</span>
-                <div className="flex-1 bg-surface-raised overflow-hidden h-5 relative">
-                  <div
-                    className="h-full bg-foreground/25 transition-all flex items-center px-1.5"
-                    style={{ width: `${Math.max(row.rate, 5)}%` }}
-                  >
-                    <span className="text-[9px] font-mono font-bold text-foreground">{row.rate}%</span>
-                  </div>
-                </div>
-                <span className="w-20 text-right text-[10px] font-mono text-muted shrink-0">
-                  {row.carried}/{row.commits}
-                </span>
-              </div>
-            ))}
+          <div role="img" aria-label="Weekly carry-forward rate percentages by week">
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="week" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <YAxis domain={[0, 100]} tick={AXIS_TICK} tickLine={false} axisLine={false} width={28} tickFormatter={(v) => `${v}%`} />
+                <Tooltip
+                  formatter={(v) => [`${v}%`]}
+                  contentStyle={TOOLTIP_STYLE.contentStyle}
+                  labelStyle={TOOLTIP_STYLE.labelStyle}
+                  itemStyle={TOOLTIP_STYLE.itemStyle}
+                />
+                <Bar dataKey="CF Rate %" fill="var(--color-foreground)" fillOpacity={0.25} radius={[2, 2, 0, 0]} maxBarSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>
@@ -743,7 +754,7 @@ function CarryForwardChart({ data }: { readonly data: CarryForwardReportEntry[] 
 // ═══════════════════════════════════════════════════════════════════════════
 
 function ComplianceChart({ data }: { readonly data: ComplianceReportEntry[] }) {
-  const byWeek = useMemo(() => {
+  const chartData = useMemo(() => {
     const map = new Map<string, { total: number; lockedOnTime: number; reconciledOnTime: number; autoLocked: number }>();
     for (const row of data) {
       const existing = map.get(row.weekStart) ?? { total: 0, lockedOnTime: 0, reconciledOnTime: 0, autoLocked: 0 };
@@ -756,11 +767,10 @@ function ComplianceChart({ data }: { readonly data: ComplianceReportEntry[] }) {
     return [...map.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([week, v]) => ({
-        week,
-        lockRate: pct(v.lockedOnTime, v.total),
-        reconcileRate: pct(v.reconciledOnTime, v.total),
-        autoLockRate: pct(v.autoLocked, v.total),
-        total: v.total,
+        week: shortWeek(week),
+        "Lock on time": pct(v.lockedOnTime, v.total),
+        "Reconcile on time": pct(v.reconciledOnTime, v.total),
+        "Auto-locked": pct(v.autoLocked, v.total),
       }));
   }, [data]);
 
@@ -769,54 +779,31 @@ function ComplianceChart({ data }: { readonly data: ComplianceReportEntry[] }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm">
           <Shield className="h-4 w-4 text-success" />
-          Lock & Reconcile Compliance
+          Lock &amp; Reconcile Compliance
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {byWeek.length === 0 ? (
+        {chartData.length === 0 ? (
           <p className="text-sm text-muted">No data for this period.</p>
         ) : (
-          <div className="space-y-2">
-            <div className="flex items-center gap-4 text-[10px] text-muted mb-2">
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-4 bg-foreground/70" /> Lock on time
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-4 bg-foreground/30" /> Reconcile on time
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-4 bg-foreground/10 border border-dashed border-foreground/30" /> Auto-locked
-              </span>
-            </div>
-            {byWeek.map((row) => (
-              <div key={row.week} className="flex items-center gap-2">
-                <span className="w-16 text-[10px] font-mono text-muted shrink-0">{shortWeek(row.week)}</span>
-                <div className="flex-1 space-y-0.5">
-                  <div className="flex gap-px h-3">
-                    <div
-                      className="h-full bg-foreground/70 transition-all"
-                      style={{ width: `${row.lockRate}%` }}
-                      title={`Lock: ${row.lockRate}%`}
-                    />
-                    {row.autoLockRate > 0 && (
-                      <div
-                        className="h-full bg-foreground/10 border border-dashed border-foreground/30 transition-all"
-                        style={{ width: `${row.autoLockRate}%` }}
-                        title={`Auto-locked: ${row.autoLockRate}%`}
-                      />
-                    )}
-                  </div>
-                  <div
-                    className="h-3 bg-foreground/30 transition-all"
-                    style={{ width: `${row.reconcileRate}%` }}
-                    title={`Reconcile: ${row.reconcileRate}%`}
-                  />
-                </div>
-                <span className="w-24 text-right text-[10px] font-mono text-muted shrink-0">
-                  {row.lockRate}% / {row.reconcileRate}%
-                </span>
-              </div>
-            ))}
+          <div role="img" aria-label="Weekly lock and reconcile compliance percentages including auto-locked plans">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="week" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <YAxis domain={[0, 100]} tick={AXIS_TICK} tickLine={false} axisLine={false} width={28} tickFormatter={(v) => `${v}%`} />
+                <Tooltip
+                  formatter={(v) => [`${v}%`]}
+                  contentStyle={TOOLTIP_STYLE.contentStyle}
+                  labelStyle={TOOLTIP_STYLE.labelStyle}
+                  itemStyle={TOOLTIP_STYLE.itemStyle}
+                />
+                <Legend iconSize={8} wrapperStyle={{ fontSize: 10, color: "var(--color-muted)" }} />
+                <Bar dataKey="Lock on time" fill="var(--color-foreground)" fillOpacity={0.7} radius={[2, 2, 0, 0]} maxBarSize={18} />
+                <Bar dataKey="Reconcile on time" fill="var(--color-foreground)" fillOpacity={0.3} radius={[2, 2, 0, 0]} maxBarSize={18} />
+                <Bar dataKey="Auto-locked" fill="var(--color-warning)" fillOpacity={0.4} radius={[2, 2, 0, 0]} maxBarSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>

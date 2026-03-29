@@ -1,0 +1,39 @@
+Clean — no orphaned CSS chart variables, shared constants used consistently. Here's a summary:
+
+---
+
+## What I changed
+
+### `frontend/src/routes/Reports.tsx`
+
+**New Recharts imports:** added `BarChart`, `ReferenceLine`, `Cell` to the existing recharts import block.
+
+**New shared styling constants** (placed once, reused across all migrated charts):
+- `TOOLTIP_STYLE` — common tooltip `contentStyle`, `labelStyle`, `itemStyle` using CSS custom properties for dark mode compatibility
+- `AXIS_TICK` — shared `XAxis`/`YAxis` tick props (monospace font, muted fill, 9px)
+
+**5 CSS chart functions replaced with Recharts:**
+
+| Chart | Component used | Key features |
+|-------|---------------|-------------|
+| **PlannedVsAchievedChart** | `BarChart` + 2 `Bar` | Two grouped bars (Planned 30% opacity, Achieved solid) |
+| **AchievementRateChart** | `BarChart` + `ReferenceLine` + `Cell` | 80% reference line; bars lighter below target, normal above |
+| **ScopeChangeChart** | `BarChart` + `ReferenceLine` + `Cell` | HIGH threshold reference line at `avg×1.5`; bars darker when high |
+| **CarryForwardChart** | `BarChart` + `Bar` | Single carry-forward rate % bar |
+| **ComplianceChart** | `BarChart` + 3 `Bar` | Lock on time (70%), Reconcile on time (30%), Auto-locked (warning color) |
+
+**Kept as pure CSS:** ChessDistributionChart (unique stacked visual), ExceptionAgingTable (table not chart), AiAcceptanceCard (simple progress bars).
+
+**All migrated charts have:**
+- `ResponsiveContainer` for responsive sizing
+- `CartesianGrid` with horizontal-only dashes + `var(--color-border)`
+- `Tooltip` styled via CSS custom properties (dark mode compatible)
+- `data-testid` preserved
+- Empty state `<p>No data…</p>` preserved
+
+### Checks
+- ✅ `typecheck` — clean
+- ✅ `lint` — 0 errors (13 pre-existing warnings)
+- ✅ `build` — successful (Reports chunk: ~238 KB gzip, unchanged from step 11)
+
+Verdict: changes_made
