@@ -199,14 +199,15 @@ public class RiskDetectionService {
 		int budget = plan.getCapacityBudgetPoints();
 		if (totalPoints > budget) {
 			signals.add(new RawSignal("OVERCOMMIT", null, STUB_RATIONALE_PREFIX + ": planned " + totalPoints
-					+ " pts exceeds capacity budget of " + budget + " pts."));
+					+ " pts exceeds capacity budget of " + budget + " pts.", "{}"));
 		}
 
 		// 2. UNDERCOMMIT
 		if (budget > 0 && (double) totalPoints / budget < UNDERCOMMIT_THRESHOLD) {
 			signals.add(new RawSignal("UNDERCOMMIT", null,
 					STUB_RATIONALE_PREFIX + ": planned " + totalPoints + " pts is less than "
-							+ (int) (UNDERCOMMIT_THRESHOLD * 100) + "% of capacity budget (" + budget + " pts)."));
+							+ (int) (UNDERCOMMIT_THRESHOLD * 100) + "% of capacity budget (" + budget + " pts).",
+					"{}"));
 		}
 
 		// 3. REPEATED_CARRY_FORWARD
@@ -215,7 +216,8 @@ public class RiskDetectionService {
 				signals.add(new RawSignal("REPEATED_CARRY_FORWARD", commit.getId(),
 						STUB_RATIONALE_PREFIX + ": commit \"" + commit.getTitle() + "\" has been carried forward "
 								+ commit.getCarryForwardStreak() + " times in a row (streak >= "
-								+ CARRY_FORWARD_STREAK_THRESHOLD + ")."));
+								+ CARRY_FORWARD_STREAK_THRESHOLD + ").",
+						"{}"));
 			}
 		}
 
@@ -238,15 +240,19 @@ public class RiskDetectionService {
 				signals.add(new RawSignal("BLOCKED_CRITICAL", commit.getId(),
 						STUB_RATIONALE_PREFIX + ": " + commit.getChessPiece() + " commit \"" + commit.getTitle()
 								+ "\" linked ticket has been BLOCKED for more than " + BLOCKED_CRITICAL_HOURS
-								+ " hours."));
+								+ " hours.",
+						"{}"));
 			}
 		}
 
 		// 5. SCOPE_VOLATILITY
 		long scopeChanges = scopeChangeRepo.findByPlanIdOrderByCreatedAtAsc(plan.getId()).size();
 		if (scopeChanges > SCOPE_VOLATILITY_THRESHOLD) {
-			signals.add(new RawSignal("SCOPE_VOLATILITY", null, STUB_RATIONALE_PREFIX + ": plan has " + scopeChanges
-					+ " post-lock scope changes (threshold: " + SCOPE_VOLATILITY_THRESHOLD + ")."));
+			signals.add(
+					new RawSignal("SCOPE_VOLATILITY", null,
+							STUB_RATIONALE_PREFIX + ": plan has " + scopeChanges
+									+ " post-lock scope changes (threshold: " + SCOPE_VOLATILITY_THRESHOLD + ").",
+							"{}"));
 		}
 
 		// ── LLM augmentation: find risks that rules miss (BOAD/ADR-001 pattern) ──
@@ -260,7 +266,7 @@ public class RiskDetectionService {
 			s.setPlanId(plan.getId());
 			s.setCommitId(signal.commitId());
 			s.setUserId(plan.getOwnerUserId());
-			s.setPrompt("{}");
+			s.setPrompt(signal.prompt());
 			s.setRationale(signal.rationale());
 			s.setSuggestionPayload("{\"signalType\":\"" + signal.type() + "\"}");
 			s.setModelVersion(signal.type().startsWith("AI_")
@@ -324,13 +330,23 @@ public class RiskDetectionService {
 			AiContext context = new AiContext(AiContext.TYPE_RISK_SIGNAL, plan.getOwnerUserId(), plan.getId(), null,
 					Map.of(), planData, commitDataList, List.of(), additionalContext);
 
+			// Serialize full context so AI signals carry their input prompt for
+			// auditability
+			String contextJson;
+			try {
+				contextJson = objectMapper.writeValueAsString(context);
+			} catch (JsonProcessingException e) {
+				log.debug("Failed to serialize AI context for plan {}: {}", plan.getId(), e.getMessage());
+				contextJson = "{}";
+			}
+
 			AiSuggestionResult result = aiProviderRegistry.generateSuggestion(context);
 			if (!result.available() || result.payload() == null) {
 				return List.of();
 			}
 
-			// Parse the LLM response
-			return parseAiRiskSignals(result.payload());
+			// Parse the LLM response, passing the serialized context as prompt
+			return parseAiRiskSignals(result.payload(), contextJson);
 		} catch (Exception ex) {
 			log.debug("AI risk augmentation failed for plan {}: {}", plan.getId(), ex.getMessage());
 			return List.of();
@@ -343,7 +359,7 @@ public class RiskDetectionService {
 	 * "commitId": ..., "severity": ..., "description": ..., "suggestedAction":
 	 * ...}]}}.
 	 */
-	private List<RawSignal> parseAiRiskSignals(String payload) {
+	private List<RawSignal> parseAiRiskSignals(String payload, String contextJson) {
 		List<RawSignal> result = new ArrayList<>();
 		try {
 			com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(payload);
@@ -369,7 +385,7 @@ public class RiskDetectionService {
 				if (!suggestedAction.isBlank()) {
 					rationale += " → " + suggestedAction;
 				}
-				result.add(new RawSignal(signalType, commitId, rationale));
+				result.add(new RawSignal(signalType, commitId, rationale, contextJson));
 			}
 		} catch (Exception ex) {
 			log.debug("Failed to parse AI risk signals: {}", ex.getMessage());
@@ -415,7 +431,14 @@ public class RiskDetectionService {
 		return "UNKNOWN";
 	}
 
-	/** Simple value object for an in-memory signal before persistence. */
-	private record RawSignal(String type, UUID commitId, String rationale) {
+	/**
+	 * Simple value object for an in-memory signal before persistence.
+	 *
+	 * <p>
+	 * {@code prompt} holds the serialized {@link AiContext} for AI-generated
+	 * signals so the full input context is persisted alongside the signal.
+	 * Rules-based signals use {@code "{}"} since there is no LLM context.
+	 */
+	private record RawSignal(String type, UUID commitId, String rationale, String prompt) {
 	}
 }

@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.dto.RiskSignalResponse.PlanRiskSignals;
+import com.weeklycommit.ai.provider.AiProvider;
+import com.weeklycommit.ai.provider.AiSuggestionResult;
 import com.weeklycommit.domain.entity.AiSuggestion;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
@@ -69,6 +71,9 @@ class RiskDetectionServiceTest {
 
 	@Mock
 	private com.weeklycommit.ai.provider.AiProviderRegistry aiProviderRegistry;
+
+	@Mock
+	private AiProvider aiProvider;
 
 	@BeforeEach
 	void setUp() {
@@ -328,6 +333,44 @@ class RiskDetectionServiceTest {
 		service.getRiskSignals(planId, userId);
 
 		verify(authService).checkCanAccessUserFullDetail(userId, userId);
+	}
+
+	// -------------------------------------------------------------------------
+	// AI signal context persistence
+	// -------------------------------------------------------------------------
+
+	@Test
+	void detectSignals_aiSignals_storedWithSerializedContextAsPrompt() {
+		// Arrange: enable AI and return one AI risk signal from the LLM
+		when(aiProviderRegistry.isAiEnabled()).thenReturn(true);
+
+		String aiPayload = "{\"signals\":[{\"signalType\":\"AI_CONCENTRATION_RISK\",\"commitId\":null,"
+				+ "\"severity\":\"HIGH\",\"description\":\"All effort in one area\","
+				+ "\"suggestedAction\":\"Diversify across RCDO nodes\"}]}";
+		when(aiProviderRegistry.generateSuggestion(any()))
+				.thenReturn(new AiSuggestionResult(true, aiPayload, "AI signal", 0.9, "test-v1"));
+		when(aiProviderRegistry.getActiveProvider()).thenReturn(Optional.of(aiProvider));
+		when(aiProvider.getVersion()).thenReturn("test-model-v1");
+
+		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of());
+		when(scopeChangeRepo.findByPlanIdOrderByCreatedAtAsc(planId)).thenReturn(List.of());
+		when(suggestionRepo.findByPlanIdAndSuggestionType(planId, "RISK_SIGNAL")).thenReturn(List.of());
+
+		// Act
+		service.detectAndStoreRiskSignals(plan);
+
+		// Assert: the AI signal must be persisted with the serialized AiContext as
+		// prompt (not the empty "{}" used for rules-based signals)
+		ArgumentCaptor<AiSuggestion> captor = ArgumentCaptor.forClass(AiSuggestion.class);
+		verify(suggestionRepo, atLeastOnce()).save(captor.capture());
+
+		AiSuggestion aiSig = captor.getAllValues().stream()
+				.filter(s -> s.getSuggestionPayload().contains("AI_CONCENTRATION_RISK")).findFirst()
+				.orElseThrow(() -> new AssertionError("AI_CONCENTRATION_RISK signal not found in saved suggestions"));
+
+		// Prompt must not be empty — it must contain the serialized AiContext
+		assertThat(aiSig.getPrompt()).isNotEqualTo("{}");
+		assertThat(aiSig.getPrompt()).contains("RISK_SIGNAL"); // AiContext.suggestionType is included
 	}
 
 	// -------------------------------------------------------------------------

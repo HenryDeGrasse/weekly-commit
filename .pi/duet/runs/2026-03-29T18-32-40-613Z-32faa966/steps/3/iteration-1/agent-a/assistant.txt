@@ -1,0 +1,37 @@
+Everything is correct:
+- `CommitLintService`: `enrichSoftGuidanceFromAi` and `AiContext` are gone
+- `RiskDetectionService`: `RawSignal` has the `prompt` field, `setPrompt` uses `signal.prompt()`, context is serialized and passed through
+- `CommitLintServiceTest`: no `generateSuggestion` stubs remain
+
+## Summary
+
+### What was reviewed
+- `CommitLintService.java` — confirmed `enrichSoftGuidanceFromAi()` called the LLM but discarded the output (comment literally said "We don't parse the AI output for lint")
+- `CommitLintServiceTest.java` — confirmed 8 tests had `when(registry.generateSuggestion(any())).thenReturn(...)` stubs that would become unnecessary stubs (strict-stub violations) after the method removal
+- `RiskDetectionService.java` — confirmed `setPrompt("{}")` was hardcoded for all signals and the `RawSignal` record had no prompt field
+- `RiskDetectionServiceTest.java` — confirmed no existing test verified AI signal prompt content
+
+### What was changed
+
+**`CommitLintService.java`:**
+- Removed the `enrichSoftGuidanceFromAi()` method (12-line waste — called LLM and discarded the result)
+- Removed the call to `enrichSoftGuidanceFromAi()` from `lint()`
+- Removed unused `import com.weeklycommit.ai.provider.AiContext` (cleaned by spotless)
+
+**`CommitLintServiceTest.java`:**
+- Removed the `when(registry.generateSuggestion(any())).thenReturn(...)` stub from all 8 affected tests (would cause `UnnecessaryStubbingException` under Mockito strict stubs)
+- Removed unused `import com.weeklycommit.ai.provider.AiSuggestionResult` (cleaned by spotless)
+
+**`RiskDetectionService.java`:**
+- Added `String prompt` field to the `RawSignal` private record (4-arg now)
+- Updated all 5 rules-based signal constructions to pass `"{}"` as prompt (OVERCOMMIT, UNDERCOMMIT, REPEATED_CARRY_FORWARD, BLOCKED_CRITICAL, SCOPE_VOLATILITY)
+- In `detectAiRiskSignals()`: serialize the `AiContext` to JSON via `objectMapper.writeValueAsString(context)` immediately after building it; fall back to `"{}"` on serialization error
+- Updated `parseAiRiskSignals()` to accept `String contextJson` and use it in `RawSignal` construction
+- Changed persistence loop from `s.setPrompt("{}")` to `s.setPrompt(signal.prompt())`
+
+**`RiskDetectionServiceTest.java`:**
+- Added `@Mock private AiProvider aiProvider` field
+- Added `import com.weeklycommit.ai.provider.AiProvider` and `AiSuggestionResult`
+- Added `detectSignals_aiSignals_storedWithSerializedContextAsPrompt()` test verifying that AI signals are persisted with the serialized `AiContext` (not empty `"{}"`)
+
+Verdict: changes_made

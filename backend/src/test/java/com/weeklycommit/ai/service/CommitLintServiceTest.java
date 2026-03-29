@@ -1,14 +1,12 @@
 package com.weeklycommit.ai.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.weeklycommit.ai.dto.CommitLintRequest;
 import com.weeklycommit.ai.dto.CommitLintResponse;
 import com.weeklycommit.ai.dto.LintMessage;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
-import com.weeklycommit.ai.provider.AiSuggestionResult;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.ChessPiece;
@@ -87,7 +85,6 @@ class CommitLintServiceTest {
 		// rcdoNodeId is null — rcdoNodeRepo is NOT called for this commit
 		WeeklyCommit commit = buildCommit("Implement auth module", ChessPiece.KING, null, null, null);
 		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(commit));
-		when(registry.generateSuggestion(any())).thenReturn(new AiSuggestionResult(true, "{}", "ok", 0.9, "stub-v1"));
 
 		CommitLintResponse resp = service.lint(new CommitLintRequest(planId, userId));
 
@@ -105,7 +102,6 @@ class CommitLintServiceTest {
 		// rcdoNodeId is null — rcdoNodeRepo is NOT called for this commit
 		WeeklyCommit commit = buildCommit("Deliver user dashboard", ChessPiece.QUEEN, null, null, null);
 		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(commit));
-		when(registry.generateSuggestion(any())).thenReturn(new AiSuggestionResult(true, "{}", "ok", 0.9, "stub-v1"));
 
 		CommitLintResponse resp = service.lint(new CommitLintRequest(planId, userId));
 
@@ -121,7 +117,6 @@ class CommitLintServiceTest {
 		WeeklyCommit commit = buildCommit("Deliver the new feature", ChessPiece.KING, "Feature accepted by QA", null,
 				null);
 		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(commit));
-		when(registry.generateSuggestion(any())).thenReturn(new AiSuggestionResult(true, "{}", "ok", 0.9, "stub-v1"));
 
 		CommitLintResponse resp = service.lint(new CommitLintRequest(planId, userId));
 
@@ -141,7 +136,6 @@ class CommitLintServiceTest {
 		WeeklyCommit c1 = buildCommit("Fix the login bug properly", ChessPiece.ROOK, null, null, null);
 		WeeklyCommit c2 = buildCommit("Fix the login bug properly", ChessPiece.ROOK, null, null, null);
 		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(c1, c2));
-		when(registry.generateSuggestion(any())).thenReturn(new AiSuggestionResult(true, "{}", "ok", 0.9, "stub-v1"));
 
 		CommitLintResponse resp = service.lint(new CommitLintRequest(planId, userId));
 
@@ -160,7 +154,6 @@ class CommitLintServiceTest {
 		// rcdoNodeId is null — rcdoNodeRepo is NOT called
 		WeeklyCommit commit = buildCommit("misc", ChessPiece.PAWN, null, null, null);
 		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(commit));
-		when(registry.generateSuggestion(any())).thenReturn(new AiSuggestionResult(true, "{}", "ok", 0.9, "stub-v1"));
 
 		CommitLintResponse resp = service.lint(new CommitLintRequest(planId, userId));
 
@@ -185,7 +178,6 @@ class CommitLintServiceTest {
 		// Simulate parent node having active children — this stub IS used
 		com.weeklycommit.domain.entity.RcdoNode childNode = new com.weeklycommit.domain.entity.RcdoNode();
 		when(rcdoNodeRepo.findByParentIdAndStatus(rcdoId, RcdoNodeStatus.ACTIVE)).thenReturn(List.of(childNode));
-		when(registry.generateSuggestion(any())).thenReturn(new AiSuggestionResult(true, "{}", "ok", 0.9, "stub-v1"));
 
 		CommitLintResponse resp = service.lint(new CommitLintRequest(planId, userId));
 
@@ -203,7 +195,6 @@ class CommitLintServiceTest {
 		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(commit));
 		// No active children → leaf node — this stub IS used
 		when(rcdoNodeRepo.findByParentIdAndStatus(rcdoId, RcdoNodeStatus.ACTIVE)).thenReturn(List.of());
-		when(registry.generateSuggestion(any())).thenReturn(new AiSuggestionResult(true, "{}", "ok", 0.9, "stub-v1"));
 
 		CommitLintResponse resp = service.lint(new CommitLintRequest(planId, userId));
 
@@ -223,7 +214,6 @@ class CommitLintServiceTest {
 		WeeklyCommit commit = buildCommit("Deliver auth module completely", ChessPiece.KING, "All tests green", null,
 				1);
 		when(commitRepo.findByPlanIdOrderByPriorityOrder(planId)).thenReturn(List.of(commit));
-		when(registry.generateSuggestion(any())).thenReturn(new AiSuggestionResult(true, "{}", "ok", 0.9, "stub-v1"));
 
 		CommitLintResponse resp = service.lint(new CommitLintRequest(planId, userId));
 

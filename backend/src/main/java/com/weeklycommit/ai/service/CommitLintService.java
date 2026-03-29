@@ -3,7 +3,6 @@ package com.weeklycommit.ai.service;
 import com.weeklycommit.ai.dto.CommitLintRequest;
 import com.weeklycommit.ai.dto.CommitLintResponse;
 import com.weeklycommit.ai.dto.LintMessage;
-import com.weeklycommit.ai.provider.AiContext;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
@@ -92,12 +91,6 @@ public class CommitLintService {
 			lintCommit(commit, hard, soft, seenTitles, plan);
 		}
 
-		// Store as ai_suggestion (rules-based lint, but stored for auditability)
-		// We do not store the suggestion when AI is rule-only; the rules are
-		// deterministic.
-		// The AI provider is called for the soft-guidance enrichment part.
-		enrichSoftGuidanceFromAi(request, commits, soft);
-
 		return new CommitLintResponse(true, hard, soft);
 	}
 
@@ -164,25 +157,4 @@ public class CommitLintService {
 		return true;
 	}
 
-	// -------------------------------------------------------------------------
-	// AI enrichment for soft guidance
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Optionally calls the AI provider to enrich soft guidance. Failures are
-	 * silently swallowed — lint always returns a result.
-	 */
-	private void enrichSoftGuidanceFromAi(CommitLintRequest request, List<WeeklyCommit> commits,
-			List<LintMessage> soft) {
-		try {
-			Map<String, Object> planData = Map.of("commitCount", commits.size());
-			AiContext ctx = new AiContext(AiContext.TYPE_COMMIT_LINT, request.userId(), request.planId(), null,
-					Map.of(), planData, List.of(), List.of(), Map.of());
-			registry.generateSuggestion(ctx);
-			// We don't parse the AI output for lint — rules-based checks are authoritative.
-			// AI call is made so providers can log/learn from the data.
-		} catch (Exception ex) {
-			// Swallow — lint never fails due to AI errors
-		}
-	}
 }
