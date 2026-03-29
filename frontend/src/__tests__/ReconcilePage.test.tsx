@@ -569,12 +569,13 @@ describe("ReconcilePage — AI pre-fill", () => {
     await waitFor(() =>
       expect(screen.getByTestId("ai-prefill-banner")).toBeInTheDocument(),
     );
+    // Updated text reflects ghost/preview state (not auto-apply)
     expect(screen.getByTestId("ai-prefill-banner")).toHaveTextContent(
-      "AI has pre-filled likely outcomes",
+      "AI has suggested likely outcomes",
     );
   });
 
-  it("pre-populates outcomes from AI suggestions", async () => {
+  it("shows ghost/preview state for AI suggestions (not pre-selected)", async () => {
     vi.mocked(useAutoReconcileAssist).mockReturnValue({
       data: AI_SUGGEST_DATA,
       loading: false,
@@ -582,28 +583,61 @@ describe("ReconcilePage — AI pre-fill", () => {
     });
     renderReconcile();
     await waitFor(() =>
-      expect(screen.getByTestId("outcome-selector-c-1")).toBeInTheDocument(),
+      expect(screen.getByTestId("reconcile-commit-list")).toBeInTheDocument(),
     );
-    // c-1 should have ACHIEVED pre-selected — OutcomeSelector adds bg-foreground/10
-    // (its selectedCls) only when that outcome is selected.
+    // Ghost accept button should be shown (not the outcome pre-selected)
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-ghost-accept-c-1")).toBeInTheDocument(),
+    );
+    // Outcome selector should NOT have pre-selected value (not bg-foreground/10)
+    expect(screen.getByTestId("outcome-option-c-1-achieved")).not.toHaveClass(
+      "bg-foreground/10",
+    );
+  });
+
+  it("accepts AI suggestion when ghost outcome is clicked", async () => {
+    vi.mocked(useAutoReconcileAssist).mockReturnValue({
+      data: AI_SUGGEST_DATA,
+      loading: false,
+      error: null,
+    });
+    renderReconcile();
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-ghost-accept-c-1")).toBeInTheDocument(),
+    );
+    // Click ghost to accept
+    fireEvent.click(screen.getByTestId("ai-ghost-accept-c-1"));
+    // After accepting, the outcome should be selected (bg-foreground/10)
     await waitFor(() =>
       expect(screen.getByTestId("outcome-option-c-1-achieved")).toHaveClass(
         "bg-foreground/10",
       ),
     );
+    // Ghost UI should be gone
+    expect(screen.queryByTestId("ai-ghost-accept-c-1")).not.toBeInTheDocument();
   });
 
-  it("pre-populates notes from AI rationale for notes-required outcomes", async () => {
+  it("shows AI rationale as placeholder text (not pre-filled value) for notes-required outcomes", async () => {
     vi.mocked(useAutoReconcileAssist).mockReturnValue({
       data: AI_SUGGEST_DATA,
       loading: false,
       error: null,
     });
     renderReconcile();
+    // Notes textarea only appears after the outcome is accepted (ghost → solid).
+    // Accept c-2 ghost outcome first.
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-ghost-accept-c-2")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId("ai-ghost-accept-c-2"));
+    // After accepting NOT_ACHIEVED, the notes textarea appears
     await waitFor(() =>
       expect(screen.getByTestId("outcome-notes-c-2")).toBeInTheDocument(),
     );
-    expect(screen.getByTestId("outcome-notes-c-2")).toHaveValue(
+    // Notes textarea should be empty (not pre-filled) but have rationale as placeholder
+    expect(screen.getByTestId("outcome-notes-c-2")).toHaveValue("");
+    expect(screen.getByTestId("outcome-notes-c-2")).toHaveAttribute(
+      "placeholder",
       "No linked ticket completed",
     );
   });
@@ -716,7 +750,7 @@ describe("ReconcilePage — AI pre-fill", () => {
     });
   });
 
-  it("pre-checks carry-forward checkbox for AI-recommended commits", async () => {
+  it("pre-checks carry-forward checkbox after accepting AI-suggested NOT_ACHIEVED outcome", async () => {
     vi.mocked(useAutoReconcileAssist).mockReturnValue({
       data: AI_SUGGEST_DATA,
       loading: false,
@@ -726,7 +760,12 @@ describe("ReconcilePage — AI pre-fill", () => {
     await waitFor(() =>
       expect(screen.getByTestId("reconcile-commit-list")).toBeInTheDocument(),
     );
-    // c-2 is NOT_ACHIEVED (AI suggested) — carry-forward checkbox should be pre-checked
+    // c-2 carry-forward checkbox only appears after accepting the ghost outcome
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-ghost-accept-c-2")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId("ai-ghost-accept-c-2"));
+    // After accepting NOT_ACHIEVED, carry-forward checkbox should appear pre-checked
     await waitFor(() =>
       expect(
         screen.getByTestId("carry-forward-checkbox-c-2"),

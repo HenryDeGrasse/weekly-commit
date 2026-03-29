@@ -10,6 +10,7 @@ import { Navigation } from "./Navigation.js";
 import { Header, getWeekMonday } from "./Header.js";
 import { cn } from "../lib/utils.js";
 import { useTheme } from "../lib/useTheme.js";
+import { useAiMode } from "../lib/useAiMode.js";
 
 interface AppShellProps {
   readonly children: ReactNode;
@@ -53,6 +54,31 @@ function tokensToStyle(
   }
 
   return base as React.CSSProperties;
+}
+
+/**
+ * Sidebar footer toggle for the global AI suggestion mode.
+ * 'full' = AI sections enabled and auto-run. 'on-demand' = all AI sections
+ * collapsed by default; auto-run disabled.
+ */
+function AiModeToggle() {
+  const { aiMode, setAiMode } = useAiMode();
+  const isOnDemand = aiMode === "on-demand";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-muted">AI:</span>
+      <button
+        type="button"
+        onClick={() => setAiMode(isOnDemand ? "full" : "on-demand")}
+        className="text-[10px] text-muted hover:text-foreground transition-colors underline cursor-pointer bg-transparent border-none p-0"
+        aria-label={isOnDemand ? "AI mode: on-demand — click to enable full AI" : "AI mode: full — click to switch to on-demand"}
+        data-testid="ai-mode-toggle"
+        title={isOnDemand ? "AI suggestions on-demand only" : "AI suggestions fully enabled"}
+      >
+        {isOnDemand ? "on-demand" : "full"}
+      </button>
+    </div>
+  );
 }
 
 export function AppShell({ children }: AppShellProps) {
@@ -120,9 +146,10 @@ export function AppShell({ children }: AppShellProps) {
           {/* Spacer pushes bottom content down */}
           <div className="flex-1" />
 
-          {/* Version or help link at bottom */}
+          {/* AI mode toggle + version at bottom */}
           {!collapsed && (
-            <div className="mt-4 px-3 pt-4 border-t border-border">
+            <div className="mt-4 px-3 pt-4 border-t border-border flex flex-col gap-2">
+              <AiModeToggle />
               <p className="text-[10px] text-muted">v1.0.0</p>
             </div>
           )}

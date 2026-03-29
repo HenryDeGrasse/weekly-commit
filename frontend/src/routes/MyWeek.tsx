@@ -33,6 +33,8 @@ import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
 import { ProactiveRiskBanner } from "../components/ai/ProactiveRiskBanner.js";
 import { WhatIfPanel } from "../components/ai/WhatIfPanel.js";
 import { useAiStatus } from "../api/aiHooks.js";
+import { useDismissMemory } from "../lib/useDismissMemory.js";
+import { useAiMode } from "../lib/useAiMode.js";
 import type {
   CommitResponse, PlanState, LockValidationError,
   ScopeChangeEventResponse, UpdateCommitPayload, CreateCommitPayload,
@@ -179,6 +181,13 @@ export default function MyWeek() {
 
   const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
   const { data: aiStatus } = useAiStatus();
+  const { aiMode } = useAiMode();
+  const { shouldAutoCollapse: shouldAutoCollapseLint, recordDismiss: recordLintDismiss } =
+    useDismissMemory("ai-lint");
+  const {
+    shouldAutoCollapse: shouldAutoCollapseInsights,
+    recordDismiss: recordInsightsDismiss,
+  } = useDismissMemory("ai-insights");
   /** True when the feature flag is on AND the provider is reachable. */
   const aiComposerEnabled = aiAssistanceEnabled && (aiStatus?.available ?? false);
 
@@ -186,6 +195,7 @@ export default function MyWeek() {
   /** Monotonically increasing counter — bumped after every commit CRUD to trigger lint re-run. */
   const [lintRefreshKey, setLintRefreshKey] = useState(0);
   const [lintHintCount, setLintHintCount] = useState<number | null>(null);
+  const [riskSignalCount, setRiskSignalCount] = useState<number | null>(null);
   /** Pre-filled values passed from AI composer → CommitForm when user switches to manual. */
   const [commitFormInitialValues, setCommitFormInitialValues] = useState<
     Partial<CreateCommitPayload>
@@ -486,11 +496,25 @@ export default function MyWeek() {
         </Card>
       )}
 
-      {/* Proactive risk banners — shown only while LOCKED so critical signals are immediately visible */}
-      {aiAssistanceEnabled && isLocked && plan && (
-        <AiErrorBoundary>
-          <ProactiveRiskBanner planId={plan.id} />
-        </AiErrorBoundary>
+      {/* Proactive risk banners — collapsible (default open) so users can minimize after reviewing */}
+      {aiAssistanceEnabled && isLocked && plan && riskSignalCount !== 0 && (
+        <CollapsibleSection
+          id="risk-banners"
+          title="Risk Signals"
+          defaultExpanded={aiMode !== "on-demand"}
+          overrideExpanded={sectionsOverride}
+          badge={
+            riskSignalCount != null ? (
+              <span className="text-[0.65rem] font-bold px-1.5 py-0.5 rounded-sm bg-warning-bg text-warning border border-warning-border">
+                ⚠ {riskSignalCount}
+              </span>
+            ) : undefined
+          }
+        >
+          <AiErrorBoundary>
+            <ProactiveRiskBanner planId={plan.id} onSignalCount={setRiskSignalCount} />
+          </AiErrorBoundary>
+        </CollapsibleSection>
       )}
 
       {/* Personal AI insights — collapsed by default to reduce overwhelm */}
@@ -498,8 +522,11 @@ export default function MyWeek() {
         <CollapsibleSection
           id="ai-insights"
           title="AI Insights"
-          defaultExpanded={false}
+          defaultExpanded={aiMode === "on-demand" ? false : shouldAutoCollapseInsights ? false : false}
           overrideExpanded={sectionsOverride}
+          onToggle={(expanded) => {
+            if (!expanded) recordInsightsDismiss();
+          }}
         >
           <InsightPanel mode="personal" planId={plan.id} />
         </CollapsibleSection>
@@ -555,7 +582,7 @@ export default function MyWeek() {
         <CollapsibleSection
           id="ai-lint"
           title="AI Quality Check"
-          defaultExpanded={false}
+          defaultExpanded={aiMode === "on-demand" ? false : shouldAutoCollapseLint ? false : false}
           badge={
             lintHintCount != null ? (
               <Badge variant="draft">
@@ -565,12 +592,15 @@ export default function MyWeek() {
           }
           testId="inline-ai-lint-panel"
           overrideExpanded={sectionsOverride}
+          onToggle={(expanded) => {
+            if (!expanded) recordLintDismiss();
+          }}
         >
           <AiErrorBoundary>
             <AiLintPanel
               planId={plan.id}
               userId={currentUserId}
-              autoRun
+              autoRun={aiMode !== "on-demand"}
               refreshKey={lintRefreshKey}
               onHintCountChange={setLintHintCount}
             />

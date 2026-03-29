@@ -10,6 +10,7 @@
  * Non-critical types (UNDERCOMMIT, SCOPE_VOLATILITY) are excluded — they
  * are surfaced on the Team Week risk tab instead.
  */
+import { useEffect } from "react";
 import { AlertTriangle, ShieldAlert, TrendingDown, RotateCcw } from "lucide-react";
 import { cn } from "../../lib/utils.js";
 import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
@@ -112,6 +113,12 @@ function RiskBannerItem({ signal }: { signal: RiskSignal }) {
 interface ProactiveRiskBannerProps {
   /** Plan UUID. The parent must only render this for LOCKED plans. */
   planId: string;
+  /**
+   * Called once the signal data is resolved with the count of critical signals
+   * (0 when no critical signals, or when AI is unavailable/errored).
+   * Useful for the parent to show a count badge or hide the section.
+   */
+  onSignalCount?: (count: number) => void;
 }
 
 /**
@@ -119,18 +126,25 @@ interface ProactiveRiskBannerProps {
  * Returns `null` when AI is unavailable, loading, errored, or when no
  * critical signals exist — so callers need no conditional guard.
  */
-export function ProactiveRiskBanner({ planId }: ProactiveRiskBannerProps) {
+export function ProactiveRiskBanner({ planId, onSignalCount }: ProactiveRiskBannerProps) {
   const { data, loading, error } = useRiskSignals(planId);
+
+  const criticalSignals = (!loading && !error && data?.aiAvailable)
+    ? data.signals.filter((s) => CRITICAL_SIGNAL_TYPES.has(s.signalType))
+    : [];
+
+  // Report count to parent after data resolves (not during render).
+  useEffect(() => {
+    if (loading) return;
+    onSignalCount?.(criticalSignals.length);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, criticalSignals.length]);
 
   // Keep the UI clean: no loading skeleton for proactive banners.
   if (loading) return null;
 
   // Silently degrade when AI is unavailable or the fetch failed.
   if (error || !data?.aiAvailable) return null;
-
-  const criticalSignals = data.signals.filter((s) =>
-    CRITICAL_SIGNAL_TYPES.has(s.signalType),
-  );
 
   if (criticalSignals.length === 0) return null;
 

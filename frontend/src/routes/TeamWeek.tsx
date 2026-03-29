@@ -23,6 +23,7 @@ import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { SemanticSearchInput } from "../components/ai/SemanticSearchInput.js";
 import { ManagerAiSummaryCard } from "../components/ai/ManagerAiSummaryCard.js";
 import { TeamRiskSummaryBanner } from "../components/ai/TeamRiskSummaryBanner.js";
+import { CollapsibleSection } from "../components/shared/CollapsibleSection.js";
 
 function getWeekStartDate(offsetWeeks = 0): string {
   const now = new Date();
@@ -60,7 +61,8 @@ export default function TeamWeek() {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStartDate = getWeekStartDate(weekOffset);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [insightsExpanded, setInsightsExpanded] = useState(true);
+  const [insightsExpanded, setInsightsExpanded] = useState(false);
+  const [managerSummaryPreview, setManagerSummaryPreview] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { data: teamWeekData, loading: teamLoading, error: teamError, refetch: refetchTeamWeek } = useTeamWeekView(teamId, weekStartDate);
@@ -134,9 +136,26 @@ export default function TeamWeek() {
 
       {teamWeekData && (
         <>
-          {/* Manager AI summary — expanded by default; the first thing managers see */}
+          {/* Manager AI summary — collapsed by default; preview shown in badge */}
           {aiAssistanceEnabled && teamId && (
-            <ManagerAiSummaryCard teamId={teamId} weekStart={weekStartDate} />
+            <CollapsibleSection
+              id="manager-ai-summary"
+              title="Manager AI Summary"
+              defaultExpanded={false}
+              badge={
+                managerSummaryPreview != null ? (
+                  <span className="text-[0.65rem] text-info truncate max-w-[180px] block">
+                    {managerSummaryPreview}…
+                  </span>
+                ) : undefined
+              }
+            >
+              <ManagerAiSummaryCard
+                teamId={teamId}
+                weekStart={weekStartDate}
+                onSummaryText={setManagerSummaryPreview}
+              />
+            </CollapsibleSection>
           )}
 
           {/* Team-level risk signals — aggregated across all locked member plans */}

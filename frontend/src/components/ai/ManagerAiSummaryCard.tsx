@@ -6,6 +6,7 @@
  * and critical blocked item / unresolved exception counts. Every piece of
  * data cites underlying domain objects so the summary is never a black box.
  */
+import { useEffect } from "react";
 import { Bot, AlertTriangle, RotateCcw, ShieldAlert } from "lucide-react";
 import { Badge } from "../ui/Badge.js";
 import { Skeleton } from "../ui/Skeleton.js";
@@ -16,6 +17,12 @@ import { useManagerAiSummary } from "../../api/aiHooks.js";
 interface ManagerAiSummaryCardProps {
   teamId: string;
   weekStart: string;
+  /**
+   * Called once the summary loads with the first sentence of the prose
+   * summary (useful for the parent to show a preview badge in a
+   * CollapsibleSection header). Called with null when unavailable/errored.
+   */
+  onSummaryText?: ((text: string | null) => void) | undefined;
 }
 
 // ── Loading skeleton ──────────────────────────────────────────────────────────
@@ -45,8 +52,20 @@ function ManagerAiSummarySkeleton() {
 
 // ── Main card ─────────────────────────────────────────────────────────────────
 
-export function ManagerAiSummaryCard({ teamId, weekStart }: ManagerAiSummaryCardProps) {
+export function ManagerAiSummaryCard({ teamId, weekStart, onSummaryText }: ManagerAiSummaryCardProps) {
   const { data, loading, error } = useManagerAiSummary(teamId, weekStart);
+
+  // Report first-sentence preview to parent for badge use.
+  useEffect(() => {
+    if (loading) return;
+    if (error || !data?.aiAvailable || !data?.summaryText) {
+      onSummaryText?.(null);
+      return;
+    }
+    const firstSentence = data.summaryText.split(/[.!?]/)[0]?.trim() ?? null;
+    onSummaryText?.(firstSentence);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, data?.summaryText, error]);
 
   if (loading) {
     return <ManagerAiSummarySkeleton />;

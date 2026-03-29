@@ -48,6 +48,8 @@ export interface CollapsibleSectionProps {
    * state to localStorage after the override is applied.
    */
   readonly overrideExpanded?: boolean | undefined;
+  /** Called only for direct user toggles (not programmatic overrides). */
+  readonly onToggle?: ((expanded: boolean) => void) | undefined;
 }
 
 export function CollapsibleSection({
@@ -60,6 +62,7 @@ export function CollapsibleSection({
   testId,
   buttonTestId,
   overrideExpanded,
+  onToggle,
 }: CollapsibleSectionProps) {
   const storageKey = `wc-section-${id}`;
   const headerId = `collapsible-header-${id}`;
@@ -90,7 +93,11 @@ export function CollapsibleSection({
       <button
         id={headerId}
         type="button"
-        onClick={() => setExpanded((prev) => !prev)}
+        onClick={() => setExpanded((prev) => {
+          const next = !prev;
+          onToggle?.(next);
+          return next;
+        })}
         aria-expanded={expanded}
         aria-controls={contentId}
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted-bg/50"

@@ -389,21 +389,22 @@ describe("TeamWeekPage — rendering", () => {
 // ── Tests: AI insights and manager summary ────────────────────────────────────
 
 describe("TeamWeekPage — AI summary and insights", () => {
-  it("AI insights are expanded by default (insightsExpanded=true)", () => {
+  it("AI insights are collapsed by default (insightsExpanded=false)", () => {
     renderPage("team-1");
-    // The toggle button should show "▾" (expanded indicator) by default
+    // The toggle button should show "▸" (collapsed indicator) by default
     const toggle = screen.getByTestId("team-insights-toggle");
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(toggle).toHaveTextContent("▾");
-  });
-
-  it("collapses AI insights when toggle is clicked", () => {
-    renderPage("team-1");
-    const toggle = screen.getByTestId("team-insights-toggle");
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle).toHaveTextContent("▸");
+  });
+
+  it("expands AI insights when toggle is clicked (starts collapsed)", () => {
+    renderPage("team-1");
+    const toggle = screen.getByTestId("team-insights-toggle");
+    // Default is now collapsed
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveTextContent("▾");
   });
 });
 

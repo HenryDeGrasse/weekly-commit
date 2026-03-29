@@ -1,0 +1,14 @@
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/cost.json
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/sessions/continuous/relay-a/2026-03-29T04-00-15-033Z_4a0ddc52-42af-49b0-9eb6-a9e548e8b47f.jsonl
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/state.json
+frontend/src/__tests__/ReconcilePage.test.tsx
+frontend/src/__tests__/TeamWeekPage.test.tsx
+frontend/src/components/AppShell.tsx
+frontend/src/components/ai/ManagerAiSummaryCard.tsx
+frontend/src/components/ai/ProactiveRiskBanner.tsx
+frontend/src/routes/MyWeek.tsx
+frontend/src/routes/Reconcile.tsx
+frontend/src/routes/TeamWeek.tsx
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/steps/8
+frontend/src/lib/useAiMode.ts
+frontend/src/lib/useDismissMemory.ts

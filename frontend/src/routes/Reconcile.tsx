@@ -15,6 +15,7 @@ import { useRcdoTree } from "../api/rcdoHooks.js";
 import { useQuery } from "../api/hooks.js";
 import { useAutoReconcileAssist } from "../api/aiHooks.js";
 import { useHostBridge } from "../host/HostProvider.js";
+import { useAiMode } from "../lib/useAiMode.js";
 import type { ReconciliationViewResponse, ReconcileCommitView, CommitOutcome, ChessPiece, CarryForwardReason } from "../api/planTypes.js";
 import type { RcdoTreeNode } from "../api/rcdoTypes.js";
 import { OutcomeSelector } from "../components/reconcile/OutcomeSelector.js";
@@ -138,14 +139,18 @@ interface ReconcileCommitRowProps {
   readonly notesError: string | null;
   readonly isReadOnly: boolean;
   readonly rcdoLabels: Record<string, string>;
-  /** True when this outcome was pre-filled by AI and not yet explicitly confirmed. */
-  readonly isAiSuggested?: boolean;
+  /** The AI-suggested outcome for this commit (ghost/preview state). */
+  readonly aiSuggestedOutcome?: CommitOutcome | undefined;
+  /** AI-suggested note shown as placeholder text (not pre-filled). */
+  readonly aiSuggestedNote?: string | undefined;
   readonly onOutcomeChange: (outcome: CommitOutcome) => void;
   readonly onNotesChange: (notes: string) => void;
   readonly onCarryForwardChange: (checked: boolean) => void;
 }
 
-function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesError, isReadOnly, rcdoLabels, isAiSuggested, onOutcomeChange, onNotesChange, onCarryForwardChange }: ReconcileCommitRowProps) {
+function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesError, isReadOnly, rcdoLabels, aiSuggestedOutcome, aiSuggestedNote, onOutcomeChange, onNotesChange, onCarryForwardChange }: ReconcileCommitRowProps) {
+  // Ghost state: AI has a suggestion but user hasn't confirmed yet
+  const isGhostState = !isReadOnly && !outcome && aiSuggestedOutcome != null;
   const needsNotes = outcome != null && NOTES_REQUIRED.has(outcome);
   const canCarryForward = !isReadOnly && outcome != null && CARRY_FORWARD_ELIGIBLE.has(outcome);
   const isAutoAchieved = commitView.linkedTicketStatus === "DONE" && outcome === "ACHIEVED" && commitView.currentOutcome === "ACHIEVED";
@@ -174,11 +179,32 @@ function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesErr
         </div>
       </div>
 
-      {/* Outcome selector + AI-suggested badge */}
+      {/* Ghost/preview state: AI has a suggestion not yet confirmed */}
+      {isGhostState && (
+        <div
+          className="px-3 py-2.5 border-b border-border bg-info-bg/60"
+          data-testid={`ai-ghost-outcome-${commitView.commitId}`}
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <AiSuggestedBadge data-testid={`ai-suggested-badge-${commitView.commitId}`} />
+            <span className="text-xs text-info">AI suggestion — click to accept:</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onOutcomeChange(aiSuggestedOutcome!)}
+            className="w-full rounded-sm border border-info-border bg-info-bg px-3 py-1.5 text-xs text-info font-semibold opacity-80 hover:opacity-100 transition-opacity text-left"
+            data-testid={`ai-ghost-accept-${commitView.commitId}`}
+          >
+            {aiSuggestedOutcome}
+          </button>
+        </div>
+      )}
+
+      {/* Outcome selector — shown always (user can pick any outcome) */}
       <div className={cn("px-3 py-2.5", (needsNotes || canCarryForward) && "border-b border-border")}>
         <div className="flex items-center gap-2 flex-wrap">
           <OutcomeSelector commitId={commitView.commitId} value={outcome} onChange={onOutcomeChange} disabled={isReadOnly} />
-          {isAiSuggested && outcome != null && (
+          {!isGhostState && outcome != null && aiSuggestedOutcome != null && (
             <AiSuggestedBadge data-testid={`ai-suggested-badge-${commitView.commitId}`} />
           )}
         </div>
@@ -200,7 +226,7 @@ function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesErr
             aria-required="true"
             aria-describedby={notesError ? `notes-error-${commitView.commitId}` : undefined}
             className={cn("w-full rounded-default border bg-surface px-3 py-1.5 text-sm resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", notesError ? "border-danger" : "border-border")}
-            placeholder="Explain what happened…"
+            placeholder={aiSuggestedNote ?? "Explain what happened…"}
           />
           {notesError && <span id={`notes-error-${commitView.commitId}`} role="alert" className="text-xs text-danger">{notesError}</span>}
         </div>
@@ -270,6 +296,7 @@ export default function ReconcilePage() {
   const bridge = useHostBridge();
   const userId = bridge.context.authenticatedUser.id;
   const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
+  const { aiMode } = useAiMode();
   const { data, loading, error, refetch } = useReconcileView(planId);
   const { data: rcdoTreeData } = useRcdoTree();
   const rcdoLabels = useMemo(() => buildRcdoLabels(rcdoTreeData), [rcdoTreeData]);
@@ -294,40 +321,45 @@ export default function ReconcilePage() {
   const [aiPrefillApplied, setAiPrefillApplied] = useState(false);
   const [aiSuggestionId, setAiSuggestionId] = useState<string | undefined>(undefined);
   const [aiDraftSummary, setAiDraftSummary] = useState<string | null>(null);
+  /**
+   * AI-suggested notes stored as ghost/placeholder text.
+   * These are NOT pre-filled into localNotes — shown as textarea placeholder
+   * text only until the user types their own notes.
+   */
+  const [aiSuggestedNotes, setAiSuggestedNotes] = useState<Record<string, string>>({});
 
   const isReconciling = data?.plan.state === "RECONCILING";
   const { data: aiAssistData } = useAutoReconcileAssist(
-    aiAssistanceEnabled ? planId : null,
+    aiAssistanceEnabled && aiMode !== "on-demand" ? planId : null,
     userId,
     isReconciling ?? false,
   );
 
   // Apply AI pre-fill once, after both page data and AI data are ready.
+  // Ghost/preview state: suggestions are stored in aiSuggestedOutcomes only.
+  // They are NOT merged into localOutcomes until the user explicitly clicks
+  // to accept them. Notes are stored as placeholder text, not pre-filled.
   useEffect(() => {
     if (!data || !aiAssistData || aiPrefillApplied) return;
 
-    const newOutcomes: Record<string, CommitOutcome> = {};
-    const newNotes: Record<string, string> = {};
     const newAiSuggested: Record<string, CommitOutcome> = {};
+    const newAiNotes: Record<string, string> = {};
 
     for (const suggestion of aiAssistData.likelyOutcomes) {
       const commitExists = data.commits.some((cv) => cv.commitId === suggestion.commitId);
       if (commitExists) {
         const suggestedOutcome = suggestion.suggestedOutcome as CommitOutcome;
-        newOutcomes[suggestion.commitId] = suggestedOutcome;
         newAiSuggested[suggestion.commitId] = suggestedOutcome;
+        // Store rationale as ghost placeholder text (not pre-filled into textarea)
         if (NOTES_REQUIRED.has(suggestedOutcome) && suggestion.rationale.trim()) {
-          newNotes[suggestion.commitId] = suggestion.rationale;
+          newAiNotes[suggestion.commitId] = suggestion.rationale;
         }
       }
     }
 
-    if (Object.keys(newOutcomes).length > 0) {
-      setLocalOutcomes((prev) => ({ ...prev, ...newOutcomes }));
+    if (Object.keys(newAiSuggested).length > 0) {
       setAiSuggestedOutcomes(newAiSuggested);
-    }
-    if (Object.keys(newNotes).length > 0) {
-      setLocalNotes((prev) => ({ ...prev, ...newNotes }));
+      setAiSuggestedNotes(newAiNotes);
     }
 
     // Pre-check carry-forward recommendations (checkboxes appear pre-checked).
@@ -561,10 +593,10 @@ export default function ReconcilePage() {
           <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <p className="m-0 text-sm font-semibold text-foreground">
-              AI has pre-filled likely outcomes based on your ticket data and commit history
+              AI has suggested likely outcomes — click each to accept
             </p>
             <p className="m-0 mt-0.5 text-xs text-muted">
-              Review and confirm each outcome below. Change any that don&apos;t look right.
+              Suggestions are shown in blue below. Click to accept, or select a different outcome.
             </p>
           </div>
           {aiSuggestionId && (
@@ -620,7 +652,8 @@ export default function ReconcilePage() {
                 notesError={notesErrors[commitId] ?? null}
                 isReadOnly={isReadOnly}
                 rcdoLabels={rcdoLabels}
-                isAiSuggested={commitId in aiSuggestedOutcomes}
+                aiSuggestedOutcome={aiSuggestedOutcomes[commitId]}
+                aiSuggestedNote={aiSuggestedNotes[commitId]}
                 onOutcomeChange={(o) => void handleOutcomeChange(commitId, o)}
                 onNotesChange={(n) => setLocalNotes((prev) => ({ ...prev, [commitId]: n }))}
                 onCarryForwardChange={(checked) => {

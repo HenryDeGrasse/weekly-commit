@@ -1,14 +1,26 @@
 /**
  * InsightPanel — displays AI-generated insight cards for a team week
  * (mode='team') or a personal plan (mode='personal').
+ *
+ * Uses @chenglou/pretext for balanced text layout: each card's paragraph
+ * is shrinkwrapped to the tightest width that doesn't add extra lines,
+ * so line lengths are roughly equal instead of ragged-right.
  */
+import { useMemo } from "react";
 import { Bot } from "lucide-react";
 import { Badge } from "../ui/Badge.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { cn } from "../../lib/utils.js";
 import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
 import { useTeamInsights, usePlanInsights } from "../../api/ragHooks.js";
+import { useBalancedText } from "../../lib/useBalancedText.js";
 import type { InsightCard } from "../../api/ragApi.js";
+
+// ── Balanced text config ──────────────────────────────────────────────────────
+// Must be a named font (not system-ui) for accurate canvas measurement.
+// Matches the `text-sm leading-relaxed` class on the insight text <p>.
+const INSIGHT_FONT = '14px "Inter", sans-serif';
+const INSIGHT_LINE_HEIGHT = 22.4; // 14px × 1.6 (leading-relaxed)
 
 // ── Severity helpers ──────────────────────────────────────────────────────────
 
@@ -35,7 +47,13 @@ function severityLabel(severity: string): string {
 
 // ── Individual card ───────────────────────────────────────────────────────────
 
-function InsightCardItem({ card }: { card: InsightCard }) {
+function InsightCardItem({
+  card,
+  balancedWidth,
+}: {
+  card: InsightCard;
+  balancedWidth: number | undefined;
+}) {
   return (
     <div
       className={cn(
@@ -55,9 +73,10 @@ function InsightCardItem({ card }: { card: InsightCard }) {
         <AiFeedbackButtons suggestionId={card.suggestionId} />
       </div>
 
-      {/* Insight text */}
+      {/* Insight text — balanced via Pretext shrinkwrap measurement */}
       <p
         className="m-0 text-sm text-foreground leading-relaxed"
+        style={balancedWidth != null ? { maxWidth: balancedWidth } : undefined}
         data-testid={`insight-text-${card.suggestionId}`}
       >
         {card.insightText}
@@ -97,6 +116,38 @@ function InsightSkeletons() {
           <Skeleton className="h-3.5 w-4/5" />
           <Skeleton className="h-3 w-2/3" />
         </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Balanced insight card list ─────────────────────────────────────────────────
+
+/**
+ * Renders a list of insight cards with Pretext-balanced text.
+ * The `ref` from `useBalancedText` is attached to the container so it
+ * re-measures when the panel resizes (e.g. sidebar toggle, window resize).
+ */
+function BalancedInsightCardList({ insights }: { insights: InsightCard[] }) {
+  const insightTexts = useMemo(
+    () => insights.map((c) => c.insightText),
+    [insights],
+  );
+
+  const { ref, widths } = useBalancedText(
+    insightTexts,
+    INSIGHT_FONT,
+    INSIGHT_LINE_HEIGHT,
+  );
+
+  return (
+    <div ref={ref} className="flex flex-col gap-3">
+      {insights.map((card) => (
+        <InsightCardItem
+          key={card.suggestionId}
+          card={card}
+          balancedWidth={widths.get(card.insightText)}
+        />
       ))}
     </div>
   );
@@ -168,13 +219,7 @@ function TeamInsightPanel({
     );
   }
 
-  return (
-    <div className="flex flex-col gap-3">
-      {data.insights.map((card) => (
-        <InsightCardItem key={card.suggestionId} card={card} />
-      ))}
-    </div>
-  );
+  return <BalancedInsightCardList insights={data.insights} />;
 }
 
 function PersonalInsightPanel({ planId }: { planId?: string }) {
@@ -216,17 +261,15 @@ function PersonalInsightPanel({ planId }: { planId?: string }) {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-3">
-      {data.insights.map((card) => (
-        <InsightCardItem key={card.suggestionId} card={card} />
-      ))}
-    </div>
-  );
+  return <BalancedInsightCardList insights={data.insights} />;
 }
 
 /**
- * InsightPanel renders AI-generated insight cards.
+ * InsightPanel renders AI-generated insight cards with balanced text layout.
+ *
+ * Uses @chenglou/pretext to measure each card's text and compute a
+ * shrinkwrapped max-width that distributes words evenly across lines,
+ * eliminating the short trailing "orphan" line typical of ragged-right text.
  *
  * Set `mode="team"` with `teamId` + `weekStart` for team-level insights, or
  * `mode="personal"` with `planId` for plan-level personal insights.
