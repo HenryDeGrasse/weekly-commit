@@ -2,7 +2,7 @@
  * My Week — personal weekly plan view.
  * Route: /weekly/my-week
  */
-import { useState, useCallback, useMemo, Component, type ErrorInfo, type ReactNode } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef, Component, type ErrorInfo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Lock, AlertTriangle, Check, X, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
@@ -28,6 +28,7 @@ import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
 import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js";
 import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { AiLintPanel } from "../components/ai/AiLintPanel.js";
+import { CollapsibleSection } from "../components/shared/CollapsibleSection.js";
 import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
 import { ProactiveRiskBanner } from "../components/ai/ProactiveRiskBanner.js";
 import { WhatIfPanel } from "../components/ai/WhatIfPanel.js";
@@ -116,8 +117,8 @@ export default function MyWeek() {
   const { data: planData, loading: planLoading, error: planError, refetch: refetchPlan } = useCurrentPlan(weekStartDate);
   const { data: rcdoTree } = useRcdoTree();
 
-  const [showHistory, setShowHistory] = useState(false);
-  const { data: planHistory, loading: historyLoading } = usePlanHistory(showHistory ? currentUserId : null);
+  // Plan history — always fetched; displayed via CollapsibleSection.
+  const { data: planHistory, loading: historyLoading } = usePlanHistory(currentUserId);
   const [lineageCommitId, setLineageCommitId] = useState<string | null>(null);
   const { data: lineage, loading: lineageLoading } = useCarryForwardLineage(lineageCommitId);
 
@@ -144,6 +145,38 @@ export default function MyWeek() {
   const [scopeChangeEvents, setScopeChangeEvents] = useState<ScopeChangeEventResponse[]>([]);
   const [showTimeline, setShowTimeline] = useState(false);
 
+  // ── Expand / Collapse all sections ───────────────────────────────────────
+
+  /**
+   * When truthy, CollapsibleSections pick up this override and expand/collapse
+   * themselves. We reset it to undefined after one React paint so individual
+   * section toggles continue to work independently.
+   */
+  const [sectionsOverride, setSectionsOverride] = useState<boolean | undefined>(undefined);
+  const overrideAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (sectionsOverride !== undefined) {
+      if (!overrideAppliedRef.current) {
+        overrideAppliedRef.current = true;
+      } else {
+        // Reset after the override has had a chance to propagate.
+        setSectionsOverride(undefined);
+        overrideAppliedRef.current = false;
+      }
+    }
+  }, [sectionsOverride]);
+
+  const handleExpandAll = useCallback(() => {
+    overrideAppliedRef.current = false;
+    setSectionsOverride(true);
+  }, []);
+
+  const handleCollapseAll = useCallback(() => {
+    overrideAppliedRef.current = false;
+    setSectionsOverride(false);
+  }, []);
+
   const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
   const { data: aiStatus } = useAiStatus();
   /** True when the feature flag is on AND the provider is reachable. */
@@ -152,6 +185,7 @@ export default function MyWeek() {
   const [showAiComposer, setShowAiComposer] = useState(false);
   /** Monotonically increasing counter — bumped after every commit CRUD to trigger lint re-run. */
   const [lintRefreshKey, setLintRefreshKey] = useState(0);
+  const [lintHintCount, setLintHintCount] = useState<number | null>(null);
   /** Pre-filled values passed from AI composer → CommitForm when user switches to manual. */
   const [commitFormInitialValues, setCommitFormInitialValues] = useState<
     Partial<CreateCommitPayload>
@@ -162,6 +196,16 @@ export default function MyWeek() {
   const effectivePreLockErrors = useMemo(() => getEffectivePreLockErrors(commits, lockValidationErrors), [commits, lockValidationErrors]);
   const isDraft = plan?.state === "DRAFT";
   const isLocked = plan?.state === "LOCKED";
+
+  // ── Soft-warning derived state (for CollapsibleSection defaultExpanded) ──
+  const hasSoftWarnings = useMemo(() => {
+    const activeCount = commits.filter((c) => c.outcome == null).length;
+    const totalPts = commits.reduce((sum, c) => sum + (c.estimatePoints ?? 0), 0);
+    const pawnPts = commits
+      .filter((c) => c.chessPiece === "PAWN")
+      .reduce((sum, c) => sum + (c.estimatePoints ?? 0), 0);
+    return activeCount > 8 || (totalPts > 0 && pawnPts / totalPts > 0.4);
+  }, [commits]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -327,34 +371,56 @@ export default function MyWeek() {
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="m-0 text-xl font-bold">My Week</h2>
-        {isDraft && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="primary"
-              onClick={handleOpenCreate}
-              data-testid="add-commit-btn"
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Expand / Collapse all — power-user layout shortcut */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleExpandAll}
+              className="text-xs text-muted hover:text-foreground underline cursor-pointer bg-transparent border-none p-0"
+              data-testid="expand-all-btn"
             >
-              {aiComposerEnabled ? (
-                <>
-                  <Sparkles className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-                  Add Commit
-                </>
-              ) : (
-                "+ Add Commit"
-              )}
-            </Button>
-            {aiComposerEnabled && (
-              <button
-                type="button"
-                onClick={handleOpenManualCreate}
-                className="text-xs text-muted hover:text-foreground underline cursor-pointer bg-transparent border-none p-0"
-                data-testid="add-commit-manually-btn"
-              >
-                + Add manually
-              </button>
-            )}
+              Expand all
+            </button>
+            <span className="text-muted text-xs" aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={handleCollapseAll}
+              className="text-xs text-muted hover:text-foreground underline cursor-pointer bg-transparent border-none p-0"
+              data-testid="collapse-all-btn"
+            >
+              Collapse all
+            </button>
           </div>
-        )}
+          {isDraft && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                onClick={handleOpenCreate}
+                data-testid="add-commit-btn"
+              >
+                {aiComposerEnabled ? (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                    Add Commit
+                  </>
+                ) : (
+                  "+ Add Commit"
+                )}
+              </Button>
+              {aiComposerEnabled && (
+                <button
+                  type="button"
+                  onClick={handleOpenManualCreate}
+                  className="text-xs text-muted hover:text-foreground underline cursor-pointer bg-transparent border-none p-0"
+                  data-testid="add-commit-manually-btn"
+                >
+                  + Add manually
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Week selector */}
@@ -427,9 +493,16 @@ export default function MyWeek() {
         </AiErrorBoundary>
       )}
 
-      {/* Personal AI insights */}
+      {/* Personal AI insights — collapsed by default to reduce overwhelm */}
       {aiAssistanceEnabled && plan && (
-        <InsightPanel mode="personal" planId={plan.id} />
+        <CollapsibleSection
+          id="ai-insights"
+          title="AI Insights"
+          defaultExpanded={false}
+          overrideExpanded={sectionsOverride}
+        >
+          <InsightPanel mode="personal" planId={plan.id} />
+        </CollapsibleSection>
       )}
 
       {/* Auto-lock system banner */}
@@ -465,16 +538,44 @@ export default function MyWeek() {
       {/* Capacity meter */}
       {plan && <CapacityMeter commits={commits} budgetPoints={plan.capacityBudgetPoints} isManagerOverride={plan.capacityBudgetPoints !== 10} />}
 
-      {/* Soft warnings */}
-      {commits.length > 0 && <SoftWarningsPanel commits={commits} />}
+      {/* Soft warnings — shown (and auto-expanded) only when thresholds are exceeded */}
+      {hasSoftWarnings && (
+        <CollapsibleSection
+          id="soft-warnings"
+          title="Warnings"
+          defaultExpanded={true}
+          overrideExpanded={sectionsOverride}
+        >
+          <SoftWarningsPanel commits={commits} />
+        </CollapsibleSection>
+      )}
 
-      {/* Inline AI commit quality hints — auto-runs in DRAFT so feedback appears without any extra click */}
+      {/* AI Quality Check — collapsed by default; auto-runs lint when opened */}
       {aiAssistanceEnabled && isDraft && plan && commits.length > 0 && (
-        <div data-testid="inline-ai-lint-panel">
+        <CollapsibleSection
+          id="ai-lint"
+          title="AI Quality Check"
+          defaultExpanded={false}
+          badge={
+            lintHintCount != null ? (
+              <Badge variant="draft">
+                {lintHintCount} {lintHintCount === 1 ? "hint" : "hints"}
+              </Badge>
+            ) : undefined
+          }
+          testId="inline-ai-lint-panel"
+          overrideExpanded={sectionsOverride}
+        >
           <AiErrorBoundary>
-            <AiLintPanel planId={plan.id} userId={currentUserId} autoRun refreshKey={lintRefreshKey} />
+            <AiLintPanel
+              planId={plan.id}
+              userId={currentUserId}
+              autoRun
+              refreshKey={lintRefreshKey}
+              onHintCountChange={setLintHintCount}
+            />
           </AiErrorBoundary>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Commit list */}
@@ -491,11 +592,18 @@ export default function MyWeek() {
         />
       )}
 
-      {/* What-If Planner — available in both DRAFT and LOCKED states */}
+      {/* What-If Planner — collapsed by default */}
       {aiAssistanceEnabled && plan && (isDraft || isLocked) && (
-        <AiErrorBoundary>
-          <WhatIfPanel planId={plan.id} currentCommits={commits} />
-        </AiErrorBoundary>
+        <CollapsibleSection
+          id="what-if"
+          title="What-If Planner"
+          defaultExpanded={false}
+          overrideExpanded={sectionsOverride}
+        >
+          <AiErrorBoundary>
+            <WhatIfPanel planId={plan.id} currentCommits={commits} />
+          </AiErrorBoundary>
+        </CollapsibleSection>
       )}
 
       {/* Scope change timeline */}
@@ -577,20 +685,16 @@ export default function MyWeek() {
         <ScopeChangeDialog action="REMOVE" commit={scopeChangeTargetCommit} onConfirm={(reason) => void handleScopeChangeConfirm(reason)} onCancel={handleScopeChangeCancel} isSubmitting={scopeChangeSaving} />
       )}
 
-      {/* Plan History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Plan History</CardTitle>
-          <Button variant="secondary" size="sm" type="button" onClick={() => setShowHistory((s) => !s)} data-testid="toggle-plan-history-btn">
-            {showHistory ? "Hide" : "Show history"}
-          </Button>
-        </CardHeader>
-        {showHistory && (
-          <CardContent>
-            <PlanHistoryView entries={planHistory ?? []} loading={historyLoading} />
-          </CardContent>
-        )}
-      </Card>
+      {/* Plan History — collapsed by default */}
+      <CollapsibleSection
+        id="plan-history"
+        title="Plan History"
+        defaultExpanded={false}
+        buttonTestId="toggle-plan-history-btn"
+        overrideExpanded={sectionsOverride}
+      >
+        <PlanHistoryView entries={planHistory ?? []} loading={historyLoading} />
+      </CollapsibleSection>
 
       {/* Carry-forward lineage */}
       {lineageCommitId && (

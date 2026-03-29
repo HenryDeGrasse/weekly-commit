@@ -1,0 +1,35 @@
+Reviewed the step-7 diff in:
+
+- `frontend/src/routes/MyWeek.tsx`
+- `frontend/src/components/shared/CollapsibleSection.tsx`
+- `frontend/src/__tests__/MyWeekPage.test.tsx`
+
+I found one material defect: the AI Lint section was wrapped in `CollapsibleSection`, but the required collapsed summary badge (e.g. `"3 hints"`) had not been implemented.
+
+What I changed:
+- `frontend/src/components/ai/AiLintPanel.tsx`
+  - Added optional `onHintCountChange` callback.
+  - Reports the total lint message count (`hardValidation + softGuidance`) once results are available.
+  - Clears the summary on loading/error/unavailable states.
+- `frontend/src/routes/MyWeek.tsx`
+  - Added `lintHintCount` state.
+  - Passed a badge into the AI Lint `CollapsibleSection` showing `"N hint(s)"`.
+  - Wired `AiLintPanel` to update that count.
+- `frontend/src/__tests__/MyWeekPage.test.tsx`
+  - Added a test proving the collapsed AI lint section shows `"3 hints"` when AI lint returns suggestions.
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm run unit` ✅
+- `npm run build` ✅
+
+Assessment:
+- With the lint summary badge added, the step requirements are now met and checks pass.
+
+Verdict: changes_made
+
+```observations
+- [low] frontend/src/__tests__/TeamWeekPage.test.tsx: Unit run still emits repeated React `act(...)` warnings; tests pass, but the warnings remain noisy.
+- [low] frontend/src/__tests__/AppShell.test.tsx: Unit run still emits repeated React `act(...)` warnings from `NotificationPanel`; pre-existing and unrelated to this step.
+```

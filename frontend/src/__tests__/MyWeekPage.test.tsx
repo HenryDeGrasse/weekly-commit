@@ -569,13 +569,17 @@ describe("MyWeekPage — delete flow", () => {
 // ── Tests: plan history toggle ────────────────────────────────────────────────
 
 describe("MyWeekPage — plan history", () => {
-  it("shows plan history section with toggle button", () => {
+  it("shows plan history section with toggle button (collapsed by default)", () => {
     renderPage();
-    expect(screen.getByTestId("toggle-plan-history-btn")).toBeInTheDocument();
-    expect(screen.getByTestId("toggle-plan-history-btn")).toHaveTextContent("Show history");
+    const btn = screen.getByTestId("toggle-plan-history-btn");
+    expect(btn).toBeInTheDocument();
+    // CollapsibleSection starts collapsed (defaultExpanded=false)
+    expect(btn).toHaveAttribute("aria-expanded", "false");
+    // Title text is "Plan History"
+    expect(btn).toHaveTextContent("Plan History");
   });
 
-  it("toggles history visibility on button click", () => {
+  it("toggles history visibility on button click (aria-expanded changes)", () => {
     vi.mocked(usePlanHistory).mockReturnValue({
       data: [],
       loading: false,
@@ -583,8 +587,10 @@ describe("MyWeekPage — plan history", () => {
       refetch: vi.fn(),
     } as ReturnType<typeof usePlanHistory>);
     renderPage();
-    fireEvent.click(screen.getByTestId("toggle-plan-history-btn"));
-    expect(screen.getByTestId("toggle-plan-history-btn")).toHaveTextContent("Hide");
+    const btn = screen.getByTestId("toggle-plan-history-btn");
+    expect(btn).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(btn);
+    expect(btn).toHaveAttribute("aria-expanded", "true");
   });
 });
 
@@ -652,6 +658,44 @@ describe("MyWeekPage — inline AI lint panel", () => {
     vi.mocked(useCurrentPlan).mockReturnValue(makePlanState(DRAFT_PLAN, []));
     renderPage();
     expect(screen.queryByTestId("inline-ai-lint-panel")).not.toBeInTheDocument();
+  });
+
+  it("shows a collapsed lint summary badge when AI returns suggestions", async () => {
+    vi.mocked(aiHooks.useAiStatus).mockReturnValue({
+      data: {
+        available: true,
+        aiEnabled: true,
+        providerName: "openrouter",
+        providerVersion: "1",
+      },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(aiHooks.useAiApi).mockReturnValue({
+      recordFeedback: vi.fn(),
+      commitDraftAssist: vi.fn(),
+      commitFromFreeform: vi.fn(),
+      rcdoSuggest: vi.fn(),
+      getStatus: vi.fn(),
+      commitLint: vi.fn().mockResolvedValue({
+        aiAvailable: true,
+        hardValidation: [{ code: "H1", message: "Missing success criteria" }],
+        softGuidance: [
+          { code: "S1", message: "Consider tightening scope" },
+          { code: "S2", message: "Clarify estimate" },
+        ],
+      }),
+      getRiskSignals: vi.fn(),
+      reconcileAssist: vi.fn(),
+      getTeamAiSummary: vi.fn(),
+    } as ReturnType<typeof aiHooks.useAiApi>);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("3 hints")).toBeInTheDocument();
+    });
   });
 });
 

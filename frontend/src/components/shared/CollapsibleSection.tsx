@@ -12,7 +12,7 @@
  * Height transition uses the CSS grid-template-rows trick (0fr ↔ 1fr) which
  * avoids the "height: auto" animation problem without JavaScript measurement.
  */
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils.js";
 import { usePersistedState } from "./usePersistedState.js";
@@ -31,6 +31,23 @@ export interface CollapsibleSectionProps {
   readonly badge?: ReactNode;
   readonly children: ReactNode;
   readonly className?: string;
+  /**
+   * Overrides the outer wrapper’s data-testid attribute.
+   * Defaults to `collapsible-section-{id}`. Useful for preserving legacy
+   * testids when wrapping existing sections.
+   */
+  readonly testId?: string;
+  /**
+   * Overrides the header button’s data-testid attribute.
+   * Defaults to `collapsible-header-{id}`.
+   */
+  readonly buttonTestId?: string;
+  /**
+   * When defined, programmatically overrides the expanded state.
+   * Used by “Expand all / Collapse all” controls. The section still persists
+   * state to localStorage after the override is applied.
+   */
+  readonly overrideExpanded?: boolean | undefined;
 }
 
 export function CollapsibleSection({
@@ -40,6 +57,9 @@ export function CollapsibleSection({
   badge,
   children,
   className,
+  testId,
+  buttonTestId,
+  overrideExpanded,
 }: CollapsibleSectionProps) {
   const storageKey = `wc-section-${id}`;
   const headerId = `collapsible-header-${id}`;
@@ -50,10 +70,21 @@ export function CollapsibleSection({
     defaultExpanded,
   );
 
+  // Sync from parent override (e.g. “Expand all / Collapse all” button).
+  // This runs whenever overrideExpanded changes to a defined value.
+  // Individual toggle clicks work independently since they update the
+  // same state; the effect only fires when the override prop itself changes.
+  useEffect(() => {
+    if (overrideExpanded !== undefined) {
+      setExpanded(overrideExpanded);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overrideExpanded]);
+
   return (
     <div
       className={cn("rounded-default border border-border bg-surface", className)}
-      data-testid={`collapsible-section-${id}`}
+      data-testid={testId ?? `collapsible-section-${id}`}
     >
       {/* ── Toggle header ─────────────────────────────────────────────── */}
       <button
@@ -63,7 +94,7 @@ export function CollapsibleSection({
         aria-expanded={expanded}
         aria-controls={contentId}
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted-bg/50"
-        data-testid={`collapsible-header-${id}`}
+        data-testid={buttonTestId ?? `collapsible-header-${id}`}
       >
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-sm font-bold leading-none">{title}</span>

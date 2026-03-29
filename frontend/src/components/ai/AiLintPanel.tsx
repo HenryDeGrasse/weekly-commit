@@ -26,9 +26,11 @@ interface AiLintPanelProps {
    * create / edit / delete / reorder operation so lint results stay current.
    */
   refreshKey?: number;
+  /** Optional callback used by parents to display a collapsed summary badge. */
+  onHintCountChange?: (count: number | null) => void;
 }
 
-export function AiLintPanel({ planId, userId, autoRun = false, refreshKey = 0 }: AiLintPanelProps) {
+export function AiLintPanel({ planId, userId, autoRun = false, refreshKey = 0, onHintCountChange }: AiLintPanelProps) {
   const aiApi = useAiApi();
   const { data: status } = useAiStatus();
   const [lintResult, setLintResult] = useState<CommitLintResponse | null>(null);
@@ -36,6 +38,19 @@ export function AiLintPanel({ planId, userId, autoRun = false, refreshKey = 0 }:
   const [error, setError] = useState<string | null>(null);
 
   const isAvailable = status?.available ?? false;
+
+  useEffect(() => {
+    if (!onHintCountChange) return;
+
+    if (loading || error || !lintResult?.aiAvailable) {
+      onHintCountChange(null);
+      return;
+    }
+
+    onHintCountChange(
+      lintResult.hardValidation.length + lintResult.softGuidance.length,
+    );
+  }, [error, lintResult, loading, onHintCountChange]);
 
   const runLint = useCallback(async () => {
     setLoading(true);
