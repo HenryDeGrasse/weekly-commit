@@ -38,17 +38,17 @@ interface SignalConfig {
 const SIGNAL_CONFIG: Record<string, SignalConfig> = {
   OVERCOMMIT: {
     Icon: TrendingDown,
-    cls: "border-neutral-400 bg-neutral-100",
+    cls: "border-warning-border bg-warning-bg",
     actionHint: "Consider reducing scope before the week runs out.",
   },
   BLOCKED_CRITICAL: {
     Icon: ShieldAlert,
-    cls: "border-neutral-400 bg-neutral-100",
+    cls: "border-danger-border bg-danger-bg",
     actionHint: "Resolve the blocked ticket or escalate to your manager.",
   },
   REPEATED_CARRY_FORWARD: {
     Icon: RotateCcw,
-    cls: "border-neutral-300 bg-neutral-50",
+    cls: "border-warning-border bg-warning-bg",
     actionHint:
       "Review whether this work needs to be broken down or deprioritised.",
   },

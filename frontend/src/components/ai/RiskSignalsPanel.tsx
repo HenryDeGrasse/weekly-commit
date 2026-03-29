@@ -18,11 +18,11 @@ const SIGNAL_ICONS: Record<string, typeof AlertTriangle> = {
 };
 
 const SIGNAL_CLS: Record<string, string> = {
-  OVERCOMMIT: "border-neutral-300 bg-neutral-100 text-foreground",
-  UNDERCOMMIT: "border-neutral-200 bg-neutral-50 text-foreground",
-  REPEATED_CARRY_FORWARD: "border-neutral-200 bg-neutral-50 text-foreground",
-  BLOCKED_CRITICAL: "border-neutral-300 bg-neutral-100 text-foreground",
-  SCOPE_VOLATILITY: "border-neutral-200 bg-neutral-50 text-foreground",
+  OVERCOMMIT: "border-warning-border bg-warning-bg text-foreground",
+  UNDERCOMMIT: "border-border bg-muted-bg text-foreground",
+  REPEATED_CARRY_FORWARD: "border-warning-border bg-warning-bg text-foreground",
+  BLOCKED_CRITICAL: "border-danger-border bg-danger-bg text-foreground",
+  SCOPE_VOLATILITY: "border-warning-border bg-warning-bg text-foreground",
 };
 
 function SignalCard({ signal }: { signal: RiskSignal }) {

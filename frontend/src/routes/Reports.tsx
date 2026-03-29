@@ -803,8 +803,8 @@ function ComplianceChart({ data }: { readonly data: ComplianceReportEntry[] }) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const SEVERITY_STYLES: Record<string, string> = {
-  CRITICAL: "border-foreground bg-foreground text-primary-foreground",
-  HIGH: "border-foreground/50 bg-foreground/10 text-foreground",
+  CRITICAL: "border-danger-border bg-danger-bg text-danger",
+  HIGH: "border-warning-border bg-warning-bg text-warning",
   MEDIUM: "border-border bg-muted-bg text-muted",
   LOW: "border-border bg-surface text-muted",
 };

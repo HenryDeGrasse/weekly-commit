@@ -27,9 +27,9 @@ interface SignalConfig {
 }
 
 const SIGNAL_CONFIG: Record<string, SignalConfig> = {
-  OVERCOMMIT: { Icon: TrendingDown, cls: "border-neutral-400 bg-neutral-100" },
-  BLOCKED_CRITICAL: { Icon: ShieldAlert, cls: "border-neutral-400 bg-neutral-100" },
-  REPEATED_CARRY_FORWARD: { Icon: RotateCcw, cls: "border-neutral-300 bg-neutral-50" },
+  OVERCOMMIT: { Icon: TrendingDown, cls: "border-warning-border bg-warning-bg" },
+  BLOCKED_CRITICAL: { Icon: ShieldAlert, cls: "border-danger-border bg-danger-bg" },
+  REPEATED_CARRY_FORWARD: { Icon: RotateCcw, cls: "border-warning-border bg-warning-bg" },
 };
 
 // ── Single signal banner ──────────────────────────────────────────────────────

@@ -21,10 +21,10 @@ import type {
 import type { CommitOutcome } from "../../api/planTypes.js";
 
 const OUTCOME_COLORS: Record<string, string> = {
-  ACHIEVED: "bg-foreground/10 text-foreground font-bold",
-  PARTIALLY_ACHIEVED: "bg-neutral-200 text-neutral-600",
-  NOT_ACHIEVED: "bg-neutral-300 text-foreground underline",
-  CANCELED: "bg-neutral-100 text-neutral-500",
+  ACHIEVED: "border-success-border bg-success-bg text-success font-bold",
+  PARTIALLY_ACHIEVED: "border-warning-border bg-warning-bg text-warning",
+  NOT_ACHIEVED: "border-danger-border bg-danger-bg text-danger",
+  CANCELED: "border-border bg-muted-bg text-muted",
 };
 
 const OUTCOME_LABELS: Record<string, string> = {
@@ -207,7 +207,7 @@ export function ReconcileAssistPanel({
               {result.likelyOutcomes.map((suggestion) => {
                 const isApplied = appliedOutcomes.has(suggestion.commitId);
                 const colorCls =
-                  OUTCOME_COLORS[suggestion.suggestedOutcome] ?? "bg-neutral-100 text-neutral-700";
+                  OUTCOME_COLORS[suggestion.suggestedOutcome] ?? "border-border bg-muted-bg text-muted";
                 return (
                   <div
                     key={suggestion.commitId}
