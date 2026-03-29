@@ -351,7 +351,7 @@ export default function ReconcilePage() {
         const suggestedOutcome = suggestion.suggestedOutcome as CommitOutcome;
         newAiSuggested[suggestion.commitId] = suggestedOutcome;
         // Store rationale as ghost placeholder text (not pre-filled into textarea)
-        if (NOTES_REQUIRED.has(suggestedOutcome) && suggestion.rationale.trim()) {
+        if (NOTES_REQUIRED.has(suggestedOutcome) && suggestion.rationale?.trim()) {
           newAiNotes[suggestion.commitId] = suggestion.rationale;
         }
       }
