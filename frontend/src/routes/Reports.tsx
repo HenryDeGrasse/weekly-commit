@@ -7,6 +7,17 @@
  * calculated client-side from existing data (velocity, achievement rate, etc.).
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { ReportChartSkeleton } from "../components/shared/skeletons/ReportChartSkeleton.js";
 import { EmptyState } from "../components/shared/EmptyState.js";
 import {
@@ -266,26 +277,28 @@ function VelocityTrendChart({ data }: { readonly data: PlannedVsAchievedEntry[] 
     [data],
   );
 
-  const maxPts = Math.max(...sorted.map((d) => d.totalAchievedPoints), 1);
-
-  // Rolling 4-week average
-  const rolling = useMemo(() => {
-    return sorted.map((_, i) => {
+  // Build Recharts-friendly data rows (add rolling average per row)
+  const chartData = useMemo(() => {
+    return sorted.map((row, i) => {
       const window = sorted.slice(Math.max(0, i - 3), i + 1);
-      const avg = window.reduce((s, r) => s + r.totalAchievedPoints, 0) / window.length;
-      return Math.round(avg);
+      const avg = Math.round(
+        window.reduce((s, r) => s + r.totalAchievedPoints, 0) / window.length,
+      );
+      return {
+        week: shortWeek(row.weekStart),
+        Achieved: row.totalAchievedPoints,
+        "4-wk avg": avg,
+      };
     });
   }, [sorted]);
 
-  // Trend direction
+  // Trend direction (last week vs prior)
   const trend = useMemo(() => {
     if (sorted.length < 2) return 0;
     const last = sorted[sorted.length - 1]!.totalAchievedPoints;
     const prev = sorted[sorted.length - 2]!.totalAchievedPoints;
     return last - prev;
   }, [sorted]);
-
-  const chartH = 160;
 
   return (
     <Card data-testid="velocity-chart">
@@ -308,79 +321,67 @@ function VelocityTrendChart({ data }: { readonly data: PlannedVsAchievedEntry[] 
         )}
       </CardHeader>
       <CardContent>
-        {sorted.length === 0 ? (
+        {chartData.length === 0 ? (
           <p className="text-sm text-muted">No data for this period.</p>
         ) : (
-          <div className="relative" style={{ height: chartH + 32 }}>
-            {/* Grid lines */}
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none" style={{ height: chartH }}>
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="border-b border-border/40 relative">
-                  <span className="absolute -top-2 -left-0 text-[9px] font-mono text-muted">
-                    {Math.round(maxPts * (1 - i / 3))}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Bars + rolling average dots */}
-            <div
-              className="absolute inset-0 flex items-end gap-1"
-              style={{ height: chartH, paddingLeft: 28 }}
+          <ResponsiveContainer width="100%" height={200}>
+            <ComposedChart
+              data={chartData}
+              margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
             >
-              {sorted.map((row, i) => {
-                const barH = (row.totalAchievedPoints / maxPts) * chartH;
-                const rollingH = ((rolling[i] ?? 0) / maxPts) * chartH;
-                return (
-                  <div
-                    key={row.weekStart}
-                    className="flex-1 flex flex-col items-center justify-end relative"
-                    style={{ height: chartH }}
-                  >
-                    {/* Rolling average marker */}
-                    <div
-                      className="absolute w-2 h-2 rounded-full bg-foreground border border-surface z-10"
-                      style={{ bottom: rollingH - 4 }}
-                      title={`4-wk avg: ${rolling[i]}pts`}
-                    />
-                    {/* Bar */}
-                    <div
-                      className="w-full bg-foreground/20 hover:bg-foreground/30 transition-all relative group"
-                      style={{ height: barH, minHeight: row.totalAchievedPoints > 0 ? 2 : 0 }}
-                      title={`${shortWeek(row.weekStart)}: ${row.totalAchievedPoints}pts`}
-                    >
-                      {/* Tooltip on hover */}
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        {row.totalAchievedPoints}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* X-axis labels */}
-            <div
-              className="absolute bottom-0 flex gap-1"
-              style={{ left: 28, right: 0, height: 24 }}
-            >
-              {sorted.map((row) => (
-                <div key={row.weekStart} className="flex-1 text-center text-[9px] font-mono text-muted pt-1.5">
-                  {shortWeek(row.weekStart)}
-                </div>
-              ))}
-            </div>
-
-            {/* Legend */}
-            <div className="absolute top-0 right-0 flex items-center gap-3 text-[10px] text-muted">
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2.5 w-4 bg-foreground/20" /> Achieved
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-2 w-2 rounded-full bg-foreground" /> 4-wk avg
-              </span>
-            </div>
-          </div>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--color-border)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="week"
+                tick={{ fontSize: 9, fontFamily: "var(--font-family-mono)", fill: "var(--color-muted)" }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 9, fontFamily: "var(--font-family-mono)", fill: "var(--color-muted)" }}
+                tickLine={false}
+                axisLine={false}
+                width={28}
+              />
+              <Tooltip
+                formatter={(value) => [`${value} pts`]}
+                contentStyle={{
+                  fontSize: 11,
+                  fontFamily: "var(--font-family-mono)",
+                  background: "var(--color-surface)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: 2,
+                  padding: "6px 10px",
+                }}
+                labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                itemStyle={{ color: "var(--color-foreground)" }}
+              />
+              <Legend
+                iconSize={8}
+                wrapperStyle={{ fontSize: 10, color: "var(--color-muted)" }}
+              />
+              {/* Achieved points bars */}
+              <Bar
+                dataKey="Achieved"
+                fill="var(--color-foreground)"
+                fillOpacity={0.2}
+                radius={[2, 2, 0, 0]}
+                maxBarSize={40}
+              />
+              {/* Rolling 4-week average line */}
+              <Line
+                dataKey="4-wk avg"
+                type="monotone"
+                stroke="var(--color-foreground)"
+                strokeWidth={1.5}
+                dot={{ r: 3, fill: "var(--color-foreground)", stroke: "var(--color-surface)", strokeWidth: 1 }}
+                activeDot={{ r: 4 }}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
         )}
       </CardContent>
     </Card>
