@@ -276,7 +276,7 @@ function VelocityTrendChart({ data }: { readonly data: PlannedVsAchievedEntry[] 
             ) : (
               <TrendingDown className="h-3.5 w-3.5 text-danger" />
             )}
-            <span className={trend > 0 ? "text-success" : "text-danger"}>
+            <span className={`font-mono ${trend > 0 ? "text-success" : "text-danger"}`}>
               {trend > 0 ? "+" : ""}{trend} pts
             </span>
           </div>
@@ -291,7 +291,7 @@ function VelocityTrendChart({ data }: { readonly data: PlannedVsAchievedEntry[] 
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none" style={{ height: chartH }}>
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="border-b border-border/40 relative">
-                  <span className="absolute -top-2 -left-0 text-[9px] text-muted">
+                  <span className="absolute -top-2 -left-0 text-[9px] font-mono text-muted">
                     {Math.round(maxPts * (1 - i / 3))}
                   </span>
                 </div>
@@ -325,7 +325,7 @@ function VelocityTrendChart({ data }: { readonly data: PlannedVsAchievedEntry[] 
                       title={`${shortWeek(row.weekStart)}: ${row.totalAchievedPoints}pts`}
                     >
                       {/* Tooltip on hover */}
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         {row.totalAchievedPoints}
                       </div>
                     </div>
@@ -340,7 +340,7 @@ function VelocityTrendChart({ data }: { readonly data: PlannedVsAchievedEntry[] 
               style={{ left: 28, right: 0, height: 24 }}
             >
               {sorted.map((row) => (
-                <div key={row.weekStart} className="flex-1 text-center text-[9px] text-muted pt-1.5">
+                <div key={row.weekStart} className="flex-1 text-center text-[9px] font-mono text-muted pt-1.5">
                   {shortWeek(row.weekStart)}
                 </div>
               ))}
@@ -392,7 +392,7 @@ function PlannedVsAchievedChart({ data }: { readonly data: PlannedVsAchievedEntr
             </div>
             {sorted.map((row) => (
               <div key={row.weekStart} className="flex items-center gap-2">
-                <span className="w-16 text-[10px] text-muted shrink-0">{shortWeek(row.weekStart)}</span>
+                <span className="w-16 text-[10px] font-mono text-muted shrink-0">{shortWeek(row.weekStart)}</span>
                 <div className="flex-1 space-y-0.5">
                   <div
                     className="h-3 rounded bg-primary/30 transition-all"
@@ -405,7 +405,7 @@ function PlannedVsAchievedChart({ data }: { readonly data: PlannedVsAchievedEntr
                     title={`Achieved: ${row.totalAchievedPoints}pts`}
                   />
                 </div>
-                <span className="w-20 text-right text-[10px] text-muted shrink-0">
+                <span className="w-20 text-right text-[10px] font-mono text-muted shrink-0">
                   {row.totalAchievedPoints}/{row.totalPlannedPoints}pts
                 </span>
               </div>
@@ -461,7 +461,7 @@ function AchievementRateChart({ data }: { readonly data: PlannedVsAchievedEntry[
               className="absolute left-0 right-0 border-t border-dashed border-foreground/25 z-10"
               style={{ top: chartH * (1 - TARGET / 100) }}
             >
-              <span className="absolute -top-3 right-0 text-[9px] text-muted">{TARGET}% target</span>
+              <span className="absolute -top-3 right-0 text-[9px] font-mono text-muted">{TARGET}% target</span>
             </div>
 
             {/* Bars */}
@@ -489,8 +489,8 @@ function AchievementRateChart({ data }: { readonly data: PlannedVsAchievedEntry[
             <div className="absolute bottom-0 flex gap-1" style={{ left: 0, right: 0, height: 24 }}>
               {rates.map((r) => (
                 <div key={r.week} className="flex-1 text-center">
-                  <span className="text-[9px] font-bold block">{r.rate}%</span>
-                  <span className="text-[8px] text-muted block">{shortWeek(r.week)}</span>
+                  <span className="text-[9px] font-mono font-bold block">{r.rate}%</span>
+                  <span className="text-[8px] font-mono text-muted block">{shortWeek(r.week)}</span>
                 </div>
               ))}
             </div>
@@ -635,7 +635,7 @@ function ScopeChangeChart({ data }: { readonly data: ScopeChangeReportEntry[] })
               const isHigh = row.count > avgChanges * 1.5;
               return (
                 <div key={row.week} className="flex items-center gap-2">
-                  <span className="w-16 text-[10px] text-muted shrink-0">{shortWeek(row.week)}</span>
+                  <span className="w-16 text-[10px] font-mono text-muted shrink-0">{shortWeek(row.week)}</span>
                   <div className="flex-1 bg-surface-raised h-5 overflow-hidden relative">
                     <div
                       className={`h-full transition-all ${isHigh ? "bg-foreground/30" : "bg-foreground/15"}`}
@@ -647,7 +647,7 @@ function ScopeChangeChart({ data }: { readonly data: ScopeChangeReportEntry[] })
                       </span>
                     )}
                   </div>
-                  <span className="w-8 text-right text-[10px] font-bold shrink-0">{row.count}</span>
+                  <span className="w-8 text-right text-[10px] font-mono font-bold shrink-0">{row.count}</span>
                 </div>
               );
             })}
@@ -691,16 +691,16 @@ function CarryForwardChart({ data }: { readonly data: CarryForwardReportEntry[] 
           <div className="space-y-2">
             {byWeek.map((row) => (
               <div key={row.week} className="flex items-center gap-2">
-                <span className="w-16 text-[10px] text-muted shrink-0">{shortWeek(row.week)}</span>
+                <span className="w-16 text-[10px] font-mono text-muted shrink-0">{shortWeek(row.week)}</span>
                 <div className="flex-1 bg-surface-raised overflow-hidden h-5 relative">
                   <div
                     className="h-full bg-foreground/25 transition-all flex items-center px-1.5"
                     style={{ width: `${Math.max(row.rate, 5)}%` }}
                   >
-                    <span className="text-[9px] font-bold text-foreground">{row.rate}%</span>
+                    <span className="text-[9px] font-mono font-bold text-foreground">{row.rate}%</span>
                   </div>
                 </div>
-                <span className="w-20 text-right text-[10px] text-muted shrink-0">
+                <span className="w-20 text-right text-[10px] font-mono text-muted shrink-0">
                   {row.carried}/{row.commits}
                 </span>
               </div>
@@ -764,7 +764,7 @@ function ComplianceChart({ data }: { readonly data: ComplianceReportEntry[] }) {
             </div>
             {byWeek.map((row) => (
               <div key={row.week} className="flex items-center gap-2">
-                <span className="w-16 text-[10px] text-muted shrink-0">{shortWeek(row.week)}</span>
+                <span className="w-16 text-[10px] font-mono text-muted shrink-0">{shortWeek(row.week)}</span>
                 <div className="flex-1 space-y-0.5">
                   <div className="flex gap-px h-3">
                     <div
@@ -786,7 +786,7 @@ function ComplianceChart({ data }: { readonly data: ComplianceReportEntry[] }) {
                     title={`Reconcile: ${row.reconcileRate}%`}
                   />
                 </div>
-                <span className="w-24 text-right text-[10px] text-muted shrink-0">
+                <span className="w-24 text-right text-[10px] font-mono text-muted shrink-0">
                   {row.lockRate}% / {row.reconcileRate}%
                 </span>
               </div>
@@ -875,9 +875,9 @@ function ExceptionAgingTable({ data }: { readonly data: ExceptionAgingEntry[] })
                     <td className="px-2 py-1.5 font-medium">
                       {EXCEPTION_LABELS[exc.exceptionType] ?? exc.exceptionType}
                     </td>
-                    <td className="px-2 py-1.5 text-muted">{shortWeek(exc.weekStartDate)}</td>
+                    <td className="px-2 py-1.5 font-mono text-muted">{shortWeek(exc.weekStartDate)}</td>
                     <td className="px-2 py-1.5 text-right font-bold">
-                      <span className="flex items-center justify-end gap-1">
+                      <span className="flex items-center justify-end gap-1 font-mono">
                         <Clock className="h-3 w-3 text-muted" />
                         {formatHours(exc.ageInHours)}
                       </span>
@@ -979,7 +979,7 @@ function StatBox({
   return (
     <div className="rounded-default border border-border bg-surface-raised p-3 text-center">
       <p className="text-[10px] font-medium text-muted uppercase tracking-wide">{label}</p>
-      <p className={`text-lg font-bold mt-0.5 ${accent ?? ""}`}>{value}</p>
+      <p className={`text-lg font-mono font-bold mt-0.5 ${accent ?? ""}`}>{value}</p>
     </div>
   );
 }

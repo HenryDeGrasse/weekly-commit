@@ -112,7 +112,7 @@ function TreeNodeItem({ node, depth, selectedId, expandedIds, onSelect, onToggle
         <span aria-label={NODE_TYPE_LABELS[node.nodeType]} title={NODE_TYPE_LABELS[node.nodeType]} className="shrink-0">
           {NODE_TYPE_ICON_ELEMENTS[node.nodeType]}
         </span>
-        <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm">{node.title}</span>
+        <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-mono">{node.title}</span>
         <Badge
           variant={STATUS_VARIANT[node.status]}
           data-testid={`status-badge-${node.status.toLowerCase()}`}

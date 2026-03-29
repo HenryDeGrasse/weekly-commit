@@ -135,7 +135,7 @@ export function Header({
           <span className="visually-hidden">Select week</span>
           <span className="flex items-center gap-1.5 rounded-default border border-border bg-background px-2.5 py-1 text-xs font-semibold hover:border-primary/50 transition-colors">
             <Calendar className="h-3.5 w-3.5 text-muted" />
-            {formatWeekShort(selectedWeek)}
+            <span className="font-mono">{formatWeekShort(selectedWeek)}</span>
           </span>
           <input
             id="week-selector-input"

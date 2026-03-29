@@ -1,0 +1,44 @@
+All 4 checks pass. Here's a summary of everything changed:
+
+---
+
+## What I changed
+
+**`frontend/src/components/myweek/CommitList.tsx`**
+- Commit title button: added `font-mono` (commits are "code-like work contracts")
+- RCDO path label div: added `font-mono` (strategic path identifiers)
+
+**`frontend/src/components/myweek/CommitForm.tsx`**
+- Title `<Input>`: added `className="font-mono"` — commit titles typed here are monospace for visual consistency with the commit list
+
+**`frontend/src/components/myweek/CapacityMeter.tsx`**
+- Capacity tally span (`{totalPoints} / {budgetPoints} pts`): added `font-mono`
+- Per-piece breakdown point value span: added `font-mono`
+
+**`frontend/src/components/Header.tsx`**
+- Week date label (`formatWeekShort`): wrapped in a `<span className="font-mono">` — date/time values are monospace
+
+**`frontend/src/components/lock/ScopeChangeTimeline.tsx`**
+- `previousValue` span: added `font-mono` (shows commit titles/identifiers before the change)
+- `newValue` span: added `font-mono` (shows commit titles/identifiers after the change)
+
+**`frontend/src/components/rcdo/RcdoTreeView.tsx`**
+- Node title span: added `font-mono` — RCDO path identifiers displayed in the tree
+
+**`frontend/src/routes/Reports.tsx`** (18 targeted edits covering all chart data cells)
+- VelocityTrendChart: trend value, Y-axis labels, hover tooltip, X-axis date labels
+- PlannedVsAchievedChart: week date labels, value column (pts)
+- AchievementRateChart: target % label, rate % values, week date labels
+- ScopeChangeChart: week date labels, count values
+- CarryForwardChart: week date labels, rate % in bars, value column
+- ComplianceChart: week date labels, value column (rate%/rate%)
+- StatBox: numeric value paragraph
+- ExceptionAgingTable: week date cells, age value spans
+
+### Checks
+- ✅ `typecheck` — clean
+- ✅ `lint` — 0 errors (13 pre-existing warnings)
+- ✅ `unit` — 759/759 pass
+- ✅ `build` — successful
+
+Verdict: changes_made

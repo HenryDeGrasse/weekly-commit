@@ -197,6 +197,7 @@ export function CommitForm(props: CommitFormProps) {
               error={errors.title}
               placeholder="What will you commit to this week?"
               data-testid="commit-form-title"
+              className="font-mono"
             />
           </div>
 

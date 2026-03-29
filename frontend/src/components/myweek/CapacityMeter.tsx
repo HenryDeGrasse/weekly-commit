@@ -43,7 +43,7 @@ export function CapacityMeter({ commits, budgetPoints, isManagerOverride = false
               Manager override
             </span>
           )}
-          <span data-testid="capacity-tally" className={cn("text-sm font-bold", isOver ? "text-foreground underline" : "text-foreground")}>
+          <span data-testid="capacity-tally" className={cn("text-sm font-bold font-mono", isOver ? "text-foreground underline" : "text-foreground")}>
             {totalPoints} / {budgetPoints} pts
           </span>
         </div>
@@ -86,7 +86,7 @@ export function CapacityMeter({ commits, budgetPoints, isManagerOverride = false
             >
               <span aria-hidden="true">{CHESS_PIECE_ICONS[piece]}</span>
               <span>{CHESS_PIECE_LABELS[piece]}</span>
-              <span className="font-bold">{points}</span>
+              <span className="font-bold font-mono">{points}</span>
             </li>
           ))}
         </ul>

@@ -102,7 +102,7 @@ function SortableItem({ commit, rank, totalCount, isDraft, rcdoLabel, onEdit, on
             onClick={() => setExpanded((e) => !e)}
             aria-expanded={expanded}
             data-testid={`commit-title-${commit.id}`}
-            className="flex-1 bg-transparent border-none cursor-pointer font-semibold text-sm text-left p-0 text-foreground hover:text-primary transition-colors"
+            className="flex-1 bg-transparent border-none cursor-pointer font-semibold font-mono text-sm text-left p-0 text-foreground hover:text-primary transition-colors"
           >
             {commit.title}
           </button>
@@ -149,7 +149,7 @@ function SortableItem({ commit, rank, totalCount, isDraft, rcdoLabel, onEdit, on
 
         {/* RCDO path */}
         {rcdoLabel && (
-          <div data-testid={`rcdo-path-${commit.id}`} className={cn("mt-1.5 text-xs text-muted flex items-center gap-1", isDraft ? "ml-12" : "ml-10")}>
+          <div data-testid={`rcdo-path-${commit.id}`} className={cn("mt-1.5 text-xs font-mono text-muted flex items-center gap-1", isDraft ? "ml-12" : "ml-10")}>
             <Target className="h-3 w-3 shrink-0" aria-hidden="true" />{rcdoLabel}
           </div>
         )}
