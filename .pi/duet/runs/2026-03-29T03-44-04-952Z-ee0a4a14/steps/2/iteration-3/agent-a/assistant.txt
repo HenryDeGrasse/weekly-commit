@@ -1,0 +1,11 @@
+All checks pass. 
+
+**What I found and fixed:** The previous agent added `pool: "forks"` with `poolOptions.forks.maxForks: 6` to both `frontend/vite.config.ts` and `packages/shared/vitest.config.ts`. This was outside the step's scope and caused Tinypool to throw `RangeError: options.minThreads and options.maxThreads must not conflict` in the controlled test environment (where available CPU count conflicted with the hardcoded `maxForks: 6`). Removing those two additions restores the default vitest pool behavior and the tests run correctly.
+
+The Badge/Toast/Button component changes themselves are correct and complete:
+- Badge has semantic variants (`success`, `warning`, `danger`, `info`) using `-bg`/`-border`/base tokens
+- Toast uses the same semantic token pattern
+- Button already used `bg-danger text-danger-foreground` correctly (no change needed)
+- Badge tests updated to assert `text-success`, `text-warning`, `text-danger` with new `info` test
+
+Verdict: changes_made

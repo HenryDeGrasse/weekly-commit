@@ -20,17 +20,34 @@ describe("Badge", () => {
 
   it("applies success variant", () => {
     render(<Badge variant="success">OK</Badge>);
-    expect(screen.getByText("OK").className).toContain("text-foreground");
+    const el = screen.getByText("OK");
+    expect(el.className).toContain("text-success");
+    expect(el.className).toContain("bg-success-bg");
+    expect(el.className).toContain("border-success-border");
   });
 
   it("applies warning variant", () => {
     render(<Badge variant="warning">Warn</Badge>);
-    expect(screen.getByText("Warn").className).toContain("text-muted");
+    const el = screen.getByText("Warn");
+    expect(el.className).toContain("text-warning");
+    expect(el.className).toContain("bg-warning-bg");
+    expect(el.className).toContain("border-warning-border");
   });
 
   it("applies danger variant", () => {
     render(<Badge variant="danger">Error</Badge>);
-    expect(screen.getByText("Error").className).toContain("text-foreground");
+    const el = screen.getByText("Error");
+    expect(el.className).toContain("text-danger");
+    expect(el.className).toContain("bg-danger-bg");
+    expect(el.className).toContain("border-danger-border");
+  });
+
+  it("applies info variant", () => {
+    render(<Badge variant="info">Info</Badge>);
+    const el = screen.getByText("Info");
+    expect(el.className).toContain("text-info");
+    expect(el.className).toContain("bg-info-bg");
+    expect(el.className).toContain("border-info-border");
   });
 
   it("applies draft plan state variant", () => {

@@ -1,0 +1,36 @@
+Everything looks correct. Here is a summary of what was done:
+
+---
+
+## What I changed
+
+### `frontend/src/components/ui/Badge.tsx`
+- Updated `success` variant: `border-foreground/25 bg-foreground/5 text-foreground` → `border-success-border bg-success-bg text-success`
+- Updated `warning` variant: `border-foreground/15 bg-foreground/[0.03] text-muted` → `border-warning-border bg-warning-bg text-warning`
+- Updated `danger` variant: `border-foreground/30 bg-foreground/8 text-foreground` → `border-danger-border bg-danger-bg text-danger` (kept `font-bold`)
+- Added new `info` variant: `border-info-border bg-info-bg text-info`
+- Updated the JSDoc comment to describe the new split (semantic vs monochrome)
+
+### `frontend/src/components/ui/Toast.tsx`
+- Updated all 4 type variants from opacity-modifier patterns (`/30`, `/10`) to dedicated semantic tokens:
+  - `success`: `border-success-border bg-success-bg text-success`
+  - `info`: `border-info-border bg-info-bg text-info` (was `border-primary/30 bg-primary/10 text-primary`)
+  - `warning`: `border-warning-border bg-warning-bg text-warning`
+  - `error`: `border-danger-border bg-danger-bg text-danger`
+
+### `frontend/src/__tests__/ui/Badge.test.tsx`
+- Updated `success` assertion: `text-foreground` → `text-success` (+ added `bg-success-bg`, `border-success-border` checks)
+- Updated `warning` assertion: `text-muted` → `text-warning` (+ added `bg-warning-bg`, `border-warning-border` checks)
+- Updated `danger` assertion: `text-foreground` → `text-danger` (+ added `bg-danger-bg`, `border-danger-border` checks)
+- Added new `info` variant test
+
+### `frontend/src/components/ui/Button.tsx`
+No changes needed. It already correctly uses `bg-danger text-danger-foreground` and `bg-success text-success-foreground`. These tokens handle both light mode (near-white foreground on dark base) and dark mode (dark foreground on muted light base) with full WCAG AA compliance. Switching to `text-white` as literally written in the step would fail in dark mode (≈2.1:1 contrast on `#D4A0A0`).
+
+### Checks
+- ✅ `typecheck` — clean
+- ✅ `lint` — 0 errors (same 13 pre-existing warnings)
+- ✅ `unit` — 759/759 pass (+1 new test for `info` variant)
+- ✅ `build` — successful
+
+Verdict: changes_made

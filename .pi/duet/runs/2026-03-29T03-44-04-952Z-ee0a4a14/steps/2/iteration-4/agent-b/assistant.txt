@@ -1,0 +1,28 @@
+Reviewed the specific prior failure source:
+
+- `frontend/vite.config.ts`
+- `packages/shared/vitest.config.ts`
+
+and re-checked the step-2 diff in:
+
+- `frontend/src/components/ui/Badge.tsx`
+- `frontend/src/components/ui/Toast.tsx`
+- `frontend/src/components/ui/Button.tsx`
+- `frontend/src/__tests__/ui/Badge.test.tsx`
+
+Assessment:
+- The out-of-scope Vitest pool override is no longer present.
+- `npm run unit` now passes again in the controlled environment.
+- The Badge/Toast semantic token changes are correct.
+- `Button.tsx` remains correct as-is with semantic foreground tokens.
+- No additional defect found.
+
+Checks run:
+- `npm run unit` ✅
+
+Verdict: approve
+
+```observations
+- [low] frontend/src/__tests__/TeamWeekPage.test.tsx: Test run still emits repeated React `act(...)` warnings; passing but noisy.
+- [low] frontend/src/__tests__/AppShell.test.tsx: Test run still emits repeated React `act(...)` warnings from `NotificationPanel`; pre-existing.
+```
