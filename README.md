@@ -35,7 +35,7 @@ A production-grade weekly planning intelligence system that replaces 15Five with
 │  ┌─────────────────────────────────────────────────────────────────┐ │
 │  │ AI Pipeline                                                     │ │
 │  │                                                                 │ │
-│  │  10 Prompt Templates → OpenRouter/Claude → 10 AI Types         │ │
+│  │  14 Prompt Templates → OpenRouter/Claude → 10 AI Types         │ │
 │  │                                                                 │ │
 │  │  DraftAssist · CommitLint · RcdoSuggest · RiskDetection ·      │ │
 │  │  ReconcileAssist · TeamSummary · RAG · Team/Personal Insights  │ │
@@ -58,7 +58,7 @@ A production-grade weekly planning intelligence system that replaces 15Five with
    │            │ │            │  │ + OpenAI     │
    │ 13 Flyway  │ │ Enriched   │  │   Embeddings │
    │ migrations │ │ chunks w/  │  │              │
-   │ 30+ tables │ │ lineage &  │  │ 10 prompt    │
+   │ 30+ tables │ │ lineage &  │  │ 14 prompt    │
    │ 5 read     │ │ RCDO paths │  │ templates    │
    │ models     │ │            │  │              │
    └────────────┘ └────────────┘  └─────────────┘
@@ -96,6 +96,9 @@ The AI layer follows three principles from the PRD: **assistive** (never authori
 | **Manager Summary** | AI-generated team week summary citing underlying data | On-demand in Team Week |
 | **Semantic Search (RAG)** | Natural-language queries over planning history | Search input in Team Week |
 | **Personal / Team Insights** | Proactive pattern detection from historical context | Generated on lock + daily sweep |
+| **What-If Planner** | Simulates impact of hypothetical commit mutations (add/remove/change) on capacity, RCDO coverage, and risk — LLM narrates implications | On-demand in My Week |
+| **Predictive Calibration** | Statistical model of estimate accuracy per user (bias, variance, RMSE, confidence tier) to calibrate AI suggestions | Computed on lock + daily sweep |
+| **Plan Recommendations** | Personalized plan adjustments based on calibration profile and current risk signals | On-demand in My Week |
 
 ### RAG Pipeline
 
@@ -192,7 +195,7 @@ Use the dev user switcher (top banner) to experience different roles:
 | **Frontend** | React 18 · TypeScript strict · Tailwind CSS 4 · Vite · Module Federation |
 | **Backend** | Java 21 · Spring Boot 3.4 · Spring Data JPA · Flyway · OpenAPI/Springdoc |
 | **Database** | PostgreSQL 16 · 13 Flyway migrations · 30+ tables · 5 derived read models |
-| **AI / LLM** | OpenRouter (Claude) · OpenAI embeddings · 10 prompt templates |
+| **AI / LLM** | OpenRouter (Claude) · OpenAI embeddings · 14 prompt templates |
 | **Vector Store** | Pinecone · Enriched chunks with RCDO paths, lineage, ticket context |
 | **Observability** | Prometheus · Grafana · Structured JSON logging · Micrometer |
 | **Testing** | JUnit 5 · Vitest · Playwright · LLM-as-judge eval harness |
@@ -204,12 +207,12 @@ Use the dev user switcher (top banner) to experience different roles:
 
 ```
 ├── backend/                    Java 21 Spring Boot modular monolith
-│   ├── src/main/java/          245 source files across 12 domain modules
+│   ├── src/main/java/          263 source files across 12 domain modules
 │   ├── src/main/resources/
 │   │   ├── db/migration/       13 Flyway migrations (V1–V13)
-│   │   └── prompts/            10 AI prompt templates
+│   │   └── prompts/            14 prompt templates (10 AI suggestion types + faithfulness eval, HyDE, SQL routing, what-if)
 │   └── src/test/
-│       ├── java/               54 test files
+│       ├── java/               63 test files
 │       └── resources/eval/     Golden eval datasets + judge prompts
 ├── frontend/                   React 18 TypeScript micro-frontend
 │   └── src/

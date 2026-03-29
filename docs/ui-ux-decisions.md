@@ -2,6 +2,8 @@
 
 Generated from ChatGPT Pro/Deep Research + Claude Research analysis of the Weekly Commit Module frontend, cross-referenced against enterprise tool patterns (Linear, Notion, GitHub, Jira, Monday.com).
 
+> **Implementation status:** Decisions 2 (progressive disclosure), 4 (loading/empty states), and 5 (AI suggestion tiering) are partially implemented — `CollapsibleSection` component ships, skeleton components exist, and AI surfaces default to collapsed. Decisions 1 (semantic colors), 4 (typography), and 6 (charts library) are documented recommendations not yet applied. The priority order below reflects effort vs. impact; remaining items are polish-layer work beyond v1 scope.
+
 ---
 
 ## Decision 1: Semantic Colors in the Monochrome System
@@ -213,20 +215,22 @@ Most pages show "Loading…" text. Skeleton component exists but is barely used.
 
 ---
 
-## Priority Order for Implementation
+## Implementation Status
 
-1. **Semantic colors** (highest impact, lowest effort) — swap 6 CSS vars
-2. **Typography dual font stack** (high readability impact) — swap font vars, add font-mono utility classes
-3. **Progressive disclosure on My Week** (reduce overwhelm) — wrap sections in collapsible containers
-4. **Loading/empty states** (perceived quality) — add skeleton variants
-5. **AI suggestion tiering** (reduce fatigue) — adjust default collapsed states
-6. **Charts library migration** (medium effort, polish) — incremental per-chart migration
+| Decision | Status | Notes |
+|---|---|---|
+| 1. Semantic colors | ❌ Not yet applied | CSS vars use gray shades; polish-layer change |
+| 2. Progressive disclosure | ✅ Partially implemented | `CollapsibleSection` component ships; sections collapsed by default |
+| 3. AI suggestion tiering | ✅ Partially implemented | Lint panel, insight panel, risk banners default to collapsed |
+| 4. Typography dual font stack | ❌ Not yet applied | Geist Mono is still primary; polish-layer change |
+| 5. Loading/empty states | ✅ Partially implemented | Skeleton components exist and are used in key views; `LoadingWithTimeout` handles slow loads |
+| 6. Charts library migration | ❌ Not yet applied | Reports use CSS-based charts; library migration is polish-layer work |
 
 ---
 
 ## Sources
-- ChatGPT Pro extended analysis (March 2025)
-- Claude Research with web search (March 2025)
+- ChatGPT Pro extended analysis (March 2026)
+- Claude Research with web search (March 2026)
 - Linear design system analysis
 - GitHub/Notion/Jira pattern comparison
 - WCAG 2.1 AA accessibility guidelines

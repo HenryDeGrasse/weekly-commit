@@ -328,6 +328,11 @@ The `HostProvider` injects authenticated user identity, team context, feature fl
 | `ProactiveRiskBanner` | Mounted on My Week | Banner for critical risk signals |
 | `TeamRiskSummaryBanner` | Mounted on Team Week | Team-level risk overview |
 | `AiSuggestedBadge` | Mounted on Reconcile | Indicates AI-prefilled outcomes |
+| `WhatIfPanel` | Mounted on My Week | Interactive what-if planner for hypothetical commit mutations |
+| `CalibrationCard` | Mounted on My Week | Displays user's rolling calibration profile and confidence tier |
+| `PlanRecommendationCard` | Mounted on My Week | Personalized plan adjustment recommendations |
+| `ConfidenceBadge` | Sub-component (CalibrationCard, PlanRecommendationCard, QueryAnswerCard) | Renders calibration/evidence confidence tier badges |
+| `AnswerRenderer` | Sub-component (QueryAnswerCard) | Renders LLM answer text with lightweight markdown support |
 | `RiskSignalsPanel` | Reusable component, not currently mounted | Detailed risk signal display |
 | `ReconcileAssistPanel` | Reusable component, not currently mounted | Manual AI-assisted reconciliation surface |
 | `EvidenceDrawer` | Reusable component, not currently mounted | Shows SQL facts, lineage, semantic matches, and risk features behind AI output |
@@ -363,8 +368,8 @@ The current Reconcile route uses `useAutoReconcileAssist()` to prefill outcomes 
 
 | Layer | Framework | Count | What it covers |
 |---|---|---|---|
-| Backend unit/integration | JUnit 5 + Mockito | 54 test files | Service logic, controller endpoints, AI services, domain validation |
-| Frontend unit | Vitest + Testing Library | 41 test files | Components, hooks, API clients, user flows |
+| Backend unit/integration | JUnit 5 + Mockito | 63 test files | Service logic, controller endpoints, AI services, domain validation |
+| Frontend unit | Vitest + Testing Library | 49 test files | Components, hooks, API clients, user flows |
 | E2E | Playwright | 4 spec files | Golden path, AI flows, manager flow, navigation |
 | AI evaluation | Custom eval harness | Golden datasets | Prompt quality, schema validation, LLM-as-judge scoring |
 

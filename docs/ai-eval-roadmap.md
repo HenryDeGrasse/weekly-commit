@@ -2,7 +2,7 @@
 
 **Created:** 2026-03-26
 **Updated:** 2026-03-28
-**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 10 product prompt templates, 10 AI suggestion types, and 16 frontend AI components (not all currently mounted). Remaining evaluation gaps identified via code audit.
+**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 14 prompt templates total (10 core AI suggestion types + faithfulness eval, HyDE, SQL routing, what-if), 10 AI suggestion types, and 20 frontend AI components (15 mounted + 2 sub-components + 3 reusable-only). Remaining evaluation gaps identified via code audit.
 
 > **Status key:** ✅ Implemented · 🔨 In progress · 📋 Planned
 
@@ -23,6 +23,7 @@
 - `risk-signal` — 8 cases
 - `reconcile-assist` — 8 cases
 - `rag-query` — 8 cases
+- `what-if` — 8 cases (narrative mentions, length, recommendation presence)
 
 **Why:** Every AI test currently mocks the LLM response. We test "does the code handle JSON correctly" but never "does the prompt produce good suggestions." A golden dataset is the foundation for all eval work.
 
@@ -83,6 +84,7 @@ backend/src/test/resources/eval/
 | risk-signal | schema_valid, signal count, duplicate-rule suppression | none yet |
 | reconcile-assist | schema_valid, outcome counts, expected outcomes / carry-forward checks | none yet |
 | rag-query | schema_valid, confidence bounds, source count, expected keywords | none yet |
+| what-if | schema_valid, narrative keyword checks, recommendation presence, response length | none yet |
 
 **Key design decisions:**
 - Runs against real OpenRouter API — requires `OPENROUTER_API_KEY` env var, skips gracefully if absent
@@ -130,7 +132,7 @@ GROUP BY prompt_version, suggestion_type;
 
 **What:** Add 1-2 good examples and 1 bad example to each of the 10 prompt templates in `backend/src/main/resources/prompts/`.
 
-**Status:** Implemented. All 10 prompt templates now contain few-shot examples.
+**Status:** Implemented. All 14 prompt templates now contain few-shot examples.
 
 **Example improvement for `commit-draft-assist.txt`:**
 ```
@@ -345,6 +347,13 @@ Mounted frontend AI surfaces:
   ManagerAiSummaryCard    — AI-generated team summary (calls TEAM_SUMMARY)
   RcdoSuggestionInline    — RCDO link suggestion (calls RCDO_SUGGEST)
   AiSuggestedBadge        — visual indicator for AI-prefilled reconcile content
+  WhatIfPanel             — interactive what-if planner for hypothetical commit mutations (calls what-if.txt)
+  CalibrationCard         — displays user rolling calibration profile and confidence tier
+  PlanRecommendationCard  — personalized plan adjustment recommendations
+
+Sub-components (used inside mounted components):
+  ConfidenceBadge         — renders calibration/evidence confidence tier badges
+  AnswerRenderer          — renders LLM answer text with lightweight markdown support
 
 Reusable components not currently mounted:
   RiskSignalsPanel        — detailed risk signal display (reads RISK_SIGNAL)
