@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-29T20:59:18.412Z",
+  "updatedAt": "2026-03-29T21:13:24.171Z",
   "runId": "2026-03-29T18-32-40-613Z-32faa966",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -215,12 +215,12 @@
     ]
   },
   "planSourcePath": "duet-plan-ai-enhancements.md",
-  "stepIndex": 10,
-  "round": 2,
+  "stepIndex": 11,
+  "round": 1,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-10",
-    "stepTitle": "Add targeted query rewriting for RAG — backend",
+    "stepId": "step-11",
+    "stepTitle": "Add calibration display and confidence tiers — frontend",
     "gateResults": [
       {
         "id": "lint",
@@ -232,10 +232,6 @@
       },
       {
         "id": "unit",
-        "passed": true
-      },
-      {
-        "id": "build",
         "passed": true
       },
       {

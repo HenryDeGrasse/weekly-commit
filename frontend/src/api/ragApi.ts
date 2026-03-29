@@ -25,6 +25,8 @@ export interface RagQueryResponse {
   sources?: RagSource[];
   confidence?: number;
   suggestionId?: string;
+  /** Evidence-quality tier from the backend: "HIGH" | "MEDIUM" | "LOW" | "INSUFFICIENT". */
+  confidenceTier?: string;
 }
 
 export interface InsightCard {

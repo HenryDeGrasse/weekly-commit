@@ -59,6 +59,10 @@ vi.mock("../api/aiHooks.js", () => ({
   useWhatIfApi: vi.fn(() => ({ simulate: vi.fn() })),
 }));
 
+vi.mock("../api/calibrationHooks.js", () => ({
+  useCalibration: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
+}));
+
 vi.mock("../api/ticketHooks.js", () => ({
   usePlanHistory: vi.fn(() => ({ data: null, loading: false })),
   useCarryForwardLineage: vi.fn(() => ({ data: null, loading: false })),

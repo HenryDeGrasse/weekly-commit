@@ -509,6 +509,23 @@
       "costCacheWrite": 0,
       "costTotal": 0.7107355,
       "timestamp": "2026-03-29T20:59:05.958Z"
+    },
+    {
+      "phase": 10,
+      "role": "relay-a",
+      "round": 1,
+      "model": "anthropic/claude-sonnet-4-6",
+      "inputTokens": 21,
+      "outputTokens": 3680,
+      "cacheReadTokens": 467161,
+      "cacheWriteTokens": 40644,
+      "totalTokens": 511506,
+      "costInput": 0.00006299999999999999,
+      "costOutput": 0.055200000000000006,
+      "costCacheRead": 0.1401483,
+      "costCacheWrite": 0.15241500000000002,
+      "costTotal": 0.34782630000000003,
+      "timestamp": "2026-03-29T21:13:14.724Z"
     }
   ]
 }

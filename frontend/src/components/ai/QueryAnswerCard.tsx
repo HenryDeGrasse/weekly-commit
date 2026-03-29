@@ -24,6 +24,7 @@ import {
 import { cn } from "../../lib/utils.js";
 import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
 import { AnswerRenderer } from "./AnswerRenderer.js";
+import { ConfidenceBadge } from "./ConfidenceBadge.js";
 import type { RagSource } from "../../api/ragApi.js";
 
 // ── Confidence indicator ──────────────────────────────────────────────────────
@@ -133,6 +134,12 @@ interface QueryAnswerCardProps {
   streaming?: boolean;
   /** True while a stream is still open (only meaningful when streaming=true). */
   isStreaming?: boolean;
+  /**
+   * Optional evidence-quality tier from the backend (HIGH | MEDIUM | LOW | INSUFFICIENT).
+   * When present, renders a {@link ConfidenceBadge} in place of the numeric confidence
+   * indicator. When absent, the existing numeric display is used unchanged.
+   */
+  confidenceTier?: string;
 }
 
 export function QueryAnswerCard({
@@ -143,6 +150,7 @@ export function QueryAnswerCard({
   className,
   streaming = false,
   isStreaming = false,
+  confidenceTier,
 }: QueryAnswerCardProps) {
   const pct = Math.round(Math.max(0, Math.min(1, confidence)) * 100);
   const [sourcesExpanded, setSourcesExpanded] = useState(false);
@@ -159,26 +167,32 @@ export function QueryAnswerCard({
           className="flex items-center gap-1.5"
           data-testid="confidence-indicator"
         >
-          <span
-            className={cn(
-              "text-xs font-semibold",
-              confidenceCls(confidence),
-            )}
-          >
-            {confidenceLabel(confidence)}
-          </span>
-          <div
-            className="h-1.5 w-16 bg-border overflow-hidden"
-            aria-label={`Confidence: ${pct}%`}
-            title={`Confidence: ${pct}%`}
-          >
-            <div
-              className={cn("h-full", confidenceBarCls(confidence))}
-              style={{ width: `${pct}%` }}
-              data-testid="confidence-bar"
-            />
-          </div>
-          <span className="text-[0.65rem] text-muted tabular-nums">{pct}%</span>
+          {confidenceTier ? (
+            <ConfidenceBadge tier={confidenceTier} />
+          ) : (
+            <>
+              <span
+                className={cn(
+                  "text-xs font-semibold",
+                  confidenceCls(confidence),
+                )}
+              >
+                {confidenceLabel(confidence)}
+              </span>
+              <div
+                className="h-1.5 w-16 bg-border overflow-hidden"
+                aria-label={`Confidence: ${pct}%`}
+                title={`Confidence: ${pct}%`}
+              >
+                <div
+                  className={cn("h-full", confidenceBarCls(confidence))}
+                  style={{ width: `${pct}%` }}
+                  data-testid="confidence-bar"
+                />
+              </div>
+              <span className="text-[0.65rem] text-muted tabular-nums">{pct}%</span>
+            </>
+          )}
         </div>
       </CardHeader>
 

@@ -27,6 +27,7 @@ import { ScopeChangeDialog } from "../components/lock/ScopeChangeDialog.js";
 import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
 import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js";
 import { InsightPanel } from "../components/ai/InsightPanel.js";
+import { CalibrationCard } from "../components/ai/CalibrationCard.js";
 import { AiLintPanel } from "../components/ai/AiLintPanel.js";
 import { CollapsibleSection } from "../components/shared/CollapsibleSection.js";
 import { PlanHeaderSkeleton } from "../components/shared/skeletons/PlanHeaderSkeleton.js";
@@ -36,6 +37,7 @@ import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
 import { ProactiveRiskBanner } from "../components/ai/ProactiveRiskBanner.js";
 import { WhatIfPanel } from "../components/ai/WhatIfPanel.js";
 import { useAiStatus } from "../api/aiHooks.js";
+import { useCalibration } from "../api/calibrationHooks.js";
 import { useDismissMemory } from "../lib/useDismissMemory.js";
 import { useAiMode } from "../lib/useAiMode.js";
 import type {
@@ -183,6 +185,13 @@ export default function MyWeek() {
   }, []);
 
   const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
+  const { data: calibrationData, loading: calibrationLoading } = useCalibration(
+    aiAssistanceEnabled ? currentUserId : null,
+  );
+  const showCalibration =
+    calibrationLoading ||
+    (calibrationData != null && calibrationData.weeksOfData >= 8);
+
   const { data: aiStatus } = useAiStatus();
   const { aiMode } = useAiMode();
   const { shouldAutoCollapse: shouldAutoCollapseLint, recordDismiss: recordLintDismiss } =
@@ -554,6 +563,27 @@ export default function MyWeek() {
         >
           <InsightPanel mode="personal" planId={plan.id} />
         </CollapsibleSection>
+      )}
+
+      {/* Calibration profile — only shown when user has ≥8 weeks of data */}
+      {aiAssistanceEnabled && showCalibration && (
+        <AiErrorBoundary>
+          <CalibrationCard
+            profile={
+              calibrationData ?? {
+                available: false,
+                overallAchievementRate: 0,
+                chessPieceAchievementRates: {},
+                carryForwardProbability: 0,
+                weeksOfData: 0,
+                avgEstimateByPiece: {},
+                confidenceTier: "INSUFFICIENT",
+              }
+            }
+            loading={calibrationLoading}
+            data-testid="my-week-calibration-card"
+          />
+        </AiErrorBoundary>
       )}
 
       {/* Auto-lock system banner */}
