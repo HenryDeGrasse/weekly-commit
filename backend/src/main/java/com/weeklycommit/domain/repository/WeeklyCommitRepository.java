@@ -1,6 +1,7 @@
 package com.weeklycommit.domain.repository;
 
 import com.weeklycommit.domain.entity.WeeklyCommit;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +15,12 @@ public interface WeeklyCommitRepository extends JpaRepository<WeeklyCommit, UUID
 	List<WeeklyCommit> findByPlanIdOrderByPriorityOrder(UUID planId);
 
 	List<WeeklyCommit> findByOwnerUserId(UUID ownerUserId);
+
+	/**
+	 * Returns commits owned by the given user created after the specified cutoff.
+	 * Used to bound historical context queries to a rolling window (e.g. 12 weeks).
+	 */
+	List<WeeklyCommit> findByOwnerUserIdAndCreatedAtAfter(UUID ownerUserId, Instant cutoff);
 
 	List<WeeklyCommit> findByRcdoNodeId(UUID rcdoNodeId);
 

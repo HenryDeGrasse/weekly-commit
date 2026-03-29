@@ -3,6 +3,7 @@ package com.weeklycommit.ai.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +17,7 @@ import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.ChessPiece;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -84,7 +86,7 @@ class CommitDraftAssistServiceTest {
 	void assist_whenAiAvailable_returnsStructuredSuggestions() throws Exception {
 		when(registry.isAiEnabled()).thenReturn(true);
 		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
-		when(commitRepo.findByOwnerUserId(userId)).thenReturn(List.of());
+		when(commitRepo.findByOwnerUserIdAndCreatedAtAfter(eq(userId), any(Instant.class))).thenReturn(List.of());
 
 		String payload = "{\"suggestedTitle\":\"Better Title\"," + "\"suggestedDescription\":\"Better desc\","
 				+ "\"suggestedSuccessCriteria\":\"Criteria\"," + "\"suggestedEstimatePoints\":3,"
@@ -116,7 +118,7 @@ class CommitDraftAssistServiceTest {
 	void assist_whenChessPieceInferred_returnsSuggestedChessPiece() throws Exception {
 		when(registry.isAiEnabled()).thenReturn(true);
 		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
-		when(commitRepo.findByOwnerUserId(userId)).thenReturn(List.of());
+		when(commitRepo.findByOwnerUserIdAndCreatedAtAfter(eq(userId), any(Instant.class))).thenReturn(List.of());
 
 		String payload = "{\"suggestedTitle\":\"Configure Pinecone index and run initial ingestion\","
 				+ "\"suggestedDescription\":null," + "\"suggestedSuccessCriteria\":\"Pinecone index created\","
@@ -143,7 +145,7 @@ class CommitDraftAssistServiceTest {
 	void assist_whenChessPieceInvalidInPayload_returnsNullChessPiece() throws Exception {
 		when(registry.isAiEnabled()).thenReturn(true);
 		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
-		when(commitRepo.findByOwnerUserId(userId)).thenReturn(List.of());
+		when(commitRepo.findByOwnerUserIdAndCreatedAtAfter(eq(userId), any(Instant.class))).thenReturn(List.of());
 
 		String payload = "{\"suggestedTitle\":\"T\",\"suggestedDescription\":null,"
 				+ "\"suggestedSuccessCriteria\":null,\"suggestedEstimatePoints\":null,"
@@ -168,7 +170,7 @@ class CommitDraftAssistServiceTest {
 	void assist_whenAiResultUnavailable_returnsUnavailable() {
 		when(registry.isAiEnabled()).thenReturn(true);
 		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
-		when(commitRepo.findByOwnerUserId(userId)).thenReturn(List.of());
+		when(commitRepo.findByOwnerUserIdAndCreatedAtAfter(eq(userId), any(Instant.class))).thenReturn(List.of());
 		when(registry.generateSuggestion(any())).thenReturn(AiSuggestionResult.unavailable());
 
 		CommitDraftAssistRequest req = new CommitDraftAssistRequest(planId, userId, null, "Do stuff", null, null, null,
@@ -179,10 +181,35 @@ class CommitDraftAssistServiceTest {
 	}
 
 	@Test
+	void assist_usesBoundedHistoricalQuery_not_unbounded() throws Exception {
+		when(registry.isAiEnabled()).thenReturn(true);
+		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
+		when(commitRepo.findByOwnerUserIdAndCreatedAtAfter(eq(userId), any(Instant.class))).thenReturn(List.of());
+
+		String payload = "{\"suggestedTitle\":\"T\",\"suggestedDescription\":\"D\","
+				+ "\"suggestedSuccessCriteria\":null,\"suggestedEstimatePoints\":null}";
+		AiSuggestionResult result = new AiSuggestionResult(true, payload, "rationale", 0.8, "stub-v1");
+		when(registry.generateSuggestion(any())).thenReturn(result);
+
+		AiSuggestion stored = new AiSuggestion();
+		stored.setId(UUID.randomUUID());
+		when(suggestionService.storeSuggestion(anyString(), any(), any(), any(), anyString(), any()))
+				.thenReturn(stored);
+
+		CommitDraftAssistRequest req = new CommitDraftAssistRequest(planId, userId, null, "title", null, null, null,
+				ChessPiece.ROOK);
+		service.assist(req);
+
+		// The bounded query must be called; the unbounded findByOwnerUserId must NOT be
+		// called
+		verify(commitRepo).findByOwnerUserIdAndCreatedAtAfter(eq(userId), any(Instant.class));
+	}
+
+	@Test
 	void assist_storesSuggestionInDb() throws Exception {
 		when(registry.isAiEnabled()).thenReturn(true);
 		when(planRepo.findById(planId)).thenReturn(Optional.of(plan));
-		when(commitRepo.findByOwnerUserId(userId)).thenReturn(List.of());
+		when(commitRepo.findByOwnerUserIdAndCreatedAtAfter(eq(userId), any(Instant.class))).thenReturn(List.of());
 
 		String payload = "{\"suggestedTitle\":\"T\",\"suggestedDescription\":\"D\","
 				+ "\"suggestedSuccessCriteria\":null,\"suggestedEstimatePoints\":null}";

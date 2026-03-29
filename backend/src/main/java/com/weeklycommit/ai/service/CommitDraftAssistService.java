@@ -15,6 +15,8 @@ import com.weeklycommit.domain.enums.ChessPiece;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.rcdo.exception.ResourceNotFoundException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,7 +70,10 @@ public class CommitDraftAssistService {
 		WeeklyPlan plan = planRepo.findById(request.planId())
 				.orElseThrow(() -> new ResourceNotFoundException("Plan not found: " + request.planId()));
 
-		List<WeeklyCommit> pastCommits = commitRepo.findByOwnerUserId(plan.getOwnerUserId());
+		// Bound historical context to the last 12 weeks to avoid unbounded prompt
+		// growth
+		Instant cutoff = Instant.now().minus(84, ChronoUnit.DAYS);
+		List<WeeklyCommit> pastCommits = commitRepo.findByOwnerUserIdAndCreatedAtAfter(plan.getOwnerUserId(), cutoff);
 
 		Map<String, Object> commitData = new HashMap<>();
 		commitData.put("title", request.currentTitle());
