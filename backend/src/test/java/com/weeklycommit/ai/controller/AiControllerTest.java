@@ -12,13 +12,14 @@ import com.weeklycommit.ai.dto.RiskSignalResponse.PlanRiskSignals;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.ai.rag.SemanticQueryService;
 import com.weeklycommit.ai.service.AiSuggestionService;
+import com.weeklycommit.ai.service.CalibrationService;
 import com.weeklycommit.ai.service.CommitDraftAssistService;
 import com.weeklycommit.ai.service.CommitLintService;
 import com.weeklycommit.ai.service.ManagerAiSummaryService;
+import com.weeklycommit.ai.service.PlanRecommendationService;
 import com.weeklycommit.ai.service.RcdoSuggestService;
 import com.weeklycommit.ai.service.ReconcileAssistService;
 import com.weeklycommit.ai.service.RiskDetectionService;
-import com.weeklycommit.ai.service.CalibrationService;
 import com.weeklycommit.ai.service.WhatIfService;
 import com.weeklycommit.domain.repository.AiSuggestionRepository;
 import java.time.Instant;
@@ -77,6 +78,9 @@ class AiControllerTest {
 
 	@MockBean
 	private CalibrationService calibrationService;
+
+	@MockBean
+	private PlanRecommendationService planRecommendationService;
 
 	@Test
 	void getRiskSignals_requiresActorHeader() throws Exception {

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-29T21:13:24.171Z",
+  "updatedAt": "2026-03-29T21:32:12.631Z",
   "runId": "2026-03-29T18-32-40-613Z-32faa966",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -215,12 +215,12 @@
     ]
   },
   "planSourcePath": "duet-plan-ai-enhancements.md",
-  "stepIndex": 11,
-  "round": 1,
+  "stepIndex": 12,
+  "round": 3,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-11",
-    "stepTitle": "Add calibration display and confidence tiers — frontend",
+    "stepId": "step-12",
+    "stepTitle": "Add typed workflow orchestration — risk→what-if→recommendation pipeline (backend)",
     "gateResults": [
       {
         "id": "lint",
@@ -232,6 +232,10 @@
       },
       {
         "id": "unit",
+        "passed": true
+      },
+      {
+        "id": "build",
         "passed": true
       },
       {

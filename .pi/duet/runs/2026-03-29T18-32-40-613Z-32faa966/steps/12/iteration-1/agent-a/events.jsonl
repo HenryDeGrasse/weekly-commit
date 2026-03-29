@@ -1,0 +1,13 @@
+{"t":390,"type":"message_end","role":"user"}
+{"t":3551,"type":"message_end","role":"assistant","stopReason":"error","textLength":0,"textPreview":""}
+{"t":3551,"type":"turn_end","toolCount":0,"thinkingLength":0,"textLength":0}
+{"t":3601,"type":"agent_end","messageCount":2,"toolCount":0,"thinkingLength":0,"textLength":0}
+{"t":8310,"type":"message_end","role":"assistant","stopReason":"error","textLength":0,"textPreview":""}
+{"t":8359,"type":"turn_end","toolCount":0,"thinkingLength":0,"textLength":0}
+{"t":8359,"type":"agent_end","messageCount":1,"toolCount":0,"thinkingLength":0,"textLength":0}
+{"t":16543,"type":"message_end","role":"assistant","stopReason":"error","textLength":0,"textPreview":""}
+{"t":16644,"type":"turn_end","toolCount":0,"thinkingLength":0,"textLength":0}
+{"t":16644,"type":"agent_end","messageCount":1,"toolCount":0,"thinkingLength":0,"textLength":0}
+{"t":28717,"type":"message_end","role":"assistant","stopReason":"error","textLength":0,"textPreview":""}
+{"t":28717,"type":"turn_end","toolCount":0,"thinkingLength":0,"textLength":0}
+{"t":28717,"type":"agent_end","messageCount":1,"toolCount":0,"thinkingLength":0,"textLength":0}

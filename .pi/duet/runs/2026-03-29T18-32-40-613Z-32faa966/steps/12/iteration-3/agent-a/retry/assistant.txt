@@ -1,0 +1,27 @@
+All four checks pass:
+- **lint**: ✅ (0 errors, only pre-existing warnings)
+- **typecheck**: ✅ (no errors)
+- **unit**: ✅ (22 tests, 0 failures)
+- **build**: ✅ (Java BUILD SUCCESSFUL, frontend built successfully)
+
+The implementation looks complete and correct:
+
+1. **`PlanRecommendationService`** — Implements the full risk→what-if→recommendation pipeline with:
+   - `generateAndPersistRecommendations()`: delete-then-regenerate with graceful degradation
+   - `getRecommendations()`: stable read-only retrieval from persisted rows
+   - `whatIfResult` is serialized into `suggestionPayload` and deserialized back on retrieval
+
+2. **`PlanRecommendationResponse`** — DTO with `suggestionId` for frontend feedback/dismissal
+
+3. **`AiController`** — GET `/api/ai/plans/{planId}/recommendations` (read-only) and POST `/api/ai/plans/{planId}/recommendations/refresh` (regenerate)
+
+4. **`PlanRecommendationServiceTest`** — All required test cases: OVERCOMMIT recommendation, no risks → empty, WhatIfService failure → partial recommendation, multiple risks → multiple recommendations, stable IDs retrieval, stale row deletion
+
+No material defects found. Prior work is correct.
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java: Pre-existing retry loop double-counts rate-limit tokens on parse failure (noted in steps 1-11, out of scope here).
+- [medium] backend/src/main/java/com/weeklycommit/ai/rag/SemanticQueryService.java: Multi-hop retrieval uses one shared intent/filter for all sub-queries, which may limit precision for compound queries with divergent entity filters (pre-existing, noted in step 10-11).
+```
+
+Verdict: approve

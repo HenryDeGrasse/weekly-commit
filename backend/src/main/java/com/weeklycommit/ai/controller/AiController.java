@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.dto.AiFeedbackRequest;
 import com.weeklycommit.ai.dto.CalibrationProfileResponse;
+import com.weeklycommit.ai.dto.PlanRecommendationResponse;
 import com.weeklycommit.ai.dto.StructuredEvidenceResponse;
 import com.weeklycommit.ai.dto.WhatIfRequest;
 import com.weeklycommit.ai.dto.WhatIfResponse;
@@ -30,13 +31,14 @@ import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.ai.rag.SemanticIndexService;
 import com.weeklycommit.ai.rag.SemanticQueryService;
 import com.weeklycommit.ai.service.AiSuggestionService;
+import com.weeklycommit.ai.service.CalibrationService;
 import com.weeklycommit.ai.service.CommitDraftAssistService;
 import com.weeklycommit.ai.service.CommitLintService;
 import com.weeklycommit.ai.service.ManagerAiSummaryService;
+import com.weeklycommit.ai.service.PlanRecommendationService;
 import com.weeklycommit.ai.service.RcdoSuggestService;
-import com.weeklycommit.ai.service.RiskDetectionService;
 import com.weeklycommit.ai.service.ReconcileAssistService;
-import com.weeklycommit.ai.service.CalibrationService;
+import com.weeklycommit.ai.service.RiskDetectionService;
 import com.weeklycommit.ai.service.WhatIfService;
 import com.weeklycommit.domain.entity.AiSuggestion;
 import com.weeklycommit.domain.repository.AiSuggestionRepository;
@@ -86,6 +88,7 @@ public class AiController {
 	private final StructuredEvidenceService evidenceService;
 	private final WhatIfService whatIfService;
 	private final CalibrationService calibrationService;
+	private final PlanRecommendationService planRecommendationService;
 	private final ObjectMapper objectMapper;
 
 	public AiController(CommitDraftAssistService draftAssistService, CommitLintService lintService,
@@ -94,7 +97,8 @@ public class AiController {
 			AiSuggestionService suggestionService, AiProviderRegistry providerRegistry,
 			SemanticIndexService semanticIndexService, SemanticQueryService semanticQueryService,
 			AiSuggestionRepository suggestionRepo, StructuredEvidenceService evidenceService,
-			WhatIfService whatIfService, CalibrationService calibrationService, ObjectMapper objectMapper) {
+			WhatIfService whatIfService, CalibrationService calibrationService,
+			PlanRecommendationService planRecommendationService, ObjectMapper objectMapper) {
 		this.draftAssistService = draftAssistService;
 		this.lintService = lintService;
 		this.rcdoSuggestService = rcdoSuggestService;
@@ -109,6 +113,7 @@ public class AiController {
 		this.evidenceService = evidenceService;
 		this.whatIfService = whatIfService;
 		this.calibrationService = calibrationService;
+		this.planRecommendationService = planRecommendationService;
 		this.objectMapper = objectMapper;
 	}
 
@@ -376,6 +381,54 @@ public class AiController {
 		} catch (Exception ex) {
 			log.warn("Calibration lookup failed for user={}: {}", userId, ex.getMessage());
 			return ResponseEntity.ok(CalibrationProfileResponse.unavailable());
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Plan recommendations
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns persisted plan recommendations for the given plan. Reads from
+	 * previously generated rows — does not trigger re-generation. Recommendation
+	 * ids are stable across page loads, enabling reliable feedback buttons and
+	 * per-recommendation dismissal in the frontend.
+	 */
+	@GetMapping("/api/ai/plans/{planId}/recommendations")
+	public ResponseEntity<List<PlanRecommendationResponse>> getRecommendations(@PathVariable UUID planId,
+			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID callerId) {
+		if (callerId == null) {
+			return ResponseEntity.badRequest().build();
+		}
+		try {
+			List<PlanRecommendationService.PlanRecommendation> recs = planRecommendationService
+					.getRecommendations(planId);
+			return ResponseEntity.ok(PlanRecommendationResponse.ofList(recs));
+		} catch (Exception ex) {
+			log.warn("Failed to get recommendations for plan {}: {}", planId, ex.getMessage());
+			return ResponseEntity.ok(List.of());
+		}
+	}
+
+	/**
+	 * Triggers recommendation re-generation for the given plan. Deletes stale rows,
+	 * runs the risk &rarr; what-if &rarr; recommendation pipeline, persists the
+	 * results, and returns the fresh list. Call this when the plan changes or the
+	 * user explicitly requests a refresh.
+	 */
+	@PostMapping("/api/ai/plans/{planId}/recommendations/refresh")
+	public ResponseEntity<List<PlanRecommendationResponse>> refreshRecommendations(@PathVariable UUID planId,
+			@RequestHeader(value = "X-Actor-User-Id", required = false) UUID callerId) {
+		if (callerId == null) {
+			return ResponseEntity.badRequest().build();
+		}
+		try {
+			List<PlanRecommendationService.PlanRecommendation> recs = planRecommendationService
+					.generateAndPersistRecommendations(planId, callerId);
+			return ResponseEntity.ok(PlanRecommendationResponse.ofList(recs));
+		} catch (Exception ex) {
+			log.warn("Failed to refresh recommendations for plan {}: {}", planId, ex.getMessage());
+			return ResponseEntity.ok(List.of());
 		}
 	}
 
