@@ -1,0 +1,29 @@
+All 22 tests pass. Here's a summary of everything done:
+
+## Summary
+
+### `EmbeddingService.java` (modified)
+- Added `ConcurrentHashMap<String, AtomicLong> modelCallCounters` for per-model observability.
+- Refactored `embed(String text)` to delegate to the new `embed(String text, String modelOverride)`.
+- New `embed(String text, String modelOverride)` implements the full HTTP logic with `effectiveModel` (falls back to `this.model` if override is null/blank); increments the per-model counter on successful parse.
+- New `getDimensions(String model)` returns 3072 for `openai/text-embedding-3-large`, 1536 for everything else (including null).
+- New `getCallCount(String model)` returns the accumulated success count for any model key.
+
+### `ChunkSizeAnalyzer.java` (new)
+- `@Component` taking `MeterRegistry` in constructor, registers `DistributionSummary("ai.chunk.tokens")`.
+- `analyze(ChunkData)` estimates tokens (chars / 4), records into the summary, returns `ChunkStats` record with `estimatedTokens`, `charLength`, `metadataKeyCount`, `exceedsRecommendedSize` (threshold: 625 tokens).
+- `logWarningIfOversized(ChunkData)` logs `WARN` when `estimatedTokens > 625`.
+
+### `SemanticIndexService.java` (modified)
+- Added `ChunkSizeAnalyzer chunkSizeAnalyzer` field and 15th constructor parameter.
+- `upsertChunk()` now calls `chunkSizeAnalyzer.analyze(chunk)` then `chunkSizeAnalyzer.logWarningIfOversized(chunk)` before embedding.
+
+### `ChunkSizeAnalyzerTest.java` (new) — 13 tests
+- Token estimation (empty, boundary, null text), threshold boundary (at/above/below 625), metadata key count, metrics recording (single and accumulated), `logWarningIfOversized` smoke tests.
+
+### `EmbeddingServiceTest.java` (modified) — 10 new tests
+- `embed(text, modelOverride)` uses override in request body; null/blank override falls back to default.
+- Call counter increments on success, not on failure; `getCallCount` returns 0 for unknown model.
+- `getDimensions` for small (1536), large (3072), unknown (1536), null (1536).
+
+Verdict: changes_made

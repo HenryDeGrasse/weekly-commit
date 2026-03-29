@@ -65,6 +65,7 @@ public class SemanticIndexService {
 	private final EmbeddingService embeddingService;
 	private final ChunkBuilder chunkBuilder;
 	private final SparseEncoder sparseEncoder;
+	private final ChunkSizeAnalyzer chunkSizeAnalyzer;
 	private final WeeklyPlanRepository planRepo;
 	private final WeeklyCommitRepository commitRepo;
 	private final ScopeChangeEventRepository scopeChangeRepo;
@@ -81,11 +82,12 @@ public class SemanticIndexService {
 			ScopeChangeEventRepository scopeChangeRepo, CarryForwardLinkRepository carryForwardLinkRepo,
 			ManagerCommentRepository commentRepo, WorkItemRepository workItemRepo, TeamRepository teamRepo,
 			RcdoNodeRepository rcdoNodeRepo, UserAccountRepository userRepo, SparseEncoder sparseEncoder,
-			@Qualifier("taskExecutor") Executor taskExecutor) {
+			@Qualifier("taskExecutor") Executor taskExecutor, ChunkSizeAnalyzer chunkSizeAnalyzer) {
 		this.pineconeClient = pineconeClient;
 		this.embeddingService = embeddingService;
 		this.chunkBuilder = chunkBuilder;
 		this.sparseEncoder = sparseEncoder;
+		this.chunkSizeAnalyzer = chunkSizeAnalyzer;
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.scopeChangeRepo = scopeChangeRepo;
@@ -592,6 +594,8 @@ public class SemanticIndexService {
 		if (chunk == null || chunk.text() == null || chunk.text().isBlank()) {
 			return;
 		}
+		chunkSizeAnalyzer.analyze(chunk);
+		chunkSizeAnalyzer.logWarningIfOversized(chunk);
 		float[] embedding = embeddingService.embed(chunk.text());
 		if (embedding.length == 0) {
 			log.debug("SemanticIndexService: embedding unavailable for chunk '{}' — skipping upsert", chunk.id());

@@ -280,6 +280,99 @@ class EmbeddingServiceTest {
 		verify(httpClient).send(any(HttpRequest.class), any());
 	}
 
+	// ── embed(text, modelOverride) ────────────────────────────────────────
+
+	@Test
+	void embedWithOverride_usesOverrideModelInRequestBody() throws Exception {
+		String overrideModel = "openai/text-embedding-3-large";
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(buildEmbeddingResponse(3072));
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		float[] result = service.embed("test input", overrideModel);
+
+		assertThat(result).hasSize(3072);
+		JsonNode body = objectMapper.readTree(readRequestBody(captor.getValue()));
+		assertThat(body.path("model").asText()).isEqualTo(overrideModel);
+	}
+
+	@Test
+	void embedWithOverride_nullOverride_fallsBackToDefaultModel() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(buildEmbeddingResponse(1536));
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		service.embed("test input", null);
+
+		JsonNode body = objectMapper.readTree(readRequestBody(captor.getValue()));
+		assertThat(body.path("model").asText()).isEqualTo(MODEL);
+	}
+
+	@Test
+	void embedWithOverride_blankOverride_fallsBackToDefaultModel() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(buildEmbeddingResponse(1536));
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		service.embed("test input", "  ");
+
+		JsonNode body = objectMapper.readTree(readRequestBody(captor.getValue()));
+		assertThat(body.path("model").asText()).isEqualTo(MODEL);
+	}
+
+	@Test
+	void embedWithOverride_successfulCall_incrementsModelCallCounter() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(buildEmbeddingResponse(1536));
+		when(httpClient.send(any(HttpRequest.class), any())).thenAnswer(inv -> httpResponse);
+
+		assertThat(service.getCallCount(MODEL)).isZero();
+		service.embed("text");
+		assertThat(service.getCallCount(MODEL)).isEqualTo(1);
+		service.embed("more text");
+		assertThat(service.getCallCount(MODEL)).isEqualTo(2);
+	}
+
+	@Test
+	void embedWithOverride_failedHttpCall_doesNotIncrementCounter() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(500);
+		when(httpResponse.body()).thenReturn("{\"error\":\"server error\"}");
+		when(httpClient.send(any(HttpRequest.class), any())).thenAnswer(inv -> httpResponse);
+
+		service.embed("text");
+		assertThat(service.getCallCount(MODEL)).isZero();
+	}
+
+	@Test
+	void getCallCount_unknownModel_returnsZero() {
+		assertThat(service.getCallCount("some/unknown-model")).isZero();
+	}
+
+	// ── getDimensions ────────────────────────────────────────────────────
+
+	@Test
+	void getDimensions_textEmbedding3Small_returns1536() {
+		assertThat(service.getDimensions("openai/text-embedding-3-small")).isEqualTo(1536);
+	}
+
+	@Test
+	void getDimensions_textEmbedding3Large_returns3072() {
+		assertThat(service.getDimensions("openai/text-embedding-3-large")).isEqualTo(3072);
+	}
+
+	@Test
+	void getDimensions_unknownModel_returnsDefault1536() {
+		assertThat(service.getDimensions("some/unknown-model")).isEqualTo(1536);
+	}
+
+	@Test
+	void getDimensions_nullModel_returnsDefault1536() {
+		assertThat(service.getDimensions(null)).isEqualTo(1536);
+	}
+
 	// ── helpers ──────────────────────────────────────────────────────────
 
 	/**

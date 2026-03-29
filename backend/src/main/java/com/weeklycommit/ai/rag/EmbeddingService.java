@@ -9,6 +9,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,9 @@ public class EmbeddingService {
 	private final String model;
 	private final ObjectMapper objectMapper;
 	private final HttpClient httpClient;
+
+	/** Per-model call counters for observability. */
+	private final ConcurrentHashMap<String, AtomicLong> modelCallCounters = new ConcurrentHashMap<>();
 
 	/**
 	 * Spring-managed constructor. {@link HttpClient} is created internally with a
@@ -81,18 +86,35 @@ public class EmbeddingService {
 	}
 
 	/**
-	 * Generates a vector embedding for the given {@code text}.
-	 *
-	 * <p>
-	 * POSTs to {@code {baseUrl}/embeddings} with body {@code {"model": "...",
-	 * "input": ["text"]}} and extracts {@code data[0].embedding} as a
-	 * {@code float[]}.
+	 * Generates a vector embedding for the given {@code text} using the configured
+	 * default model.
 	 *
 	 * @param text
 	 *            the text to embed; {@code null} or blank returns {@code float[0]}
 	 * @return the embedding vector, or {@code float[0]} on any error
 	 */
 	public float[] embed(String text) {
+		return embed(text, this.model);
+	}
+
+	/**
+	 * Generates a vector embedding for the given {@code text} using
+	 * {@code modelOverride} instead of the configured default model.
+	 *
+	 * <p>
+	 * <strong>Intended for offline evaluation only</strong> (e.g.
+	 * {@code AbComparisonRunner}). Do <em>not</em> use this in the live
+	 * {@code SemanticQueryService} path: the Pinecone index stores 1536-d vectors
+	 * (text-embedding-3-small) and querying with 3072-d vectors
+	 * (text-embedding-3-large) would cause a dimension mismatch.
+	 *
+	 * @param text
+	 *            the text to embed; {@code null} or blank returns {@code float[0]}
+	 * @param modelOverride
+	 *            the embedding model to use for this call
+	 * @return the embedding vector, or {@code float[0]} on any error
+	 */
+	public float[] embed(String text, String modelOverride) {
 		if (!isAvailable()) {
 			log.debug("EmbeddingService unavailable — API key is blank");
 			return EMPTY;
@@ -100,9 +122,10 @@ public class EmbeddingService {
 		if (text == null || text.isBlank()) {
 			return EMPTY;
 		}
+		String effectiveModel = (modelOverride != null && !modelOverride.isBlank()) ? modelOverride : this.model;
 		try {
 			ObjectNode body = objectMapper.createObjectNode();
-			body.put("model", model);
+			body.put("model", effectiveModel);
 			ArrayNode inputArray = body.putArray("input");
 			inputArray.add(text);
 			String json = objectMapper.writeValueAsString(body);
@@ -119,11 +142,49 @@ public class EmbeddingService {
 				return EMPTY;
 			}
 
-			return parseEmbedding(response.body());
+			float[] result = parseEmbedding(response.body());
+			if (result.length > 0) {
+				modelCallCounters.computeIfAbsent(effectiveModel, k -> new AtomicLong(0)).incrementAndGet();
+			}
+			return result;
 		} catch (Exception e) {
 			log.warn("Embedding request failed: {}", e.getMessage());
 			return EMPTY;
 		}
+	}
+
+	/**
+	 * Returns the output vector dimension for a known embedding model.
+	 *
+	 * <ul>
+	 * <li>{@code openai/text-embedding-3-small} → 1536</li>
+	 * <li>{@code openai/text-embedding-3-large} → 3072</li>
+	 * </ul>
+	 *
+	 * Returns 1536 for any unrecognised model (safe default matching the live
+	 * Pinecone index dimension).
+	 *
+	 * @param model
+	 *            the embedding model identifier
+	 * @return expected output dimension
+	 */
+	public int getDimensions(String model) {
+		if ("openai/text-embedding-3-large".equals(model)) {
+			return 3072;
+		}
+		return 1536;
+	}
+
+	/**
+	 * Returns the total successful call count for the given model, or {@code 0} if
+	 * no calls have been made yet.
+	 *
+	 * @param model
+	 *            the embedding model identifier
+	 */
+	public long getCallCount(String model) {
+		AtomicLong counter = modelCallCounters.get(model);
+		return counter != null ? counter.get() : 0L;
 	}
 
 	// ── Private helpers ──────────────────────────────────────────────────
