@@ -1,0 +1,12 @@
+The JSON is valid. Here's a summary of the fix:
+
+**What changed:** Step 8, item 5 was rewritten to correctly target `frontend/src/routes/Reconcile.tsx` instead of `ReconcileAssistPanel.tsx`.
+
+**Why:** The critique correctly identified that the AI reconcile prefill flow lives entirely in `Reconcile.tsx` — it uses `useAutoReconcileAssist` hook, manages `aiSuggestedOutcomes` state locally, and has a `useEffect` that auto-merges AI suggestions into `localOutcomes`. The `ReconcileAssistPanel.tsx` component is a separate, manually-triggered panel that isn't even imported by the Reconcile page.
+
+**Updated instructions now specify:**
+1. Modify the `useEffect` in `Reconcile.tsx` to store AI suggestions only in `aiSuggestedOutcomes` (not auto-merge into `localOutcomes`)
+2. Update `ReconcileCommitRow` to render a ghost/preview visual state when a commit has an AI suggestion but no user-confirmed outcome
+3. Solidify the selection only when the user explicitly clicks/confirms
+4. Handle AI-prefilled notes as placeholder text rather than pre-filling `localNotes`
+5. Explicitly notes that `ReconcileAssistPanel.tsx` is a separate component and should be left unchanged

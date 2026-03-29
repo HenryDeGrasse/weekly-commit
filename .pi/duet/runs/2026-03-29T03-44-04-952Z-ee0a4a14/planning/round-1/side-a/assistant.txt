@@ -1,0 +1,20 @@
+## Summary of reasoning
+
+I explored the full frontend codebase to understand the real architecture before converting the plan. Here's how I addressed the three blocking issues from the gap analysis:
+
+### Issue 1: Semantic colors surface area
+The original plan said "swap 6 CSS vars" — massively undersized. I found the real surface area spans:
+- `index.css` (@theme + dark mode block)
+- `MockHostProvider.tsx` (defaultDesignTokens)
+- `AppShell.tsx` (tokensToStyle passthrough)
+- `Badge.tsx`, `Toast.tsx`, `Button.tsx` (all use success/warning/danger variants)
+- 50+ usage sites across 20+ component files using `text-success`, `text-danger`, `text-warning`, `bg-success/10`, etc.
+- `InsightPanel`, `ProactiveRiskBanner`, `RiskSignalsPanel`, `ReconcileAssistPanel`, `ExceptionAgingTable`, `ScopeChangeDialog`, `TicketDetailView`
+
+I split this into 3 steps: token definition, component updates, and app-wide status indicator sweep.
+
+### Issue 2: WCAG AA contrast failures
+I adjusted the proposed color values to pass 4.5:1 contrast ratio for normal text. For example, success light base darkened from `#5F7A66` to `#3D7A4A`, warning from `#8A7A5A` to `#7A6520`, danger from `#8A5C5C` to `#9B3B3B`. Dark mode values were lightened correspondingly.
+
+### Issue 3: Font pipeline architecture
+The font change isn't just "swap CSS vars" — it flows through `packages/shared/src/host.ts` (DesignTokens contract) → `MockHostProvider.tsx` (default value) → `AppShell.tsx` (sets as inline CSS var) → `index.css` (consumed in @theme and body). Step 4 traces this full pipeline. Step 5 handles the critical audit of which components need explicit `font-mono` preservation (commit titles, ticket IDs, estimates, dates) vs which should use the new proportional font.

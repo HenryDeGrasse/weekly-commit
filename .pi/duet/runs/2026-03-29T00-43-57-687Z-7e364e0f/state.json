@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "completed",
-  "updatedAt": "2026-03-29T02:19:22.323Z",
+  "updatedAt": "2026-03-29T02:30:28.680Z",
   "runId": "2026-03-29T00-43-57-687Z-7e364e0f",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -130,10 +130,8 @@
   },
   "planSourcePath": "duet-plan-whatif.md",
   "stepIndex": 5,
-  "round": 2,
   "activeSummary": {
-    "stepId": "step-5",
-    "stepTitle": "Historical Replay Benchmark and eval results documentation",
+    "stepTitle": "All steps complete",
     "gateResults": [
       {
         "id": "lint",
@@ -155,7 +153,6 @@
         "id": "git-diff-check",
         "passed": true
       }
-    ],
-    "lastVerdict": "approve"
+    ]
   }
 }

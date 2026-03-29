@@ -32,12 +32,26 @@
   --color-border: var(--color-border, #e5e5e5);
   --color-input: #e5e5e5;
   --color-ring: #a1a1a1;
-  --color-success: var(--color-success, #404040);
+  /* ── Semantic status colors (WCAG AA-validated, muted palette) ──── */
+  /* Light-mode base values pass ≥4.5:1 contrast against their respective   */
+  /* bg tokens. Foreground (#fafafa) passes ≥4.5:1 on each base.            */
+  --color-success: var(--color-success, #3D7A4A);
+  --color-success-bg: #EEF3EF;
+  --color-success-border: #C7D6CB;
   --color-success-foreground: #fafafa;
-  --color-warning: var(--color-warning, #737373);
+  --color-warning: var(--color-warning, #7A6520);
+  --color-warning-bg: #F5F2EA;
+  --color-warning-border: #DDD2B8;
   --color-warning-foreground: #fafafa;
-  --color-danger: var(--color-danger, #171717);
-  --color-danger-foreground: #f5f5f5;
+  --color-danger: var(--color-danger, #9B3B3B);
+  --color-danger-bg: #F6EEEE;
+  --color-danger-border: #E2CACA;
+  --color-danger-foreground: #fafafa;
+  /* Info/AI — CSS-only token (not in host DesignTokens contract)            */
+  --color-info: var(--color-info, #4A5578);
+  --color-info-bg: #EEF1F6;
+  --color-info-border: #CCD3E0;
+  --color-info-foreground: #fafafa;
 
   /* ── Typography ──────────────────────────────────────────────────── */
   --font-family-base: var(--font-family-base, "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace);
@@ -81,12 +95,23 @@
     --color-border: #2a2a2a;
     --color-input: #2a2a2a;
     --color-ring: #525252;
-    --color-success: #4ade80;
+    /* ── Dark-mode semantic colors (muted, lightened for ≥4.5:1 on dark bgs) */
+    --color-success: #8FBF9A;
+    --color-success-bg: #1A221C;
+    --color-success-border: #2F3E33;
     --color-success-foreground: #0a0a0a;
-    --color-warning: #fbbf24;
+    --color-warning: #C4AC6A;
+    --color-warning-bg: #211F18;
+    --color-warning-border: #3A3526;
     --color-warning-foreground: #0a0a0a;
-    --color-danger: #f87171;
+    --color-danger: #D4A0A0;
+    --color-danger-bg: #221A1A;
+    --color-danger-border: #3B2A2A;
     --color-danger-foreground: #0a0a0a;
+    --color-info: #9DABC8;
+    --color-info-bg: #1A1D24;
+    --color-info-border: #2F3542;
+    --color-info-foreground: #0a0a0a;
 
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
     --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.4);

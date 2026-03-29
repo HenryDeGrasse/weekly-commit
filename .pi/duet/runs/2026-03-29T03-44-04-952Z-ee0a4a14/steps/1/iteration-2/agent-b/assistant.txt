@@ -1,0 +1,27 @@
+Reviewed `docs/ui-ux-decisions.md` and the step-1 diff in:
+
+- `frontend/src/index.css`
+- `frontend/src/host/MockHostProvider.tsx`
+- `frontend/src/components/AppShell.tsx`
+
+Assessment:
+- Semantic light-mode tokens were updated to the WCAG-corrected values.
+- New `-bg` and `-border` CSS tokens were added for success/warning/danger, plus the full info token set.
+- Dark-mode semantic tokens were updated as required.
+- `MockHostProvider` matches the new light-mode success/warning/danger values.
+- `AppShell.tsx` did not need a code change; it already forwards the existing host-backed semantic base tokens (`success`, `warning`, `danger`) in light mode, which is all the step requires from the host contract.
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm run build` ✅
+- `npm run unit` ✅
+
+No material defects found, so I made no changes.
+
+Verdict: approve
+
+```observations
+- [low] frontend/src/__tests__/TeamWeekPage.test.tsx: Test run emits repeated React `act(...)` warnings from `TeamWeek`; tests still pass, but the async update handling is noisy and may hide future test issues.
+- [low] frontend/src/__tests__/AppShell.test.tsx: Test run emits repeated React `act(...)` warnings from `NotificationPanel`; pre-existing and unrelated to this step.
+```

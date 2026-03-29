@@ -1,0 +1,2376 @@
+diff --git a/.pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/draft-plan.json b/.pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/draft-plan.json
+deleted file mode 100644
+index feaf31d..0000000
+--- a/.pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/draft-plan.json
++++ /dev/null
+@@ -1,35 +0,0 @@
+-{
+-  "goal": "Build a What-If Planner and Historical Replay Benchmark for the Weekly Commit Module. The What-If Planner lets users simulate hypothetical commit mutations (add/remove/modify) against a draft plan and see the impact on capacity, RCDO coverage, and risk — with an optional LLM narrative. All computation uses the existing rules engine and feature tables; the LLM only narrates. The Historical Replay Benchmark replays risk predictions against historical seed data (weeks 1-8), compares to actual reconcile outcomes (weeks 9-12), computes precision/recall/F1, and publishes results as a markdown doc.\n\nSuccess criteria:\n- POST /api/ai/what-if endpoint accepts hypothetical mutations and returns structured impact analysis + optional LLM narrative\n- Frontend What-If panel on MyWeek page shows before/after capacity, RCDO coverage delta, risk changes, and AI narrative\n- Historical replay benchmark runs via ./gradlew evalTest and produces docs/eval-results.md\n- All existing tests continue to pass (npm test, npm run lint, npm run typecheck)\n\nConstraints:\n- Java 21 backend, TypeScript strict frontend, SQL only — no Python or new infrastructure\n- Reuse existing PostgreSQL, Pinecone, OpenRouter, RiskDetectionService rules, read models, AiProviderRegistry\n- Do NOT modify existing entity classes, migrations, or domain enums — add new DTOs/services only\n- Do NOT restructure existing frontend routes/pages — integrate via composition\n- Follow existing patterns: DTOs as Java records, @Service annotation, controllers in module packages, frontend components in frontend/src/components/ai/",
+-  "steps": [
+-    {
+-      "id": "step-1",
+-      "title": "What-If backend DTOs and pure-computation service",
+-      "description": "Create the What-If Planner backend: request/response DTOs and the core WhatIfService that simulates plan mutations using existing rules and read models. No LLM calls in this step — pure computation only.\n\nScope: Backend only. Do NOT modify any files in frontend/src/. Do NOT modify existing services (RiskDetectionService, WeeklyPlanService, etc.) — read from them, don't change them.\n\nDeliverables:\n\n1. `backend/src/main/java/com/weeklycommit/ai/dto/WhatIfRequest.java` — Java record with planId (UUID, @NotNull), userId (UUID, @NotNull), and hypotheticalChanges (List<WhatIfMutation>). WhatIfMutation is a nested record or sibling file with: action field using a nested enum `WhatIfAction` (values: ADD_COMMIT, REMOVE_COMMIT, MODIFY_COMMIT) defined alongside the record (nested inside WhatIfRequest or in the same file), commitId (nullable UUID), title (String), chessPiece (String — not the domain ChessPiece enum, to avoid coupling), estimatePoints (Integer), rcdoNodeId (nullable UUID). Use @Valid/@NotNull consistent with existing DTO records like CommitDraftAssistRequest.\n\n2. `backend/src/main/java/com/weeklycommit/ai/dto/WhatIfResponse.java` — Java record with: available (boolean), currentState (nested PlanSnapshot record: totalPoints int, capacityBudget int, riskSignals List<String>, rcdoCoverage Map<UUID,Integer>), projectedState (same PlanSnapshot type), capacityDelta (int), rcdoCoverageChanges (List<RcdoCoverageChange> with rcdoNodeId, rcdoTitle nullable, beforePoints, afterPoints), riskDelta (nested record: newRisks List<String>, resolvedRisks List<String>), narrative (String, null this step), recommendation (String, null this step). Add `public static WhatIfResponse unavailable()` factory method following CommitDraftAssistResponse.unavailable() pattern.\n\n3. `backend/src/main/java/com/weeklycommit/ai/service/WhatIfService.java` — @Service class. Inject WeeklyPlanRepository, WeeklyCommitRepository, ScopeChangeEventRepository, WorkItemRepository, WorkItemStatusHistoryRepository (do NOT inject RcdoWeekRollupRepository — RCDO coverage is computed from commits' rcdoNodeId fields, not from the rollup table). Method simulate(WhatIfRequest): WhatIfResponse that: (a) loads plan + commits from DB, (b) builds currentState snapshot (total points, budget, per-RCDO points, risk signals computed by re-implementing the 5 rules logic inline — do NOT call RiskDetectionService.detectAndStoreRiskSignals which persists), (c) clones commit list in-memory, applies mutations (ADD inserts synthetic, REMOVE filters out, MODIFY updates), (d) builds projectedState from mutated list, (e) computes deltas. Returns WhatIfResponse with narrative=null. Replicate OVERCOMMIT/UNDERCOMMIT/REPEATED_CARRY_FORWARD/BLOCKED_CRITICAL/SCOPE_VOLATILITY rule thresholds from RiskDetectionService (duplicate as package-private constants). Throw ResourceNotFoundException if plan not found.\n\n4. `backend/src/test/java/com/weeklycommit/ai/service/WhatIfServiceTest.java` — @ExtendWith(MockitoExtension.class) unit test matching RiskDetectionServiceTest pattern. Mock all repositories. Test cases: (a) ADD_COMMIT pushes over budget → OVERCOMMIT in projectedState.riskSignals, (b) REMOVE_COMMIT brings under budget → resolves OVERCOMMIT, riskDelta shows resolved, (c) MODIFY_COMMIT changes rcdoNodeId → rcdoCoverageChanges shows point shift, (d) empty mutations → currentState equals projectedState, (e) plan not found → ResourceNotFoundException.",
+-      "requiredChecks": ["lint", "typecheck", "unit", "build"]
+-    },
+-    {
+-      "id": "step-2",
+-      "title": "What-If LLM narration and REST API endpoint",
+-      "description": "Wire WhatIfService to the LLM for narrative generation and expose the REST endpoint. The LLM receives the structured impact analysis and produces a 2-3 sentence explanation — it does NOT compute anything. Graceful degradation: when AI is unavailable, return the full structured response with narrative=null and recommendation=null.\n\nScope: Backend only. Do NOT modify any files in frontend/src/.\n\nDeliverables:\n\n1. `backend/src/main/resources/prompts/what-if.txt` — Prompt template receiving WhatIfResponse data (current state, projected state, deltas) as structured JSON in additionalContext. Output: JSON {\"narrative\": \"2-3 sentence impact explanation\", \"recommendation\": \"optional short recommendation\"}. Include 2 few-shot examples and an ## Input Data Structure section. Follow style of existing risk-signal.txt and reconcile-assist.txt prompts.\n\n2. Update `backend/src/main/java/com/weeklycommit/ai/provider/AiContext.java` — Add `public static final String TYPE_WHAT_IF = \"WHAT_IF\";` constant following existing pattern.\n\n3. Update `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java` — Add `case AiContext.TYPE_WHAT_IF -> \"what-if.txt\";` to loadPromptTemplate() switch and `case AiContext.TYPE_WHAT_IF -> \"what-if-v1\";` to resolvePromptVersion() switch. Do NOT change any other logic.\n\n4. Update `backend/src/main/java/com/weeklycommit/ai/provider/StubAiProvider.java` — Add case AiContext.TYPE_WHAT_IF in generateSuggestion() returning canned JSON {\"narrative\": \"This change would ...\", \"recommendation\": \"Consider ...\"}. Follow existing stub case patterns.\n\n5. Update `backend/src/main/java/com/weeklycommit/ai/service/WhatIfService.java` — After computing impact, build AiContext with suggestionType=TYPE_WHAT_IF, serialize delta data into additionalContext, call AiProviderRegistry.generateSuggestion(), parse narrative/recommendation from the JSON response string using ObjectMapper (inject ObjectMapper via constructor, following the pattern in CommitDraftAssistService and RiskDetectionService). If AI unavailable (!result.available()), return response with narrative=null, recommendation=null. Inject both AiProviderRegistry and ObjectMapper via constructor (update the constructor created in step 1 to add these two dependencies).\n\n6. Add endpoint in `backend/src/main/java/com/weeklycommit/ai/controller/AiController.java` — @PostMapping(\"/api/ai/what-if\") accepting @Valid @RequestBody WhatIfRequest, calls WhatIfService.simulate(), returns ResponseEntity<WhatIfResponse>. Add WhatIfService to constructor params/fields. Follow commitDraftAssist endpoint pattern.",
+-      "requiredChecks": ["lint", "typecheck", "unit", "build"]
+-    },
+-    {
+-      "id": "step-3",
+-      "title": "What-If frontend API client and panel component",
+-      "description": "Build the frontend What-If panel and integrate it into the MyWeek page. The panel should always be available when the feature flag and plan state allow — it does NOT require AI to be online because the backend computation is deterministic. Only the narrative/recommendation portion degrades when AI is down.\n\nScope: Frontend only. Do NOT modify any files in backend/.\n\nDeliverables:\n\n1. `frontend/src/api/whatIfApi.ts` — Follow the createXxxApi(client, actorUserId) factory pattern used by aiApi.ts and ragApi.ts. Export createWhatIfApi(client: ApiClient, actorUserId: string) and WhatIfApi type. Define TypeScript interfaces: WhatIfMutationAction (union \"ADD_COMMIT\" | \"REMOVE_COMMIT\" | \"MODIFY_COMMIT\"), WhatIfMutation (action, commitId?, title?, chessPiece?, estimatePoints?, rcdoNodeId?), WhatIfRequest (planId, userId, hypotheticalChanges), PlanSnapshot (totalPoints, capacityBudget, riskSignals, rcdoCoverage), RcdoCoverageChange (rcdoNodeId, rcdoTitle?, beforePoints, afterPoints), RiskDelta (newRisks, resolvedRisks), WhatIfResponse (available, currentState, projectedState, capacityDelta, rcdoCoverageChanges, riskDelta, narrative?, recommendation?). Factory returns object with simulate: (req) => Promise<WhatIfResponse> calling client.post(\"/ai/what-if\", req).\n\n2. `frontend/src/api/aiHooks.ts` — Add useWhatIfApi() hook returning stable WhatIfApi instance, following the exact pattern of useAiApi(). Import createWhatIfApi from whatIfApi.ts.\n\n3. Update `frontend/src/__tests__/MyWeekPage.test.tsx` — Add `useWhatIfApi: vi.fn(() => ({ simulate: vi.fn() }))` to the existing `vi.mock(\"../api/aiHooks.js\", ...)` block (around line 45-60). This prevents a TypeError when WhatIfPanel calls useWhatIfApi() inside AiErrorBoundary and avoids console noise in tests. Follow the pattern of the existing useAiApi, useAiStatus, useRiskSignals mocks already in that block.\n\n4. `frontend/src/components/ai/WhatIfPanel.tsx` — Main component. Props: planId: string, currentCommits: ReadonlyArray<CommitResponse> (from planTypes.ts). UI: collapsible card (collapsed by default, expand button \"🔮 What-If Planner\"). Expanded shows: (a) mutation form — action type selector (add/remove/modify), for ADD: title+chess+points inputs, for REMOVE: dropdown of current commits, for MODIFY: commit dropdown+field+value; (b) queued mutations list with remove buttons; (c) \"Simulate\" button calling API; (d) results section: capacity before→after with color indicator, RCDO coverage changes with +/- indicators, risk delta (new=danger, resolved=success colors), narrative in highlighted box with sparkles icon (shown only when narrative is non-null, hidden gracefully when null). Loading spinner on simulate, error on failure, graceful handling of available:false. IMPORTANT: Do NOT use useAiStatus() to hide the entire panel — the what-if computation is deterministic backend logic that works without AI. Only degrade the narrative display when narrative is null. Show the panel whenever aiAssistanceEnabled feature flag is on and the plan is in the right state. Use Card/CardHeader/CardTitle/CardContent from ../ui/Card.js, Button from ../ui/Button.js, Badge from ../ui/Badge.js. Follow CommitDraftAssistButton and ReconcileAssistPanel for styling, cn() usage, lucide-react icons.\n\n5. Integrate into `frontend/src/routes/MyWeek.tsx` — Import WhatIfPanel. Insert below the CommitList render and before the scope-change timeline section. Integration: {aiAssistanceEnabled && plan && (isDraft || isLocked) && (<AiErrorBoundary><WhatIfPanel planId={plan.id} currentCommits={commits} /></AiErrorBoundary>)}. AiErrorBoundary is already defined in the file. This is a minimal 3-line insertion — no restructuring of existing layout.",
+-      "requiredChecks": ["lint", "typecheck", "unit"]
+-    },
+-    {
+-      "id": "step-4",
+-      "title": "What-If eval fixtures and eval runner extension",
+-      "description": "Add golden evaluation test cases for the What-If LLM narration capability and extend the eval runner.\n\nScope: Backend test resources and eval runner only. Do NOT modify any production source files.\n\nDeliverables:\n\n1. `backend/src/test/resources/eval/what-if/cases.json` — 8 test cases matching the EvalCase record schema (id, description, edgeCaseType, input, expectedBehavior, critical). Input contains structured what-if impact data as the LLM receives it (current state, projected state, deltas — matching WhatIfService additionalContext format). expectedBehavior has: shouldHaveNarrative (boolean), narrativeShouldMention (string array of keywords), maxNarrativeLength (int), shouldHaveRecommendation (boolean, optional). Cases: (1) add-overcommit: pushes over budget, narrative mentions overcommit, (2) remove-resolves-risk: removing resolves OVERCOMMIT, narrative mentions improvement, (3) rcdo-shift: changes RCDO coverage, narrative mentions affected branch, (4) no-impact: empty mutations, narrative indicates minimal impact, (5) mixed-mutations: add+remove, (6) budget-consumed: single large mutation consuming entire budget, (7) chess-piece-change: PAWN→KING, narrative mentions priority change, (8) undercommit-resolution: adding resolves UNDERCOMMIT.\n\n2. Extend `backend/src/test/java/com/weeklycommit/ai/eval/PromptEvalRunner.java` — Add: (a) whatIfCases() method returning Stream<EvalCase> via loadCases(\"eval/what-if/cases.json\"), (b) @ParameterizedTest(name=\"what-if: {0}\") @MethodSource(\"whatIfCases\") void evaluateWhatIf(EvalCase) — follows evaluateRagQuery pattern: check provider available, build AiContext with TYPE_WHAT_IF putting input into additionalContext, call provider, validate JSON has \"narrative\" field, create EvalResult, call evaluateWhatIfOutput(), add to allResults, assert schema valid, (c) private evaluateWhatIfOutput(JsonNode output, JsonNode expected, EvalResult) helper — checks shouldHaveNarrative (narrative present and non-empty), narrativeShouldMention (keyword matching in lowercase, same pattern as evaluateRagQueryOutput's answerShouldMention), maxNarrativeLength (string length), shouldHaveRecommendation (optional).",
+-      "requiredChecks": ["lint", "typecheck", "unit", "build"]
+-    },
+-    {
+-      "id": "step-5",
+-      "title": "Historical Replay Benchmark and eval results documentation",
+-      "description": "Build a test-harness that replays risk predictions against historical seed data and computes accuracy metrics, plus create the evaluation results documentation.\n\nScope: Backend test files and docs only. Do NOT modify any production source files or frontend. Independent of steps 1-4 for the benchmark class; the docs deliverable references step 4's what-if cases so should be written knowing that step 4 adds 8 what-if eval cases.\n\nDeliverables:\n\n1. `backend/src/test/java/com/weeklycommit/ai/eval/HistoricalReplayBenchmark.java` — @Tag(\"eval\") @TestInstance(TestInstance.Lifecycle.PER_CLASS) test class. IMPORTANT: Do NOT use @SpringBootTest — there are zero @SpringBootTest tests in this codebase and Testcontainers is not a dependency. Instead, follow the established pure-unit-test pattern: use plain Java objects with NO database, NO Spring context, NO external services. The benchmark creates synthetic historical data as plain Java objects (WeeklyPlan and WeeklyCommit instances built with setters, NOT persisted to any DB). Construct 10-12 weeks of synthetic plans with known outcomes using deterministic UUIDs: some RECONCILED plans that were overcommitted and had low completion, some with carry-forward streaks, some well-balanced. For each synthetic RECONCILED plan: (1) reconstruct state at lock time from the in-memory objects (planned points, commit chess pieces, carry-forward streaks via getCarryForwardStreak()), (2) run the 5 rules-based risk signal detection logic in-memory (replicate the exact thresholds from RiskDetectionService: OVERCOMMIT = totalPoints > budget, UNDERCOMMIT = totalPoints/budget < 0.60, REPEATED_CARRY_FORWARD = streak >= 2, BLOCKED_CRITICAL = King/Queen with blocked ticket for 48+ hours, SCOPE_VOLATILITY = scope changes > 3), (3) compare predictions to actual outcomes using these explicit signal-to-outcome mappings: OVERCOMMIT true positive if the plan's average commit completion rate < 70% (ACHIEVED=1.0, PARTIALLY_ACHIEVED=0.5, NOT_ACHIEVED/CANCELED=0.0); UNDERCOMMIT true positive if plan had spare capacity AND all commits ACHIEVED; REPEATED_CARRY_FORWARD true positive if the flagged commit's outcome is NOT_ACHIEVED or CANCELED; BLOCKED_CRITICAL true positive if the flagged commit's outcome is NOT_ACHIEVED; SCOPE_VOLATILITY true positive if any commit outcome is NOT_ACHIEVED, (4) aggregate per-signal-type confusion matrix → precision/recall/F1. Output results to build/eval-results/replay-benchmark.json via Jackson ObjectMapper. Since this is a pure unit test with synthetic data, setup should always succeed. Use Assumptions.assumeTrue() only as a defensive guard.\n\n2. `docs/eval-results.md` — Markdown document: overview of eval approach (rules-based + LLM-augmented), per-capability eval summary table (commit-draft-assist: 12 cases, commit-lint: 6 cases, rcdo-suggest: 10 cases, risk-signal: 8 cases, reconcile-assist: 8 cases, rag-query: 8 cases, what-if: 8 cases — these counts match the actual files in backend/src/test/resources/eval/*/cases.json), historical replay benchmark section with metrics table (signal type / # predicted / # actual / true positives / precision / recall / F1) showing placeholder values to be filled by running ./gradlew evalTest, and \"How to run\" section explaining ./gradlew test (unit tests) and ./gradlew evalTest (eval tests, requires OPENROUTER_API_KEY). Note: the benchmark writes machine-readable results to build/eval-results/replay-benchmark.json; this markdown doc is the human-readable companion with placeholder tables that document the approach.",
+-      "requiredChecks": ["lint", "typecheck", "unit", "build"]
+-    }
+-  ]
+-}
+diff --git a/.pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/handoff-source.txt b/.pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/handoff-source.txt
+deleted file mode 100644
+index 8e338d5..0000000
+--- a/.pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/handoff-source.txt
++++ /dev/null
+@@ -1,12777 +0,0 @@
+-## 1. user
+-how could I make this an outstanding deeply intelligent AI engineering feat of a repo / project?
+-
+-## 2. assistant
+-{
+-  "type": "thinking",
+-  "thinking": "**Exploring user’s repo context**\n\nI need to provide a high-level advisory about the user's repo or project. Since they mentioned \"this,\" it means I should focus on the current repo. I’ll need to inspect it to understand better. My goal is to be concise but helpful. I might check out specific files, using commands like bash ls or rg. It seems essential to look at the README, package.json, and similar files. Let's dive into the repo!",
+-  "thinkingSignature": "{\"id\":\"rs_0c83a0c7a2ecf6e70169c732428b98819ba85a69663191a5bf\",\"type\":\"reasoning\",\"encrypted_content\":\"gAAAAABpxzJIZg_rTylptzDek7UYsNNsZvlaWxli3f15s4s7F5p_0Dxip__37c5mJUZtfFNHPKvpRjNUVx2CWNyXnKNJM8ahHjfUgkXM9GMB9HQhfYWLioWB2vjkg28_08tQOLapP6qb-RP5eSjJ50OvNqQQYQYGH9Uaw7jd4H6EXEPbI4RFoR7w61yxABsydBt4oF5FmFipC0mMM2K6d_oFsR4BtfXotnlbweydJcOd-vh0owO-EuuRz_spOkL0e_q7ttYaUXXUcV1tRP9vq-j9SmpS5tHzTOryx96X7YqbtY4I4nmmYEhevtyeKv-0eCXs_bCPPYx-9BiuCZ_J9n1letGOeA36t8FzYps5Vy5xuZbcPchQQuzfS19s_crbUQJmL76orBje0pyq7aI2pW3a2m8P9PaNZIvEoFGnNOmSnBuvc2LeM8FUoKSAc1AoHYBjuqDmvgvQW_Am_D0mASWCreJefMkiv-K-vrXEWXjQK2ktAmIxUnu9s2wrierb4J0ZCyrjTmwmL98s2f2GBBO3r7zx6651AnUTOSuOlNxu1PGvfQqZ-lIVKD6WFIAu7H1RkGwfZUVSReShuC7F4PW-WNnZ0NprK_HB_VIwtpZL8vZGvx81MhdPyK2kOtxboCei8csK2FSX06CahTpUX0NZCP_Xbc1XRCu8vayILusZCUqRRT6xfpv7xenmqzumyTCk15Gbb6LCm430rDh0UBirvhnv4PLu_9kktjtD7yG2Urbu4FeZB4qQbvBOihaW4nqA0dk1RvtXbWkoGhF_Q8Hp-X8fAOhEg2BfbXOK1n6l6Az1RvOpOI47uosgxhgOrRycl-DXGQhjq5OezQOCLI4J9ZqSh0IOK3X0fzRwIROxarWMutrialEctmVJttbFaefOR34KFkJSXSOkb1MXfQzjfyf50g1d_4nKP4BewPhDBdVBGwAyU3mjW8X8-eEcfHISXMMQIjLoXFWOIOjGuCkE-fakZk3dOHHo88NfsKYXnZnjHr0FpVRzIiu04Fze-yio07V1wT-xTPtI_EQqfWz5wTusQrQpuqfgWgp86qUGwpcxw6kLNZyJ1_1tyedx_oEZKocmORfj5hpNJi9aQFVttl5-Ywix-N_Kuy9kKjA9DxGr23aQmtz-JFtJYXHmI9qZnClJTei9bbt93bMyivGG2Q0Pn421zaK3RGQit_sPD8Orn52D4CS0wvY8dkvnR_l7DW8SJ0vQ_AURYA6GbEdSbmg8aiXBrx5H2wxAwiCbOWCdKcJIqg0cHGRJsysaiejfPwLJSaS5\",\"summary\":[{\"type\":\"summary_text\",\"text\":\"**Exploring user’s repo context**\\n\\nI need to provide a high-level advisory about the user's repo or project. Since they mentioned \\\"this,\\\" it means I should focus on the current repo. I’ll need to inspect it to understand better. My goal is to be concise but helpful. I might check out specific files, using commands like bash ls or rg. It seems essential to look at the README, package.json, and similar files. Let's dive into the repo!\"}]}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_ZPLO4XBYl7Ag3AH7fKnfzxFY|fc_0c83a0c7a2ecf6e70169c732484de0819bb8c011b8a0dec30a",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "pwd && printf '\\n---\\n' && rg --files -g 'README*' -g 'package.json' -g 'pyproject.toml' -g 'Cargo.toml' -g 'go.mod' -g 'requirements.txt' -g '*.md' -g '!node_modules' -g '!dist' -g '!build' | head -200"
+-  },
+-  "partialJson": "{\"command\":\"pwd && printf '\\\\n---\\\\n' && rg --files -g 'README*' -g 'package.json' -g 'pyproject.toml' -g 'Cargo.toml' -g 'go.mod' -g 'requirements.txt' -g '*.md' -g '!node_modules' -g '!dist' -g '!build' | head -200\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_OfhrVSk8itgmV1CtMPjMN2uK|fc_0c83a0c7a2ecf6e70169c732484df4819b950cd70680f23a56",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "find . -maxdepth 2 -type f | sed 's#^./##' | sort | head -300"
+-  },
+-  "partialJson": "{\"command\":\"find . -maxdepth 2 -type f | sed 's#^./##' | sort | head -300\"}"
+-}
+-
+-## 3. toolResult
+-/Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2
+-
+----
+-package.json
+-docs/ai-eval-roadmap.md
+-docs/prd.md
+-docs/assignment.md
+-packages/shared/package.json
+-frontend/package.json
+-
+-## 4. toolResult
+-.dockerignore
+-.env
+-.git/COMMIT_EDITMSG
+-.git/config
+-.git/description
+-.git/HEAD
+-.git/index
+-.git/ORIG_HEAD
+-.gitignore
+-.gitlab-ci.yml
+-backend/.dockerignore
+-backend/build.gradle.kts
+-backend/Dockerfile
+-backend/gradlew
+-backend/gradlew.bat
+-backend/settings.gradle.kts
+-docker-compose.yml
+-docs/ai-eval-roadmap.md
+-docs/assignment.md
+-docs/prd.md
+-e2e/ai-flows.spec.ts
+-e2e/golden-path.spec.ts
+-e2e/manager-flow.spec.ts
+-e2e/navigation.spec.ts
+-e2e/playwright.config.ts
+-frontend/.dockerignore
+-frontend/Dockerfile
+-frontend/eslint.config.js
+-frontend/index.html
+-frontend/nginx.conf
+-frontend/package.json
+-frontend/tsconfig.json
+-frontend/vite.config.ts
+-Makefile
+-node_modules/.package-lock.json
+-package-lock.json
+-package.json
+-scripts/generate-api-types.sh
+-scripts/reseed.sql
+-
+-## 5. assistant
+-{
+-  "type": "thinking",
+-  "thinking": "**Inspecting package details**\n\nI need to check the package.json file and the associated documentation. It seems I should also look into the README if it's available. Let me inspect the package.json further and see what it reveals about our project and its milestones. I’m considering whether this is related to the frontend or the backend of the application. There's a lot to uncover in these files!",
+-  "thinkingSignature": "{\"id\":\"rs_0c83a0c7a2ecf6e70169c732491850819b98a8860ef49aef7a\",\"type\":\"reasoning\",\"encrypted_content\":\"gAAAAABpxzJM5XaaNVnGuU4vNPqZZXuXb2zwVShEkd_LeE13tG13Mb0S9DuXLBkgA1qPYTG5dTPSp71eLpqVUwZtIZ6-80L8B_pZIXjWj9w3QiO-CIHMZ56rmDK53tKYR0N7OrACNLYyloQ3gMCO2Ftd6xjsaaWyfjhYJEnx74TJ_wt7rU1StFiD9xZqvMk7sxXYYslFvbkN_gp0MqhPQDsBx1_IN1dcXsCECF8iC8SD0-4Zti3z0zXGkySsHIwKCjZGSS08Aiy5PBDf1aJVsQJTxZzyIk5vZp6W5dwqaQ41Ve56NJrO5Pm6lzH6NYVlvRGoRYhqZxUaTQW-i5jNZlqI7AhUvhpLNkXBypPT5dMp6BnANojHvecIux7-LQPdH_P_PxO7cozZGk1oeOR0NcokrxMfXYOyoPKOS-PHA1uRlo73AiHKEbs7DmRdXGoop5oJ3fi9e2GzsspHe5kfmKYPkszOkIN7Q3c_eJkVM4-A_YyrzUQSBinPl91LoJjQ6Ucnp2fiIzWqSoYJ6MBtkqXEe-wm2htCZO3Rq2ePbwutULsGF63h9vaBfllHVtUD9kjIdibf6ynFzINGGRginbIwKnJEQcp61WAifZzvn5_CBVCNM26tjs0HqHkP8WJnAqHQI1EfFK0m13l9CtECEN2aYEYpr1zj3wqjcqu_ASQ9RkHnure3IEnxhhJPvsfzX0KyO8wHMEkRU2UK-P9uqIlp5L1Zso_LXh9MzxlQBbLr9kjKz6tvhpJHiFumfLJSL-z5eWd6tgciYL2ANKvxukIXWAgGP6acDu4AX9fv_qMdhkrwwJI7GTbxvISjfyOnqb9XPyd4N2GSnVrKwnowyVBMx6vgdruf4mskw9Q-5tPHTxW4DVk2LBJsfKIEMaLvd5j2RkUaqcS6tk9FJEG8w-fYks4EZxJuyO5XArgNw8_JJ0s52Btp5YgFsRJcXZSdtHj0-ANeE_4vPIYivH5NVvG7fCoUqudHS1YcETFewh6Gt7B-k9BRlkidapaYof656WQHvrcr-pfh\",\"summary\":[{\"type\":\"summary_text\",\"text\":\"**Inspecting package details**\\n\\nI need to check the package.json file and the associated documentation. It seems I should also look into the README if it's available. Let me inspect the package.json further and see what it reveals about our project and its milestones. I’m considering whether this is related to the frontend or the backend of the application. There's a lot to uncover in these files!\"}]}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_27SOCzER2Tywhjapce4iMqxk|fc_0c83a0c7a2ecf6e70169c7324c1624819b992a7d3bd2040e57",
+-  "name": "read",
+-  "arguments": {
+-    "path": "package.json"
+-  },
+-  "partialJson": "{\"path\":\"package.json\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_R6K6sH183ePGgLUQ6LkL591z|fc_0c83a0c7a2ecf6e70169c7324c1638819bab925000c45b0df6",
+-  "name": "read",
+-  "arguments": {
+-    "path": "docs/prd.md"
+-  },
+-  "partialJson": "{\"path\":\"docs/prd.md\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_jQIPrnKBfgptXAKhkn9GclDA|fc_0c83a0c7a2ecf6e70169c7324c1640819b93be941abcf9ee9c",
+-  "name": "read",
+-  "arguments": {
+-    "path": "docs/assignment.md"
+-  },
+-  "partialJson": "{\"path\":\"docs/assignment.md\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_YfZE3aKl66NkekilkVeKkydJ|fc_0c83a0c7a2ecf6e70169c7324c1648819b874a60df49d217e3",
+-  "name": "read",
+-  "arguments": {
+-    "path": "docs/ai-eval-roadmap.md"
+-  },
+-  "partialJson": "{\"path\":\"docs/ai-eval-roadmap.md\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_0VEBVLKrJSJb0LDIvdbmwGKf|fc_0c83a0c7a2ecf6e70169c7324c1650819b910cf1edd37671df",
+-  "name": "read",
+-  "arguments": {
+-    "path": "frontend/package.json"
+-  },
+-  "partialJson": "{\"path\":\"frontend/package.json\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_9KtpJCXLbK1VSgR4cxETvren|fc_0c83a0c7a2ecf6e70169c7324c1654819bbcc5cbac0e036104",
+-  "name": "read",
+-  "arguments": {
+-    "path": "packages/shared/package.json"
+-  },
+-  "partialJson": "{\"path\":\"packages/shared/package.json\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_Ad60VQNbIKKXH1VRCvB9yY8B|fc_0c83a0c7a2ecf6e70169c7324c1658819bbae123d80bdfaa9c",
+-  "name": "read",
+-  "arguments": {
+-    "path": "backend/build.gradle.kts"
+-  },
+-  "partialJson": "{\"path\":\"backend/build.gradle.kts\"}"
+-}
+-
+-## 6. toolResult
+-{
+-  "name": "weekly-commit-monorepo",
+-  "version": "1.0.0",
+-  "private": true,
+-  "workspaces": [
+-    "frontend",
+-    "packages/shared"
+-  ],
+-  "scripts": {
+-    "dev": "npm run build -w @weekly-commit/shared && concurrently --kill-others-on-fail -p \"[{name}]\" -n \"backend,frontend\" -c \"blue.bold,green.bold\" \"cd backend && ./gradlew bootRun\" \"npm run dev -w frontend\"",
+-    "lint": "npm run lint -w frontend && npm run lint -w @weekly-commit/shared && cd backend && ./gradlew spotlessCheck",
+-    "typecheck": "npm run typecheck -w frontend && npm run typecheck -w @weekly-commit/shared",
+-    "test": "npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test",
+-    "unit": "npm run test",
+-    "build": "npm run build -w @weekly-commit/shared && npm run build -w frontend && cd backend && ./gradlew build -x test",
+-    "e2e": "npx playwright test --config=e2e/playwright.config.ts",
+-    "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
+-    "generate:api-types": "./scripts/generate-api-types.sh",
+-    "docker:up": "docker compose up -d",
+-    "docker:up:full": "docker compose --profile observability up -d",
+-    "docker:down": "docker compose --profile observability down"
+-  },
+-  "devDependencies": {
+-    "@playwright/test": "^1.58.2",
+-    "@testing-library/dom": "^10.4.1",
+-    "@testing-library/jest-dom": "^6.9.1",
+-    "@testing-library/react": "^16.3.2",
+-    "concurrently": "^9.2.1",
+-    "jsdom": "^29.0.1"
+-  }
+-}
+-
+-## 7. toolResult
+-## 1. Overview
+-
+-Weekly Commit Module is a production internal application module that replaces 15Five for weekly planning and reconciliation. It creates a structured, auditable weekly workflow that ties each person’s weekly commitments to the organization’s RCDO hierarchy and gives managers timely visibility into alignment, scope change, and rollover risk.
+-
+-The module will be delivered as a route-level micro-frontend integrated into the existing PA host app. It will own the following domains in v1:
+-
+-* weekly plans and commits
+-* RCDO hierarchy management
+-* minimal native tickets/work items
+-* weekly lock and reconciliation lifecycle
+-* team and manager rollups
+-* conservative, explainable AI assistance
+-
+-Key v1 product decisions in this PRD:
+-
+-* One weekly plan per user per week.
+-* Team weekly plan is a derived aggregate view, not a separate planning object.
+-* Each commit maps to exactly one primary RCDO node in v1.
+-* Commits link to Outcomes by default; they may link to a Defining Objective only when that objective has no active Outcomes. Rally Cries are roll-up only and are not valid direct commit targets in v1.
+-* Capacity uses coarse commit-level points on a 1/2/3/5/8 scale, with a default weekly budget of 10 points per full-time user.
+-* No blanket manager approval gates for weekly plans. Managers review exceptions; they do not approve every plan.
+-* Carry-forward is always explicit and creates a new commit object with provenance.
+-* AI is assistive and explainable. It never makes hidden edits and never produces punitive scoring.
+-
+----
+-
+-## 2. Problem Statement
+-
+-The current 15Five-based weekly planning process has four structural failures:
+-
+-1. **No first-class strategy linkage.** Users can describe weekly work, but the system does not require work to map to Rally Cries, Defining Objectives, or Outcomes. Managers cannot see whether a team’s weekly effort is moving the right strategic branches.
+-
+-2. **No locked baseline.** Weekly plans can change without an auditable contract point. That makes it hard to distinguish planned work from in-week scope change.
+-
+-3. **No structured reconciliation.** Managers and individuals cannot reliably compare planned vs. actual. Silent carry-forward hides repeated misses and reduces learning quality.
+-
+-4. **No operational data foundation for AI.** Without structured work objects, lifecycle states, linkage, and historical lineage, AI cannot provide high-signal drafting, alignment, or risk assistance.
+-
+-The result is late detection of misalignment, poor weekly discipline, weak managerial visibility, and no trustworthy data model for assistive intelligence.
+-
+----
+-
+-## 3. Product Vision
+-
+-Weekly Commit Module should function as the organization’s system of record for weekly work contracts and their connection to strategy.
+-
+-The product vision is:
+-
+-* lightweight enough that users complete weekly planning and reconciliation as a normal ritual
+-* structured enough that lock and reconciliation create durable historical records
+-* operational enough that managers can see risk and misalignment early
+-* AI-native enough that the system improves clarity, linkage quality, and exception detection without feeling invasive or authoritarian
+-
+-In practice, this means a user should be able to answer three questions quickly every week:
+-
+-* What am I committing to this week?
+-* Why does it matter strategically?
+-* What actually happened compared with the plan?
+-
+-A manager should be able to answer three parallel questions:
+-
+-* What is my team actually committing to this week?
+-* Which RCDOs are receiving effort, and which are not?
+-* Where do I need to intervene before the week is lost?
+-
+----
+-
+-## 4. Goals
+-
+-1. **Enforce strategy linkage.** Every locked weekly commit must have one valid primary RCDO link.
+-2. **Create a versioned weekly contract.** Lock creates an immutable baseline; reconciliation creates an immutable actual snapshot.
+-3. **Make scope change explicit.** Work added, changed, or dropped after lock must be visible as structured events.
+-4. **Make carry-forward explicit.** Incomplete work must not silently persist into the next week.
+-5. **Provide manager visibility without heavy process.** Managers should see team alignment, exception queues, and rollover trends without approving every user plan.
+-6. **Establish a credible AI foundation.** The data model must support conservative assistance for drafting, linkage, and risk detection in v1.
+-
+----
+-
+-## 5. Non-Goals
+-
+-1. Formal performance evaluation, compensation, or ranking of employees.
+-2. A composite “productivity score” or hidden employee scoring.
+-3. Detailed time tracking or surveillance-style monitoring.
+-4. A full Jira replacement for portfolio, dependency, or release management.
+-5. Many-to-many commit-to-RCDO mapping in v1.
+-6. A separate team planning object with its own lifecycle in v1.
+-7. Autonomous AI edits or automatic submission of plans/reconciliations.
+-8. Broad external integrations as a dependency for v1.
+-
+----
+-
+-## 6. Personas
+-
+-### Individual Contributor (IC)
+-
+-Owns a weekly plan. Needs to commit to a focused set of work, link it to strategy, and reconcile quickly without writing a weekly essay.
+-
+-### Manager
+-
+-Owns a team and is accountable for weekly alignment, capacity realism, and exception handling. Needs a team roll-up, not a pile of individual check-ins.
+-
+-### Admin / Strategy Owner
+-
+-Owns org configuration, RCDO health, and rollout governance. Needs to manage hierarchy integrity, permissions, and cadence settings.
+-
+----
+-
+-## 7. Jobs to Be Done
+-
+-### IC
+-
+-* When I start the week, I want to create a small, prioritized set of commitments tied to strategy so I can focus and my manager can see what matters.
+-* When priorities change mid-week, I want to record the change without rewriting history so my plan remains honest.
+-* When the week ends, I want to reconcile quickly and carry unfinished work forward explicitly.
+-
+-### Manager
+-
+-* When my team starts the week, I want to see what each person committed to and how those commitments roll up to RCDOs.
+-* When scope changes or people overcommit, I want to detect it early enough to intervene.
+-* When the week ends, I want to see which work moved strategy forward and where carry-forward is becoming a pattern.
+-
+-### Admin / Strategy Owner
+-
+-* When strategy changes, I want to update the RCDO tree without breaking historical reporting.
+-* When the organization adopts the module, I want one consistent cadence, permission model, and audit trail.
+-
+----
+-
+-## 8. Product Principles
+-
+-1. **Weekly plans are contracts, not notes.** They must be structured, lockable, and reconcilable.
+-2. **Link strategy explicitly.** RCDO linkage is a required field, not narrative text.
+-3. **Keep the ritual short.** Users should enter commitments, not every micro-task. Small operational work can be grouped into a single Pawn commit.
+-4. **History should be truthful.** After lock, work can change, but only through explicit change events.
+-5. **Managers handle exceptions, not routine approvals.** The workflow should not create a managerial bottleneck.
+-6. **AI must be visible, explainable, and ignorable.** Every suggestion needs a rationale and an audit trail.
+-7. **Use structure to help, not to police.** The system should improve focus and alignment without becoming a performance surveillance tool.
+-
+----
+-
+-## 9. Core Concepts and Domain Model
+-
+-### Weekly Plan
+-
+-A weekly plan is a user-owned, week-scoped planning object. There is exactly one weekly plan per user per planning week in v1.
+-
+-Fields include:
+-
+-* owner user
+-* home team snapshot
+-* week start date
+-* state
+-* lock and reconcile deadlines
+-* capacity budget snapshot
+-* compliance flags
+-* lock snapshot reference
+-* reconcile snapshot reference
+-
+-### Commit
+-
+-A commit is the core weekly work object. It is a weekly promise owned by one user and attached to one weekly plan.
+-
+-Commit fields in v1:
+-
+-* title (required)
+-* description (optional)
+-* chess piece (required)
+-* priority order (required)
+-* primary RCDO link (required at lock)
+-* optional native ticket link
+-* estimate points (required at lock)
+-* success criteria (required for King and Queen; recommended otherwise)
+-* current status metadata
+-* provenance metadata if carried forward
+-
+-### Baseline Snapshot
+-
+-When a plan is locked, the system captures an immutable snapshot of the plan and all commits as the baseline contract for the week.
+-
+-### Scope Change Event
+-
+-Any commit add, remove, reprioritization, or material field edit after lock is stored as an append-only scope change event. No silent edits are allowed after lock.
+-
+-### Reconciliation Snapshot
+-
+-When a plan is reconciled, the system captures an immutable actual snapshot including outcomes, linked ticket status snapshots, change-event summary, and carry-forward decisions.
+-
+-### Carry-Forward Link
+-
+-Carry-forward creates a new commit object in a later plan and stores lineage to the source commit. It does not mutate the original commit into a new week.
+-
+-### Ticket / Work Item
+-
+-A ticket is a durable execution object that may or may not be represented in a weekly plan. It can exist before, during, or after a commit.
+-
+-### RCDO Node
+-
+-The hierarchy has three node types:
+-
+-* Rally Cry
+-* Defining Objective
+-* Outcome
+-
+-Commits link directly to Outcomes by default. If a Defining Objective has no active child Outcomes, commits may link directly to that objective. Commits do not link directly to Rally Cries in v1.
+-
+-### Team Weekly View
+-
+-The team weekly view is a derived read model over:
+-
+-* all weekly commits for users on the team for the selected week
+-* week-targeted tickets with no linked commit, including unassigned tickets
+-
+-This is not a separate persisted planning object.
+-
+-### Home Team
+-
+-Each user has one home team for weekly planning and capacity in v1. A user may work on tickets or RCDOs outside the home team, but weekly plan ownership and manager accountability follow the home team.
+-
+-### AI Suggestion / Risk Signal
+-
+-An AI output is a stored suggestion or risk signal tied to a user action or review surface. Every AI output must store rationale, model version, timestamp, and accept/dismiss feedback.
+-
+----
+-
+-## 10. User Experience Overview
+-
+-The module will ship with five primary surfaces.
+-
+-### My Week
+-
+-Default user landing page. Shows current week plan or upcoming draft, commit list, capacity meter, AI lint panel, and lock/reconcile actions.
+-
+-### Reconcile
+-
+-A comparison view that shows baseline vs. actual, linked ticket evidence, scope changes, outcome entry, and carry-forward actions.
+-
+-### Team Week
+-
+-Manager-focused roll-up showing:
+-
+-* lock and reconcile compliance
+-* commits by person
+-* roll-up by RCDO
+-* chess distribution
+-* uncommitted assigned/unassigned work
+-* risk flags and exception queue
+-
+-### Tickets
+-
+-A minimal native work item experience: list view, detail view, status updates, assignment, filters, and create-from-commit. Full sprint/board functionality is not required in v1.
+-
+-### RCDOs
+-
+-Hierarchy management UI for admins and managers within their authorized branches.
+-
+-The dominant interaction model should be list/table based rather than canvas-heavy. The module should feel operational and compact, not reflective or essay-based.
+-
+----
+-
+-## 11. Primary User Flows
+-
+-### Flow 1: Create and Lock Weekly Plan
+-
+-1. Draft opens for next week.
+-2. User creates or edits commits.
+-3. System validates required fields and shows AI lint/suggestions.
+-4. User locks the plan manually.
+-5. Baseline snapshot is captured and the plan becomes LOCKED.
+-
+-If the user does not lock by cutoff, the system auto-locks the draft as-is and flags the plan as non-compliant.
+-
+-### Flow 2: Modify Scope After Lock
+-
+-1. User edits a locked plan.
+-2. Instead of in-place silent mutation, the system creates a structured scope change event.
+-3. User must provide a reason for material changes.
+-4. Managers see the change in the exception feed if it crosses configured thresholds.
+-
+-### Flow 3: Reconcile Weekly Plan
+-
+-1. Plan enters RECONCILING at week end.
+-2. User sees baseline commits, post-lock changes, linked ticket statuses, and outcome inputs.
+-3. Done tickets auto-mark linked commits as Achieved.
+-4. User manually reconciles non-ticket work and linked-ticket work that is not done.
+-5. User submits reconciliation.
+-6. Immutable reconciliation snapshot is created.
+-
+-### Flow 4: Carry Forward Incomplete Work
+-
+-1. During reconciliation, the user selects incomplete commits to carry forward.
+-2. User provides a carry-forward reason.
+-3. System creates a new commit in the next week’s draft plan with provenance.
+-4. New commit is inserted at the bottom of the next week’s priority order and must be re-ranked before lock.
+-
+-If the next week is already locked, the carry-forward is added as a post-lock scope change event in that week.
+-
+-### Flow 5: Manager Weekly Review
+-
+-1. Manager opens Team Week.
+-2. Sees compliance cards, risks, and RCDO coverage.
+-3. Reviews exception queue.
+-4. Comments, adjusts capacity overrides if needed, assigns unassigned tickets, or follows up on repeated carry-forward.
+-5. No per-user signoff is required for routine weekly plans.
+-
+-### Flow 6: RCDO Maintenance
+-
+-1. Admin or authorized manager creates or updates RCDO nodes.
+-2. Active nodes become selectable in commit creation.
+-3. Archived nodes remain in history but cannot be used for new commits.
+-
+----
+-
+-## 12. Weekly Lifecycle State Machine
+-
+-The weekly lifecycle applies to the **weekly plan**, not to the ticket.
+-
+-| State       | Meaning                                            | Allowed Actions                                                                           | Entry Trigger                                                | Exit Trigger                                |
+-| ----------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------- |
+-| DRAFT       | Editable plan for a specific upcoming/current week | Commit CRUD, reorder, set capacity note, link tickets, accept AI suggestions              | Draft window opens or plan is lazily created on first access | Manual lock or auto-lock at cutoff          |
+-| LOCKED      | Baseline contract exists                           | View plan, add structured scope changes, view manager comments, continue ticket execution | Lock action captures baseline snapshot                       | Automatic transition at reconcile open time |
+-| RECONCILING | User compares baseline vs. actual                  | View linked ticket evidence, set outcomes, add reconcile notes, choose carry-forward      | Automatic at reconcile open time                             | User submits reconciliation                 |
+-| RECONCILED  | Immutable actual snapshot exists                   | View history, manager review, analytics/reporting                                         | Reconcile submission captures actual snapshot                | Terminal for the source plan                |
+-
+-**Carry Forward** is implemented as a post-reconciliation action, not as a durable state on the original plan. The original plan remains RECONCILED. Carry-forward creates a new commit object with lineage into a future plan.
+-
+-### Default cadence in v1
+-
+-The cadence is configurable at the org or team level. The recommended default is:
+-
+-* planning week: Monday 00:00 to Friday 17:00, team local time
+-* next week draft opens: prior Friday 12:00
+-* reconciliation opens: Friday 17:00
+-* reconciliation due: Monday 10:00
+-* lock due: Monday 12:00
+-
+-Rationale:
+-
+-* Monday lock preserves a start-of-week planning ritual.
+-* Monday reconcile due allows users to reflect after the week closes.
+-* A two-hour gap between reconcile due and lock due allows explicit carry-forward before the new week is locked.
+-* Teams with weekend operations can configure alternative cutoffs.
+-
+-### Compliance rules
+-
+-* Manual lock by deadline counts as compliant.
+-* Auto-lock counts as locked but non-compliant.
+-* Reconciliation submitted by deadline counts as compliant.
+-* Late reconciliation remains allowed, but the plan is marked overdue.
+-
+----
+-
+-## 13. Functional Requirements
+-
+-### FR-1: Weekly Plan Creation
+-
+-* The system must create a DRAFT plan for each active eligible user for each week when the draft window opens, or lazily on first access if pre-creation fails.
+-* A user must have exactly one plan per week in v1.
+-* The system must snapshot the user’s home team and configured capacity budget onto the plan.
+-
+-### FR-2: Commit CRUD
+-
+-* Users must be able to create, edit, delete, and reorder commits in DRAFT.
+-* Title, chess piece, priority order, primary RCDO link, and estimate points are required for manual lock.
+-* Success criteria are required for King and Queen commits.
+-* The UI must support drag/drop or explicit reorder controls for priority rank.
+-
+-### FR-3: Validation and Lock
+-
+-* Manual lock must enforce hard validation rules.
+-* Hard validation errors must block manual lock.
+-* The system must auto-lock at the configured cutoff even if the draft contains validation issues; such plans are marked `system_locked_with_errors`.
+-* Lock must create an immutable baseline snapshot.
+-
+-### FR-4: Post-Lock Scope Change
+-
+-* After lock, users may not silently edit or delete baseline commits.
+-* All changes after lock must be represented as structured change events.
+-* A reason category is required for:
+-
+-  * adding a commit
+-  * removing/canceling a commit
+-  * changing estimate points
+-  * changing chess piece
+-  * changing primary RCDO
+-* The system must show an in-week change timeline in plan and manager views.
+-
+-### FR-5: Reconciliation
+-
+-* Reconciliation must show baseline values and current values side by side.
+-* Reconciliation must display linked ticket status and ticket history summary where available.
+-* The system must support actual outcomes:
+-
+-  * Achieved
+-  * Partially Achieved
+-  * Not Achieved
+-  * Canceled / De-scoped
+-* Reconcile notes are required for Partially Achieved, Not Achieved, and Canceled outcomes.
+-
+-### FR-6: Carry Forward
+-
+-* Carry-forward must be explicit per commit.
+-* Carry-forward must create a new commit object, not mutate the existing one into the next week.
+-* The new commit must retain provenance to the source commit and increment carry-forward streak metadata.
+-* Carry-forward reason is required from a controlled list plus optional text.
+-
+-### FR-7: Team Weekly View
+-
+-* The system must provide a team aggregate view for a selected week.
+-* The view must include:
+-
+-  * team members’ weekly commits
+-  * assigned tickets with no linked commit
+-  * unassigned tickets targeted to the selected week
+-* Linked tickets must not be double-counted as both committed work and separate uncommitted work.
+-
+-### FR-8: Manager Review
+-
+-* Managers must have an exception queue showing:
+-
+-  * missed/auto locks
+-  * missed reconciliation
+-  * over-budget plans
+-  * repeated carry-forward
+-  * post-lock major scope increases
+-  * added/changed King commits after lock
+-* Managers must be able to add plan-level and commit-level comments for direct reports.
+-
+-### FR-9: Search, Filters, and History
+-
+-* Users and managers must be able to filter by week, user, team, RCDO, chess piece, state, and risk flag.
+-* Users must be able to view their plan history and carry-forward lineage.
+-* Managers must be able to view team history and trend summaries.
+-
+-### FR-10: Configuration
+-
+-* Org/admin must be able to configure default week cadence and deadlines.
+-* Teams must be able to override org defaults.
+-* Managers/admins must be able to set per-user weekly capacity overrides.
+-
+-### FR-11: Auditability
+-
+-* Lock, reconcile, carry-forward, RCDO edits, ticket status changes, capacity overrides, and AI suggestions must all be auditable.
+-* Historical snapshots must remain immutable.
+-
+-### FR-12: Failure Handling
+-
+-* If AI is unavailable, the core planning workflow must continue with no loss of functionality.
+-* If scheduled lifecycle jobs fail, retries must be idempotent and must not create duplicate transitions or snapshots.
+-
+----
+-
+-## 14. Native Ticket / Work Item Model
+-
+-### Purpose
+-
+-Tickets are the durable execution objects inside the module. Commits are week-scoped promises. Tickets and commits are related but not interchangeable.
+-
+-### Exact distinction
+-
+-**Commit**
+-
+-* scoped to one user and one week
+-* answers: “What am I committing to this week, in what order, and why?”
+-* participates in lock, reconciliation, and carry-forward
+-* required for weekly reporting
+-
+-**Ticket**
+-
+-* durable execution artifact
+-* answers: “What work item exists, who owns it, and what is its execution status?”
+-* may span multiple weeks
+-* does not participate in the weekly plan state machine
+-
+-### Ticket fields in v1
+-
+-* key / id
+-* title
+-* description
+-* status
+-* assignee
+-* reporter
+-* team
+-* priority
+-* optional estimate points
+-* optional primary RCDO link
+-* optional target week
+-* created/updated timestamps
+-
+-### Ticket workflow in v1
+-
+-Required statuses:
+-
+-* Backlog
+-* Ready
+-* In Progress
+-* Blocked
+-* Done
+-* Canceled
+-
+-Status transitions must be timestamped and retained in history to support duration-in-status reporting and future AI features.
+-
+-### Relationship rules
+-
+-* A commit may link to zero or one ticket.
+-* A ticket may be linked by many commits over time.
+-* In the same week, a ticket should not be linked to more than one active commit for the same assignee.
+-* A ticket may exist without a weekly commit.
+-* A weekly commit may exist without a ticket.
+-
+-### Completion semantics
+-
+-* If a linked ticket is `Done` at reconciliation snapshot time, the linked commit is auto-marked `Achieved`.
+-* If the linked ticket is not `Done`, the user reconciles manually against the commit’s success criteria.
+-* If users intend to commit to a partial milestone on a large ticket, they should either create a smaller ticket or use manual actuals. Ticket completion is treated as authoritative evidence of done when it exists.
+-
+-### Ticket and RCDO linkage
+-
+-Tickets may also have an optional primary RCDO link. When a ticket is linked to a commit:
+-
+-* the commit RCDO defaults from the ticket if the commit is blank
+-* the commit still stores its own explicit RCDO
+-* if ticket and commit RCDO differ, the UI warns; weekly reporting uses the commit’s RCDO
+-
+-### Unassigned work in team view
+-
+-Week-targeted tickets without a linked commit appear as uncommitted work in the team weekly view. This is how v1 handles team-level assigned and unassigned work without creating a separate team plan object.
+-
+----
+-
+-## 15. RCDO Management Model
+-
+-### Hierarchy
+-
+-The module is the system of record for the RCDO hierarchy:
+-
+-* Rally Cry
+-* Defining Objective
+-* Outcome
+-
+-Parent-child relationships are enforced in that order.
+-
+-### Ownership
+-
+-* **Admins** can create, update, archive, and move any RCDO node.
+-* **Managers** can create and update Defining Objectives and Outcomes within branches owned by their team.
+-* **Rally Cries** are admin-managed in v1.
+-
+-Each node should have:
+-
+-* title
+-* description
+-* owner team
+-* owner user (optional)
+-* status
+-* created/updated metadata
+-
+-Outcomes may additionally store a short target metric or success statement, but v1 does not require full KPI tracking.
+-
+-### Node statuses
+-
+-* Draft
+-* Active
+-* Archived
+-
+-Only Active nodes can be linked to new commits.
+-
+-### Commit linkage rules
+-
+-* Commits must link directly to an Outcome when one exists.
+-* A commit may link to a Defining Objective only if that objective has no active Outcomes.
+-* Commits may not link directly to Rally Cries in v1.
+-
+-This keeps strategy linkage specific enough for real reporting without blocking teams whose hierarchy is not fully matured.
+-
+-### History behavior
+-
+-RCDO edits must not rewrite historical meaning. Lock and reconciliation snapshots must store the denormalized RCDO path and labels as they existed at that time.
+-
+-### Archival rules
+-
+-* Archived nodes remain visible in historical plans and reports.
+-* Archived nodes cannot be selected on new commits.
+-* A node with active child nodes cannot be archived until children are resolved or moved.
+-
+----
+-
+-## 16. Chess Layer and Prioritization Rules
+-
+-The chess layer is a required internal prioritization taxonomy on every commit. It affects attention, rollups, notification priority, and risk detection. It is not a score.
+-
+-| Piece  | Meaning                                                                               | v1 Guardrails                                      | Operational Effect                                                       |
+-| ------ | ------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
+-| King   | Must not fail; critical compliance, production stability, or mission-critical blocker | Max 1 per user per week; success criteria required | Highest alerting; post-lock changes always enter manager exception queue |
+-| Queen  | Highest leverage strategic progress directly tied to RCDO movement                    | Max 2 per user per week; success criteria required | High rollup weight; elevated risk signaling                              |
+-| Rook   | Major deliverable with clear edges                                                    | No hard cap                                        | Standard deliverable rollup                                              |
+-| Bishop | Enabling/platform/process work supporting multiple outcomes                           | No hard cap                                        | Highlighted in enabling-work rollups                                     |
+-| Knight | Exploratory or high-uncertainty work                                                  | No hard cap; success criteria recommended          | Elevated uncertainty flag in risk model                                  |
+-| Pawn   | Small but necessary hygiene/ops/admin work                                            | No hard cap                                        | Lowest notification priority                                             |
+-
+-### Additional rules
+-
+-* Priority order is separate from chess piece and must be explicit.
+-* The UI should warn if a user creates more than 8 total active commits in a week.
+-* The UI should warn if more than 40% of total points are Pawns.
+-* The system should sort manager exceptions first by King/Queen, then by risk level.
+-
+-### Why this model
+-
+-The chess layer gives v1 a lightweight but meaningful taxonomy for reporting and AI without introducing numeric scoring or false precision.
+-
+----
+-
+-## 17. AI Capabilities
+-
+-### AI design constraints
+-
+-All AI capabilities in v1 must follow these rules:
+-
+-* assistive, not authoritarian
+-* no hidden edits
+-* no autonomous submission
+-* no punitive or composite scoring
+-* explainable rationale on every suggestion
+-* auditable storage of suggestion and response
+-* conservative thresholds with a bias toward silence over noise
+-
+-### v1 AI capabilities
+-
+-#### 1. Commit drafting assistance
+-
+-Available on demand while writing a commit.
+-
+-Capabilities:
+-
+-* improve title clarity
+-* suggest concise description wording
+-* suggest success criteria for King/Queen commits
+-* suggest estimate points based on similar past commits and linked tickets
+-
+-Output behavior:
+-
+-* shown as editable suggestion
+-* never applied automatically
+-
+-#### 2. Commit quality linting
+-
+-Runs at save and pre-lock.
+-
+-Checks include:
+-
+-* vague titles
+-* missing success criteria for King/Queen
+-* parent-level RCDO linkage when leaf linkage is available
+-* duplicate or near-duplicate commit titles
+-* estimate inconsistency
+-* likely over-fragmented plan
+-
+-Lint must clearly distinguish between hard validation and soft AI guidance.
+-
+-#### 3. RCDO link suggestions
+-
+-Uses commit text, linked ticket data, and prior similar commits to suggest a primary RCDO.
+-
+-Requirements:
+-
+-* only show when confidence clears a threshold
+-* always show rationale such as keyword match, linked ticket RCDO, or historical analog
+-* never auto-link
+-
+-#### 4. Risk detection
+-
+-Runs when a plan is locked and daily while LOCKED.
+-
+-v1 risk signals:
+-
+-* overcommit risk
+-* undercommit risk
+-* repeated carry-forward risk
+-* blocked critical work risk
+-* scope volatility risk
+-
+-Rationale examples:
+-
+-* current points exceed budget and exceed historical completed points
+-* two consecutive weeks of carry-forward on the same lineage
+-* King/Queen linked to blocked ticket for more than two business days
+-
+-#### 5. Reconciliation assistance
+-
+-At reconciliation start, AI may propose:
+-
+-* likely outcome for unlinked commits based on notes and linked artifacts
+-* a draft summary of what changed after lock
+-* carry-forward recommendation with rationale
+-
+-These are suggestions only and require user acceptance or editing.
+-
+-#### 6. Manager summary
+-
+-Managers may receive a short, generated team summary for the selected week:
+-
+-* top strategic branches receiving effort
+-* unresolved exceptions
+-* repeated carry-forward patterns
+-* critical blocked items
+-
+-This summary must cite the underlying objects in-product, not act as a black box narrative.
+-
+-### Later-phase AI, not v1
+-
+-The following are post-v1:
+-
+-* personalized notification timing
+-* proactive decomposition of large commits into smaller tickets
+-* richer contextual retrieval across tickets, documents, and prior weeks
+-* cross-team dependency inference
+-* more advanced historical planning-pattern coaching
+-* conversational manager copilot
+-
+----
+-
+-## 18. Notifications and Nudges
+-
+-Notifications in v1 are primarily rules-based. AI may affect prioritization and wording, but not the existence of the core reminder schedule.
+-
+-### Channels
+-
+-* in-app notifications: required
+-* email digest: supported in v1
+-* host app notification center: supported if the host bridge exposes it
+-
+-### Default events
+-
+-* draft window opened
+-* lock due reminder
+-* auto-lock occurred
+-* reconciliation opened
+-* reconciliation due reminder
+-* repeated carry-forward reminder
+-* manager exception digest
+-* unassigned week-targeted ticket created
+-* critical linked ticket became blocked
+-
+-### Priority behavior
+-
+-* King-related exceptions: immediate in-app plus same-day email
+-* Queen/Rook exceptions: same-day digest
+-* Bishop/Knight/Pawn reminders: daily digest only
+-
+-### Frequency controls
+-
+-* no more than 2 direct reminders per user per task per day
+-* low-priority notifications must be batched
+-* notifications should respect team local time and business-hour defaults
+-
+-### Missed-action data
+-
+-Notification deliveries, opens, and outcomes should be stored because missed lock/reconcile patterns are relevant to manager reporting and future AI.
+-
+----
+-
+-## 19. Permissions and Privacy Model
+-
+-### Role model
+-
+-#### IC
+-
+-May:
+-
+-* create/edit/lock/reconcile own plan
+-* create/edit own commits
+-* create tickets where they are reporter or assignee
+-* view basic current/next-week commit detail for peers on the same home team
+-* view full detail of own AI suggestions and historical patterns
+-
+-May not:
+-
+-* edit others’ plans
+-* view others’ private AI risk history
+-* edit RCDOs unless also a manager/admin
+-
+-#### Manager
+-
+-May:
+-
+-* do everything an IC can do for their own plan
+-* view full detail for direct reports’ weekly plans and history
+-* view aggregate rollups for indirect reports
+-* comment on direct reports’ plans/commits
+-* manage capacity overrides for reports
+-* create/edit team-owned Defining Objectives and Outcomes
+-* create and assign team tickets
+-* view and resolve exception queues
+-
+-May not:
+-
+-* view detailed personal AI history for employees outside their direct reporting line
+-* see peer-level named data outside authorized team scope
+-
+-#### Admin
+-
+-May:
+-
+-* manage org-wide settings and cadence
+-* manage all RCDOs
+-* access all team-level reporting
+-* perform data correction actions
+-* manage role assignments and feature flags
+-
+-### Privacy defaults
+-
+-The v1 privacy posture is intentionally conservative.
+-
+-1. **Peer visibility within team**
+-
+-   * visible: title, owner, priority, chess piece, primary RCDO, linked ticket, current state
+-   * hidden: AI risk flags, historical completion patterns, manager comments, detailed reconcile notes
+-
+-2. **Historical visibility**
+-
+-   * peers can see only current and next week basic detail
+-   * direct managers can see detailed historical plans for direct reports
+-   * skip-level leaders get aggregate summaries by default, not person-level detail
+-
+-3. **Org-level reporting**
+-
+-   * outside the management chain, reports default to aggregate team/RCDO views only
+-   * no individual leaderboards
+-
+-4. **Time and duration data**
+-
+-   * ticket status durations may be stored and used in risk logic
+-   * raw duration-in-status must not be presented as a person-level productivity metric
+-
+-5. **Sensitive content**
+-
+-   * no private-commit mode in v1
+-   * the module is not intended for HR-sensitive or medical notes; the UI should make that clear
+-
+-### Recommended privacy default
+-
+-This model optimizes for team coordination and manager usefulness while minimizing peer-level surveillance and cross-org personal visibility.
+-
+----
+-
+-## 20. Manager Experience
+-
+-The manager experience is centered on one weekly operating surface, not a stack of approvals.
+-
+-### Team Week dashboard sections
+-
+-1. **Overview**
+-
+-   * lock compliance
+-   * reconcile compliance
+-   * total planned points
+-   * total achieved points
+-   * number of open exceptions
+-
+-2. **By Person**
+-
+-   * direct report plans
+-   * points vs budget
+-   * current risk flags
+-   * carry-forward streaks
+-   * major post-lock changes
+-
+-3. **By RCDO**
+-
+-   * points and commit counts by Rally Cry / DO / Outcome
+-   * planned vs achieved by branch
+-   * branch coverage gaps
+-
+-4. **Chess Distribution**
+-
+-   * team mix of King/Queen/Rook/Bishop/Knight/Pawn
+-   * concentration of critical work
+-
+-5. **Uncommitted Work**
+-
+-   * assigned tickets with no linked weekly commit
+-   * unassigned tickets targeted to the week
+-
+-6. **Exceptions**
+-
+-   * missed lock
+-   * missed reconcile
+-   * over-budget plan
+-   * added/changed King after lock
+-   * repeated carry-forward
+-   * high scope volatility
+-
+-### Minimum manager actions required in v1
+-
+-Managers are not required to approve every plan. The minimum expected actions are:
+-
+-1. Review the team exception queue once per week by Tuesday 12:00 local time.
+-2. Resolve capacity override and critical scope-change exceptions within one business day.
+-3. Maintain team-owned RCDOs in an active, usable state.
+-
+-Optional but encouraged:
+-
+-* add comments on important plans
+-* rebalance unassigned week-targeted work
+-* follow up on repeated carry-forward
+-
+-### Approval policy
+-
+-V1 does **not** require manager approval for routine weekly plan lock or reconciliation.
+-
+-V1 uses **exception review**, not blanket approval:
+-
+-* initial weekly plans do not require approval
+-* over-budget plans at lock require user rationale and manager notification, not a blocking gate
+-* post-lock material changes generate manager review items, not silent edits
+-* added or materially changed King work always enters the manager exception queue
+-
+-This is the recommended policy because true approval gates would create bottlenecks and damage adoption.
+-
+----
+-
+-## 21. Reporting and Success Metrics
+-
+-### Operational reporting in v1
+-
+-The product must support the following reports:
+-
+-* lock compliance by team and week
+-* reconcile compliance by team and week
+-* planned vs achieved points
+-* explicit carry-forward rate
+-* repeated carry-forward streaks
+-* points and commit counts by RCDO branch
+-* chess distribution by team and week
+-* post-lock scope change volume
+-* uncommitted assigned/unassigned weekly work
+-* AI suggestion acceptance rates
+-* manager exception aging
+-
+-### v1 success metrics
+-
+-#### Adoption and workflow health
+-
+-* **85%** of eligible users have a locked plan each week by week 8 of rollout.
+-* **70%** of eligible users manually lock before cutoff by week 12.
+-* **80%** of locked plans are reconciled by the due time by week 12.
+-
+-#### Alignment quality
+-
+-* **90%** of locked commits are linked to an active Outcome or valid Defining Objective.
+-* **95%** of incomplete work appearing in the next week is created through explicit carry-forward lineage rather than copy/paste duplication.
+-
+-#### Manager usefulness
+-
+-* **75%** of managers with direct reports are weekly active in Team Week by week 8.
+-* Manager survey score on “I can see how my team’s weekly work maps to strategy” averages **4.0/5** or better in pilot.
+-
+-#### User efficiency
+-
+-* Median IC time to complete weekly planning is **under 10 minutes**.
+-* Median IC time to reconcile a week is **under 7 minutes**.
+-* Median manager time to review a team week is **under 15 minutes**.
+-
+-#### AI usefulness
+-
+-* At least **25%** of active users accept at least one AI suggestion per month.
+-* High-risk overcommit/carry-forward flags achieve **60% precision** or better, defined as the flagged condition materially appearing in reconciliation outcomes.
+-* Negative user feedback on AI suggestions remains below **10%** of suggestion impressions.
+-
+-### What will not be reported
+-
+-* no employee leaderboard
+-* no composite completion score
+-* no cross-team named ranking of individuals
+-
+----
+-
+-## 22. Technical Architecture Considerations
+-
+-### Micro-frontend integration assumption
+-
+-The recommended assumption is a standard internal enterprise SPA host that can load route-level remotes. The Weekly Commit Module should follow a pragmatic remote pattern:
+-
+-* route-level micro-frontend remote mounted under the PA host app
+-* TypeScript strict mode
+-* host provides SSO identity, navigation, design tokens, feature flags, telemetry hooks, and notification bridge
+-* remote owns domain routing, page composition, API client, and local state
+-
+-A Module Federation-style remote is the most practical assumption for v1. If the host uses a different remote loading mechanism, the integration contract should remain the same.
+-
+-### Backend shape
+-
+-Recommended backend architecture:
+-
+-* Java 21 service
+-* modular monolith for v1 rather than multiple distributed services
+-* REST/JSON APIs with OpenAPI contract
+-* background job workers for lifecycle transitions, rollups, notifications, and AI tasks
+-* relational SQL database, with PostgreSQL as the recommended implementation
+-
+-### Why a modular monolith
+-
+-This product’s complexity is in workflow, data integrity, and read models, not service decomposition. A modular monolith reduces coordination cost while still allowing clear bounded modules:
+-
+-* weekly planning
+-* reconciliation
+-* RCDOs
+-* tickets
+-* notifications
+-* AI suggestions
+-* reporting/read models
+-
+-### Host/remote contract
+-
+-The host should pass:
+-
+-* authenticated user identity
+-* team and manager chain context
+-* environment and feature flags
+-* telemetry callback or SDK access
+-* theme/design tokens
+-* notification center bridge
+-
+-The remote should expose:
+-
+-* full page routes
+-* optional summary widgets for host dashboards
+-* typed events for deep-link navigation and telemetry
+-
+-### AI architecture boundary
+-
+-AI must be behind a provider abstraction. The core workflow cannot depend on a single model vendor. If AI fails or is disabled, the module must remain fully usable.
+-
+-### Read model strategy
+-
+-Manager dashboards and RCDO rollups should not run large live joins against transactional tables on every request. Use derived SQL read models/materialized tables refreshed by events/jobs.
+-
+----
+-
+-## 23. Data Model and Storage Strategy
+-
+-### Transactional records
+-
+-These should be stored as source-of-truth transactional tables:
+-
+-* organization, team, user, membership, home team
+-* weekly_plan
+-* commit
+-* lock_snapshot_header
+-* lock_snapshot_commit
+-* scope_change_event
+-* reconcile_snapshot_header
+-* reconcile_snapshot_commit
+-* carry_forward_link
+-* work_item
+-* work_item_status_history
+-* work_item_comment
+-* rcdo_node
+-* rcdo_change_log
+-* manager_comment
+-* capacity_override
+-* notification
+-* notification_delivery
+-* ai_suggestion
+-* ai_feedback
+-* audit_log
+-
+-### Derived / aggregated records
+-
+-These should be stored as derived tables or materialized read models:
+-
+-* user_week_fact
+-* team_week_rollup
+-* rcdo_week_rollup
+-* compliance_fact
+-* carry_forward_fact
+-* risk_feature tables
+-* dashboard summary tables
+-
+-### Snapshot strategy
+-
+-Lock and reconcile should each store:
+-
+-* normalized snapshot rows for queryability
+-* denormalized JSON payload for exact historical replay and audit
+-
+-This dual storage is justified because the product needs both reliable analytics and immutable historical truth.
+-
+-### Storage decisions for AI and analytics
+-
+-AI and reporting should rely primarily on derived feature tables, not direct request-path scans of raw historical events.
+-
+-Examples of derived fields:
+-
+-* points planned vs achieved
+-* repeated carry-forward count
+-* lock lateness
+-* reconcile lateness
+-* status-duration metrics for linked tickets
+-* unplanned added work points
+-* RCDO coverage distribution
+-* manager exception backlog
+-
+-### History and retention
+-
+-Recommended retention target:
+-
+-* weekly plans, snapshots, change events, and carry-forward lineage: 24 months online minimum
+-* audit logs: per corporate audit policy, ideally 24 months online minimum
+-* AI suggestion and feedback logs: 12 months minimum
+-
+-If corporate policy differs, policy wins.
+-
+-### Consistency guarantees
+-
+-* lifecycle jobs must be idempotent
+-* lock/reconcile snapshot writes must be transactional
+-* derived rollups may be eventually consistent, but should update within 5 minutes for current-week views
+-
+----
+-
+-## 24. Non-Functional Requirements
+-
+-### Performance
+-
+-* P95 initial page load for My Week and Team Week: under 2.5 seconds on the corporate network
+-* P95 commit create/edit/save interaction: under 500 ms server time
+-* P95 manager dashboard query: under 1.5 seconds from derived read model
+-
+-### Availability
+-
+-* 99.9% monthly availability during business hours
+-* lifecycle jobs must retry safely after failure
+-
+-### Scale
+-
+-The system should support, at minimum:
+-
+-* 10,000 active eligible users
+-* 1,000 concurrent users during Monday peak
+-* 250,000+ commits per year
+-* millions of ticket status history rows without dashboard degradation
+-
+-### Security
+-
+-* SSO-based authentication via host app
+-* backend-enforced RBAC
+-* encryption in transit and at rest
+-* audit logging for privileged actions
+-
+-### Accessibility
+-
+-* WCAG 2.1 AA target
+-* keyboard-accessible drag/reorder alternative required
+-* readable state and priority indicators without color dependence
+-
+-### Observability
+-
+-* structured logs
+-* metrics for job success/failure
+-* audit trail for lifecycle transitions
+-* tracing across remote and backend
+-* feature flag support for staged rollout
+-
+-### Reliability
+-
+-* no duplicate snapshots
+-* no duplicate carry-forward links from retry behavior
+-* no partial lock/reconcile writes
+-
+-### Privacy
+-
+-* row-level filtering enforced in backend, not only frontend
+-* AI requests must respect user/team authorization boundaries
+-
+----
+-
+-## 25. Risks, Abuse Cases, and Safeguards
+-
+-### Risk 1: The product is used as de facto performance surveillance
+-
+-**Safeguards**
+-
+-* no productivity score
+-* no employee ranking
+-* no public individual history outside management chain
+-* direct policy language in-product and in rollout training
+-
+-### Risk 2: Users game chess pieces or estimates
+-
+-**Safeguards**
+-
+-* max 1 King, max 2 Queens
+-* explicit rationale for major post-lock changes
+-* manager rollups show unusual distributions
+-* AI can flag suspicious overuse patterns, but not score them
+-
+-### Risk 3: Users dump every tiny task into the system
+-
+-**Safeguards**
+-
+-* soft warning above 8 commits
+-* guidance to group small work into Pawns
+-* capacity meter based on points, not count alone
+-
+-### Risk 4: RCDO quality decays and linkage becomes meaningless
+-
+-**Safeguards**
+-
+-* hierarchy ownership rules
+-* archived nodes blocked for new work
+-* managers accountable for team branches
+-* parent-level linking restricted
+-
+-### Risk 5: AI becomes noisy and loses trust
+-
+-**Safeguards**
+-
+-* show only above confidence threshold
+-* separate hard validation from AI suggestions
+-* store accept/dismiss feedback
+-* disable low-performing suggestion types independently
+-
+-### Risk 6: Auto-lock creates bad historical baselines
+-
+-**Safeguards**
+-
+-* manual lock remains the compliance standard
+-* auto-lock records validation errors clearly
+-* manager exception queue highlights bad auto-locks
+-* post-lock change events preserve honest correction without rewriting history
+-
+-### Risk 7: Unassigned work becomes a shadow backlog with no owner
+-
+-**Safeguards**
+-
+-* separate uncommitted-work section on team dashboard
+-* age and target-week filters
+-* manager reminders for aging unassigned weekly work
+-
+-### Risk 8: Sensitive personal details are entered into reconcile notes
+-
+-**Safeguards**
+-
+-* UI warning not to store HR/medical/sensitive personal detail
+-* no private notes feature in v1
+-* admin correction process for improper content
+-
+----
+-
+-## 26. v1 Scope
+-
+-### In scope
+-
+-* user weekly plan creation and commit CRUD
+-* one plan per user per week
+-* required primary RCDO linkage
+-* chess taxonomy and priority ordering
+-* capacity points and budget meter
+-* manual lock with baseline capture
+-* auto-lock at cutoff
+-* structured post-lock scope change events
+-* reconciliation view with planned vs actual
+-* explicit carry-forward with lineage
+-* minimal native tickets/work items with status workflow and history
+-* manager team dashboard and exception queue
+-* RCDO hierarchy management
+-* rules-based notifications
+-* AI v1:
+-
+-  * drafting assistance
+-  * commit quality linting
+-  * RCDO suggestions
+-  * conservative risk flags
+-  * reconciliation assistance
+-* route-level micro-frontend integration into PA host app
+-* audit logs and derived rollups
+-
+-### Explicit v1 limits
+-
+-* no many-to-many commit-to-RCDO
+-* no separate team plan object
+-* no advanced dependency graph
+-* no mobile-first experience requirement
+-* no external Jira/OKR integration dependency
+-* no full sprint board or advanced backlog planning
+-* no autonomous AI agent behavior
+-
+----
+-
+-## 27. Post-v1 / Future Scope
+-
+-* Jira, GitHub, or other external work-system integrations
+-* many-to-many commit-to-RCDO support
+-* dependency tracking across users and teams
+-* richer ticket boards and sprint planning
+-* calendar and PTO integration for automatic capacity adjustment
+-* more advanced AI context retrieval
+-* personalized AI coaching on planning patterns
+-* cross-team risk and dependency summaries
+-* conversational search over plans, tickets, and RCDOs
+-* configurable custom chess policies by org
+-
+----
+-
+-## 28. Open Questions
+-
+-These are the remaining questions that should be validated, but they do not block writing or building v1.
+-
+-1. **Host integration detail:** confirm the exact remote-loading mechanism and shell contract with the PA platform team.
+-2. **Org directory source of truth:** confirm whether home team and manager chain are provided by the host/identity layer or a separate internal service.
+-3. **Historical migration:** decide whether any 15Five historical data needs read-only migration, or whether rollout begins with fresh history.
+-4. **Nonstandard workweeks:** validate whether pilot teams need non-Monday/Friday defaults on day one, or whether team-level overrides are sufficient after pilot.
+-
+----
+-
+-## 29. Acceptance Criteria
+-
+-1. A DRAFT weekly plan exists or is created on first access for every active eligible user once the draft window opens.
+-2. A user can create, edit, delete, and reorder commits in DRAFT.
+-3. Manual lock is blocked if required fields are missing or chess-piece hard limits are violated.
+-4. Auto-lock occurs at the configured cutoff and creates a baseline snapshot even if the draft is incomplete.
+-5. A locked plan cannot be silently edited; all post-lock changes create append-only scope change events.
+-6. Reconciliation presents baseline values, scope changes, linked ticket evidence, and outcome inputs in one view.
+-7. A linked ticket in `Done` auto-marks the commit `Achieved` at reconciliation snapshot time.
+-8. Unlinked work and linked work with incomplete tickets can be reconciled manually.
+-9. Carry-forward creates a new commit object with provenance and does not mutate the original week’s commit.
+-10. If carry-forward occurs after the destination week is already locked, the new commit is added as a post-lock scope change event in that week.
+-11. Team Week shows committed work, assigned-but-uncommitted tickets, and unassigned week-targeted tickets without double counting.
+-12. Managers can view full detail for direct reports and only aggregate detail for indirect reports by default.
+-13. Peers on the same team can see current and next week basic commit detail, but not AI risk flags, manager comments, or detailed reconcile notes.
+-14. Admins and authorized managers can create, edit, activate, archive, and move RCDO nodes within their allowed scope.
+-15. Archived RCDO nodes remain visible historically but cannot be linked to new commits.
+-16. Every AI suggestion shows rationale, can be accepted or dismissed, and stores model version and response outcome.
+-17. AI downtime does not prevent planning, locking, reconciling, or carry-forward.
+-18. Manager dashboard loads from derived read models and meets the stated performance targets.
+-19. Lifecycle jobs are idempotent and do not create duplicate lock snapshots, reconcile snapshots, or carry-forward links.
+-20. All lifecycle transitions, RCDO edits, privileged actions, and AI suggestions are auditable.
+-
+----
+-
+-## 30. Critical Review of the Proposed PRD
+-
+-### The 5 biggest delivery risks
+-
+-1. **This v1 is still broad.** Weekly planning, RCDO authoring, native tickets, manager dashboards, and AI assistance are each meaningful workstreams. Delivering all five together will pressure scope, QA, and rollout readiness.
+-
+-2. **Historical snapshot integrity is easy to get wrong.** Lock snapshots, scope change events, reconciliation snapshots, and carry-forward lineage need careful transactional design. If that model is unstable, reporting and trust collapse.
+-
+-3. **Permissions are subtle.** The distinction between peers, direct managers, skip-level leaders, and admins is simple on paper but easy to misimplement in APIs and derived rollups.
+-
+-4. **Micro-frontend host uncertainty is real.** The PRD makes a sensible remote-pattern assumption, but if the PA host shell lacks stable auth, navigation, or notification contracts, the frontend team will absorb unexpected platform work.
+-
+-5. **Dashboard performance depends on read models from the start.** If the team tries to build manager views directly off transactional joins first and optimize later, Monday peak performance will likely be poor and hard to recover.
+-
+-### The 5 biggest product risks
+-
+-1. **Users may resist required structure.** Mandatory RCDO linkage, chess piece selection, and estimate points add friction. If the UX is not very tight, adoption will lag.
+-
+-2. **RCDO quality may be too weak for the feature to pay off.** If managers do not maintain Outcomes or if branches are too coarse, the product will technically enforce linkage while still producing weak alignment data.
+-
+-3. **The native ticket stance may conflict with existing behavior.** Even though the PRD scopes ticketing modestly, teams already using Jira-like systems may not want to duplicate work item management internally.
+-
+-
+-[Showing lines 1-1363 of 1386 (50.0KB limit). Use offset=1364 to continue.]
+-
+-## 8. toolResult
+-Weekly Commit Module
+-
+-active
+-Category:
+-
+-ai-accelerated
+-Role:
+-
+-All Roles
+-Problem Statement
+-
+-The organization currently uses 15-Five for weekly planning, but it has no structural connection between individual weekly commitments and organizational strategic goals. Managers lack visibility into how team members' weekly work maps to Rally Cries, Defining Objectives, and Outcomes, making it impossible to identify misalignment until it's too late. The challenge is to build a production-ready micro-frontend module that replaces 15-Five with a system that enforces this connection through a complete weekly lifecycle: commit entry, prioritization, reconciliation, and manager review.
+-
+-Functional Requirements
+-
+-Weekly commit CRUD with RCDO hierarchy linking, chess layer for categorization and prioritization, full weekly lifecycle state machine (DRAFT → LOCKED → RECONCILING → RECONCILED → Carry Forward), reconciliation view comparing planned vs. actual, manager dashboard with team roll-up, micro-frontend integration into existing PA host app following the PM remote pattern
+-
+-Required Languages
+-
+-TypeScript (strict mode), Java 21, SQL
+-
+-## 9. toolResult
+-# AI Evaluation & Quality Roadmap
+-
+-**Created:** 2026-03-26
+-**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 10 prompt templates, 7 AI service types, 6 frontend AI components. Evaluation gaps identified via code audit and validated against Manus RAG evaluation research report (see `docs/rag-eval-research.md`).
+-
+----
+-
+-## Phase 1: Eval Foundation
+-
+-**Goal:** Build the infrastructure to scientifically validate AI output quality, enable A/B testing of prompts, and measure the metrics that the Manus research identifies as critical (Faithfulness ≥ 0.90, Context Recall ≥ 0.85).
+-
+-### 1a. Golden Test Dataset
+-
+-**What:** 15-20 realistic test cases per AI capability, stored as JSON fixtures under `backend/src/test/resources/eval/`. Not synthetic — hand-crafted from realistic scenarios matching our seed data patterns.
+-
+-**Why:** Every AI test currently mocks the LLM response. We test "does the code handle JSON correctly" but never "does the prompt produce good suggestions." A golden dataset is the foundation for all eval work.
+-
+-**Capabilities to cover:**
+-- `commit-draft-assist` — vague titles, missing success criteria, KING/QUEEN without criteria, estimate calibration
+-- `commit-lint` — plans with real quality issues vs clean plans, false positive detection
+-- `rcdo-suggest` — commits with obvious RCDO matches, ambiguous matches, no good match
+-- `risk-signal` — overcommit/undercommit edge cases, carry-forward patterns, blocked criticals
+-- `reconcile-assist` — plans with mixed outcomes, linked ticket evidence, carry-forward decisions
+-- `rag-query` — temporal questions, team-scoped vs personal, entity-specific queries
+-
+-**Each case contains:**
+-```json
+-{
+-  "id": "draft-001",
+-  "description": "Vague KING commit, no success criteria",
+-  "input": { /* realistic AiContext fields */ },
+-  "expectedBehavior": {
+-    "shouldSuggestTitle": true,
+-    "titleShouldNotContain": ["stuff", "things", "work on"],
+-    "shouldSuggestSuccessCriteria": true,
+-    "estimateRange": [3, 8]
+-  },
+-  "edgeCaseType": "vague_input"
+-}
+-```
+-
+-**File structure:**
+-```
+-backend/src/test/resources/eval/
+-├── commit-draft-assist/
+-│   └── cases.json
+-├── commit-lint/
+-│   └── cases.json
+-├── rcdo-suggest/
+-│   └── cases.json
+-├── risk-signal/
+-│   └── cases.json
+-├── reconcile-assist/
+-│   └── cases.json
+-└── rag-query/
+-    └── cases.json
+-```
+-
+-### 1b. Eval Runner
+-
+-**What:** A JUnit test class that calls the real LLM (not mocked) with actual prompts, scores output against the golden dataset using automated + LLM-as-judge scoring, and writes results to a JSON report.
+-
+-**Scoring dimensions per capability:**
+-
+-| Capability | Automated Judges | LLM-as-Judge |
+-|---|---|---|
+-| commit-draft-assist | schema_valid, estimate_in_range, null_handling | title_clarity, criteria_measurability |
+-| commit-lint | schema_valid, hard_vs_soft_classification | false_positive_rate, guidance_usefulness |
+-| rcdo-suggest | schema_valid, confidence_calibration | rationale_quality |
+-| risk-signal | schema_valid, signal_type_valid | risk_specificity, action_usefulness |
+-| reconcile-assist | schema_valid, outcome_enum_valid | summary_accuracy, carry_forward_reasoning |
+-| rag-query | schema_valid, source_count, confidence_range | faithfulness, answer_relevancy |
+-
+-**Key design decisions:**
+-- Runs against real OpenRouter API — requires `OPENROUTER_API_KEY` env var, skips gracefully if absent
+-- Tagged with `@Tag("eval")` so normal `./gradlew test` doesn't trigger it
+-- Outputs results to `build/eval-results/` as JSON for analysis
+-- Each case runs 3 times to measure output variance (temperature stability)
+-
+-**Judge prompts** stored in `backend/src/test/resources/eval/judge-prompts/`:
+-- `title-quality-judge.txt` — scores clarity, specificity, appropriate scope, improvement over original
+-- `criteria-quality-judge.txt` — scores measurability, completeness, achievability within one week
+-- `faithfulness-judge.txt` — scores whether every claim is attributable to retrieved context (per Manus §2.1)
+-- `relevancy-judge.txt` — scores whether output directly addresses the input query
+-
+-### 1c. Prompt Version Tracking
+-
+-**What:** Add `prompt_version TEXT` column to `ai_suggestion` table. Populate it in `OpenRouterAiProvider` from the prompt template filename + a version suffix. Enables A/B analysis using existing `ai_feedback` data.
+-
+-**Implementation:**
+-1. Flyway migration: `ALTER TABLE ai_suggestion ADD COLUMN prompt_version TEXT;`
+-2. `AiSuggestionResult` record: add `promptVersion` field
+-3. `OpenRouterAiProvider.generateSuggestion()`: read prompt version from template metadata or filename convention (`commit-draft-assist-v2.txt` → version `v2`)
+-4. `AiSuggestionService.storeSuggestion()`: persist prompt version
+-
+-**A/B analysis query (once data accumulates):**
+-```sql
+-SELECT prompt_version, suggestion_type,
+-       COUNT(*) as total,
+-       COUNT(CASE WHEN f.accepted THEN 1 END) as accepted,
+-       ROUND(COUNT(CASE WHEN f.accepted THEN 1 END)::decimal / NULLIF(COUNT(f.id), 0), 3) as acceptance_rate
+-FROM ai_suggestion s
+-LEFT JOIN ai_feedback f ON f.suggestion_id = s.id
+-WHERE prompt_version IS NOT NULL
+-GROUP BY prompt_version, suggestion_type;
+-```
+-
+-### 1d. Faithfulness Scoring
+-
+-**What:** Implement the RAGAS faithfulness metric as an LLM-as-judge call specifically for RAG query answers and risk signals. Per Manus §2.1: decompose the answer into atomic claims, verify each against retrieved context, score = supported/total.
+-
+-**Implementation:**
+-- New service: `FaithfulnessEvaluator` in `ai/eval/` package
+-- Judge prompt: given an answer + retrieved chunks, extract claims, mark each as SUPPORTED or UNSUPPORTED
+-- Store faithfulness score on `ai_suggestion` (new column `eval_faithfulness_score REAL`)
+-- Run asynchronously after suggestion storage (sample 10% of production suggestions)
+-- Target: ≥ 0.90 (Manus §8 staging gate)
+-
+-**Context from Manus report:**
+-> "Faithfulness is the single most important metric for enterprise risk-signal generation, where a fabricated risk can trigger unnecessary escalation and erode stakeholder trust." — Manus §2.1
+->
+-> The metric is computed by decomposing the answer into atomic statements, then verifying each against the retrieved context. Formula: Faithfulness = (claims supported by context) / (total claims). — Manus §2.1
+-
+----
+-
+-## Phase 2: Prompt Quality
+-
+-**Goal:** Improve actual LLM output quality through prompt engineering. This is the highest-ROI code change — better prompts produce better outputs immediately, before any eval infrastructure is needed.
+-
+-### 2a. Add Few-Shot Examples to All Prompts
+-
+-**What:** Add 1-2 good examples and 1 bad example to each of the 10 prompt templates in `backend/src/main/resources/prompts/`.
+-
+-**Current problem:** Every prompt says "respond with ONLY a JSON object" but gives zero examples of good vs bad output. The model has no reference for what quality looks like in our domain.
+-
+-**Example improvement for `commit-draft-assist.txt`:**
+-```
+-## Example 1 (Good improvement):
+-Input: {"title": "Do API stuff", "chessPiece": "KING", "estimatePoints": null}
+-Output: {"suggestedTitle": "Deploy payment API v2 to staging with load test validation", "suggestedEstimatePoints": 5, "suggestedSuccessCriteria": "Payment API v2 deployed to staging, handles 100 req/s with <200ms p95 latency, zero error rate on smoke test suite", "suggestedDescription": null}
+-
+-## Example 2 (Already good — return nulls):
+-Input: {"title": "Migrate user auth from JWT to session tokens", "chessPiece": "ROOK", "estimatePoints": 3}
+-Output: {"suggestedTitle": null, "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": null}
+-```
+-
+-**Prompts to update (all 10):**
+-- `commit-draft-assist.txt`
+-- `commit-lint.txt`
+-- `rcdo-suggest.txt`
+-- `risk-signal.txt`
+-- `reconcile-assist.txt`
+-- `team-summary.txt`
+-- `team-insight.txt`
+-- `personal-insight.txt`
+-- `rag-intent.txt`
+-- `rag-query.txt`
+-
+-### 2b. Add Field-Level Context Descriptions
+-
+-**What:** The system prompts don't explain the data structure the model receives. The user message is a raw JSON blob from `buildUserMessage()` in `OpenRouterAiProvider`:
+-
+-```json
+-{"suggestionType":"COMMIT_DRAFT_ASSIST","commitData":{"title":"Do stuff"},"planData":{},"historicalCommits":[],"rcdoTree":[],"additionalContext":{}}
+-```
+-
+-The model has no instructions about what `historicalCommits` contains, what `rcdoTree` looks like, or how to use `additionalContext`. Each prompt should document the fields it receives.
+-
+-**Add to each prompt:**
+-```
+-## Input Data Structure:
+-- commitData: {title, description, chessPiece, estimatePoints, successCriteria} — the current commit being drafted
+-- planData: {state, capacityBudgetPoints, weekStartDate, totalPlannedPoints} — the weekly plan this commit belongs to
+-- historicalCommits: [{title, chessPiece, estimatePoints, outcome}] — this user's recent past commits for pattern matching
+-- rcdoTree: [{id, title, type, parentId, status}] — the active RCDO hierarchy nodes
+-```
+-
+-### 2c. Deduplicate Risk Signal Prompt vs Rules Engine
+-
+-**What:** `risk-signal.txt` asks the LLM for risks but doesn't tell it what rules already exist. The `RiskDetectionService` already computes:
+-- OVERCOMMIT: total points > capacity budget
+-- UNDERCOMMIT: total points < 60% of budget
+-- REPEATED_CARRY_FORWARD: any commit with carryForwardStreak ≥ 2
+-- BLOCKED_CRITICAL: KING/QUEEN linked to ticket in BLOCKED status for >48 hours
+-- SCOPE_VOLATILITY: >3 scope change events on the plan
+-
+-The LLM should be told "these rules already run — look for risks they miss."
+-
+-**Update `risk-signal.txt` to include:**
+-```
+-The following rules-based signals are already computed automatically and should NOT be duplicated:
+-- OVERCOMMIT: total planned points exceed capacity budget
+-- UNDERCOMMIT: total planned points below 60% of capacity budget
+-- REPEATED_CARRY_FORWARD: any commit with carry-forward streak ≥ 2 consecutive weeks
+-- BLOCKED_CRITICAL: KING or QUEEN commit linked to a ticket in BLOCKED status for >48 hours
+-- SCOPE_VOLATILITY: more than 3 post-lock scope change events on the plan
+-
+-Your job is to find ADDITIONAL risks that these rules miss. Focus on:
+-...
+-```
+-
+-### 2d. Enrich ChunkBuilder with RCDO Context
+-
+-**What:** Commit chunks in Pinecone are thin — a commit with no description embeds as:
+-```
+-"Deploy new API" — QUEEN, 5pts. Description: . Success criteria: . Outcome: . Notes:
+-```
+-
+-This is a sparse embedding that hurts retrieval quality. Enrich with:
+-- RCDO node title (the linked Outcome/DO name)
+-- Team name
+-- Plan state at index time
+-
+-**Update `ChunkBuilder.buildCommitChunk()`:**
+-```java
+-// Current:
+-String text = "\"" + commit.getTitle() + "\" — " + chess + ", " + pts + "pts. " + ...
+-
+-// Enriched:
+-String text = "\"" + commit.getTitle() + "\" — " + chess + ", " + pts + "pts. "
+-    + "RCDO: " + rcdoNodeTitle + ". "
+-    + "Team: " + teamName + ". "
+-    + "Description: " + orEmpty(commit.getDescription()) + ". " + ...
+-```
+-
+-This requires passing RCDO node and team data into the chunk builder, which means updating the `indexCommitDirect` method to look up the RCDO node title.
+-
+-**Impact:** Directly improves Context Precision (Manus §7.2) — embeddings become more semantically rich, so retrieval returns more relevant chunks for RCDO-specific or team-specific queries.
+-
+----
+-
+-## Phase 3: Wire Missing Frontend AI Features
+-
+-**Goal:** Three AI backend capabilities exist but have no frontend component calling them. Wiring these up completes the user-facing AI story.
+-
+-### 3a. Commit Draft Assist Button in CommitForm
+-
+-**What:** `CommitDraftAssistService` (backend) and `aiApi.commitDraftAssist()` (frontend API client) exist and work. No UI component calls them.
+-
+-**Build:** An "✨ AI Suggest" button in the commit creation/edit form that:
+-1. Calls `aiApi.commitDraftAssist()` with current form values
+-2. Shows suggestions inline (highlighted diff-style: "Current: X → Suggested: Y")
+-3. Each suggestion has Accept / Dismiss buttons (using existing `AiFeedbackButtons`)
+-4. Accepting a suggestion fills the form field
+-5. Disabled when AI is unavailable (check `useAiStatus()`)
+-
+-**Location:** New component `frontend/src/components/ai/CommitDraftAssistButton.tsx`, used inside the commit form on the MyWeek page.
+-
+-**UX notes:**
+-- Don't auto-run on every keystroke — trigger on explicit button click
+-- Show loading spinner while waiting
+-- If all suggestions are null (current values are already good), show "✓ Looks good!"
+-- Show rationale text in a tooltip or collapsed section
+-
+-### 3b. Reconcile Assist in ReconcilePage
+-
+-**What:** `ReconcileAssistService` (backend) exists. No frontend component calls it.
+-
+-**Build:** An "AI Assist Reconciliation" button on the Reconcile page that:
+-1. Calls the reconcile assist endpoint with the plan's commits + scope changes
+-2. Pre-fills likely outcomes (ACHIEVED/PARTIALLY_ACHIEVED/NOT_ACHIEVED/CANCELED) in the `OutcomeSelector` components
+-3. Shows a draft week summary
+-4. Suggests which commits to carry forward with reasons
+-5. All suggestions are editable — user must explicitly accept
+-
+-**Location:** New component `frontend/src/components/ai/ReconcileAssistPanel.tsx`, used in `frontend/src/routes/Reconcile.tsx`.
+-
+-### 3c. Suggested Questions in SemanticSearchInput
+-
+-**What:** When the search input is empty, show 3-4 clickable example questions as pills/chips below the input.
+-
+-**Build:** Add to `SemanticSearchInput.tsx`:
+-```tsx
+-const SUGGESTED_QUESTIONS = [
+-  "What did the team commit to last week?",
+-  "Which RCDOs received the most effort this month?",
+-  "What are the recurring carry-forward patterns?",
+-  "Which team members are overcommitting?",
+-];
+-```
+-
+-Show these as clickable badges when `question` is empty and no result is displayed. Clicking one fills the input and auto-submits.
+-
+----
+-
+-## Phase 4: Production Monitoring
+-
+-**Goal:** Continuously validate AI quality in production, detect degradation early, and provide observability into the AI layer's health.
+-
+-### 4a. Async Eval Sampling
+-
+-**What:** After each AI suggestion is stored, sample 5-10% and run faithfulness + relevancy scoring asynchronously. Store scores on the `ai_suggestion` row.
+-
+-**Implementation:**
+-1. Add columns to `ai_suggestion`: `eval_faithfulness_score REAL`, `eval_relevancy_score REAL`, `eval_scored_at TIMESTAMPTZ`
+-2. New service: `ProductionEvalService` — after `AiSuggestionService.storeSuggestion()`, probabilistically enqueue an eval job
+-3. Eval job: call `FaithfulnessEvaluator` (from Phase 1d) + a relevancy judge on the stored suggestion
+-4. Results written back to the suggestion row
+-
+-**Sampling strategy:** Score 100% of RISK_SIGNAL and TEAM_INSIGHT suggestions (high-stakes), 10% of COMMIT_DRAFT and COMMIT_LINT (high-volume, lower stakes).
+-
+-### 4b. Prometheus Metrics for AI Quality
+-
+-**What:** Expose Prometheus gauges for rolling AI quality metrics. Wire into the existing Grafana setup (provisioning already exists at `infra/grafana/provisioning/`).
+-
+-**Metrics to expose:**
+-- `weekly_commit_ai_faithfulness_score` (gauge, labeled by suggestion_type) — rolling 7-day average
+-- `weekly_commit_ai_acceptance_rate` (gauge, labeled by suggestion_type) — accepted / (accepted + dismissed)
+-- `weekly_commit_ai_suggestion_latency_seconds` (histogram, labeled by suggestion_type)
+-- `weekly_commit_ai_provider_availability` (gauge) — 1 if available, 0 if not
+-- `weekly_commit_ai_total_tokens_used` (counter) — from `OpenRouterAiProvider.getTotalTokensUsed()`
+-
+-**Grafana dashboard:** Create `infra/grafana/provisioning/dashboards/ai-quality.json` with panels for each metric.
+-
+-### 4c. Drift Alerting
+-
+-**What:** Alert when AI quality degrades below Manus-recommended production thresholds.
+-
+-**Alert rules (add to `infra/prometheus/alerts.yml`):**
+-- `AiFaithfulnessLow`: rolling 7-day faithfulness < 0.88 → warning
+-- `AiFaithfulnessCritical`: rolling 7-day faithfulness < 0.85 → critical
+-- `AiAcceptanceRateLow`: rolling 7-day acceptance rate < 0.20 → warning
+-- `AiProviderDown`: provider unavailable for > 5 minutes → critical
+-- `AiLatencyHigh`: p95 suggestion latency > 8 seconds → warning
+-
+-**Context from Manus report (§8):**
+-> Production alert thresholds: Faithfulness < 0.88, Context Recall < 0.82, Answer Relevancy < 0.78, P95 Latency > 8s
+-
+----
+-
+-## Reference: Current AI Architecture
+-
+-```
+-Write Path (real-time):
+-  CommitService.create() → SemanticIndexService.indexEntity(COMMIT, id)    [async]
+-  ScopeChangeService.*() → SemanticIndexService.indexEntity(SCOPE_CHANGE)  [async]
+-  CarryForwardService.*() → SemanticIndexService.indexEntity(CARRY_FORWARD)[async]
+-  LockService.lock()     → SemanticIndexService.indexEntity(PLAN_SUMMARY)  [async]
+-                         → InsightGenerationService.generatePersonalInsightsAsync() [async]
+-  ReconciliationService  → SemanticIndexService.indexEntity(PLAN_SUMMARY)  [async]
+-  ManagerReviewService   → SemanticIndexService.indexEntity(MANAGER_COMMENT)[async]
+-  TicketService.*()      → SemanticIndexService.indexEntity(TICKET)        [async]
+-
+-Indexing Pipeline:
+-  Entity → ChunkBuilder.build*Chunk() → EmbeddingService.embed() → PineconeClient.upsert()
+-
+-Query Pipeline:
+-  Question → Intent Classification (LLM) → EmbeddingService.embed() → PineconeClient.query()
+-           → Context Assembly → RAG Answer Generation (LLM) → AiSuggestionService.store()
+-
+-Scheduled Jobs:
+-  SemanticIndexService.dailySweepReindex()     — 03:00 UTC, reindexes plans updated in last 48h
+-  InsightGenerationService.generateDailyInsights() — 08:00 UTC, team + personal insights
+-  RiskDetectionService.runDailyRiskDetection() — runs on all LOCKED plans
+-
+-AI Services (10 types):
+-  COMMIT_DRAFT_ASSIST  → CommitDraftAssistService  → prompt: commit-draft-assist.txt
+-  COMMIT_LINT          → CommitLintService          → prompt: commit-lint.txt
+-  RCDO_SUGGEST         → RcdoSuggestService         → prompt: rcdo-suggest.txt
+-  RISK_SIGNAL          → RiskDetectionService        → prompt: risk-signal.txt (+ rules engine)
+-  RECONCILE_ASSIST     → ReconcileAssistService      → prompt: reconcile-assist.txt
+-  TEAM_SUMMARY         → ManagerAiSummaryService     → prompt: team-summary.txt
+-  RAG_INTENT           → SemanticQueryService        → prompt: rag-intent.txt
+-  RAG_QUERY            → SemanticQueryService        → prompt: rag-query.txt
+-  TEAM_INSIGHT         → InsightGenerationService    → prompt: team-insight.txt
+-  PERSONAL_INSIGHT     → InsightGenerationService    → prompt: personal-insight.txt
+-
+-Frontend AI Components:
+-  AiLintPanel            — commit quality lint (calls COMMIT_LINT)
+-  RiskSignalsPanel       — risk signal display (reads RISK_SIGNAL)
+-  InsightPanel           — team + personal insights (reads TEAM_INSIGHT, PERSONAL_INSIGHT)
+-  SemanticSearchInput    — RAG query interface (calls RAG_INTENT + RAG_QUERY)
+-  QueryAnswerCard        — RAG answer display with source citations
+-  AiFeedbackButtons      — thumbs up/down on every AI output
+-
+-  MISSING: CommitDraftAssist UI (backend exists, no frontend component)
+-  MISSING: ReconcileAssist UI (backend exists, no frontend component)
+-  MISSING: Suggested questions in SemanticSearchInput
+-```
+-
+-## Reference: Key Manus Report Thresholds
+-
+-| Metric | Dev Gate | Staging Gate | Prod Alert |
+-|---|---|---|---|
+-| Faithfulness | ≥ 0.85 | ≥ 0.90 | < 0.88 |
+-| Context Recall | ≥ 0.80 | ≥ 0.85 | < 0.82 |
+-| Answer Relevancy | ≥ 0.75 | ≥ 0.80 | < 0.78 |
+-| Context Precision | ≥ 0.65 | ≥ 0.70 | < 0.68 |
+-| P95 Latency | < 10s | < 7s | > 8s |
+-
+-## 10. toolResult
+-{
+-  "name": "frontend",
+-  "version": "1.0.0",
+-  "private": true,
+-  "type": "module",
+-  "scripts": {
+-    "dev": "vite",
+-    "build": "vite build",
+-    "lint": "eslint src",
+-    "typecheck": "tsc --noEmit",
+-    "test": "vitest"
+-  },
+-  "dependencies": {
+-    "@dnd-kit/core": "^6.3.1",
+-    "@dnd-kit/sortable": "^10.0.0",
+-    "@dnd-kit/utilities": "^3.2.2",
+-    "@tailwindcss/vite": "^4.2.2",
+-    "@weekly-commit/shared": "*",
+-    "class-variance-authority": "^0.7.1",
+-    "clsx": "^2.1.1",
+-    "lucide-react": "^1.7.0",
+-    "react": "^18.3.0",
+-    "react-dom": "^18.3.0",
+-    "react-router-dom": "^7.0.0",
+-    "tailwind-merge": "^3.5.0",
+-    "tailwindcss": "^4.2.2"
+-  },
+-  "devDependencies": {
+-    "@eslint/js": "^9.0.0",
+-    "@originjs/vite-plugin-federation": "^1.4.1",
+-    "@testing-library/jest-dom": "^6.9.1",
+-    "@testing-library/react": "^16.3.2",
+-    "@types/react": "^18.3.0",
+-    "@types/react-dom": "^18.3.0",
+-    "@vitejs/plugin-react": "^4.3.0",
+-    "@vitest/coverage-v8": "^2.1.9",
+-    "eslint": "^9.0.0",
+-    "eslint-plugin-react-hooks": "^5.0.0",
+-    "eslint-plugin-react-refresh": "^0.4.0",
+-    "jsdom": "^25.0.0",
+-    "prettier": "^3.3.0",
+-    "typescript": "^5.5.0",
+-    "typescript-eslint": "^8.0.0",
+-    "vite": "^5.4.0",
+-    "vitest": "^2.0.0"
+-  }
+-}
+-
+-## 11. toolResult
+-{
+-  "name": "@weekly-commit/shared",
+-  "version": "1.0.0",
+-  "private": true,
+-  "type": "module",
+-  "main": "./dist/index.js",
+-  "types": "./dist/index.d.ts",
+-  "exports": {
+-    ".": {
+-      "import": "./dist/index.js",
+-      "types": "./dist/index.d.ts"
+-    }
+-  },
+-  "scripts": {
+-    "build": "tsc -p tsconfig.build.json",
+-    "lint": "eslint src",
+-    "typecheck": "tsc --noEmit",
+-    "test": "vitest"
+-  },
+-  "devDependencies": {
+-    "@eslint/js": "^9.0.0",
+-    "eslint": "^9.0.0",
+-    "typescript": "^5.5.0",
+-    "typescript-eslint": "^8.0.0",
+-    "vitest": "^2.0.0"
+-  }
+-}
+-
+-## 12. toolResult
+-plugins {
+-    java
+-    id("org.springframework.boot") version "3.4.4"
+-    id("io.spring.dependency-management") version "1.1.7"
+-    id("com.diffplug.spotless") version "7.0.2"
+-}
+-
+-group = "com.weeklycommit"
+-version = "0.0.1-SNAPSHOT"
+-
+-java {
+-    sourceCompatibility = JavaVersion.VERSION_21
+-    targetCompatibility = JavaVersion.VERSION_21
+-}
+-
+-repositories {
+-    mavenCentral()
+-}
+-
+-dependencies {
+-    implementation("org.springframework.boot:spring-boot-starter-web")
+-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+-    implementation("org.springframework.boot:spring-boot-starter-validation")
+-    implementation("org.springframework.boot:spring-boot-starter-actuator")
+-    implementation("org.flywaydb:flyway-core")
+-    implementation("org.flywaydb:flyway-database-postgresql")
+-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
+-    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+-    implementation("me.paulschwarz:spring-dotenv:4.0.0")
+-    implementation("io.micrometer:micrometer-registry-prometheus")
+-    runtimeOnly("org.postgresql:postgresql")
+-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+-    testRuntimeOnly("com.h2database:h2")
+-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+-}
+-
+-tasks.named<Test>("test") {
+-    useJUnitPlatform {
+-        // Exclude eval tests from normal test runs — they call real LLM APIs
+-        excludeTags("eval")
+-    }
+-}
+-
+-// Dedicated task for running eval tests against real LLM
+-tasks.register<Test>("evalTest") {
+-    description = "Run AI prompt evaluation tests against real LLM (requires OPENROUTER_API_KEY)"
+-    group = "verification"
+-
+-    // Use same classpath and sources as the standard test task
+-    testClassesDirs = sourceSets["test"].output.classesDirs
+-    classpath = sourceSets["test"].runtimeClasspath
+-
+-    useJUnitPlatform {
+-        includeTags("eval")
+-    }
+-    // Eval tests need longer timeouts (each case calls the LLM)
+-    systemProperty("junit.jupiter.execution.timeout.default", "120s")
+-    // Forward env vars
+-    environment("OPENROUTER_API_KEY", System.getenv("OPENROUTER_API_KEY") ?: "")
+-    environment("OPENROUTER_MODEL", System.getenv("OPENROUTER_MODEL") ?: "anthropic/claude-sonnet-4-20250514")
+-}
+-
+-tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+-    // Set working directory to monorepo root so spring-dotenv picks up .env
+-    workingDir = rootProject.projectDir.parentFile
+-}
+-
+-spotless {
+-    java {
+-        // google-java-format/palantirJavaFormat use JDK-internal APIs removed in JDK 25.
+-        // Eclipse JDT formatter is fully JDK-agnostic and enforces consistent style.
+-        eclipse()
+-        removeUnusedImports()
+-        trimTrailingWhitespace()
+-        endWithNewline()
+-    }
+-}
+-
+-## 13. assistant
+-{
+-  "type": "thinking",
+-  "thinking": "**Understanding backend structure**\n\nI need to understand the code and examine the backend structure. It seems that the answer could benefit from strategic suggestions. I should inspect what’s already built and identify what's missing. There are documentation and roadmaps to consider. It might help to look through the repository tree to check key backend packages and frontend components. I could run a search for any TODOs as well; that might provide more insights!",
+-  "thinkingSignature": "{\"id\":\"rs_0c83a0c7a2ecf6e70169c7324dde8c819b8c1af27cfb9063f9\",\"type\":\"reasoning\",\"encrypted_content\":\"gAAAAABpxzJRJGb2DRIiL-1aPE0-HC_SBpmzgoIkqorksCOodrUoFAC6qixQpqPBN_5ncMKC-4gP8gH8gPw0pRD-Hg5QL7Vi0cl16l29E7dnLagUnTyy4IYZB1iusX3JV2GGYAqw_VY74U6_m_qtTI1m5KlIKy-ZZFcTI_NiPqthoTuH7QwdTwwYIgsety8FJwTq_APmhujYciyUEdVZAMD3Gkd-sqyqO90QYKbiKeCx2DB_1HR2I852SYYmiahRy9JLnwgBaH2c4aHlXdL-JRIq-Pag-qmopE0N4gKnbSB8kHX5Aofzz5Ewmm_SogSwmJNbe3GA6yWTK8TFxPmyIAxBoeyOGdxvm22kWsSBTZC_sUJTb7G_Pqgb5WZY75Yzfy_tsbWxkst_XktrgQbRiySqOD0kUomRUlfocPxyVJ1V7TjT-9Z0Z8MfbvHXL0vJYhpy3FusIkAtDNwQtzlKDDIN2_uEHkeN9CeUMf2_u8uFTgI8TV_qerEiiZ4T8MGHpFN7TbZofetot4Kd-KVirrT63SK4vNFcA-MBQeLxzwv66Z2n-2mNWkYI6oaEsrKLITvnpyehflB6dwn18QJl_fqiJI1FU1Vc1_oXsKU5C9zYmRQLj5shQkiG95qWCyZXhfKWCZEIdnQEV-Lq2G4h0eJJhPmv_HWug6ak4pdMqycXz1ffK57R1answpLtTIOf1GdMqJSlkp7fgpH-Amux-26W58ilTznlEcy3Yyfo-_nJrnLi7vgK-5Uz8IYev5DJfLOPzzZq7kW0qvpFfpzDgW0ReUuGja0rQE8UcKtcSyMMMdUZ8nflkFqmGcCOEZ2qM_3ftYS4a7kTstCQVPLRoGzmIQdoUYF4nbU7mtNERO8BNYzG-Kt3txXhvbD0msvnNCAXf2tpQ66xnNhP0pV5-dJcGui0w3MOjjksyWCIQTWO3hu7PDUAYeV1G9jN9oW3hhJxOg1HaGi-nYsbkkGjFnyq1_TOnlaL-Yy_Or2e1Kc4Cy0QtQzesc45gBgmJrCwBJ3tAlbmVBeq2tJOU1THj8wQl35mIJk0dtRRnWODW6x2SqLhfIv1U76ncYueyb69bAtxPaI1HLhxe8ucKhfCHbWon0_IMAaUHa6u8YN1HbzML4d0kG2Qmwax2ubmOqEQcWuBbV0_OrFSMuTzyMUPSjePdD6nfMR8xJjqhgHEShEaw-lne2lm02mfvJF2cTIrOhdbjj5aJww7\",\"summary\":[{\"type\":\"summary_text\",\"text\":\"**Understanding backend structure**\\n\\nI need to understand the code and examine the backend structure. It seems that the answer could benefit from strategic suggestions. I should inspect what’s already built and identify what's missing. There are documentation and roadmaps to consider. It might help to look through the repository tree to check key backend packages and frontend components. I could run a search for any TODOs as well; that might provide more insights!\"}]}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_ngiYdATl6g2KPBKxDqD9Ghna|fc_0c83a0c7a2ecf6e70169c73251e6c4819b862bcc540dce66de",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "find backend/src -maxdepth 4 -type f | sed 's#^#/#' | sort | head -300"
+-  },
+-  "partialJson": "{\"command\":\"find backend/src -maxdepth 4 -type f | sed 's#^#/#' | sort | head -300\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_KKuFleAdpKLLdhF2nnPd6Ll9|fc_0c83a0c7a2ecf6e70169c73251e6d4819b974220226aa2481b",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "find frontend/src -maxdepth 4 -type f | sort | head -300"
+-  },
+-  "partialJson": "{\"command\":\"find frontend/src -maxdepth 4 -type f | sort | head -300\"}"
+-}
+-{
+-  "type": "toolCall",
+-  "id": "call_8areIPSPh2yZ2GXrcVGEwv61|fc_0c83a0c7a2ecf6e70169c73251e6dc819b94e611e2ab7ef4e3",
+-  "name": "bash",
+-  "arguments": {
+-    "command": "rg -n \"TODO|FIXME|HACK|XXX|@Tag\\(\\\"eval\\\"\\)|COMMIT_DRAFT_ASSIST|RECONCILE_ASSIST|Pinecone|OpenRouter|prompt\" backend frontend docs -g '!node_modules' | head -400"
+-  },
+-  "partialJson": "{\"command\":\"rg -n \\\"TODO|FIXME|HACK|XXX|@Tag\\\\(\\\\\\\"eval\\\\\\\"\\\\)|COMMIT_DRAFT_ASSIST|RECONCILE_ASSIST|Pinecone|OpenRouter|prompt\\\" backend frontend docs -g '!node_modules' | head -400\"}"
+-}
+-
+-## 14. toolResult
+-/backend/src/main/resources/application.yml
+-/backend/src/main/resources/logback-spring.xml
+-/backend/src/main/resources/prompts/commit-draft-assist.txt
+-/backend/src/main/resources/prompts/commit-lint.txt
+-/backend/src/main/resources/prompts/faithfulness-eval.txt
+-/backend/src/main/resources/prompts/personal-insight.txt
+-/backend/src/main/resources/prompts/rag-intent.txt
+-/backend/src/main/resources/prompts/rag-query.txt
+-/backend/src/main/resources/prompts/rcdo-suggest.txt
+-/backend/src/main/resources/prompts/reconcile-assist.txt
+-/backend/src/main/resources/prompts/risk-signal.txt
+-/backend/src/main/resources/prompts/team-insight.txt
+-/backend/src/main/resources/prompts/team-summary.txt
+-/backend/src/test/resources/application.yml
+-/backend/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker
+-
+-## 15. toolResult
+-frontend/src/__tests__/AiCommitComposer.test.tsx
+-frontend/src/__tests__/ApiClient.test.ts
+-frontend/src/__tests__/AppShell.test.tsx
+-frontend/src/__tests__/Breadcrumb.test.tsx
+-frontend/src/__tests__/CapacityMeter.test.tsx
+-frontend/src/__tests__/CarryForwardLineageView.test.tsx
+-frontend/src/__tests__/CommitForm.test.tsx
+-frontend/src/__tests__/CommitList.test.tsx
+-frontend/src/__tests__/FilterBar.test.tsx
+-frontend/src/__tests__/Flows.test.tsx
+-frontend/src/__tests__/Header.test.tsx
+-frontend/src/__tests__/HostProvider.test.tsx
+-frontend/src/__tests__/InsightPanel.test.tsx
+-frontend/src/__tests__/LockConfirmDialog.test.tsx
+-frontend/src/__tests__/ManagerAiSummaryCard.test.tsx
+-frontend/src/__tests__/MoveNodeDialog.test.tsx
+-frontend/src/__tests__/MyWeekPage.test.tsx
+-frontend/src/__tests__/Navigation.test.tsx
+-frontend/src/__tests__/PlanHistoryView.test.tsx
+-frontend/src/__tests__/PreLockValidation.test.tsx
+-frontend/src/__tests__/ProactiveRiskBanner.test.tsx
+-frontend/src/__tests__/QueryAnswerCard.test.tsx
+-frontend/src/__tests__/QueryHooks.test.tsx
+-frontend/src/__tests__/RcdoNodeForm.test.tsx
+-frontend/src/__tests__/RcdoPage.test.tsx
+-frontend/src/__tests__/RcdoTreeView.test.tsx
+-frontend/src/__tests__/ReconcilePage.test.tsx
+-frontend/src/__tests__/Router.test.tsx
+-frontend/src/__tests__/ScopeChangeDialog.test.tsx
+-frontend/src/__tests__/SemanticSearchInput.test.tsx
+-frontend/src/__tests__/TeamHistoryView.test.tsx
+-frontend/src/__tests__/TeamWeekPage.test.tsx
+-frontend/src/__tests__/TicketsPage.test.tsx
+-frontend/src/__tests__/ui/Badge.test.tsx
+-frontend/src/__tests__/ui/Button.test.tsx
+-frontend/src/__tests__/ui/Card.test.tsx
+-frontend/src/__tests__/ui/Dialog.test.tsx
+-frontend/src/__tests__/ui/Input.test.tsx
+-frontend/src/__tests__/ui/Select.test.tsx
+-frontend/src/__tests__/ui/Skeleton.test.tsx
+-frontend/src/__tests__/ui/Toast.test.tsx
+-frontend/src/api/aiApi.ts
+-frontend/src/api/aiHooks.ts
+-frontend/src/api/client.ts
+-frontend/src/api/configApi.ts
+-frontend/src/api/hooks.ts
+-frontend/src/api/notificationApi.ts
+-frontend/src/api/planApi.ts
+-frontend/src/api/planHooks.ts
+-frontend/src/api/planTypes.ts
+-frontend/src/api/ragApi.ts
+-frontend/src/api/ragHooks.ts
+-frontend/src/api/rcdoApi.ts
+-frontend/src/api/rcdoHooks.ts
+-frontend/src/api/rcdoTypes.ts
+-frontend/src/api/reportApi.ts
+-frontend/src/api/teamApi.ts
+-frontend/src/api/teamHooks.ts
+-frontend/src/api/teamTypes.ts
+-frontend/src/api/ticketApi.ts
+-frontend/src/api/ticketHooks.ts
+-frontend/src/api/ticketTypes.ts
+-frontend/src/App.test.tsx
+-frontend/src/App.tsx
+-frontend/src/components/ai/AiCommitComposer.tsx
+-frontend/src/components/ai/AiFeedbackButtons.tsx
+-frontend/src/components/ai/AiLintPanel.tsx
+-frontend/src/components/ai/AiSuggestedBadge.tsx
+-frontend/src/components/ai/AnswerRenderer.tsx
+-frontend/src/components/ai/CommitDraftAssistButton.tsx
+-frontend/src/components/ai/InsightPanel.tsx
+-frontend/src/components/ai/ManagerAiSummaryCard.tsx
+-frontend/src/components/ai/ProactiveRiskBanner.tsx
+-frontend/src/components/ai/QueryAnswerCard.tsx
+-frontend/src/components/ai/RcdoSuggestionInline.tsx
+-frontend/src/components/ai/ReconcileAssistPanel.tsx
+-frontend/src/components/ai/RiskSignalsPanel.tsx
+-frontend/src/components/ai/SemanticSearchInput.tsx
+-frontend/src/components/ai/TeamRiskSummaryBanner.tsx
+-frontend/src/components/AppShell.tsx
+-frontend/src/components/Breadcrumb.tsx
+-frontend/src/components/Header.tsx
+-frontend/src/components/lock/LockConfirmDialog.tsx
+-frontend/src/components/lock/lockValidation.ts
+-frontend/src/components/lock/PreLockValidationPanel.tsx
+-frontend/src/components/lock/ScopeChangeDialog.tsx
+-frontend/src/components/lock/ScopeChangeTimeline.tsx
+-frontend/src/components/myweek/CapacityMeter.tsx
+-frontend/src/components/myweek/CarryForwardLineageView.tsx
+-frontend/src/components/myweek/CommitForm.tsx
+-frontend/src/components/myweek/CommitList.tsx
+-frontend/src/components/myweek/PlanHistoryView.tsx
+-frontend/src/components/myweek/SoftWarningsPanel.tsx
+-frontend/src/components/Navigation.tsx
+-frontend/src/components/notifications/NotificationPanel.tsx
+-frontend/src/components/rcdo/ArchiveConfirmDialog.tsx
+-frontend/src/components/rcdo/MoveNodeDialog.tsx
+-frontend/src/components/rcdo/RcdoBreadcrumb.tsx
+-frontend/src/components/rcdo/RcdoNodeForm.tsx
+-frontend/src/components/rcdo/RcdoTreeView.tsx
+-frontend/src/components/reconcile/CarryForwardDialog.tsx
+-frontend/src/components/reconcile/OutcomeSelector.tsx
+-frontend/src/components/shared/FilterBar.tsx
+-frontend/src/components/teamweek/ByPersonSection.tsx
+-frontend/src/components/teamweek/ByRcdoSection.tsx
+-frontend/src/components/teamweek/ChessDistributionSection.tsx
+-frontend/src/components/teamweek/ExceptionQueueSection.tsx
+-frontend/src/components/teamweek/OverviewSection.tsx
+-frontend/src/components/teamweek/TeamHistoryView.tsx
+-frontend/src/components/teamweek/UncommittedWorkSection.tsx
+-frontend/src/components/tickets/TicketDetailView.tsx
+-frontend/src/components/tickets/TicketForm.tsx
+-frontend/src/components/tickets/TicketListView.tsx
+-frontend/src/components/ui/Badge.tsx
+-frontend/src/components/ui/Button.tsx
+-frontend/src/components/ui/Card.tsx
+-frontend/src/components/ui/Dialog.tsx
+-frontend/src/components/ui/index.ts
+-frontend/src/components/ui/Input.tsx
+-frontend/src/components/ui/Select.tsx
+-frontend/src/components/ui/Skeleton.tsx
+-frontend/src/components/ui/Toast.tsx
+-frontend/src/components/ui/Tooltip.tsx
+-frontend/src/host/HostProvider.tsx
+-frontend/src/host/MockHostProvider.tsx
+-frontend/src/index.css
+-frontend/src/lib/theme.ts
+-frontend/src/lib/useTheme.ts
+-frontend/src/lib/utils.ts
+-frontend/src/main.tsx
+-frontend/src/Routes.tsx
+-frontend/src/routes/Admin.tsx
+-frontend/src/routes/MyWeek.tsx
+-frontend/src/routes/Rcdos.tsx
+-frontend/src/routes/Reconcile.tsx
+-frontend/src/routes/Reports.tsx
+-frontend/src/routes/TeamWeek.tsx
+-frontend/src/routes/Tickets.tsx
+-frontend/src/test-setup.ts
+-
+-## 16. toolResult
+-docs/ai-eval-roadmap.md:4:**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 10 prompt templates, 7 AI service types, 6 frontend AI components. Evaluation gaps identified via code audit and validated against Manus RAG evaluation research report (see `docs/rag-eval-research.md`).
+-docs/ai-eval-roadmap.md:10:**Goal:** Build the infrastructure to scientifically validate AI output quality, enable A/B testing of prompts, and measure the metrics that the Manus research identifies as critical (Faithfulness ≥ 0.90, Context Recall ≥ 0.85).
+-docs/ai-eval-roadmap.md:16:**Why:** Every AI test currently mocks the LLM response. We test "does the code handle JSON correctly" but never "does the prompt produce good suggestions." A golden dataset is the foundation for all eval work.
+-docs/ai-eval-roadmap.md:61:**What:** A JUnit test class that calls the real LLM (not mocked) with actual prompts, scores output against the golden dataset using automated + LLM-as-judge scoring, and writes results to a JSON report.
+-docs/ai-eval-roadmap.md:75:- Runs against real OpenRouter API — requires `OPENROUTER_API_KEY` env var, skips gracefully if absent
+-docs/ai-eval-roadmap.md:76:- Tagged with `@Tag("eval")` so normal `./gradlew test` doesn't trigger it
+-docs/ai-eval-roadmap.md:80:**Judge prompts** stored in `backend/src/test/resources/eval/judge-prompts/`:
+-docs/ai-eval-roadmap.md:88:**What:** Add `prompt_version TEXT` column to `ai_suggestion` table. Populate it in `OpenRouterAiProvider` from the prompt template filename + a version suffix. Enables A/B analysis using existing `ai_feedback` data.
+-docs/ai-eval-roadmap.md:91:1. Flyway migration: `ALTER TABLE ai_suggestion ADD COLUMN prompt_version TEXT;`
+-docs/ai-eval-roadmap.md:92:2. `AiSuggestionResult` record: add `promptVersion` field
+-docs/ai-eval-roadmap.md:93:3. `OpenRouterAiProvider.generateSuggestion()`: read prompt version from template metadata or filename convention (`commit-draft-assist-v2.txt` → version `v2`)
+-docs/ai-eval-roadmap.md:94:4. `AiSuggestionService.storeSuggestion()`: persist prompt version
+-docs/ai-eval-roadmap.md:98:SELECT prompt_version, suggestion_type,
+-docs/ai-eval-roadmap.md:104:WHERE prompt_version IS NOT NULL
+-docs/ai-eval-roadmap.md:105:GROUP BY prompt_version, s
+...[diff truncated at 120000 chars to control duet artifact size]

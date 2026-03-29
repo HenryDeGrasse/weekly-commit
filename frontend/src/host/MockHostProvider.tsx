@@ -23,9 +23,9 @@ export const defaultDesignTokens: DesignTokens = {
   colorText: "#0a0a0a",
   colorTextMuted: "#717171",
   colorBorder: "#e5e5e5",
-  colorSuccess: "#16a34a",
-  colorWarning: "#d97706",
-  colorDanger: "#e7000b",
+  colorSuccess: "#3D7A4A",
+  colorWarning: "#7A6520",
+  colorDanger: "#9B3B3B",
   fontFamilyBase:
     "'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
   fontSizeBase: "16px",
