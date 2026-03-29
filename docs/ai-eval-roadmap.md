@@ -2,7 +2,7 @@
 
 **Created:** 2026-03-26
 **Updated:** 2026-03-28
-**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 10 prompt templates, 7 AI service types, 6 frontend AI components. Evaluation gaps identified via code audit.
+**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 10 product prompt templates, 10 AI suggestion types, and 16 frontend AI components (not all currently mounted). Remaining evaluation gaps identified via code audit.
 
 > **Status key:** ✅ Implemented · 🔨 In progress · 📋 Planned
 
@@ -12,11 +12,17 @@
 
 **Goal:** Build the infrastructure to scientifically validate AI output quality, enable A/B testing of prompts, and measure the metrics that the Manus research identifies as critical (Faithfulness ≥ 0.90, Context Recall ≥ 0.85).
 
-### 1a. Golden Test Dataset ✅ (partial — expanding)
+### 1a. Golden Test Dataset ✅
 
 **What:** 15-20 realistic test cases per AI capability, stored as JSON fixtures under `backend/src/test/resources/eval/`. Not synthetic — hand-crafted from realistic scenarios matching our seed data patterns.
 
-**Status:** Implemented for `commit-draft-assist` (12 cases) and `commit-lint` (6 cases). Remaining capabilities (`rcdo-suggest`, `risk-signal`, `reconcile-assist`, `rag-query`) are in progress.
+**Status:** Implemented for all currently evaluated capabilities:
+- `commit-draft-assist` — 12 cases
+- `commit-lint` — 6 cases
+- `rcdo-suggest` — 10 cases
+- `risk-signal` — 8 cases
+- `reconcile-assist` — 8 cases
+- `rag-query` — 8 cases
 
 **Why:** Every AI test currently mocks the LLM response. We test "does the code handle JSON correctly" but never "does the prompt produce good suggestions." A golden dataset is the foundation for all eval work.
 
@@ -65,30 +71,30 @@ backend/src/test/resources/eval/
 
 **What:** A JUnit test class that calls the real LLM (not mocked) with actual prompts, scores output against the golden dataset using automated + LLM-as-judge scoring, and writes results to a JSON report.
 
-**Status:** Implemented as `PromptEvalRunner.java` with parameterized tests for `commit-draft-assist` and `commit-lint`. Tagged `@Tag("eval")`, excluded from normal test runs, runs via `./gradlew evalTest`.
+**Status:** Implemented as `PromptEvalRunner.java` with parameterized tests for all 6 evaluated capabilities. Tagged `@Tag("eval")`, excluded from normal test runs, runs via `./gradlew evalTest`.
 
 **Scoring dimensions per capability:**
 
-| Capability | Automated Judges | LLM-as-Judge |
+| Capability | Current automated checks | Current LLM-as-judge coverage |
 |---|---|---|
-| commit-draft-assist | schema_valid, estimate_in_range, null_handling | title_clarity, criteria_measurability |
-| commit-lint | schema_valid, hard_vs_soft_classification | false_positive_rate, guidance_usefulness |
-| rcdo-suggest | schema_valid, confidence_calibration | rationale_quality |
-| risk-signal | schema_valid, signal_type_valid | risk_specificity, action_usefulness |
-| reconcile-assist | schema_valid, outcome_enum_valid | summary_accuracy, carry_forward_reasoning |
-| rag-query | schema_valid, source_count, confidence_range | faithfulness, answer_relevancy |
+| commit-draft-assist | schema_valid, estimate_in_range, suggestion presence/absence | title quality, criteria quality |
+| commit-lint | schema_valid, hard/soft counts, expected code detection | none yet |
+| rcdo-suggest | schema_valid, confidence bounds, correct/incorrect node checks | none yet |
+| risk-signal | schema_valid, signal count, duplicate-rule suppression | none yet |
+| reconcile-assist | schema_valid, outcome counts, expected outcomes / carry-forward checks | none yet |
+| rag-query | schema_valid, confidence bounds, source count, expected keywords | none yet |
 
 **Key design decisions:**
 - Runs against real OpenRouter API — requires `OPENROUTER_API_KEY` env var, skips gracefully if absent
 - Tagged with `@Tag("eval")` so normal `./gradlew test` doesn't trigger it
 - Outputs results to `build/eval-results/` as JSON for analysis
-- Each case runs 3 times to measure output variance (temperature stability)
+- Output is compared against `eval-thresholds.json` and `eval-baseline.json` via `scripts/eval-threshold-check.js`
 
-**Judge prompts** stored in `backend/src/test/resources/eval/judge-prompts/`:
+**Judge prompts currently present:**
 - `title-quality-judge.txt` — scores clarity, specificity, appropriate scope, improvement over original
 - `criteria-quality-judge.txt` — scores measurability, completeness, achievability within one week
-- `faithfulness-judge.txt` — scores whether every claim is attributable to retrieved context (per Manus §2.1)
-- `relevancy-judge.txt` — scores whether output directly addresses the input query
+
+`faithfulness-judge.txt` exists as supporting eval material, while production faithfulness scoring uses `backend/src/main/resources/prompts/faithfulness-eval.txt`.
 
 ### 1c. Prompt Version Tracking ✅
 
@@ -228,9 +234,9 @@ This requires passing RCDO node and team data into the chunk builder, which mean
 
 ---
 
-## Phase 3: Wire Missing Frontend AI Features ✅
+## Phase 3: Frontend AI Surfaces ✅
 
-**Goal:** Three AI backend capabilities existed without frontend components. All three are now wired up.
+**Goal:** Ensure backend AI capabilities have corresponding frontend surfaces, and document which ones are mounted vs still reusable-only.
 
 ### 3a. Commit Draft Assist Button in CommitForm ✅
 
@@ -238,7 +244,7 @@ This requires passing RCDO node and team data into the chunk builder, which mean
 
 ### 3b. Reconcile Assist in ReconcilePage ✅
 
-**Status:** Implemented as `frontend/src/components/ai/ReconcileAssistPanel.tsx`. Shows "AI Assist Reconciliation" button on Reconcile page, suggests likely outcomes, draft week summary, and carry-forward recommendations. All suggestions are accept/dismiss-able.
+**Status:** The live Reconcile page now uses `useAutoReconcileAssist()` in `frontend/src/routes/Reconcile.tsx` to prefill likely outcomes, a draft summary, and carry-forward recommendations automatically when a plan enters `RECONCILING`. The reusable `frontend/src/components/ai/ReconcileAssistPanel.tsx` component also exists, but it is not currently mounted in the route.
 
 ### 3c. Suggested Questions in SemanticSearchInput ✅
 
@@ -326,21 +332,24 @@ AI Services (10 types):
   TEAM_INSIGHT         → InsightGenerationService    → prompt: team-insight.txt
   PERSONAL_INSIGHT     → InsightGenerationService    → prompt: personal-insight.txt
 
-Frontend AI Components (all wired):
-  AiLintPanel            — commit quality lint (calls COMMIT_LINT)
-  RiskSignalsPanel       — risk signal display (reads RISK_SIGNAL)
-  InsightPanel           — team + personal insights (reads TEAM_INSIGHT, PERSONAL_INSIGHT)
-  SemanticSearchInput    — RAG query interface (calls RAG_INTENT + RAG_QUERY) + suggested questions
-  QueryAnswerCard        — RAG answer display with source citations
-  AiFeedbackButtons      — thumbs up/down on every AI output
+Mounted frontend AI surfaces:
+  AiLintPanel             — commit quality lint (calls COMMIT_LINT)
+  InsightPanel            — team + personal insights (reads TEAM_INSIGHT, PERSONAL_INSIGHT)
+  SemanticSearchInput     — Team Week RAG query interface (calls RAG_INTENT + RAG_QUERY) + suggested questions
+  QueryAnswerCard         — RAG answer display with source citations
+  AiFeedbackButtons       — thumbs up/down on every AI output
   CommitDraftAssistButton — ✨ AI Suggest in commit form (calls COMMIT_DRAFT_ASSIST)
-  ReconcileAssistPanel   — AI reconciliation assistant (calls RECONCILE_ASSIST)
-  AiCommitComposer       — AI-guided commit creation flow
-  ProactiveRiskBanner    — critical risk signal banner
-  TeamRiskSummaryBanner  — team-level risk overview
-  ManagerAiSummaryCard   — AI-generated team summary (calls TEAM_SUMMARY)
-  RcdoSuggestionInline   — RCDO link suggestion (calls RCDO_SUGGEST)
-  AiSuggestedBadge       — visual indicator for AI-suggested content
+  AiCommitComposer        — AI-guided commit creation flow
+  ProactiveRiskBanner     — critical risk signal banner
+  TeamRiskSummaryBanner   — team-level risk overview
+  ManagerAiSummaryCard    — AI-generated team summary (calls TEAM_SUMMARY)
+  RcdoSuggestionInline    — RCDO link suggestion (calls RCDO_SUGGEST)
+  AiSuggestedBadge        — visual indicator for AI-prefilled reconcile content
+
+Reusable components not currently mounted:
+  RiskSignalsPanel        — detailed risk signal display (reads RISK_SIGNAL)
+  ReconcileAssistPanel    — manual AI reconciliation assistant (calls RECONCILE_ASSIST)
+  EvidenceDrawer          — explainability drawer for structured evidence bundles
 ```
 
 ## Reference: Key Manus Report Thresholds

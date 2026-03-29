@@ -1,0 +1,40 @@
+All files are correct and properly formatted. Here's a summary of what was implemented:
+
+## What Was Implemented
+
+### 4 new files created:
+
+**1. `WhatIfRequest.java`**
+- Java record with `@NotNull planId`, `@NotNull userId`, `@Valid hypotheticalChanges`
+- Nested `WhatIfMutation` record with: `@NotNull action`, nullable `commitId`, `title`, `chessPiece` (String, no enum coupling), `estimatePoints`, `rcdoNodeId`
+- Nested `WhatIfAction` enum: `ADD_COMMIT`, `REMOVE_COMMIT`, `MODIFY_COMMIT`
+
+**2. `WhatIfResponse.java`**
+- Java record with `available`, `currentState`, `projectedState`, `capacityDelta`, `rcdoCoverageChanges`, `riskDelta`, `narrative` (null), `recommendation` (null)
+- Nested `PlanSnapshot`, `RcdoCoverageChange`, `RiskDelta` records
+- `unavailable()` factory method matching `CommitDraftAssistResponse` pattern
+
+**3. `WhatIfService.java`**
+- `@Service @Transactional(readOnly = true)` — no writes
+- Injects: `WeeklyPlanRepository`, `WeeklyCommitRepository`, `ScopeChangeEventRepository`, `WorkItemRepository`, `WorkItemStatusHistoryRepository` (NO `RcdoWeekRollupRepository`)
+- Package-private threshold constants duplicated from `RiskDetectionService`
+- `simulate()` method: loads plan/commits, builds `currentState`, applies mutations in-memory, builds `projectedState`, computes deltas
+- All 5 risk rules implemented inline (no persistence, no call to `detectAndStoreRiskSignals`)
+- Throws `ResourceNotFoundException` if plan not found
+
+**4. `WhatIfServiceTest.java`**
+- `@ExtendWith(MockitoExtension.class)` Mockito unit tests
+- 5 required test cases all passing: ADD_COMMIT → OVERCOMMIT, REMOVE_COMMIT → resolves OVERCOMMIT, MODIFY_COMMIT → rcdoCoverageChanges, empty mutations → equal snapshots, plan not found → exception
+
+### Check results:
+- `npm run lint` ✅ (backend spotlessCheck passes, only pre-existing frontend warnings)
+- `npm run typecheck` ✅
+- `npm test` ✅ (5/5 new WhatIf tests pass, all existing tests pass)
+- `npm run build` ✅
+
+Verdict: changes_made
+
+```observations
+- [low] WhatIfService.java: The `outer:` labeled break for BLOCKED_CRITICAL is slightly unusual style — a boolean flag would be idiomatic Java, but it's functionally correct and the label is clear.
+- [low] Step 2 (LLM narration) will need to add `AiContext.TYPE_WHAT_IF` constant to AiContext.java and inject `AiProviderRegistry` + `ObjectMapper` into WhatIfService — straightforward extension of what's already here.
+```

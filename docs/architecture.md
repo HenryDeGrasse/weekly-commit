@@ -52,13 +52,14 @@ com.weeklycommit
 │   │               RiskDetection, ReconcileAssist, ManagerSummary
 │   ├── rag/        Pinecone, Embedding, ChunkBuilder, SemanticQuery,
 │   │               SemanticIndex, InsightGeneration
+│   ├── evidence/   Structured evidence bundles for explainability
 │   ├── eval/       FaithfulnessEvaluator (production scoring)
 │   ├── metrics/    Prometheus AI quality gauges
 │   └── dto/        Request/response records for all AI endpoints
 └── domain/
-    ├── entity/     33 JPA entities
-    ├── enums/      12 enum types
-    └── repository/ 33 Spring Data repositories
+    ├── entity/     32 JPA entities
+    ├── enums/      13 enum types
+    └── repository/ 32 Spring Data repositories
 ```
 
 ### API Surface
@@ -185,12 +186,14 @@ Two implementations:
 | `COMMIT_LINT` | `CommitLintService` | `commit-lint.txt` | Auto on save + pre-lock |
 | `RCDO_SUGGEST` | `RcdoSuggestService` | `rcdo-suggest.txt` | During commit editing |
 | `RISK_SIGNAL` | `RiskDetectionService` | `risk-signal.txt` | On lock + daily 07:00 UTC |
-| `RECONCILE_ASSIST` | `ReconcileAssistService` | `reconcile-assist.txt` | User clicks "AI Assist" |
+| `RECONCILE_ASSIST` | `ReconcileAssistService` | `reconcile-assist.txt` | Auto-prefill when the Reconcile page loads in `RECONCILING` |
 | `TEAM_SUMMARY` | `ManagerAiSummaryService` | `team-summary.txt` | On-demand in Team Week |
 | `RAG_INTENT` | `SemanticQueryService` | `rag-intent.txt` | First step of any RAG query |
 | `RAG_QUERY` | `SemanticQueryService` | `rag-query.txt` | Second step — answer synthesis |
 | `TEAM_INSIGHT` | `InsightGenerationService` | `team-insight.txt` | Daily 08:00 UTC + on-demand |
 | `PERSONAL_INSIGHT` | `InsightGenerationService` | `personal-insight.txt` | On lock + daily sweep |
+
+`AiController` also exposes structured evidence endpoints at `/api/plans/{planId}/evidence` and `/api/commits/{commitId}/evidence`, which assemble SQL facts, carry-forward lineage, semantic matches, and risk features for explainability.
 
 ### Risk Detection: Hybrid Rules + LLM
 
@@ -247,15 +250,14 @@ Question
 **Offline evaluation** (`PromptEvalRunner`, `@Tag("eval")`):
 - Golden test datasets per capability in `backend/src/test/resources/eval/`
 - Calls real LLM with actual prompt templates
-- Automated schema validation + behavioral checks
-- LLM-as-judge scoring (title quality, criteria measurability, faithfulness)
-- 3 runs per case for output variance measurement
+- Automated schema validation + behavioral checks across 6 evaluated capabilities
+- LLM-as-judge scoring currently for commit-draft title quality + success-criteria quality
 - JSON report output to `build/eval-results/`
 
 **Production evaluation** (`FaithfulnessEvaluator`):
 - Async sampling after suggestion storage
 - 100% of high-stakes types (RISK_SIGNAL, TEAM_INSIGHT, PERSONAL_INSIGHT, RAG_QUERY)
-- 10% of lower-stakes types (COMMIT_DRAFT, COMMIT_LINT)
+- 10% of lower-stakes types (`COMMIT_DRAFT_ASSIST`, `COMMIT_LINT`)
 - RAGAS-style claim decomposition: faithfulness = supported claims / total claims
 - Scores written back to `ai_suggestion` table
 
@@ -312,21 +314,25 @@ The `HostProvider` injects authenticated user identity, team context, feature fl
 
 ### AI Components
 
-| Component | Location | Purpose |
+| Component | Current status | Purpose |
 |---|---|---|
-| `CommitDraftAssistButton` | Commit form | "✨ AI Suggest" with inline diff-style suggestions |
-| `AiLintPanel` | My Week | Commit quality lint with hard vs soft distinction |
-| `RcdoSuggestionInline` | Commit form | RCDO link suggestion with rationale |
-| `RiskSignalsPanel` | My Week | Risk signal display (rules + AI) |
-| `ReconcileAssistPanel` | Reconcile page | AI-assisted outcome suggestions + carry-forward recs |
-| `InsightPanel` | My Week / Team Week | Proactive personal + team insights |
-| `ManagerAiSummaryCard` | Team Week | AI-generated team summary |
-| `SemanticSearchInput` | All pages | Natural-language RAG query input |
-| `QueryAnswerCard` | Search results | RAG answer with source citations |
-| `AiFeedbackButtons` | Every AI output | Thumbs up/down on every suggestion |
-| `AiCommitComposer` | My Week | AI-guided commit creation flow |
-| `ProactiveRiskBanner` | My Week | Banner for critical risk signals |
-| `TeamRiskSummaryBanner` | Team Week | Team-level risk overview |
+| `CommitDraftAssistButton` | Mounted in commit form | "✨ AI Suggest" with inline diff-style suggestions |
+| `AiLintPanel` | Mounted on My Week | Commit quality lint with hard vs soft distinction |
+| `RcdoSuggestionInline` | Mounted in commit form | RCDO link suggestion with rationale |
+| `InsightPanel` | Mounted on My Week / Team Week | Proactive personal + team insights |
+| `ManagerAiSummaryCard` | Mounted on Team Week | AI-generated team summary |
+| `SemanticSearchInput` | Mounted on Team Week | Natural-language RAG query input |
+| `QueryAnswerCard` | Mounted via `SemanticSearchInput` | RAG answer with source citations |
+| `AiFeedbackButtons` | Mounted across AI surfaces | Thumbs up/down on every AI output |
+| `AiCommitComposer` | Mounted on My Week | AI-guided commit creation flow |
+| `ProactiveRiskBanner` | Mounted on My Week | Banner for critical risk signals |
+| `TeamRiskSummaryBanner` | Mounted on Team Week | Team-level risk overview |
+| `AiSuggestedBadge` | Mounted on Reconcile | Indicates AI-prefilled outcomes |
+| `RiskSignalsPanel` | Reusable component, not currently mounted | Detailed risk signal display |
+| `ReconcileAssistPanel` | Reusable component, not currently mounted | Manual AI-assisted reconciliation surface |
+| `EvidenceDrawer` | Reusable component, not currently mounted | Shows SQL facts, lineage, semantic matches, and risk features behind AI output |
+
+The current Reconcile route uses `useAutoReconcileAssist()` to prefill outcomes and carry-forward recommendations automatically when a plan enters `RECONCILING`, rather than rendering `ReconcileAssistPanel` directly.
 
 ---
 

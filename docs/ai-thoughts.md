@@ -1,199 +1,88 @@
-Short answer: this repo already has serious bones. To make it feel like a deep AI engineering feat, I’d stop thinking “add more AI” and start thinking:
+# AI Notes (current state)
 
- make it a provable, explainable decision engine over real organizational history.
+This file used to contain a rough repo review. It has been refreshed to match the current codebase.
 
- From a quick pass, what’s already strong:
+## What is already strong
 
- - docs/prd.md is unusually rigorous
- - backend AI architecture is real, not toy-level:
-     - provider abstraction
-     - RAG / Pinecone
-     - prompt versioning
-     - faithfulness scoring
-     - metrics + alerts
- - frontend already has real AI surfaces in frontend/src/components/ai/
- - CI / E2E / OpenAPI verification are in place
+- The product/domain docs are unusually concrete (`docs/prd.md`, `docs/architecture.md`).
+- The backend AI stack is real infrastructure, not placeholder code:
+  - provider abstraction
+  - Pinecone-backed semantic retrieval
+  - prompt version tracking
+  - async faithfulness scoring
+  - Prometheus metrics + alert rules
+- The frontend already ships multiple AI surfaces in production routes.
+- CI covers lint, typecheck, backend/frontend tests, build, OpenAPI verification, and E2E.
 
- That’s a very good base.
+## Current recommendations
 
- What would make it outstanding
+### 1. Decide whether dormant AI components should ship or be removed
 
- ### 1. Add one signature capability that feels undeniably “intelligent”
+The repo now contains a few AI UI components that are implemented but not mounted in the current routes:
 
- Right now the AI seems mostly assistive. Good, but not yet jaw-dropping.
+- `frontend/src/components/ai/RiskSignalsPanel.tsx`
+- `frontend/src/components/ai/ReconcileAssistPanel.tsx`
+- `frontend/src/components/ai/EvidenceDrawer.tsx`
 
- If I were you, I’d build:
+That is not necessarily bad, but it should be intentional.
 
- Strategic What-If Planner
+Good next step:
+- either mount them in the product flow,
+- or mark them as experimental / future surfaces in docs,
+- or remove them to reduce maintenance drag.
 
- Given a draft plan, historical throughput, carry-forward lineage, blocked tickets, team capacity, and RCDO coverage, the system should answer:
+### 2. Finish the observability story with an AI-quality Grafana dashboard
 
- - “If I add this 5-point Queen, what should I de-scope?”
- - “Which 2 commits are most likely to carry forward, and why?”
- - “Which strategic branches are underfunded next week?”
- - “What is the minimal plan change that reduces rollover risk by 30%?”
+Metrics and Prometheus alerts exist, but there is still no dedicated AI quality dashboard JSON under `infra/grafana/provisioning/dashboards/json/`.
 
- That would be a real feat.
+The most valuable panels would be:
 
- The key is: don’t make this a chat gimmick. Make it a pipeline:
+- faithfulness by suggestion type
+- acceptance rate by suggestion type
+- provider availability
+- request volume + token consumption
+- latency percentiles for RAG queries
 
- 1. structured feature extraction
- 2. hybrid retrieval
- 3. deterministic constraints/rules
- 4. predictive scoring
- 5. counterfactual simulation
- 6. LLM only for explanation + UX rendering
+### 3. Expand judge-backed evals beyond draft assist
 
- That’s the difference between “AI app” and “AI system.”
+The eval runner now covers six capability datasets, which is a big improvement. The remaining gap is that judge-based scoring is still concentrated on commit-draft title/criteria quality.
 
- ────────────────────────────────────────────────────────────────────────────────
+High-value next expansions:
 
- ### 2. Turn your data model into a temporal intelligence engine
+- judge prompts for `rag-query` faithfulness / answer relevance
+- judge prompts for `reconcile-assist` summary usefulness
+- judge prompts for `rcdo-suggest` rationale quality
 
- Your biggest advantage is not the model vendor. It’s the domain structure:
+### 4. Publish eval outputs as a product artifact
 
- - weekly lifecycle states
- - lock vs reconcile snapshots
- - scope change events
- - carry-forward lineage
- - RCDO hierarchy
- - tickets/status history
- - manager exceptions
+The repo already has:
 
- That is gold.
+- `backend/build/eval-results/`
+- `eval-thresholds.json`
+- `eval-baseline.json`
+- `scripts/eval-threshold-check.js`
 
- Exploit it by building a temporal planning graph:
- - nodes: plans, commits, tickets, RCDOs, users, teams
- - edges: carried-forward-from, linked-to-ticket, belongs-to-team, maps-to-RCDO, blocked-by, changed-after-lock
+What would make this easier to understand for new contributors is a short companion doc such as `docs/evals.md` that explains:
 
- Then use:
- - SQL for exact facts
- - graph traversal / lineage queries for provenance
- - vector search for semantic similarity
- - feature tables for prediction
+- how to run evals locally
+- how thresholds are enforced
+- how to interpret regressions vs soft judge warnings
+- where baseline files come from
 
- That hybrid memory layer is where “deep intelligence” comes from.
+### 5. The biggest future differentiator is still a real planning intelligence feature
 
- ────────────────────────────────────────────────────────────────────────────────
+The current AI is strongest in assistive flows. The most compelling next leap would be a higher-order planning capability such as a strategic what-if planner:
 
- ### 3. Make the AI visibly evidence-based
+- “If I add this 5-point Queen, what should I de-scope?”
+- “Which commits are most likely to carry forward, and why?”
+- “Which RCDO branches are underfunded next week?”
 
- An outstanding repo doesn’t just give answers. It shows:
+If implemented, it should be built as a hybrid system:
 
- - what evidence it used
- - why it said something
- - why it stayed silent
- - how confident it is
- - how it can be wrong
+1. structured feature extraction
+2. exact SQL facts
+3. lineage / graph-style traversal
+4. predictive scoring
+5. LLM explanation only at the final layer
 
- For every AI suggestion, add an evidence drawer:
- - retrieved commits / tickets / historical analogs
- - rules that fired
- - feature values that mattered
- - confidence + abstention reason
- - exact RCDO/timeline citations
-
- A repo becomes memorable when the AI feels auditable, not magical.
-
- ────────────────────────────────────────────────────────────────────────────────
-
- ### 4. Make evals a first-class product artifact
-
- This is where you can really separate yourself.
-
- You already have a good foundation in:
- - backend/src/test/java/com/weeklycommit/ai/eval/PromptEvalRunner.java
- - backend/src/main/java/com/weeklycommit/ai/eval/FaithfulnessEvaluator.java
-
- But from what I saw, the eval fixture coverage is still narrow:
- - backend/src/test/resources/eval/ only has cases for:
-     - commit-draft-assist
-     - commit-lint
-
- To level this up:
-
- - expand evals to all AI capabilities
-     - RCDO suggest
-     - risk signals
-     - reconcile assist
-     - RAG query
-     - manager summary / insights
- - add historical replay evals
-     - run the system on past seeded weeks
-     - compare predicted risk vs actual reconcile outcomes
- - add calibration reports
-     - when model says 0.82 confidence, is it right ~82% of the time?
- - add shadow mode
-     - score but don’t show suggestions initially
-     - compare to eventual human actions
- - publish eval results as repo artifacts and docs
-
- This is how the repo starts to feel research-grade.
-
- ────────────────────────────────────────────────────────────────────────────────
-
- ### 5. Close the learning loop
-
- You already capture suggestion feedback. Great.
-
- Now go one level deeper:
-
- Train or rank from:
- - accept / dismiss
- - actual completion vs carry-forward
- - scope volatility
- - blocked duration
- - estimate accuracy
- - manager overrides
- - false-positive risk flags
-
- In other words: let the system learn not just from prompt feedback, but from real outcomes.
-
- That’s the beginning of a true planning intelligence flywheel.
-
- ────────────────────────────────────────────────────────────────────────────────
-
- Repo-specific things I’d fix immediately
-
- These are boring, but they matter a lot for perceived excellence.
-
- ### A. Add a top-level README.md
-
- I didn’t see one. That hurts the repo more than it should.
-
- It should include:
- - 1-paragraph positioning
- - architecture diagram
- - screenshots/GIFs
- - core AI flow
- - local run steps
- - demo personas
- - eval story
- - what makes it novel
-
- ### B. Fix doc drift
-
- Right now docs/ai-eval-roadmap.md looks partly stale.
-
- Examples:
- - it references docs/rag-eval-research.md, which I didn’t find
- - it talks about missing frontend AI features, but:
-     - frontend/src/components/ai/CommitDraftAssistButton.tsx
-     - frontend/src/components/ai/ReconcileAssistPanel.tsx
- already exist
- - it references a Grafana dashboard JSON that doesn’t appear present
-
- For a repo to feel world-class, docs must match reality.
-
- ### C. Publish benchmarks, not just plans
-
- Add:
- - docs/architecture.md
- - docs/evals.md
- - docs/demo-scenarios.md
-
- And ideally:
- - generated eval reports under docs/evals/
- - screenshots of Prometheus/Grafana AI quality dashboards
- - prompt/version comparison tables
-
+That would feel like a true planning intelligence system rather than a set of isolated AI helpers.

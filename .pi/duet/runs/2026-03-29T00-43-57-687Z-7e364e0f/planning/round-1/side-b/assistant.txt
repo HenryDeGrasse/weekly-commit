@@ -1,0 +1,10 @@
+I read the plan and spot-checked the code paths it targets (`AiController`, `AiContext`, `OpenRouterAiProvider`, `StubAiProvider`, `RiskDetectionService`, `aiHooks.ts`, `MyWeek.tsx`, `PromptEvalRunner`, `backend/build.gradle.kts`).
+
+This is a workable implementation path. The steps are in a reasonable order, the referenced files/APIs mostly exist, and the plan’s graceful-degradation model now matches the codebase style well enough to implement safely.
+
+Non-blocking suggestions:
+- Consider renaming `WhatIfResponse.available` to `aiAvailable` for consistency with the rest of the AI API surface, unless you intentionally want “computation available” semantics instead.
+- In the historical replay step, be explicit that the seeded benchmark data must include `ScopeChangeEvent`, `WorkItem`, and `WorkItemStatusHistory` rows if you want meaningful coverage of all 5 existing risk rules.
+- If `docs/eval-results.md` is meant to be generated from the benchmark run rather than committed as a hand-written summary, clarify that in the plan; either approach is fine, but it would help the implementer.
+
+Verdict: approve

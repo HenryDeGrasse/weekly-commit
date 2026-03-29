@@ -1,0 +1,11 @@
+ M README.md
+ M docs/ai-eval-roadmap.md
+ M docs/ai-thoughts.md
+ M docs/architecture.md
+ M duet-plan-whatif.md
+ D duet-plan.md
+?? .pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/
+?? backend/src/main/java/com/weeklycommit/ai/dto/WhatIfRequest.java
+?? backend/src/main/java/com/weeklycommit/ai/dto/WhatIfResponse.java
+?? backend/src/main/java/com/weeklycommit/ai/service/WhatIfService.java
+?? backend/src/test/java/com/weeklycommit/ai/service/WhatIfServiceTest.java

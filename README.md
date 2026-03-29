@@ -35,10 +35,10 @@ A production-grade weekly planning intelligence system that replaces 15Five with
 │  ┌─────────────────────────────────────────────────────────────────┐ │
 │  │ AI Pipeline                                                     │ │
 │  │                                                                 │ │
-│  │  10 Prompt Templates → OpenRouter/Claude → 7 AI Services       │ │
+│  │  10 Prompt Templates → OpenRouter/Claude → 10 AI Types         │ │
 │  │                                                                 │ │
-│  │  CommitDraftAssist · CommitLint · RcdoSuggest · RiskDetection  │ │
-│  │  ReconcileAssist · ManagerSummary · InsightGeneration          │ │
+│  │  DraftAssist · CommitLint · RcdoSuggest · RiskDetection ·      │ │
+│  │  ReconcileAssist · TeamSummary · RAG · Team/Personal Insights  │ │
 │  │                                                                 │ │
 │  │  RAG: ChunkBuilder → Embeddings → Pinecone → SemanticQuery    │ │
 │  │  Eval: FaithfulnessEvaluator · PromptEvalRunner               │ │
@@ -92,9 +92,9 @@ The AI layer follows three principles from the PRD: **assistive** (never authori
 | **Commit Quality Lint** | Flags vague titles, missing criteria, estimate inconsistencies | Auto on save, pre-lock |
 | **RCDO Link Suggest** | Recommends primary RCDO with rationale | During commit editing |
 | **Risk Detection** | Rules engine (5 types) + LLM augmentation for risks rules miss | On lock + daily scheduled job |
-| **Reconcile Assist** | Suggests outcomes, draft summary, carry-forward recommendations | On-demand during reconciliation |
+| **Reconcile Assist** | Suggests outcomes, draft summary, carry-forward recommendations | Auto-prefill when a plan enters reconciliation |
 | **Manager Summary** | AI-generated team week summary citing underlying data | On-demand in Team Week |
-| **Semantic Search (RAG)** | Natural-language queries over planning history | Search input across all pages |
+| **Semantic Search (RAG)** | Natural-language queries over planning history | Search input in Team Week |
 | **Personal / Team Insights** | Proactive pattern detection from historical context | Generated on lock + daily sweep |
 
 ### RAG Pipeline
@@ -204,7 +204,7 @@ Use the dev user switcher (top banner) to experience different roles:
 
 ```
 ├── backend/                    Java 21 Spring Boot modular monolith
-│   ├── src/main/java/          241 source files across 12 domain modules
+│   ├── src/main/java/          245 source files across 12 domain modules
 │   ├── src/main/resources/
 │   │   ├── db/migration/       13 Flyway migrations (V1–V13)
 │   │   └── prompts/            10 AI prompt templates

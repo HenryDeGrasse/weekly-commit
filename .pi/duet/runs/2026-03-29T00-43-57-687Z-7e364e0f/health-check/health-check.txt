@@ -1,0 +1,73 @@
+# Plan Health Check
+Model: anthropic/claude-opus-4-6
+Verdict: ⚠️ issues found
+
+## Summary
+
+The plan is well-structured and mostly aligned with existing codebase patterns. Steps 1-4 are solid — file paths, API patterns, imports, and existing code references are all verified against the actual codebase. The primary risks are: (1) Step 3 doesn't mention updating the MyWeekPage.test.tsx mock for the new useWhatIfApi hook, relying on AiErrorBoundary to suppress the resulting TypeError — functional but fragile and producing console noise; (2) Step 5 introduces @SpringBootTest for the first time in a codebase that uses exclusively Mockito unit tests, with vague guidance ('or Testcontainers as needed' — Testcontainers isn't even a dependency), unclear signal-to-outcome mapping logic, and no way to validate the benchmark actually works since evalTest isn't in requiredChecks. Step 5 is the most likely to cause an escalation loop as the agent navigates uncharted @SpringBootTest territory.
+
+## Goal Coverage Gaps
+
+- ❌ The goal says 'publishes results as a markdown doc' implying the evalTest produces docs/eval-results.md automatically, but the plan creates docs/eval-results.md as a static file in step 5 (deliverable #2) with pre-filled tables. The actual benchmark writes to build/eval-results/replay-benchmark.json. There is no step that auto-generates the markdown doc from benchmark results.
+
+## Goal Requirements Covered
+
+- ✅ POST /api/ai/what-if endpoint accepts hypothetical mutations and returns structured impact analysis + optional LLM narrative
+- ✅ Frontend What-If panel on MyWeek page shows before/after capacity, RCDO coverage delta, risk changes, and AI narrative
+- ✅ Historical replay benchmark runs via ./gradlew evalTest and produces docs/eval-results.md
+- ✅ All existing tests continue to pass (npm test, npm run lint, npm run typecheck)
+- ✅ Reuse existing RiskDetectionService rules, read models, AiProviderRegistry
+- ✅ Follow existing patterns: DTOs as Java records, @Service annotation, controllers in module packages, frontend components in frontend/src/components/ai/
+- ✅ Do NOT modify existing entity classes, migrations, or domain enums
+- ✅ Do NOT restructure existing frontend routes — integrate via composition
+
+## Step Risk Assessment
+
+### 🟢 step-1: What-If backend DTOs and pure-computation service — low risk
+- Plan injects RcdoWeekRollupRepository into WhatIfService but the described logic only uses rcdoNodeId from WeeklyCommit entities — the RcdoWeekRollupRepository is unused. Harmless but may confuse the agent.
+- The plan uses 'action enum (ADD_COMMIT/REMOVE_COMMIT/MODIFY_COMMIT)' inside a Java record — agent needs to define this as a nested enum or separate class. The description is ambiguous on whether it should be a nested enum inside WhatIfMutation or a standalone enum, but it mentions 'nested record or sibling file' for WhatIfMutation, not the enum.
+- The ResourceNotFoundException import path (com.weeklycommit.rcdo.exception.ResourceNotFoundException) is not stated — agent must discover it. RiskDetectionService.java uses this import, so it's findable.
+
+### 🟡 step-2: What-If LLM narration and REST API endpoint — medium risk
+- AiController constructor already has 13 parameters. Adding WhatIfService makes 14. The spotless/eclipse formatter may reformat the constructor, which is fine but could produce a noisy diff.
+- The plan says to update WhatIfService to inject AiProviderRegistry — this modifies the constructor already created in step 1. The agent must merge this carefully rather than appending.
+- OpenRouterAiProvider.loadPromptTemplate() switch has a string-literal 'FAITHFULNESS_EVAL' case (not using AiContext constant). The plan's new case correctly uses AiContext.TYPE_WHAT_IF — consistent with the majority pattern.
+- The plan says to 'parse narrative/recommendation from JSON response' in WhatIfService — but the AiSuggestionResult.payload() returns a raw JSON string. The agent needs ObjectMapper to parse it. The plan doesn't mention injecting ObjectMapper into WhatIfService, but the agent should figure this out from existing patterns (e.g., CommitDraftAssistService injects ObjectMapper).
+
+### 🟡 step-3: What-If frontend API client and panel component — medium risk
+- MyWeekPage.test.tsx mocks aiHooks.js module entirely with vi.mock(). Adding useWhatIfApi export to aiHooks.ts means it won't be in the mock. WhatIfPanel will call useWhatIfApi() which will be undefined → TypeError. AiErrorBoundary catches it so tests pass, BUT this produces console noise and is fragile. The plan does NOT mention updating the mock in MyWeekPage.test.tsx.
+- The plan says to use 'Card/CardHeader/CardTitle/CardContent from ../ui/Card.js' with .js extension — this is correct for the ESM project (type: module in package.json).
+- The plan says 'Use Card/CardHeader/CardTitle/CardContent from ../ui/Card.js, Button from ../ui/Button.js, Badge from ../ui/Badge.js' — all these files exist at frontend/src/components/ui/.
+- The plan says to use 'cn() usage, lucide-react icons' — cn is imported from '../../lib/utils.js' and lucide-react is in package.json dependencies. Both patterns are correct.
+- No frontend unit tests are specified for the new WhatIfPanel component. The requiredChecks include 'unit' but this only means existing tests pass, not that new tests are written. This is a test coverage gap but won't cause check failure.
+
+### 🟢 step-4: What-If eval fixtures and eval runner extension — low risk
+- Step 4 depends on step 2 having added AiContext.TYPE_WHAT_IF — the new evaluateWhatIf method references this constant. If step 4 compiles as part of a build that already includes step 2's changes, this is fine. But the plan says steps are executed sequentially, so step 2 is already complete.
+- The ParameterizedTest uses {0} display name which calls EvalCase.toString(). Since EvalCase is a Java record, toString() includes ALL fields (including the large JsonNode input). This produces extremely verbose test names but is consistent with existing eval tests.
+- The eval tests are @Tag('eval') and excluded from ./gradlew test, so they won't affect normal builds. The 'build' requiredCheck only needs compilation success, which depends on AiContext.TYPE_WHAT_IF being present (from step 2).
+
+### 🔴 step-5: Historical Replay Benchmark and eval results documentation — high risk
+
+⚠️ **Checks will fail:** The 'build' check runs ./gradlew build -x test which compiles test sources. If HistoricalReplayBenchmark uses @SpringBootTest and imports Spring test classes, compilation will succeed. However, the 'unit' check runs ./gradlew test which excludes @Tag('eval'), so the benchmark won't run during normal tests — it only runs via evalTest. The issue is that the plan says requiredChecks include 'unit' and 'build' — compilation should pass but if the agent gets the @SpringBootTest / H2 setup wrong, evalTest will fail. Since evalTest is not in requiredChecks, the checks would technically pass even if the benchmark is broken. The real risk is a broken eval test that's not caught by any requiredCheck.
+- Plan says 'Use @SpringBootTest with test DB or Testcontainers as needed' — but NO @SpringBootTest tests exist anywhere in the codebase. This is completely new territory with zero precedent to follow. Testcontainers is NOT in build.gradle.kts dependencies.
+- If using @SpringBootTest with H2 (test application.yml), the full Spring context boots with all beans including PineconeService, SemanticIndexService, etc. These use empty API keys in test config, which may cause startup warnings or errors depending on initialization logic.
+- Plan says to persist entities in @BeforeAll — but @SpringBootTest + @Tag('eval') + @TestInstance(PER_CLASS) is an unusual combination. @BeforeAll in a static context won't have access to autowired repositories. With @TestInstance(PER_CLASS) it works, but this is a subtle JUnit 5 feature the agent must get right.
+- Plan says 'replays risk predictions against historical seed data (weeks 1-8), compares to actual reconcile outcomes (weeks 9-12)' but the actual implementation creates synthetic data programmatically (10-12 weeks). There's no real historical seed data to load. The plan acknowledges this ('V11 seed uses PostgreSQL-specific SQL') but the agent may be confused about what 'historical seed data' means.
+- The plan's confusion matrix approach (predicted vs actual) requires defining what a 'true positive' means for each signal type. E.g., 'did OVERCOMMIT predict low completion rate?' — but the plan doesn't define how to compute 'actual reconcile outcomes' from the entity data. The WeeklyCommit entity has an 'outcome' field (ACHIEVED/PARTIALLY_ACHIEVED/NOT_ACHIEVED/CANCELED) — the agent must map signal predictions to outcome patterns, but the plan doesn't specify these mappings.
+- The docs/eval-results.md mentions specific case counts (commit-draft-assist: 12 cases, commit-lint: 6 cases, etc.) — the agent would need to verify these match actual files. Some may be wrong if the actual case counts differ.
+- Step says 'Independent of steps 1-4' but docs/eval-results.md deliverable references 'what-if: 8 cases' which is created in step 4. If step 5 executes before step 4 (as implied by 'independent'), the doc references non-existent cases. However, since it's a static doc this won't cause a check failure.
+- The evalTest Gradle task has 'junit.jupiter.execution.timeout.default=120s'. If @SpringBootTest context initialization is slow or has errors, the first HistoricalReplayBenchmark test could time out.
+
+## Critical Issues (will cause failure)
+
+- 🔴 Step 5 prescribes '@SpringBootTest with test DB or Testcontainers as needed' but zero @SpringBootTest tests exist in the codebase for reference, and Testcontainers is not in build.gradle.kts dependencies. The agent has no pattern to follow and will likely struggle with Spring context bootstrapping, entity persistence in @BeforeAll, and the confusion matrix mapping between risk signals and reconcile outcomes.
+- 🔴 Step 5's confusion matrix logic (precision/recall/F1 for risk signal accuracy) lacks specification for how to map predicted risk signals to actual reconcile outcomes. The plan doesn't define what constitutes a 'true positive' for each of the 5 signal types (e.g., does OVERCOMMIT predict NOT_ACHIEVED outcomes? At what threshold?). The agent will have to invent these mappings.
+
+## Warnings (may cause problems)
+
+- 🟡 Step 3 does not mention updating the vi.mock('aiHooks.js') block in frontend/src/__tests__/MyWeekPage.test.tsx to include useWhatIfApi. The error is caught by AiErrorBoundary so tests pass, but this produces console noise and is a fragile pattern that could break if AiErrorBoundary is removed or if tests check for console errors.
+- 🟡 Step 2 doesn't mention injecting ObjectMapper into WhatIfService for parsing the LLM response JSON. Existing service patterns (CommitDraftAssistService, RiskDetectionService) inject ObjectMapper, so the agent should figure this out, but it's not explicit.
+- 🟡 Step 1 injects RcdoWeekRollupRepository into WhatIfService but the described computation doesn't use it — it computes RCDO coverage from commits' rcdoNodeId fields. The unused injection won't break anything but adds unnecessary coupling.
+- 🟡 Step 5's docs/eval-results.md references 'what-if: 8 cases' which is created by step 4. If step 5 claims independence from steps 1-4, the doc's accuracy depends on step 4 being complete first.
+- 🟡 The 'lint' requiredCheck in steps 1-2 includes ./gradlew spotlessCheck (backend). The eclipse formatter in spotless may reformat newly added code. If the agent writes code that doesn't match eclipse format conventions, spotlessCheck will fail. The agent should run spotlessApply or follow the existing code style precisely.
+

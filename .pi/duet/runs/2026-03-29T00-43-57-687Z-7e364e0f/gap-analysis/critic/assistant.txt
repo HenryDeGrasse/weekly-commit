@@ -1,0 +1,12 @@
+I found one missed blocker.
+
+The planner’s earlier blockers are real and the revised plan fixes them, but Step 3 still has a contradiction with the intended backend behavior.
+
+Non-blocking suggestions:
+- Consider using `aiAvailable` instead of `available` in `WhatIfResponse` to match every other AI DTO.
+- If `docs/eval-results.md` is meant to publish actual benchmark output, consider generating/updating it from the benchmark JSON rather than leaving it as a placeholder.
+- If the UI should show human-readable RCDO names in diffs, you may want `RcdoNodeRepository` in the backend plan too.
+
+Verdict: changes_requested
+Blocking issues:
+- Step 3 says `WhatIfPanel` should use `useAiStatus()` to hide the panel when AI is unavailable. That conflicts with Step 2 and the codebase’s graceful-degradation model: the what-if computation is deterministic backend logic, and only the narrative is AI-dependent. The backend plan explicitly says to return structured impact analysis with `narrative = null` when AI is unavailable. Hiding the panel on provider unavailability would make the feature inaccessible precisely when it should still work. The plan should instead keep the panel available whenever the feature flag/page state allows it, and degrade only the narrative/recommendation portion when AI is down.
