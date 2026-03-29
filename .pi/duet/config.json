@@ -35,20 +35,12 @@
   "maxExecutionRounds": 10,
   "alternateByStep": true,
   "checks": {
-    "lint": {
-      "cmd": "npm run lint",
-      "timeoutSec": 300
-    },
-    "typecheck": {
-      "cmd": "npm run typecheck",
+    "static": {
+      "cmd": "npm run check:static",
       "timeoutSec": 300
     },
     "unit": {
       "cmd": "npm test",
-      "timeoutSec": 600
-    },
-    "build": {
-      "cmd": "npm run build",
       "timeoutSec": 600
     }
   },

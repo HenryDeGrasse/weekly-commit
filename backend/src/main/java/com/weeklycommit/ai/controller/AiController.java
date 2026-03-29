@@ -3,6 +3,7 @@ package com.weeklycommit.ai.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.dto.AiFeedbackRequest;
+import com.weeklycommit.ai.dto.CalibrationProfileResponse;
 import com.weeklycommit.ai.dto.StructuredEvidenceResponse;
 import com.weeklycommit.ai.dto.WhatIfRequest;
 import com.weeklycommit.ai.dto.WhatIfResponse;
@@ -35,6 +36,7 @@ import com.weeklycommit.ai.service.ManagerAiSummaryService;
 import com.weeklycommit.ai.service.RcdoSuggestService;
 import com.weeklycommit.ai.service.RiskDetectionService;
 import com.weeklycommit.ai.service.ReconcileAssistService;
+import com.weeklycommit.ai.service.CalibrationService;
 import com.weeklycommit.ai.service.WhatIfService;
 import com.weeklycommit.domain.entity.AiSuggestion;
 import com.weeklycommit.domain.repository.AiSuggestionRepository;
@@ -83,6 +85,7 @@ public class AiController {
 	private final AiSuggestionRepository suggestionRepo;
 	private final StructuredEvidenceService evidenceService;
 	private final WhatIfService whatIfService;
+	private final CalibrationService calibrationService;
 	private final ObjectMapper objectMapper;
 
 	public AiController(CommitDraftAssistService draftAssistService, CommitLintService lintService,
@@ -91,7 +94,7 @@ public class AiController {
 			AiSuggestionService suggestionService, AiProviderRegistry providerRegistry,
 			SemanticIndexService semanticIndexService, SemanticQueryService semanticQueryService,
 			AiSuggestionRepository suggestionRepo, StructuredEvidenceService evidenceService,
-			WhatIfService whatIfService, ObjectMapper objectMapper) {
+			WhatIfService whatIfService, CalibrationService calibrationService, ObjectMapper objectMapper) {
 		this.draftAssistService = draftAssistService;
 		this.lintService = lintService;
 		this.rcdoSuggestService = rcdoSuggestService;
@@ -105,6 +108,7 @@ public class AiController {
 		this.suggestionRepo = suggestionRepo;
 		this.evidenceService = evidenceService;
 		this.whatIfService = whatIfService;
+		this.calibrationService = calibrationService;
 		this.objectMapper = objectMapper;
 	}
 
@@ -348,6 +352,29 @@ public class AiController {
 		} catch (Exception e) {
 			log.warn("Evidence gathering failed for commit {}: {}", commitId, e.getMessage());
 			return ResponseEntity.ok(StructuredEvidenceResponse.unavailable());
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Calibration
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns the rolling calibration profile for the given user: overall
+	 * achievement rate, per-chess-piece rates, carry-forward probability, and
+	 * data-sufficiency tier.
+	 *
+	 * <p>
+	 * Returns {@code available: false} when fewer than 8 weeks of history exist.
+	 */
+	@GetMapping("/api/ai/calibration/{userId}")
+	public ResponseEntity<CalibrationProfileResponse> getCalibration(@PathVariable UUID userId) {
+		try {
+			CalibrationService.CalibrationProfile profile = calibrationService.getCalibration(userId);
+			return ResponseEntity.ok(CalibrationProfileResponse.of(profile));
+		} catch (Exception ex) {
+			log.warn("Calibration lookup failed for user={}: {}", userId, ex.getMessage());
+			return ResponseEntity.ok(CalibrationProfileResponse.unavailable());
 		}
 	}
 

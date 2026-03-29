@@ -1,0 +1,34 @@
+Everything is correctly wired. Here's a summary of all changes made:
+
+## Summary
+
+### What was reviewed
+- `WeeklyCommitRepository.java` — confirmed the native query method `findByOwnerUserIdAndPlanWeekStartBetween` was already added in the interrupted first attempt
+- `UserWeekFact.java` / `UserWeekFactRepository.java` — confirmed fields and available query methods
+- `CommitOutcome.java` / `ChessPiece.java` — confirmed enum values
+- `AiController.java` — confirmed structure for adding new dependency/endpoint
+- `AiControllerTest.java` — identified the missing `@MockBean CalibrationService` that would break the existing test
+
+### What was changed
+
+**`WeeklyCommitRepository.java`** (was already partially done): confirmed native SQL query with `nativeQuery = true` is in place — this correctly handles the fact that `WeeklyCommit.planId` is a raw UUID column, not a `@ManyToOne` relationship, exactly as the operator note flagged.
+
+**New: `CalibrationService.java`**
+- `getCalibration(UUID userId)` queries `UserWeekFactRepository` for the 12-week window for aggregate stats, then `WeeklyCommitRepository.findByOwnerUserIdAndPlanWeekStartBetween()` for per-piece stats
+- Returns `CalibrationProfile.insufficient()` when fewer than 8 weeks of data
+- `CalibrationConfidenceTier` enum (HIGH/MEDIUM/LOW/INSUFFICIENT with tier boundaries at 8/15/30 weeks)
+- `CalibrationProfile` record with all required fields; CANCELED commits excluded from chess-piece rate calculations
+
+**New: `CalibrationProfileResponse.java`** — DTO that serializes `ChessPiece` enum keys to strings for JSON
+
+**Modified: `AiController.java`** — injected `CalibrationService`, added `GET /api/ai/calibration/{userId}` endpoint with graceful error handling
+
+**New: `CalibrationServiceTest.java`** — 12 tests covering: insufficient data (0 and 7 weeks), valid rates from 12 weeks, all four confidence tier thresholds, carry-forward probability calculation, per-chess-piece rates (including CANCELED exclusion), average estimates by piece, division-by-zero safety
+
+**Modified: `AiControllerTest.java`** — added `@MockBean CalibrationService calibrationService` to fix the `NoSuchBeanDefinitionException` that broke the existing controller tests after `AiController`'s constructor was expanded
+
+```observations
+- [medium] OpenRouterAiProvider.java: Retry loop double-counts rate tokens (pre-existing, carry forward)
+```
+
+Verdict: changes_made
