@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-29T02:03:44.511Z",
+  "updatedAt": "2026-03-29T02:09:55.272Z",
   "runId": "2026-03-29T00-43-57-687Z-7e364e0f",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -129,12 +129,12 @@
     ]
   },
   "planSourcePath": "duet-plan-whatif.md",
-  "stepIndex": 3,
+  "stepIndex": 4,
   "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-3",
-    "stepTitle": "What-If frontend API client and panel component",
+    "stepId": "step-4",
+    "stepTitle": "What-If eval fixtures and eval runner extension",
     "gateResults": [
       {
         "id": "lint",
@@ -146,6 +146,10 @@
       },
       {
         "id": "unit",
+        "passed": true
+      },
+      {
+        "id": "build",
         "passed": true
       },
       {

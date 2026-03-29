@@ -1,0 +1,202 @@
+[
+  {
+    "id": "whatif-001",
+    "description": "ADD_COMMIT pushes total over capacity budget — OVERCOMMIT risk appears, narrative must mention it",
+    "edgeCaseType": "risk_introduction",
+    "input": {
+      "currentTotalPoints": 8,
+      "projectedTotalPoints": 14,
+      "capacityBudget": 10,
+      "capacityDelta": 6,
+      "currentRiskSignals": [],
+      "projectedRiskSignals": ["OVERCOMMIT"],
+      "newRisks": ["OVERCOMMIT"],
+      "resolvedRisks": [],
+      "rcdoCoverageChanges": []
+    },
+    "expectedBehavior": {
+      "shouldHaveNarrative": true,
+      "narrativeShouldMention": ["overcommit", "14", "10"],
+      "maxNarrativeLength": 600,
+      "shouldHaveRecommendation": true
+    },
+    "critical": true
+  },
+  {
+    "id": "whatif-002",
+    "description": "REMOVE_COMMIT resolves OVERCOMMIT — narrative must highlight the improvement",
+    "edgeCaseType": "risk_resolution",
+    "input": {
+      "currentTotalPoints": 14,
+      "projectedTotalPoints": 8,
+      "capacityBudget": 10,
+      "capacityDelta": -6,
+      "currentRiskSignals": ["OVERCOMMIT"],
+      "projectedRiskSignals": [],
+      "newRisks": [],
+      "resolvedRisks": ["OVERCOMMIT"],
+      "rcdoCoverageChanges": []
+    },
+    "expectedBehavior": {
+      "shouldHaveNarrative": true,
+      "narrativeShouldMention": ["overcommit", "8"],
+      "maxNarrativeLength": 600
+    },
+    "critical": true
+  },
+  {
+    "id": "whatif-003",
+    "description": "MODIFY_COMMIT shifts RCDO coverage between two nodes — narrative must mention the coverage change",
+    "edgeCaseType": "rcdo_shift",
+    "input": {
+      "currentTotalPoints": 8,
+      "projectedTotalPoints": 8,
+      "capacityBudget": 10,
+      "capacityDelta": 0,
+      "currentRiskSignals": [],
+      "projectedRiskSignals": [],
+      "newRisks": [],
+      "resolvedRisks": [],
+      "rcdoCoverageChanges": [
+        {
+          "rcdoNodeId": "aaaaaaaa-0001-0001-0001-000000000001",
+          "beforePoints": 5,
+          "afterPoints": 0
+        },
+        {
+          "rcdoNodeId": "bbbbbbbb-0002-0002-0002-000000000002",
+          "beforePoints": 0,
+          "afterPoints": 5
+        }
+      ]
+    },
+    "expectedBehavior": {
+      "shouldHaveNarrative": true,
+      "narrativeShouldMention": ["coverage", "5"],
+      "maxNarrativeLength": 600
+    },
+    "critical": false
+  },
+  {
+    "id": "whatif-004",
+    "description": "No mutations applied — zero delta across all dimensions, narrative indicates no significant impact",
+    "edgeCaseType": "no_change",
+    "input": {
+      "currentTotalPoints": 7,
+      "projectedTotalPoints": 7,
+      "capacityBudget": 10,
+      "capacityDelta": 0,
+      "currentRiskSignals": [],
+      "projectedRiskSignals": [],
+      "newRisks": [],
+      "resolvedRisks": [],
+      "rcdoCoverageChanges": []
+    },
+    "expectedBehavior": {
+      "shouldHaveNarrative": true,
+      "narrativeShouldMention": ["7"],
+      "maxNarrativeLength": 600
+    },
+    "critical": false
+  },
+  {
+    "id": "whatif-005",
+    "description": "Mixed add and remove mutations with net-zero capacity change and RCDO coverage redistribution",
+    "edgeCaseType": "mixed_mutations",
+    "input": {
+      "currentTotalPoints": 8,
+      "projectedTotalPoints": 8,
+      "capacityBudget": 10,
+      "capacityDelta": 0,
+      "currentRiskSignals": [],
+      "projectedRiskSignals": [],
+      "newRisks": [],
+      "resolvedRisks": [],
+      "rcdoCoverageChanges": [
+        {
+          "rcdoNodeId": "cccccccc-0003-0003-0003-000000000003",
+          "beforePoints": 3,
+          "afterPoints": 6
+        },
+        {
+          "rcdoNodeId": "dddddddd-0004-0004-0004-000000000004",
+          "beforePoints": 5,
+          "afterPoints": 2
+        }
+      ]
+    },
+    "expectedBehavior": {
+      "shouldHaveNarrative": true,
+      "narrativeShouldMention": ["coverage"],
+      "maxNarrativeLength": 600
+    },
+    "critical": false
+  },
+  {
+    "id": "whatif-006",
+    "description": "Single large ADD_COMMIT fills the entire capacity budget — resolves UNDERCOMMIT, narrative notes budget utilization",
+    "edgeCaseType": "budget_saturation",
+    "input": {
+      "currentTotalPoints": 0,
+      "projectedTotalPoints": 10,
+      "capacityBudget": 10,
+      "capacityDelta": 10,
+      "currentRiskSignals": ["UNDERCOMMIT"],
+      "projectedRiskSignals": [],
+      "newRisks": [],
+      "resolvedRisks": ["UNDERCOMMIT"],
+      "rcdoCoverageChanges": []
+    },
+    "expectedBehavior": {
+      "shouldHaveNarrative": true,
+      "narrativeShouldMention": ["10", "budget"],
+      "maxNarrativeLength": 600
+    },
+    "critical": false
+  },
+  {
+    "id": "whatif-007",
+    "description": "Chess-piece escalation PAWN→KING introduces BLOCKED_CRITICAL risk — narrative must warn about the blocked critical signal",
+    "edgeCaseType": "risk_introduction",
+    "input": {
+      "currentTotalPoints": 10,
+      "projectedTotalPoints": 10,
+      "capacityBudget": 10,
+      "capacityDelta": 0,
+      "currentRiskSignals": [],
+      "projectedRiskSignals": ["BLOCKED_CRITICAL"],
+      "newRisks": ["BLOCKED_CRITICAL"],
+      "resolvedRisks": [],
+      "rcdoCoverageChanges": []
+    },
+    "expectedBehavior": {
+      "shouldHaveNarrative": true,
+      "narrativeShouldMention": ["blocked", "critical"],
+      "maxNarrativeLength": 600,
+      "shouldHaveRecommendation": true
+    },
+    "critical": false
+  },
+  {
+    "id": "whatif-008",
+    "description": "ADD_COMMIT brings under-capacity plan above 60% threshold — resolves UNDERCOMMIT, narrative mentions improvement",
+    "edgeCaseType": "risk_resolution",
+    "input": {
+      "currentTotalPoints": 4,
+      "projectedTotalPoints": 8,
+      "capacityBudget": 10,
+      "capacityDelta": 4,
+      "currentRiskSignals": ["UNDERCOMMIT"],
+      "projectedRiskSignals": [],
+      "newRisks": [],
+      "resolvedRisks": ["UNDERCOMMIT"],
+      "rcdoCoverageChanges": []
+    },
+    "expectedBehavior": {
+      "shouldHaveNarrative": true,
+      "narrativeShouldMention": ["undercommit", "8"],
+      "maxNarrativeLength": 600
+    },
+    "critical": true
+  }
+]

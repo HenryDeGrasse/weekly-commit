@@ -434,7 +434,88 @@ class PromptEvalRunner {
 		assertThat(schemaValid).as("Schema validation for case %s", evalCase.id()).isTrue();
 	}
 
+	// ── What-If Narration Evaluation ────────────────────────────────────────
+
+	Stream<EvalCase> whatIfCases() throws Exception {
+		return loadCases("eval/what-if/cases.json");
+	}
+
+	@ParameterizedTest(name = "what-if: {0}")
+	@MethodSource("whatIfCases")
+	void evaluateWhatIf(EvalCase evalCase) throws Exception {
+		if (!providerAvailable) {
+			log.info("Skipping eval case {} — provider unavailable", evalCase.id());
+			return;
+		}
+
+		JsonNode input = evalCase.input();
+		JsonNode expected = evalCase.expectedBehavior();
+
+		// input IS the additionalContext — matches
+		// WhatIfService.buildNarrationContext()
+		Map<String, Object> additionalContext = objectMapper.convertValue(input, new TypeReference<>() {
+		});
+
+		AiContext context = new AiContext(AiContext.TYPE_WHAT_IF, null, null, null, Map.of(), Map.of(), List.of(),
+				List.of(), additionalContext);
+
+		AiSuggestionResult result = provider.generateSuggestion(context);
+
+		boolean schemaValid = false;
+		JsonNode output = null;
+		if (result.available() && result.payload() != null) {
+			try {
+				output = objectMapper.readTree(result.payload());
+				schemaValid = output.has("narrative");
+			} catch (Exception e) {
+				log.warn("Case {}: invalid JSON output: {}", evalCase.id(), e.getMessage());
+			}
+		}
+
+		EvalResult evalResult = new EvalResult(evalCase.id(), evalCase.description(),
+				result.promptVersion() != null ? result.promptVersion() : "unknown", schemaValid, result.payload(),
+				evalCase.critical());
+
+		if (schemaValid && output != null) {
+			evaluateWhatIfOutput(output, expected, evalResult);
+		}
+
+		allResults.add(evalResult);
+		log.info("Eval result: {}", evalResult);
+		assertThat(schemaValid).as("Schema validation for case %s", evalCase.id()).isTrue();
+	}
+
 	// ── Output evaluation helpers ─────────────────────────────────────────
+
+	private void evaluateWhatIfOutput(JsonNode output, JsonNode expected, EvalResult result) {
+		String narrative = output.path("narrative").asText("");
+		boolean hasNarrative = !narrative.isBlank() && !"null".equalsIgnoreCase(narrative);
+
+		if (expected.has("shouldHaveNarrative")) {
+			result.addCheck("hasNarrative", expected.get("shouldHaveNarrative").asBoolean() == hasNarrative);
+		}
+
+		if (expected.has("narrativeShouldMention") && hasNarrative) {
+			String lowerNarrative = narrative.toLowerCase();
+			for (JsonNode keyword : expected.get("narrativeShouldMention")) {
+				String kw = keyword.asText("").toLowerCase();
+				result.addCheck("mentions_" + kw.replace(" ", "_"), lowerNarrative.contains(kw));
+			}
+		}
+
+		if (expected.has("maxNarrativeLength") && hasNarrative) {
+			result.addCheck("maxNarrativeLength", narrative.length() <= expected.get("maxNarrativeLength").asInt());
+		}
+
+		if (expected.has("shouldHaveRecommendation")) {
+			String rec = output.path("recommendation").asText("");
+			boolean hasRec = !rec.isBlank() && !"null".equalsIgnoreCase(rec);
+			result.addCheck("hasRecommendation", expected.get("shouldHaveRecommendation").asBoolean() == hasRec);
+		}
+
+		result.addScore("narrativeLength", narrative.length());
+		result.addNote("narrativePreview", narrative.substring(0, Math.min(200, narrative.length())));
+	}
 
 	private void evaluateRcdoSuggestOutput(JsonNode output, JsonNode expected, EvalResult result) {
 		boolean suggestedNode = output.has("suggestedRcdoNodeId") && !output.get("suggestedRcdoNodeId").isNull()

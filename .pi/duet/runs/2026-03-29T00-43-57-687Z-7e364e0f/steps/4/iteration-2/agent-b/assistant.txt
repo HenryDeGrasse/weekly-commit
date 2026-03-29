@@ -1,0 +1,28 @@
+Reviewed the step-4 diff:
+
+- `backend/src/test/java/com/weeklycommit/ai/eval/PromptEvalRunner.java`
+- `backend/src/test/resources/eval/what-if/cases.json`
+
+What I verified:
+- The new what-if eval fixture file exists and contains 8 cases matching the `EvalCase` schema.
+- The inputs match the `WhatIfService` narration `additionalContext` shape.
+- `PromptEvalRunner` now loads the what-if cases, adds a `@ParameterizedTest` for them, and evaluates output fields per the requested behavior.
+- The changes are confined to test resources / eval runner only, consistent with scope.
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅
+- `npm run build` ✅
+
+Assessment:
+- I did not find any material defect in the diff.
+- The step requirements are met and the required checks pass.
+
+Verdict: approve
+
+```observations
+- [low] backend/src/test/java/com/weeklycommit/ai/eval/PromptEvalRunner.java: The new what-if eval path compiles, but the tagged eval suite is not exercised by the normal required checks; runtime verification still depends on running `./gradlew evalTest` / `npm run eval:run`.
+- [low] frontend/src/__tests__/TeamWeekPage.test.tsx: Pre-existing React `act(...)` warnings still appear during `npm test`; unrelated to this step.
+- [low] frontend/src/__tests__/AppShell.test.tsx: Pre-existing React `act(...)` warnings still appear during `npm test`; unrelated to this step.
+```
