@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.dto.WhatIfRequest;
 import com.weeklycommit.ai.dto.WhatIfRequest.WhatIfMutation;
 import com.weeklycommit.ai.dto.WhatIfRequest.WhatIfMutation.WhatIfAction;
 import com.weeklycommit.ai.dto.WhatIfResponse;
+import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.ChessPiece;
@@ -46,6 +48,9 @@ class WhatIfServiceTest {
 	@Mock
 	private WorkItemStatusHistoryRepository statusHistoryRepo;
 
+	@Mock
+	private AiProviderRegistry aiProviderRegistry;
+
 	private WhatIfService service;
 
 	private UUID planId;
@@ -54,7 +59,10 @@ class WhatIfServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new WhatIfService(planRepo, commitRepo, scopeChangeRepo, workItemRepo, statusHistoryRepo);
+		// aiProviderRegistry.isAiEnabled() returns false by default (unstubbed mock)
+		// so LLM path is skipped and existing assertions on structured data still pass
+		service = new WhatIfService(planRepo, commitRepo, scopeChangeRepo, workItemRepo, statusHistoryRepo,
+				aiProviderRegistry, new ObjectMapper());
 		planId = UUID.randomUUID();
 		userId = UUID.randomUUID();
 

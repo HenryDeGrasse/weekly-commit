@@ -18,6 +18,7 @@ import com.weeklycommit.ai.service.ManagerAiSummaryService;
 import com.weeklycommit.ai.service.RcdoSuggestService;
 import com.weeklycommit.ai.service.ReconcileAssistService;
 import com.weeklycommit.ai.service.RiskDetectionService;
+import com.weeklycommit.ai.service.WhatIfService;
 import com.weeklycommit.domain.repository.AiSuggestionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -69,6 +70,9 @@ class AiControllerTest {
 
 	@MockBean
 	private com.weeklycommit.ai.evidence.StructuredEvidenceService evidenceService;
+
+	@MockBean
+	private WhatIfService whatIfService;
 
 	@Test
 	void getRiskSignals_requiresActorHeader() throws Exception {

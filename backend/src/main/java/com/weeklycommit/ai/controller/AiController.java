@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.dto.AiFeedbackRequest;
 import com.weeklycommit.ai.dto.StructuredEvidenceResponse;
+import com.weeklycommit.ai.dto.WhatIfRequest;
+import com.weeklycommit.ai.dto.WhatIfResponse;
 import com.weeklycommit.ai.evidence.StructuredEvidence;
 import com.weeklycommit.ai.evidence.StructuredEvidenceService;
 import com.weeklycommit.ai.dto.CommitDraftAssistRequest;
@@ -33,6 +35,7 @@ import com.weeklycommit.ai.service.ManagerAiSummaryService;
 import com.weeklycommit.ai.service.RcdoSuggestService;
 import com.weeklycommit.ai.service.RiskDetectionService;
 import com.weeklycommit.ai.service.ReconcileAssistService;
+import com.weeklycommit.ai.service.WhatIfService;
 import com.weeklycommit.domain.entity.AiSuggestion;
 import com.weeklycommit.domain.repository.AiSuggestionRepository;
 import jakarta.validation.Valid;
@@ -79,6 +82,7 @@ public class AiController {
 	private final SemanticQueryService semanticQueryService;
 	private final AiSuggestionRepository suggestionRepo;
 	private final StructuredEvidenceService evidenceService;
+	private final WhatIfService whatIfService;
 	private final ObjectMapper objectMapper;
 
 	public AiController(CommitDraftAssistService draftAssistService, CommitLintService lintService,
@@ -87,7 +91,7 @@ public class AiController {
 			AiSuggestionService suggestionService, AiProviderRegistry providerRegistry,
 			SemanticIndexService semanticIndexService, SemanticQueryService semanticQueryService,
 			AiSuggestionRepository suggestionRepo, StructuredEvidenceService evidenceService,
-			ObjectMapper objectMapper) {
+			WhatIfService whatIfService, ObjectMapper objectMapper) {
 		this.draftAssistService = draftAssistService;
 		this.lintService = lintService;
 		this.rcdoSuggestService = rcdoSuggestService;
@@ -100,6 +104,7 @@ public class AiController {
 		this.semanticQueryService = semanticQueryService;
 		this.suggestionRepo = suggestionRepo;
 		this.evidenceService = evidenceService;
+		this.whatIfService = whatIfService;
 		this.objectMapper = objectMapper;
 	}
 
@@ -171,6 +176,24 @@ public class AiController {
 	@PostMapping("/api/ai/reconcile-assist")
 	public ResponseEntity<ReconcileAssistResponse> reconcileAssist(@Valid @RequestBody ReconcileAssistRequest request) {
 		return ResponseEntity.ok(reconcileAssistService.assist(request));
+	}
+
+	// -------------------------------------------------------------------------
+	// Capability 5b: What-If plan simulation
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Simulates hypothetical plan mutations (add/remove/modify commits) in-memory
+	 * and returns a structured impact analysis with optional LLM narrative.
+	 *
+	 * <p>
+	 * No data is persisted. The response always includes the structured
+	 * before/after analysis; {@code narrative} and {@code recommendation} are null
+	 * when AI is disabled or unavailable.
+	 */
+	@PostMapping("/api/ai/what-if")
+	public ResponseEntity<WhatIfResponse> whatIf(@Valid @RequestBody WhatIfRequest request) {
+		return ResponseEntity.ok(whatIfService.simulate(request));
 	}
 
 	// -------------------------------------------------------------------------

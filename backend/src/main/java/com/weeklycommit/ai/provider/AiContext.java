@@ -57,4 +57,7 @@ public record AiContext(
 
 	/** Suggestion type constant — proactive personal/plan-level insight. */
 	public static final String TYPE_PERSONAL_INSIGHT = "PERSONAL_INSIGHT";
+
+	/** Suggestion type constant — what-if plan simulation narration. */
+	public static final String TYPE_WHAT_IF = "WHAT_IF";
 }

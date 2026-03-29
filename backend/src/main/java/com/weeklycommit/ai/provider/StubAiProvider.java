@@ -164,6 +164,15 @@ public class StubAiProvider implements AiProvider {
 						""";
 				rationale = "Personal insight generated from recent plan history.";
 			}
+			case AiContext.TYPE_WHAT_IF -> {
+				payload = """
+						{
+						  "narrative": "This change would shift the plan's total points and affect RCDO coverage as described.",
+						  "recommendation": "Consider whether the capacity change aligns with your weekly goals."
+						}
+						""";
+				rationale = "Stub what-if narration generated for simulation result.";
+			}
 			default -> {
 				payload = "{}";
 				rationale = "Unknown suggestion type.";

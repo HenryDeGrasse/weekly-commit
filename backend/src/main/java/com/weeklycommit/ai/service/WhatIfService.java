@@ -1,5 +1,7 @@
 package com.weeklycommit.ai.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.dto.WhatIfRequest;
 import com.weeklycommit.ai.dto.WhatIfRequest.WhatIfMutation;
 import com.weeklycommit.ai.dto.WhatIfRequest.WhatIfMutation.WhatIfAction;
@@ -7,6 +9,9 @@ import com.weeklycommit.ai.dto.WhatIfResponse;
 import com.weeklycommit.ai.dto.WhatIfResponse.PlanSnapshot;
 import com.weeklycommit.ai.dto.WhatIfResponse.RcdoCoverageChange;
 import com.weeklycommit.ai.dto.WhatIfResponse.RiskDelta;
+import com.weeklycommit.ai.provider.AiContext;
+import com.weeklycommit.ai.provider.AiProviderRegistry;
+import com.weeklycommit.ai.provider.AiSuggestionResult;
 import com.weeklycommit.domain.entity.WeeklyCommit;
 import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.entity.WorkItem;
@@ -28,16 +33,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Pure-computation What-If simulation service (no LLM calls in this step).
+ * What-If simulation service: pure computation + optional LLM narration.
  *
  * <p>
  * Applies hypothetical commit mutations in-memory against a plan's current
  * state and returns a before/after analysis: capacity delta, per-RCDO-node
  * coverage changes, and risk signal diff. No data is persisted.
+ *
+ * <p>
+ * After computing the structured impact the service optionally calls the LLM to
+ * produce a 2-3 sentence narrative and a short recommendation. When AI is
+ * unavailable the full structured response is still returned with
+ * {@code narrative=null} and {@code recommendation=null}.
  *
  * <p>
  * Risk thresholds are duplicated from {@code RiskDetectionService} as
@@ -47,6 +60,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class WhatIfService {
+
+	private static final Logger log = LoggerFactory.getLogger(WhatIfService.class);
 
 	/** Blocked-for threshold in hours for the BLOCKED_CRITICAL signal. */
 	static final long BLOCKED_CRITICAL_HOURS = 48;
@@ -65,15 +80,20 @@ public class WhatIfService {
 	private final ScopeChangeEventRepository scopeChangeRepo;
 	private final WorkItemRepository workItemRepo;
 	private final WorkItemStatusHistoryRepository statusHistoryRepo;
+	private final AiProviderRegistry aiProviderRegistry;
+	private final ObjectMapper objectMapper;
 
 	public WhatIfService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			ScopeChangeEventRepository scopeChangeRepo, WorkItemRepository workItemRepo,
-			WorkItemStatusHistoryRepository statusHistoryRepo) {
+			WorkItemStatusHistoryRepository statusHistoryRepo, AiProviderRegistry aiProviderRegistry,
+			ObjectMapper objectMapper) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.scopeChangeRepo = scopeChangeRepo;
 		this.workItemRepo = workItemRepo;
 		this.statusHistoryRepo = statusHistoryRepo;
+		this.aiProviderRegistry = aiProviderRegistry;
+		this.objectMapper = objectMapper;
 	}
 
 	// -------------------------------------------------------------------------
@@ -81,12 +101,13 @@ public class WhatIfService {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Simulates the impact of hypothetical mutations on a plan.
+	 * Simulates the impact of hypothetical mutations on a plan and optionally adds
+	 * an LLM narrative.
 	 *
 	 * @param request
 	 *            the what-if request with mutations to apply
-	 * @return structured before/after analysis, with narrative=null (added in step
-	 *         2)
+	 * @return structured before/after analysis; narrative/recommendation are null
+	 *         when AI is unavailable
 	 * @throws ResourceNotFoundException
 	 *             if the plan does not exist
 	 */
@@ -113,8 +134,91 @@ public class WhatIfService {
 
 		RiskDelta riskDelta = computeRiskDelta(currentState.riskSignals(), projectedState.riskSignals());
 
-		return new WhatIfResponse(true, currentState, projectedState, capacityDelta, coverageChanges, riskDelta, null,
-				null);
+		// Optional LLM narration — never blocks the structured response
+		String[] narration = fetchNarration(request, currentState, projectedState, capacityDelta, riskDelta,
+				coverageChanges);
+
+		return new WhatIfResponse(true, currentState, projectedState, capacityDelta, coverageChanges, riskDelta,
+				narration[0], narration[1]);
+	}
+
+	// -------------------------------------------------------------------------
+	// LLM narration
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Calls the LLM to produce a narrative and recommendation for the impact.
+	 * Returns a two-element array: {@code [narrative, recommendation]}, both
+	 * possibly null on AI unavailability or parse failure.
+	 */
+	private String[] fetchNarration(WhatIfRequest request, PlanSnapshot currentState, PlanSnapshot projectedState,
+			int capacityDelta, RiskDelta riskDelta, List<RcdoCoverageChange> coverageChanges) {
+		if (!aiProviderRegistry.isAiEnabled()) {
+			return new String[]{null, null};
+		}
+		try {
+			Map<String, Object> additionalContext = buildNarrationContext(currentState, projectedState, capacityDelta,
+					riskDelta, coverageChanges);
+			AiContext context = new AiContext(AiContext.TYPE_WHAT_IF, request.userId(), request.planId(), null,
+					Map.of(), Map.of(), List.of(), List.of(), additionalContext);
+			AiSuggestionResult result = aiProviderRegistry.generateSuggestion(context);
+			if (!result.available() || result.payload() == null) {
+				return new String[]{null, null};
+			}
+			return parseNarration(result.payload());
+		} catch (Exception e) {
+			log.debug("LLM narration failed for what-if plan {}: {}", request.planId(), e.getMessage());
+			return new String[]{null, null};
+		}
+	}
+
+	private String[] parseNarration(String payload) {
+		try {
+			JsonNode node = objectMapper.readTree(payload);
+			String narrative = textOrNull(node, "narrative");
+			String recommendation = textOrNull(node, "recommendation");
+			return new String[]{narrative, recommendation};
+		} catch (Exception e) {
+			log.debug("Failed to parse what-if narration payload: {}", e.getMessage());
+			return new String[]{null, null};
+		}
+	}
+
+	private static String textOrNull(JsonNode node, String field) {
+		JsonNode child = node.get(field);
+		if (child == null || child.isNull()) {
+			return null;
+		}
+		String text = child.asText();
+		return (text.isBlank() || "null".equalsIgnoreCase(text)) ? null : text;
+	}
+
+	/**
+	 * Serialises the computed impact data into the additionalContext map that the
+	 * LLM prompt template reads.
+	 */
+	private Map<String, Object> buildNarrationContext(PlanSnapshot currentState, PlanSnapshot projectedState,
+			int capacityDelta, RiskDelta riskDelta, List<RcdoCoverageChange> coverageChanges) {
+		Map<String, Object> ctx = new LinkedHashMap<>();
+		ctx.put("currentTotalPoints", currentState.totalPoints());
+		ctx.put("projectedTotalPoints", projectedState.totalPoints());
+		ctx.put("capacityBudget", currentState.capacityBudget());
+		ctx.put("capacityDelta", capacityDelta);
+		ctx.put("currentRiskSignals", currentState.riskSignals());
+		ctx.put("projectedRiskSignals", projectedState.riskSignals());
+		ctx.put("newRisks", riskDelta.newRisks());
+		ctx.put("resolvedRisks", riskDelta.resolvedRisks());
+
+		List<Map<String, Object>> coverageList = new ArrayList<>();
+		for (RcdoCoverageChange change : coverageChanges) {
+			Map<String, Object> cc = new LinkedHashMap<>();
+			cc.put("rcdoNodeId", change.rcdoNodeId() != null ? change.rcdoNodeId().toString() : null);
+			cc.put("beforePoints", change.beforePoints());
+			cc.put("afterPoints", change.afterPoints());
+			coverageList.add(cc);
+		}
+		ctx.put("rcdoCoverageChanges", coverageList);
+		return ctx;
 	}
 
 	// -------------------------------------------------------------------------

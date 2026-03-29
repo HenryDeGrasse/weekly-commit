@@ -1,0 +1,29 @@
+All tests pass: 5/5 `WhatIfServiceTest`, 2/2 `AiControllerTest`. All 4 checks (lint, typecheck, unit, build) green.
+
+## Summary of changes made
+
+### New file
+- **`backend/src/main/resources/prompts/what-if.txt`** — Prompt template with input structure description, 2 few-shot examples, and JSON output schema `{narrative, recommendation}`. Follows the style of `reconcile-assist.txt` and `risk-signal.txt`.
+
+### Modified files
+
+1. **`AiContext.java`** — Added `public static final String TYPE_WHAT_IF = "WHAT_IF";`
+
+2. **`OpenRouterAiProvider.java`** — Added `case AiContext.TYPE_WHAT_IF -> "what-if.txt"` to `loadPromptTemplate()` and `case AiContext.TYPE_WHAT_IF -> "what-if"` to `resolvePromptVersion()` (which produces `"what-if-v1"` via the `+ "-v1"` suffix).
+
+3. **`StubAiProvider.java`** — Added `case AiContext.TYPE_WHAT_IF` returning a canned `{narrative, recommendation}` JSON.
+
+4. **`WhatIfService.java`** — Added `AiProviderRegistry` + `ObjectMapper` constructor params; added `fetchNarration()` / `parseNarration()` / `buildNarrationContext()` methods; `simulate()` now populates `narrative` and `recommendation` from LLM result (gracefully null when AI unavailable).
+
+5. **`AiController.java`** — Added `WhatIfService whatIfService` field + constructor param; added `@PostMapping("/api/ai/what-if")` endpoint delegating to `whatIfService.simulate()`.
+
+6. **`WhatIfServiceTest.java`** — Added `@Mock AiProviderRegistry aiProviderRegistry` and updated constructor call to pass it + `new ObjectMapper()`. All 5 existing tests pass unchanged (mock returns `false` for `isAiEnabled()` by default, skipping the LLM path).
+
+7. **`AiControllerTest.java`** — Added `@MockBean WhatIfService whatIfService` so the `@WebMvcTest` Spring context can wire `AiController`.
+
+Verdict: changes_made
+
+```observations
+- [low] AiControllerTest.java: Pre-existing deprecation warnings for `@MockBean` (Spring Boot 3.4.4 uses newer test mocking APIs) — not introduced by this step, not actionable within scope.
+- [low] WhatIfService.fetchNarration() returns a String[] two-element array as a simple carrier for [narrative, recommendation] — a private record or record-like tuple would be more idiomatic; acceptable for an internal helper.
+```
