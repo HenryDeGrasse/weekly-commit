@@ -1,0 +1,33 @@
+No WebFlux dependency added — pure Spring MVC SseEmitter as required.
+
+## Summary
+
+### What was reviewed
+- `AiController.java` — existing controller patterns (constructor injection, `@RestController`, `@Qualifier` usage), existing `AiControllerTest.java` with `@WebMvcTest` pattern
+- `Application.java` — confirmed `@EnableAsync` is present, so Spring auto-creates `taskExecutor`
+- `SemanticIndexService.java` — confirmed `@Qualifier("taskExecutor") Executor taskExecutor` is the established pattern for async work
+
+### What was changed
+
+**New: `AiStreamController.java`**
+- `@RestController` with `@GetMapping("/api/ai/rag/stream", produces = TEXT_EVENT_STREAM_VALUE)`
+- All three params required (`question`, `teamId`, `userId`) — missing any returns 400 automatically
+- Sets `X-Accel-Buffering: no` and `Cache-Control: no-cache` headers on the `HttpServletResponse`
+- Creates `SseEmitter(60_000L)` and submits work to `@Qualifier("taskExecutor") Executor`
+- Async work: calls `SemanticQueryService.query()`, streams answer word-by-word as `delta` events, then sends `sources`, `confidence`, `done` events
+- Error path: sends `error` event then calls `emitter.complete()` (NOT `completeWithError()`, which would propagate the exception through the async dispatch rather than delivering it as an SSE event to the client)
+- Uses `org.springframework.web.servlet.mvc.method.annotation.SseEmitter` — **no WebFlux/Reactor dependency**
+
+**New: `AiStreamControllerTest.java`**
+- `@WebMvcTest(AiStreamController.class)` with `@Import(SyncExecutorConfig.class)`
+- `@TestConfiguration` `SyncExecutorConfig` provides a synchronous `taskExecutor` (`Runnable::run`) so SSE events are written before `asyncDispatch()` and tests are deterministic
+- 7 tests: 3 × missing-param → 400, 2 × successful stream (event types in order, delta words), 1 × AI unavailable → error event, 1 × service exception → error event
+
+**One bug found and fixed during implementation:** Initial use of `emitter.completeWithError(e)` caused `jakarta.servlet.ServletException` to propagate through MockMvc's `asyncDispatch`, failing the exception-path test. Fixed to `emitter.complete()` after the error event — the error is already communicated via SSE, so the stream can end gracefully.
+
+```observations
+- [medium] OpenRouterAiProvider.java: Retry loop double-counts rate tokens (pre-existing, out of scope)
+- [low] SemanticQueryService.java: the original buildRagAdditionalContext(String, List<PineconeMatch>) private method is now unreachable (replaced by the reranked version in step 5). Could be cleaned up in a future step.
+```
+
+Verdict: changes_made
