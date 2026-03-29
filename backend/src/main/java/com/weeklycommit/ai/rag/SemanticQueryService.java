@@ -12,7 +12,9 @@ import com.weeklycommit.domain.entity.Team;
 import com.weeklycommit.domain.repository.TeamRepository;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -102,11 +104,12 @@ public class SemanticQueryService {
 	private final SparseEncoder sparseEncoder;
 	private final RerankService rerankService;
 	private final ConfidenceTierCalculator confidenceTierCalculator;
+	private final QueryRewriter queryRewriter;
 
 	public SemanticQueryService(PineconeClient pineconeClient, EmbeddingService embeddingService,
 			AiProviderRegistry aiProviderRegistry, AiSuggestionService aiSuggestionService, ObjectMapper objectMapper,
 			TeamRepository teamRepo, SparseEncoder sparseEncoder, RerankService rerankService,
-			ConfidenceTierCalculator confidenceTierCalculator) {
+			ConfidenceTierCalculator confidenceTierCalculator, QueryRewriter queryRewriter) {
 		this.pineconeClient = pineconeClient;
 		this.embeddingService = embeddingService;
 		this.aiProviderRegistry = aiProviderRegistry;
@@ -116,6 +119,7 @@ public class SemanticQueryService {
 		this.sparseEncoder = sparseEncoder;
 		this.rerankService = rerankService;
 		this.confidenceTierCalculator = confidenceTierCalculator;
+		this.queryRewriter = queryRewriter;
 	}
 
 	// ── Public API ────────────────────────────────────────────────────────
@@ -143,45 +147,61 @@ public class SemanticQueryService {
 		}
 
 		try {
-			// Step 2: intent classification
-			IntentResult intent = classifyIntent(question, teamId, userId);
+			// Step 1a: rewrite the question for better embedding quality
+			String rewritten = queryRewriter.rewrite(question);
 
-			// Step 3: embed the question
-			float[] vector = embeddingService.embed(question);
-			if (vector.length == 0) {
-				log.debug("SemanticQueryService: embedding returned empty vector — unavailable");
-				return RagQueryResult.unavailable();
-			}
+			// Step 1b: decompose into sub-queries (detects multi-hop questions)
+			List<String> subQueries = queryRewriter.decompose(rewritten);
 
-			// Step 4: build metadata filter
+			// Step 2: intent classification (uses the full rewritten question)
+			IntentResult intent = classifyIntent(rewritten, teamId, userId);
+
+			// Step 3: build metadata filter
 			Map<String, Object> filter = buildFilter(intent, teamId, userId);
 
-			// Step 5: query Pinecone with hybrid sparse+dense when available
+			// Step 4: resolve namespace
 			String namespace = resolveNamespace(teamId);
-			java.util.Map<Integer, Float> sparseVector = null;
-			try {
-				java.util.Map<Integer, Float> sv = sparseEncoder.encode(question);
-				if (!sv.isEmpty()) {
-					sparseVector = sv;
+
+			// Step 5: embed and query Pinecone — single query or multi-hop
+			List<PineconeClient.PineconeMatch> matches;
+			if (subQueries.size() <= 1) {
+				// Single query path
+				float[] vector = embeddingService.embed(rewritten);
+				if (vector.length == 0) {
+					log.debug("SemanticQueryService: embedding returned empty vector — unavailable");
+					return RagQueryResult.unavailable();
 				}
-			} catch (Exception ex) {
-				log.debug("SemanticQueryService: sparse encoding failed — falling back to dense-only: {}",
-						ex.getMessage());
+				java.util.Map<Integer, Float> sparseVector = null;
+				try {
+					java.util.Map<Integer, Float> sv = sparseEncoder.encode(rewritten);
+					if (!sv.isEmpty()) {
+						sparseVector = sv;
+					}
+				} catch (Exception ex) {
+					log.debug("SemanticQueryService: sparse encoding failed — falling back to dense-only: {}",
+							ex.getMessage());
+				}
+				matches = pineconeClient.query(namespace, vector, TOP_K, filter, sparseVector);
+			} else {
+				// Multi-hop path: embed each sub-query, merge results
+				matches = queryMultiHop(subQueries, namespace, filter);
+				if (matches == null) {
+					return RagQueryResult.unavailable();
+				}
 			}
-			List<PineconeClient.PineconeMatch> matches = pineconeClient.query(namespace, vector, TOP_K, filter,
-					sparseVector);
 
 			// Step 5b: rerank candidates to find the most relevant top-N
-			List<RerankService.RankedChunk> reranked = rerankService.rerank(question, matches, rerankService.getTopN());
+			List<RerankService.RankedChunk> reranked = rerankService.rerank(rewritten, matches,
+					rerankService.getTopN());
 
 			// Step 5c: compute evidence-based confidence tier from the reranked chunks
 			ConfidenceTier confidenceTier = confidenceTierCalculator.calculate(toConfidenceMatches(reranked));
 
 			// Step 6 & 7: build RAG prompt context from reranked results and generate
 			// answer
-			String contextString = buildContextString(question, matches);
+			String contextString = buildContextString(rewritten, matches);
 			AiContext ragContext = new AiContext(AiContext.TYPE_RAG_QUERY, userId, null, null, Map.of(), Map.of(),
-					List.of(), List.of(), buildRagAdditionalContextReranked(question, reranked));
+					List.of(), List.of(), buildRagAdditionalContextReranked(rewritten, reranked));
 			AiSuggestionResult llmResult = aiProviderRegistry.generateSuggestion(ragContext);
 
 			// Step 7: parse the answer
@@ -397,6 +417,79 @@ public class SemanticQueryService {
 			log.debug("SemanticQueryService: could not parse RAG answer — {}", e.getMessage());
 			return new RagAnswer(result.payload(), List.of(), result.confidence());
 		}
+	}
+
+	/**
+	 * Executes a multi-hop query by embedding each sub-query independently,
+	 * querying Pinecone for each, and merging the results.
+	 *
+	 * <p>
+	 * Merge strategy: union of all matches, deduplicated by chunk ID, keeping the
+	 * highest score for each chunk. Results are returned sorted by score descending
+	 * so the reranker sees the best candidates first.
+	 *
+	 * <p>
+	 * Error handling: if one sub-query fails (e.g. embedding error), it is skipped
+	 * and the remaining sub-queries are processed. If <em>all</em> sub-queries
+	 * fail, {@code null} is returned to signal that the caller should degrade to
+	 * {@link RagQueryResult#unavailable()}.
+	 *
+	 * @param subQueries
+	 *            decomposed sub-queries (2 – {@value QueryRewriter#MAX_SUB_QUERIES}
+	 *            elements)
+	 * @param namespace
+	 *            Pinecone namespace
+	 * @param filter
+	 *            Pinecone metadata filter (shared across all sub-queries)
+	 * @return merged, deduplicated match list sorted by score descending; or
+	 *         {@code null} if all sub-queries failed
+	 */
+	private List<PineconeClient.PineconeMatch> queryMultiHop(List<String> subQueries, String namespace,
+			Map<String, Object> filter) {
+		// Map from chunk ID → best-scoring match seen so far
+		Map<String, PineconeClient.PineconeMatch> best = new LinkedHashMap<>();
+		boolean anySuccess = false;
+
+		for (String subQuery : subQueries) {
+			try {
+				float[] vector = embeddingService.embed(subQuery);
+				if (vector.length == 0) {
+					log.debug("SemanticQueryService: sub-query embedding returned empty — skipping sub-query");
+					continue;
+				}
+
+				java.util.Map<Integer, Float> sparseVector = null;
+				try {
+					java.util.Map<Integer, Float> sv = sparseEncoder.encode(subQuery);
+					if (!sv.isEmpty()) {
+						sparseVector = sv;
+					}
+				} catch (Exception ex) {
+					log.debug("SemanticQueryService: sparse encoding failed for sub-query — {}", ex.getMessage());
+				}
+
+				List<PineconeClient.PineconeMatch> subMatches = pineconeClient.query(namespace, vector, TOP_K, filter,
+						sparseVector);
+				anySuccess = true;
+
+				// Merge: keep the highest score per chunk ID
+				for (PineconeClient.PineconeMatch m : subMatches) {
+					best.merge(m.id(), m,
+							(existing, incoming) -> incoming.score() > existing.score() ? incoming : existing);
+				}
+			} catch (Exception ex) {
+				log.debug("SemanticQueryService: sub-query '{}' failed — {}", subQuery, ex.getMessage());
+			}
+		}
+
+		if (!anySuccess) {
+			log.debug("SemanticQueryService: all multi-hop sub-queries failed — unavailable");
+			return null;
+		}
+
+		// Return merged results sorted by score descending
+		return best.values().stream().sorted(Comparator.comparingDouble(PineconeClient.PineconeMatch::score).reversed())
+				.toList();
 	}
 
 	// ── Private helper records ────────────────────────────────────────────

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-29T20:39:56.202Z",
+  "updatedAt": "2026-03-29T20:59:18.412Z",
   "runId": "2026-03-29T18-32-40-613Z-32faa966",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -215,12 +215,12 @@
     ]
   },
   "planSourcePath": "duet-plan-ai-enhancements.md",
-  "stepIndex": 9,
-  "round": 3,
+  "stepIndex": 10,
+  "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-9",
-    "stepTitle": "Add evidence-based confidence tiers and integrate calibration into prompts — backend",
+    "stepId": "step-10",
+    "stepTitle": "Add targeted query rewriting for RAG — backend",
     "gateResults": [
       {
         "id": "lint",

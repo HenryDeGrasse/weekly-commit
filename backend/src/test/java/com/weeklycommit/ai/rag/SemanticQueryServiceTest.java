@@ -69,17 +69,23 @@ class SemanticQueryServiceTest {
 	@Mock
 	private ConfidenceTierCalculator confidenceTierCalculator;
 
+	@Mock
+	private QueryRewriter queryRewriter;
+
 	private SemanticQueryService service;
 
 	@BeforeEach
 	void setUp() {
 		// SparseEncoder is pure computation — use the real instance (no mock needed)
 		service = new SemanticQueryService(pineconeClient, embeddingService, aiProviderRegistry, aiSuggestionService,
-				objectMapper, teamRepo, new SparseEncoder(), rerankService, confidenceTierCalculator);
+				objectMapper, teamRepo, new SparseEncoder(), rerankService, confidenceTierCalculator, queryRewriter);
 		lenient()
 				.when(confidenceTierCalculator
 						.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
 				.thenReturn(ConfidenceTier.MEDIUM);
+		// Default: QueryRewriter is a no-op passthrough for existing tests
+		lenient().when(queryRewriter.rewrite(anyString())).thenAnswer(inv -> inv.getArgument(0));
+		lenient().when(queryRewriter.decompose(anyString())).thenAnswer(inv -> List.of((String) inv.getArgument(0)));
 	}
 
 	// ── Availability guards ───────────────────────────────────────────────

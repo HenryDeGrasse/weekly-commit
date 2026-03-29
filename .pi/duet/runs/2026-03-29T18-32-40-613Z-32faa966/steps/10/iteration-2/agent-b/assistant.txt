@@ -1,0 +1,32 @@
+Reviewed:
+- `backend/src/main/java/com/weeklycommit/ai/rag/QueryRewriter.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticQueryService.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/QueryRewriterTest.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/SemanticQueryServiceTest.java`
+
+What I verified:
+- `QueryRewriter` exists and is pure string logic only
+- `rewrite()` includes acronym, chess-term, time, shorthand, and filler-word normalization
+- `decompose()` detects compound questions and caps to `MAX_SUB_QUERIES = 3`
+- `SemanticQueryService` injects and uses `QueryRewriter`
+- multi-hop path embeds each sub-query, queries Pinecone per sub-query, dedupes by chunk ID keeping highest score, and reranks merged results
+- partial-failure handling is graceful; full sub-query failure degrades to unavailable
+- scope stayed inside `backend/src/main/java/com/weeklycommit/ai/rag/` and matching tests
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅
+- `npm run build` ✅
+
+Assessment:
+- Step 10 requirements are met
+- No material defects found in the diff
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/ai/rag/SemanticQueryService.java: Multi-hop retrieval uses one shared intent/filter derived from the full rewritten question, not per-sub-query intent classification. This is acceptable for this step but may limit precision for compound queries with divergent filters.
+- [medium] backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java: Pre-existing retry loop still double-counts rate-limit tokens on parse failure; out of scope here.
+- [low] frontend/src/**: Pre-existing lint warnings and React test `act(...)` warnings still appear during repo-wide checks, but they do not fail checks and are outside this backend step.
+```
+
+Verdict: approve
