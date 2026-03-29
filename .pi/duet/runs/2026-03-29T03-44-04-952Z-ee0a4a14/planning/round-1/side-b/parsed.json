@@ -1,6 +1,0 @@
-{
-  "verdict": "changes_requested",
-  "blockingIssues": [
-    "Decision 3 / step 8 targets `frontend/src/components/ai/ReconcileAssistPanel.tsx`, but the live reconcile AI prefill flow is actually implemented directly in `frontend/src/routes/Reconcile.tsx` via `useAutoReconcileAssist`, `aiSuggestedOutcomes`, and the local outcome state. As written, that step changes the wrong surface for the user-facing behavior. The plan should explicitly target `Reconcile.tsx` (and related reconcile UI) for the ghost/preview-state change, or add a prior step to wire `ReconcileAssistPanel` into the page before relying on it."
-  ]
-}

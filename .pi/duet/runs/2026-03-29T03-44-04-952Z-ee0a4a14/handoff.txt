@@ -1,1 +1,0 @@
-Review the ui-ux decisions md, and look over all of the frontend components of this repo and ux design, and implement the decisions in this

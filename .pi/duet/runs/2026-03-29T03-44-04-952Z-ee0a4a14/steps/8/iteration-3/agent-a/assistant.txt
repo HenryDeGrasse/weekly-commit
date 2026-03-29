@@ -1,3 +1,0 @@
-All 4 checks pass. The single concrete defect was `"lib": ["ES2020", ...]` missing `Intl.Segmenter`, which is defined in TypeScript's `lib.es2022.intl.d.ts`. Adding `"ES2022.Intl"` to the lib array resolves it without changing the compilation target or affecting any existing behavior.
-
-Verdict: changes_made
