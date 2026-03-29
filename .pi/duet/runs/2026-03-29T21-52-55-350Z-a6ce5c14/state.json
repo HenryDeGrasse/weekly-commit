@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-29T22:19:20.163Z",
+  "updatedAt": "2026-03-29T22:22:24.143Z",
   "runId": "2026-03-29T21-52-55-350Z-a6ce5c14",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -129,12 +129,12 @@
     ]
   },
   "planSourcePath": "duet-plan-ai-optimization.md",
-  "stepIndex": 1,
+  "stepIndex": 2,
   "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-1",
-    "stepTitle": "Prompt Caching in OpenRouterAiProvider",
+    "stepId": "step-2",
+    "stepTitle": "A/B Testing Infrastructure",
     "gateResults": [
       {
         "id": "static",
