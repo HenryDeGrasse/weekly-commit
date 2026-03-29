@@ -1,0 +1,28 @@
+Reviewed the step-4 diff and validated it against `docs/ui-ux-decisions.md` plus the stated token pipeline:
+
+- `frontend/src/index.css`
+- `frontend/src/host/MockHostProvider.tsx`
+- `frontend/src/components/AppShell.tsx`
+- `packages/shared/src/host.ts`
+
+Assessment:
+- `frontend/src/index.css` correctly loads Inter alongside Geist Mono via the Google Fonts import.
+- `--font-family-base` now defaults to `"Inter", "Geist Sans", system-ui, sans-serif`.
+- `--font-family-mono` remains unchanged, as required.
+- `frontend/src/host/MockHostProvider.tsx` now provides `fontFamilyBase: "'Inter', 'Geist Sans', system-ui, sans-serif"`.
+- `frontend/src/components/AppShell.tsx` already correctly pipes `tokens.fontFamilyBase` into `--font-family-base` and applies it, so no code change was needed there.
+- `packages/shared/src/host.ts` did not require a type change.
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm run build` ✅
+
+No material defects found, so I made no changes.
+
+Verdict: approve
+
+```observations
+- [low] frontend/src/routes/Reports.tsx: Pre-existing lint warning remains for an unnecessary `useMemo` dependency on `rangeWeeks`.
+- [low] frontend/src/host/MockHostProvider.tsx: Pre-existing `react-refresh/only-export-components` warning remains; unrelated to this step.
+```

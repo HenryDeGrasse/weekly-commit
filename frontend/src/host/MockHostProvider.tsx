@@ -11,9 +11,9 @@ import { HostProvider, type HostBridge } from "./HostProvider.js";
 /**
  * Default design tokens for standalone development (maps to CSS custom props).
  *
- * Design direction: monochrome utilitarian — Geist Mono everywhere, zero
- * radius, neutral gray primary, minimal shadow. Inspired by shadcn/ui
- * "New York" neutral theme.
+ * Design direction: monochrome utilitarian — Inter for UI chrome, Geist Mono
+ * for code-like content, zero radius, neutral gray primary, minimal shadow.
+ * Inspired by shadcn/ui "New York" neutral theme.
  */
 export const defaultDesignTokens: DesignTokens = {
   colorPrimary: "#737373",
@@ -26,8 +26,7 @@ export const defaultDesignTokens: DesignTokens = {
   colorSuccess: "#3D7A4A",
   colorWarning: "#7A6520",
   colorDanger: "#9B3B3B",
-  fontFamilyBase:
-    "'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+  fontFamilyBase: "'Inter', 'Geist Sans', system-ui, sans-serif",
   fontSizeBase: "16px",
   borderRadius: "0px",
   spacingUnit: "8px",

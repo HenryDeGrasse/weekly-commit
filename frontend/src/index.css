@@ -1,10 +1,11 @@
 /*
- * Geist Mono font — loaded from CDN. In production this would come from
- * the host app's font stack or be self-hosted.
- * Must precede @import "tailwindcss" because CSS @import rules must come
- * before all other statements in the compiled output.
+ * Inter (proportional sans-serif) + Geist Mono — loaded from CDN.
+ * Inter is the new base UI font; Geist Mono is kept for code-like content.
+ * In production these would come from the host app's font stack or be
+ * self-hosted. Must precede @import "tailwindcss" because CSS @import
+ * rules must come before all other statements in the compiled output.
  */
-@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Geist+Mono:wght@300..900&display=swap");
 
 @import "tailwindcss";
 
@@ -54,7 +55,7 @@
   --color-info-foreground: #fafafa;
 
   /* ── Typography ──────────────────────────────────────────────────── */
-  --font-family-base: var(--font-family-base, "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace);
+  --font-family-base: var(--font-family-base, "Inter", "Geist Sans", system-ui, sans-serif);
   --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
   /* ── Radii (0rem = sharp corners everywhere) ─────────────────────── */
