@@ -124,6 +124,15 @@ interface QueryAnswerCardProps {
   confidence: number;
   suggestionId: string;
   className?: string;
+  /**
+   * When true the card renders in streaming mode: answer text is shown as it
+   * arrives (incremental), a typing indicator is shown while streaming, and
+   * sources / confidence are hidden until the stream completes.
+   * Defaults to false (batch mode) for backward compatibility.
+   */
+  streaming?: boolean;
+  /** True while a stream is still open (only meaningful when streaming=true). */
+  isStreaming?: boolean;
 }
 
 export function QueryAnswerCard({
@@ -132,6 +141,8 @@ export function QueryAnswerCard({
   confidence,
   suggestionId,
   className,
+  streaming = false,
+  isStreaming = false,
 }: QueryAnswerCardProps) {
   const pct = Math.round(Math.max(0, Math.min(1, confidence)) * 100);
   const [sourcesExpanded, setSourcesExpanded] = useState(false);
@@ -175,6 +186,19 @@ export function QueryAnswerCard({
         {/* Rich answer text */}
         <AnswerRenderer text={answer} />
 
+        {/* Typing indicator — shown only in streaming mode while still receiving tokens */}
+        {streaming && isStreaming && (
+          <span
+            className="inline-flex items-center gap-1 text-xs text-muted"
+            data-testid="streaming-typing-indicator"
+            aria-label="Streaming…"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
+          </span>
+        )}
+
         {/* Source citations — collapsible */}
         {sources.length > 0 && (
           <div data-testid="rag-sources-section">
@@ -207,7 +231,9 @@ export function QueryAnswerCard({
         <span className="text-[0.65rem] text-muted">
           AI-generated answer — verify before acting
         </span>
-        <AiFeedbackButtons suggestionId={suggestionId} />
+        {!streaming && suggestionId ? (
+          <AiFeedbackButtons suggestionId={suggestionId} />
+        ) : null}
       </CardFooter>
     </Card>
   );

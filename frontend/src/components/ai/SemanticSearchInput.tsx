@@ -8,7 +8,7 @@ import { Button } from "../ui/Button.js";
 import { Input } from "../ui/Input.js";
 
 import { cn } from "../../lib/utils.js";
-import { useSemanticQuery } from "../../api/ragHooks.js";
+import { useStreamingRagQuery } from "../../api/ragStreamHooks.js";
 import { QueryAnswerCard } from "./QueryAnswerCard.js";
 
 const SUGGESTED_QUESTIONS = [
@@ -31,24 +31,37 @@ export function SemanticSearchInput({
   className,
 }: SemanticSearchInputProps) {
   const [question, setQuestion] = useState("");
-  const { mutate, data, loading, error } = useSemanticQuery();
+  const {
+    answer,
+    sources,
+    confidence,
+    isStreaming,
+    error,
+    startStream,
+    cancel,
+  } = useStreamingRagQuery(teamId ?? "", userId ?? "");
+
+  // Treat "has received any answer content" as equivalent to batch data availability
+  const hasAnswer = answer.length > 0;
+  const loading = isStreaming && !hasAnswer;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
       const q = question.trim();
       if (!q) return;
-      await mutate(q, teamId, userId);
+      startStream(q);
     },
-    [question, mutate, teamId, userId],
+    [question, startStream],
   );
 
   const handleRetry = useCallback(() => {
     const q = question.trim();
     if (!q) return;
-    void mutate(q, teamId, userId);
-  }, [question, mutate, teamId, userId]);
+    cancel();
+    startStream(q);
+  }, [question, startStream, cancel]);
 
   return (
     <div className={cn("rounded-default border border-border bg-surface p-4 flex flex-col gap-3", className)}>
@@ -98,7 +111,7 @@ export function SemanticSearchInput({
       </form>
 
       {/* Suggested questions — shown when input is empty and no result */}
-      {!question.trim() && !data && !loading && !error && (
+      {!question.trim() && !hasAnswer && !loading && !error && (
         <div className="flex flex-wrap gap-1.5" data-testid="suggested-questions">
           <span className="text-[0.65rem] text-muted flex items-center gap-1 mr-1">
             <MessageCircle className="h-3 w-3" /> Try asking:
@@ -109,7 +122,7 @@ export function SemanticSearchInput({
               type="button"
               onClick={() => {
                 setQuestion(q);
-                void mutate(q, teamId, userId);
+                startStream(q);
               }}
               className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-[0.65rem] text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors cursor-pointer"
               data-testid={`suggested-q-${q.slice(0, 20).replace(/\s/g, "-").toLowerCase()}`}
@@ -154,31 +167,21 @@ export function SemanticSearchInput({
         </div>
       )}
 
-      {/* Answer card */}
-      {!loading && !error && data?.aiAvailable && data.answer && (
+      {/* Answer card — streaming mode: shown as soon as any content arrives */}
+      {(hasAnswer || isStreaming) && !error && (
         <QueryAnswerCard
-          answer={data.answer}
-          sources={data.sources ?? []}
-          confidence={data.confidence ?? 0}
-          suggestionId={data.suggestionId ?? ""}
+          answer={answer}
+          sources={sources}
+          confidence={confidence}
+          suggestionId=""
+          streaming={true}
+          isStreaming={isStreaming}
           data-testid="semantic-search-answer"
         />
       )}
 
-      {/* AI unavailable (no Pinecone / LLM) */}
-      {!loading && !error && data && !data.aiAvailable && (
-        <div
-          className="flex items-start gap-2 rounded-default border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs text-muted"
-          data-testid="semantic-search-unavailable"
-        >
-          <Bot className="h-3.5 w-3.5 mt-0.5 shrink-0" aria-hidden="true" />
-          <span>
-            AI search requires the vector index to be configured and populated.
-            Go to <strong>Admin → Reindex</strong> to build the search index, or
-            ensure <code>PINECONE_API_KEY</code> is set.
-          </span>
-        </div>
-      )}
+      {/* AI unavailable — the streaming error callback covers this case via the
+          error state rendered above. No additional block needed. */}
     </div>
   );
 }

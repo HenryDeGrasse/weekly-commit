@@ -13,6 +13,8 @@
     "test": "npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test && cd .. && node --test scripts/__tests__/*.test.js",
     "unit": "npm run test",
     "build": "npm run build -w @weekly-commit/shared && npm run build -w frontend && cd backend && ./gradlew build -x test",
+    "check:static": "npm run lint -w frontend && npm run lint -w @weekly-commit/shared && npm run typecheck -w frontend && npm run typecheck -w @weekly-commit/shared && cd backend && ./gradlew spotlessCheck",
+    "check:all": "npm run check:static && npm run test && npm run build",
     "e2e": "npx playwright test --config=e2e/playwright.config.ts",
     "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
     "generate:api-types": "./scripts/generate-api-types.sh",

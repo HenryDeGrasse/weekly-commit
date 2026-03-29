@@ -1,0 +1,36 @@
+Reviewed:
+- `frontend/src/api/ragStreamApi.ts`
+- `frontend/src/api/ragStreamHooks.ts`
+- `frontend/src/components/ai/QueryAnswerCard.tsx`
+- `frontend/src/components/ai/SemanticSearchInput.tsx`
+- `frontend/src/__tests__/RagStreamHooks.test.ts`
+- `frontend/src/__tests__/SemanticSearchInput.test.tsx`
+
+What I changed:
+- `frontend/src/components/ai/QueryAnswerCard.tsx`
+  - Fixed a concrete defect: streaming mode was rendering `AiFeedbackButtons` with an empty `suggestionId`, which would make feedback submissions fail silently.
+  - Now feedback buttons render only in non-streaming mode and only when `suggestionId` is truthy.
+
+- `frontend/src/__tests__/SemanticSearchInput.test.tsx`
+  - Updated the test expectation to verify feedback buttons are not shown in streaming mode.
+
+What I verified:
+- Streaming API/hook wiring is present
+- `SemanticSearchInput` uses the streaming hook
+- `QueryAnswerCard` remains backward-compatible for non-streaming usage
+- The introduced broken feedback control is no longer exposed in streaming mode
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅
+
+Assessment:
+- Step 7 is now in good shape
+- I found and fixed one material frontend defect introduced by the streaming integration
+
+```observations
+- [low] frontend/src/**: Pre-existing lint warnings and React test `act(...)` warnings remain, but checks pass and they are outside this step's scope
+```
+
+Verdict: changes_made

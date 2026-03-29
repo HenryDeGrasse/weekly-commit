@@ -1,29 +1,30 @@
 /**
  * Tests for SemanticSearchInput component.
+ *
+ * The component now uses useStreamingRagQuery instead of the batch
+ * useSemanticQuery hook. Tests are updated to reflect the streaming interface.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MockHostProvider } from "../host/MockHostProvider.js";
 import { SemanticSearchInput } from "../components/ai/SemanticSearchInput.js";
-import type { RagQueryResponse } from "../api/ragApi.js";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockMutate = vi.fn<
-  (question: string, teamId?: string, userId?: string) => Promise<void>
->();
+const mockStartStream = vi.fn<(question: string) => void>();
+const mockCancel = vi.fn<() => void>();
 
-// Default hook state — overridden per test via mockReturnValue
-vi.mock("../api/ragHooks.js", () => ({
-  useSemanticQuery: vi.fn(() => ({
-    mutate: mockMutate,
-    data: undefined,
-    loading: false,
+// Default streaming hook state — overridden per test via mockReturnValue
+vi.mock("../api/ragStreamHooks.js", () => ({
+  useStreamingRagQuery: vi.fn(() => ({
+    answer: "",
+    sources: [],
+    confidence: 0,
+    isStreaming: false,
     error: null,
+    startStream: mockStartStream,
+    cancel: mockCancel,
   })),
-  useRagApi: vi.fn(),
-  useTeamInsights: vi.fn(),
-  usePlanInsights: vi.fn(),
 }));
 
 // AiFeedbackButtons inside QueryAnswerCard also needs aiHooks mocked
@@ -41,22 +42,27 @@ vi.mock("../api/aiHooks.js", () => ({
 }));
 
 // Import the mocked module so we can reconfigure per test
-import * as ragHooks from "../api/ragHooks.js";
+import * as ragStreamHooks from "../api/ragStreamHooks.js";
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-function setHookState(
-  overrides: Partial<{
-    data: RagQueryResponse | undefined;
-    loading: boolean;
-    error: string | null;
-  }>,
-) {
-  vi.mocked(ragHooks.useSemanticQuery).mockReturnValue({
-    mutate: mockMutate,
-    data: undefined,
-    loading: false,
+type StreamState = {
+  answer?: string;
+  sources?: { entityType: string; entityId: string }[];
+  confidence?: number;
+  isStreaming?: boolean;
+  error?: string | null;
+};
+
+function setHookState(overrides: StreamState) {
+  vi.mocked(ragStreamHooks.useStreamingRagQuery).mockReturnValue({
+    answer: "",
+    sources: [],
+    confidence: 0,
+    isStreaming: false,
     error: null,
+    startStream: mockStartStream,
+    cancel: mockCancel,
     ...overrides,
   });
 }
@@ -73,8 +79,9 @@ function renderInput(props: { teamId?: string; userId?: string } = {}) {
 
 describe("SemanticSearchInput", () => {
   beforeEach(() => {
-    mockMutate.mockReset();
-    // Reset to default state before each test
+    mockStartStream.mockReset();
+    mockCancel.mockReset();
+    // Reset to default (idle) state before each test
     setHookState({});
   });
 
@@ -103,10 +110,9 @@ describe("SemanticSearchInput", () => {
     expect(screen.getByTestId("semantic-search-submit")).not.toBeDisabled();
   });
 
-  // ── Mutation trigger ────────────────────────────────────────────────────
+  // ── Stream trigger ──────────────────────────────────────────────────────
 
-  it("calls mutate with the question when form is submitted", async () => {
-    mockMutate.mockResolvedValue(undefined);
+  it("calls startStream with the question when form is submitted", async () => {
     renderInput();
 
     fireEvent.change(screen.getByTestId("semantic-search-input"), {
@@ -115,28 +121,8 @@ describe("SemanticSearchInput", () => {
     fireEvent.click(screen.getByTestId("semantic-search-submit"));
 
     await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith(
+      expect(mockStartStream).toHaveBeenCalledWith(
         "How many KING commits this week?",
-        undefined,
-        undefined,
-      );
-    });
-  });
-
-  it("passes teamId and userId to mutate", async () => {
-    mockMutate.mockResolvedValue(undefined);
-    renderInput({ teamId: "team-1", userId: "user-1" });
-
-    fireEvent.change(screen.getByTestId("semantic-search-input"), {
-      target: { value: "Show me carry-forwards" },
-    });
-    fireEvent.click(screen.getByTestId("semantic-search-submit"));
-
-    await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith(
-        "Show me carry-forwards",
-        "team-1",
-        "user-1",
       );
     });
   });
@@ -149,13 +135,27 @@ describe("SemanticSearchInput", () => {
     fireEvent.submit(
       screen.getByTestId("semantic-search-input").closest("form")!,
     );
-    expect(mockMutate).not.toHaveBeenCalled();
+    expect(mockStartStream).not.toHaveBeenCalled();
+  });
+
+  it("clicking a suggested question calls startStream", async () => {
+    renderInput();
+
+    const suggestedBtn = screen.getByTestId(
+      "suggested-q-what-did-the-team-co",
+    );
+    fireEvent.click(suggestedBtn);
+
+    await waitFor(() => {
+      expect(mockStartStream).toHaveBeenCalled();
+    });
   });
 
   // ── Loading state ───────────────────────────────────────────────────────
 
-  it("shows loading indicator while query is in-flight", () => {
-    setHookState({ loading: true });
+  it("shows loading indicator while streaming is in-flight and no answer yet", () => {
+    // isStreaming=true + no answer = loading
+    setHookState({ isStreaming: true, answer: "" });
     renderInput();
 
     expect(screen.getByTestId("semantic-search-loading")).toBeInTheDocument();
@@ -165,7 +165,7 @@ describe("SemanticSearchInput", () => {
   });
 
   it("disables input while loading", () => {
-    setHookState({ loading: true });
+    setHookState({ isStreaming: true, answer: "" });
     renderInput();
 
     expect(screen.getByTestId("semantic-search-input")).toBeDisabled();
@@ -178,9 +178,19 @@ describe("SemanticSearchInput", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("does not show loading indicator once answer content arrives", () => {
+    // isStreaming=true but already has answer content — no longer "loading"
+    setHookState({ isStreaming: true, answer: "The team" });
+    renderInput();
+
+    expect(
+      screen.queryByTestId("semantic-search-loading"),
+    ).not.toBeInTheDocument();
+  });
+
   // ── Error state ─────────────────────────────────────────────────────────
 
-  it("shows error message when query fails", () => {
+  it("shows error message when streaming fails", () => {
     setHookState({ error: "Connection refused" });
     renderInput();
 
@@ -197,10 +207,8 @@ describe("SemanticSearchInput", () => {
     expect(screen.getByTestId("semantic-search-retry")).toBeInTheDocument();
   });
 
-  it("does not show error when query succeeds", () => {
-    setHookState({
-      data: { aiAvailable: true, answer: "Some answer", sources: [], confidence: 0.8, suggestionId: "s-1" },
-    });
+  it("does not show error when answer is available", () => {
+    setHookState({ answer: "The team shipped X." });
     renderInput();
 
     expect(
@@ -211,15 +219,7 @@ describe("SemanticSearchInput", () => {
   // ── Answer display ──────────────────────────────────────────────────────
 
   it("renders QueryAnswerCard when answer is available", () => {
-    setHookState({
-      data: {
-        aiAvailable: true,
-        answer: "The team completed 8 of 10 commits last week.",
-        sources: [],
-        confidence: 0.9,
-        suggestionId: "s-1",
-      },
-    });
+    setHookState({ answer: "The team completed 8 of 10 commits last week." });
     renderInput();
 
     expect(screen.getByTestId("query-answer-card")).toBeInTheDocument();
@@ -228,14 +228,29 @@ describe("SemanticSearchInput", () => {
     );
   });
 
-  it("does not render QueryAnswerCard when AI is unavailable", () => {
-    setHookState({ data: { aiAvailable: false } });
+  it("renders QueryAnswerCard even while still streaming (incremental display)", () => {
+    setHookState({ isStreaming: true, answer: "Partial answer so far" });
     renderInput();
 
-    expect(screen.queryByTestId("query-answer-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("query-answer-card")).toBeInTheDocument();
+  });
+
+  it("shows typing indicator while streaming", () => {
+    setHookState({ isStreaming: true, answer: "Partial" });
+    renderInput();
+
     expect(
-      screen.getByTestId("semantic-search-unavailable"),
+      screen.getByTestId("streaming-typing-indicator"),
     ).toBeInTheDocument();
+  });
+
+  it("does not show typing indicator after stream completes", () => {
+    setHookState({ isStreaming: false, answer: "Complete answer" });
+    renderInput();
+
+    expect(
+      screen.queryByTestId("streaming-typing-indicator"),
+    ).not.toBeInTheDocument();
   });
 
   it("does not render QueryAnswerCard before first query", () => {
@@ -243,19 +258,22 @@ describe("SemanticSearchInput", () => {
     expect(screen.queryByTestId("query-answer-card")).not.toBeInTheDocument();
   });
 
-  it("renders feedback buttons inside the answer card", () => {
+  it("does not render QueryAnswerCard when there is an error", () => {
+    setHookState({ error: "AI unavailable" });
+    renderInput();
+
+    expect(screen.queryByTestId("query-answer-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("semantic-search-error")).toBeInTheDocument();
+  });
+
+  it("does not render feedback buttons in streaming mode", () => {
     setHookState({
-      data: {
-        aiAvailable: true,
-        answer: "Test answer",
-        sources: [],
-        confidence: 0.75,
-        suggestionId: "s-2",
-      },
+      answer: "Test answer",
+      confidence: 0.75,
     });
     renderInput();
 
-    expect(screen.getByTestId("ai-feedback-accept")).toBeInTheDocument();
-    expect(screen.getByTestId("ai-feedback-dismiss")).toBeInTheDocument();
+    expect(screen.queryByTestId("ai-feedback-accept")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ai-feedback-dismiss")).not.toBeInTheDocument();
   });
 });
