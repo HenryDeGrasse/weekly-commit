@@ -9,6 +9,7 @@
  * editing commits.
  */
 import { useState, useCallback, useEffect, useRef } from "react";
+import { Skeleton } from "../ui/Skeleton.js";
 import { Bot, RefreshCw } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
@@ -119,12 +120,17 @@ export function AiLintPanel({ planId, userId, autoRun = false, refreshKey = 0, o
     );
   }
 
-  // Loading
+  // Loading — shimmer skeleton with message
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-xs text-muted animate-pulse" data-testid="ai-lint-loading">
-        <Bot className="h-3.5 w-3.5 shrink-0" />
-        Analyzing commit quality…
+      <div className="flex flex-col gap-2" data-testid="ai-lint-loading">
+        <div className="flex items-center gap-2 text-xs text-muted animate-pulse">
+          <Bot className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>Analyzing commit quality…</span>
+        </div>
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-4/5" />
+        <Skeleton className="h-3.5 w-3/5" />
       </div>
     );
   }

@@ -4,6 +4,7 @@
 import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Badge } from "../ui/Badge.js";
+import { Skeleton } from "../ui/Skeleton.js";
 import { cn } from "../../lib/utils.js";
 import type { TicketSummaryResponse, TicketStatus, TicketPriority } from "../../api/ticketTypes.js";
 import { TICKET_STATUS_LABELS, TICKET_PRIORITY_LABELS } from "../../api/ticketTypes.js";
@@ -49,7 +50,26 @@ export function TicketListView({ tickets, total, page, pageSize, sortBy, sortDir
 
   return (
     <div data-testid="ticket-list-view" className="flex flex-col gap-3">
-      {loading && <div role="status" aria-label="Loading tickets" data-testid="ticket-list-loading" className="text-sm text-muted px-2">Loading tickets…</div>}
+      {loading && (
+        <div role="status" aria-label="Loading tickets" data-testid="ticket-list-loading" className="flex flex-col gap-2">
+          <span className="sr-only">Loading tickets…</span>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <tbody>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <tr key={i} className="border-b border-border">
+                    <td className="px-2.5 py-2 w-20"><Skeleton className="h-4 w-16" /></td>
+                    <td className="px-2.5 py-2"><Skeleton className="h-4 w-full" /></td>
+                    <td className="px-2.5 py-2 w-24"><Skeleton className="h-5 w-20 rounded-sm" /></td>
+                    <td className="px-2.5 py-2 w-24"><Skeleton className="h-5 w-16 rounded-sm" /></td>
+                    <td className="px-2.5 py-2 w-28"><Skeleton className="h-4 w-24" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {!loading && tickets.length === 0 && (
         <div data-testid="ticket-list-empty" className="py-8 text-center text-sm text-muted">No tickets found matching your filters.</div>

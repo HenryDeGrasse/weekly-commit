@@ -7,6 +7,7 @@
  * calculated client-side from existing data (velocity, achievement rate, etc.).
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { ReportChartSkeleton } from "../components/shared/skeletons/ReportChartSkeleton.js";
 import {
   BarChart3,
   TrendingUp,
@@ -190,7 +191,20 @@ export default function Reports() {
         </div>
       </div>
 
-      {loading && <p className="text-sm text-muted animate-pulse">Loading report data…</p>}
+      {loading && (
+        <>
+          <span role="status" aria-label="Loading report data" className="sr-only">Loading report data…</span>
+          <ReportChartSkeleton chartHeight={200} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ReportChartSkeleton chartHeight={160} />
+            <ReportChartSkeleton chartHeight={160} />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ReportChartSkeleton chartHeight={140} />
+            <ReportChartSkeleton chartHeight={140} />
+          </div>
+        </>
+      )}
       {error && (
         <div className="flex items-center gap-2 text-sm text-danger" role="alert">
           <AlertTriangle className="h-4 w-4" /> {error}

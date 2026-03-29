@@ -3,6 +3,7 @@
  * Route: /weekly/rcdos
  */
 import { useState, useCallback } from "react";
+import { Skeleton } from "../components/ui/Skeleton.js";
 import { Target } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
@@ -169,7 +170,16 @@ export default function Rcdos() {
           </fieldset>
 
           {loading ? (
-            <div role="status" aria-label="Loading RCDO hierarchy" className="text-sm text-muted px-2">Loading…</div>
+            <div role="status" aria-label="Loading RCDO hierarchy" className="flex flex-col gap-2 px-2">
+              <span className="sr-only">Loading RCDO hierarchy…</span>
+              {/* Tree skeleton — indent levels mimic RCDO depth */}
+              <Skeleton className="h-7 w-full" />
+              <Skeleton className="h-7 w-11/12 ml-5" />
+              <Skeleton className="h-7 w-10/12 ml-10" />
+              <Skeleton className="h-7 w-10/12 ml-10" />
+              <Skeleton className="h-7 w-11/12 ml-5" />
+              <Skeleton className="h-7 w-10/12 ml-10" />
+            </div>
           ) : error ? (
             <div role="alert" className="text-sm text-foreground font-semibold">Failed to load: {error.message}</div>
           ) : (

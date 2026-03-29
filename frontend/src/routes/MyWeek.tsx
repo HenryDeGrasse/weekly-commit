@@ -29,6 +29,8 @@ import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js"
 import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { AiLintPanel } from "../components/ai/AiLintPanel.js";
 import { CollapsibleSection } from "../components/shared/CollapsibleSection.js";
+import { PlanHeaderSkeleton } from "../components/shared/skeletons/PlanHeaderSkeleton.js";
+import { CommitListSkeleton } from "../components/shared/skeletons/CommitListSkeleton.js";
 import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
 import { ProactiveRiskBanner } from "../components/ai/ProactiveRiskBanner.js";
 import { WhatIfPanel } from "../components/ai/WhatIfPanel.js";
@@ -447,9 +449,13 @@ export default function MyWeek() {
         )}
       </div>
 
-      {/* Loading */}
+      {/* Loading — skeleton layout */}
       {planLoading && (
-        <div role="status" aria-label="Loading plan" data-testid="plan-loading" className="text-sm text-muted">Loading plan…</div>
+        <>
+          <div role="status" aria-label="Loading plan" data-testid="plan-loading" className="sr-only">Loading plan…</div>
+          <PlanHeaderSkeleton />
+          <CommitListSkeleton rows={3} />
+        </>
       )}
 
       {/* Error */}

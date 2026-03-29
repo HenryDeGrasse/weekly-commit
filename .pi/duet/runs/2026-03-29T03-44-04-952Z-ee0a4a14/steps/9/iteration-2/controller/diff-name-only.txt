@@ -1,0 +1,15 @@
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/cost.json
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/observations.jsonl
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/sessions/continuous/relay-a/2026-03-29T04-00-15-033Z_4a0ddc52-42af-49b0-9eb6-a9e548e8b47f.jsonl
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/sessions/continuous/relay-b/2026-03-29T04-04-50-469Z_79c83d4c-406d-467e-8e69-8f49317b8794.jsonl
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/state.json
+frontend/src/components/ai/AiLintPanel.tsx
+frontend/src/components/tickets/TicketListView.tsx
+frontend/src/routes/MyWeek.tsx
+frontend/src/routes/Rcdos.tsx
+frontend/src/routes/Reports.tsx
+frontend/src/routes/TeamWeek.tsx
+frontend/src/routes/Tickets.tsx
+.pi/duet/runs/2026-03-29T03-44-04-952Z-ee0a4a14/steps/9
+frontend/src/components/shared/LoadingWithTimeout.tsx
+frontend/src/components/shared/skeletons

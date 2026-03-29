@@ -24,6 +24,7 @@ import { SemanticSearchInput } from "../components/ai/SemanticSearchInput.js";
 import { ManagerAiSummaryCard } from "../components/ai/ManagerAiSummaryCard.js";
 import { TeamRiskSummaryBanner } from "../components/ai/TeamRiskSummaryBanner.js";
 import { CollapsibleSection } from "../components/shared/CollapsibleSection.js";
+import { TeamWeekSkeleton } from "../components/shared/skeletons/TeamWeekSkeleton.js";
 
 function getWeekStartDate(offsetWeeks = 0): string {
   const now = new Date();
@@ -123,7 +124,10 @@ export default function TeamWeek() {
         </div>
       )}
       {teamId && (teamLoading || exceptionsLoading) && (
-        <div role="status" aria-label="Loading team data" data-testid="team-week-loading" className="text-sm text-muted">Loading team data…</div>
+        <div data-testid="team-week-loading">
+          <span role="status" aria-label="Loading team data" className="sr-only">Loading team data…</span>
+          <TeamWeekSkeleton />
+        </div>
       )}
       {(teamError ?? exceptionsError) && (
         <div role="alert" data-testid="team-week-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-foreground font-semibold">

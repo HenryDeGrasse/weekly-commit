@@ -6,6 +6,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { X } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
+import { Skeleton } from "../components/ui/Skeleton.js";
 import { useHostBridge } from "../host/HostProvider.js";
 import { useTicketList, useTicketApi, useTicket } from "../api/ticketHooks.js";
 import { useRcdoTree } from "../api/rcdoHooks.js";
@@ -189,7 +190,18 @@ export default function Tickets() {
 
         {selectedTicketId && (
           <div data-testid="ticket-detail-panel" className="flex-1 min-w-[280px] sticky top-4">
-            {detailLoading && <div data-testid="ticket-detail-loading" role="status" className="text-muted p-4">Loading…</div>}
+            {detailLoading && (
+              <div data-testid="ticket-detail-loading" role="status" aria-label="Loading ticket details" className="p-4 flex flex-col gap-3">
+                <span className="sr-only">Loading ticket details…</span>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-20 w-full" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-16 rounded-sm" />
+                  <Skeleton className="h-5 w-16 rounded-sm" />
+                </div>
+              </div>
+            )}
             {!detailLoading && ticketDetail && (
               <TicketDetailView
                 ticket={ticketDetail}
