@@ -1,0 +1,72 @@
+{
+  "entries": [
+    {
+      "phase": "planning",
+      "role": "planner",
+      "round": 1,
+      "model": "anthropic/claude-opus-4-6",
+      "inputTokens": 17,
+      "outputTokens": 7663,
+      "cacheReadTokens": 603137,
+      "cacheWriteTokens": 67047,
+      "totalTokens": 677864,
+      "costInput": 0.000085,
+      "costOutput": 0.191575,
+      "costCacheRead": 0.3015685,
+      "costCacheWrite": 0.41904375000000005,
+      "costTotal": 0.9122722499999999,
+      "timestamp": "2026-03-29T22:03:53.619Z"
+    },
+    {
+      "phase": "planning",
+      "role": "critic",
+      "round": 1,
+      "model": "openai-codex/gpt-5.4",
+      "inputTokens": 67933,
+      "outputTokens": 6492,
+      "cacheReadTokens": 706048,
+      "cacheWriteTokens": 0,
+      "totalTokens": 780473,
+      "costInput": 0.16983250000000003,
+      "costOutput": 0.09738000000000001,
+      "costCacheRead": 0.176512,
+      "costCacheWrite": 0,
+      "costTotal": 0.4437245000000001,
+      "timestamp": "2026-03-29T22:06:49.003Z"
+    },
+    {
+      "phase": 0,
+      "role": "relay-a",
+      "round": 1,
+      "model": "anthropic/claude-sonnet-4-6",
+      "inputTokens": 17,
+      "outputTokens": 8745,
+      "cacheReadTokens": 236249,
+      "cacheWriteTokens": 24766,
+      "totalTokens": 269777,
+      "costInput": 0.000050999999999999986,
+      "costOutput": 0.13117499999999999,
+      "costCacheRead": 0.0708747,
+      "costCacheWrite": 0.0928725,
+      "costTotal": 0.29497320000000005,
+      "timestamp": "2026-03-29T22:18:26.131Z"
+    },
+    {
+      "phase": 0,
+      "role": "relay-b",
+      "round": 2,
+      "model": "openai-codex/gpt-5.4",
+      "inputTokens": 37555,
+      "outputTokens": 1361,
+      "cacheReadTokens": 35584,
+      "cacheWriteTokens": 0,
+      "totalTokens": 74500,
+      "costInput": 0.09388750000000001,
+      "costOutput": 0.020415000000000003,
+      "costCacheRead": 0.008896,
+      "costCacheWrite": 0,
+      "costTotal": 0.12319850000000002,
+      "timestamp": "2026-03-29T22:19:08.964Z"
+    }
+  ]
+}

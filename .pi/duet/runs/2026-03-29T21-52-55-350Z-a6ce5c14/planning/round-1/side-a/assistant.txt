@@ -1,0 +1,12 @@
+**Summary of plan and key decisions:**
+
+1. **7 steps** preserving the original sequencing: prompt caching → experiment infra → embedding override + chunk analysis → LLM A/B → HyDE + SQL routing → integration wiring → eval runner
+
+2. **Gap analysis fix (embedding-model A/B):** The Pinecone index is fixed at 1536 dimensions (`EMBEDDING_DIMENSION = 1536` in `PineconeClient`), and `SemanticIndexService.upsertChunk()` only writes with the default model. Routing live queries through `text-embedding-3-large` (3072-d) would produce dimension mismatches. Resolution:
+   - Step 3 still adds `embed(text, modelOverride)` to `EmbeddingService` — but documents it as **offline eval only**
+   - Step 6 explicitly **omits** embedding-model experiment from `SemanticQueryService`'s live query path
+   - Step 7's `AbComparisonRunner` is the correct venue for embedding model A/B (creates separate `EmbeddingService` instances per model for offline comparison)
+
+3. **Check assignments:** Steps 1–6 require both `static` and `unit`; Step 7 requires only `static` (the A/B eval runner is tagged `ab-eval` and excluded from normal test runs, requiring real API keys)
+
+4. **Backward compatibility:** All experiments default to `control-weight: 1.0` (100% control), `enabled: false`. The existing `SemanticQueryService` constructor grows from 10→13 params, and `SemanticIndexService` from 14→15 — matching the existing pattern of constructor injection in these orchestrator services.

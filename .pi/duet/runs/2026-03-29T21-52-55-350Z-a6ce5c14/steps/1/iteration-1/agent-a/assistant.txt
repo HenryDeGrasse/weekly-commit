@@ -1,0 +1,24 @@
+Everything looks good. Let me provide a summary of all the changes made.
+
+## Summary
+
+### Changes Made
+
+**`OpenRouterAiProvider.java`:**
+1. **New counters**: Added `cacheCreationTokens` and `cacheReadTokens` `AtomicLong` fields.
+2. **Constructor INFO log**: Added `log.info("Prompt caching enabled for Anthropic models")` unconditionally.
+3. **`callOpenRouter()` — system message**: Replaced the one-liner `messages.addObject().put(...)` chain with separate variable construction. When `model.startsWith("anthropic/")`, adds `"cache_control": {"type": "ephemeral"}` to the system message object.
+4. **`callOpenRouter()` — usage parsing**: Delegated to new `updateUsageCounters(JsonNode usage)` package-private method.
+5. **`updateUsageCounters(JsonNode usage)`**: New package-private method that parses `total_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens` from the usage node, updates all three counters, and logs cache fields at DEBUG level.
+6. **New public getters**: `getCacheCreationTokens()` and `getCacheReadTokens()`.
+
+**`OpenRouterAiProviderTest.java`:**
+- Added `cacheCounters_startAtZero()` — verifies defaults to zero.
+- Added `updateUsageCounters_withCacheFields_updatesCacheCounters()` — verifies both cache fields are parsed and counters updated.
+- Added `updateUsageCounters_withoutCacheFields_cacheCountersRemainZero()` — verifies only `total_tokens` is updated when cache fields absent.
+- Added `updateUsageCounters_calledMultipleTimes_accumulatesCounters()` — verifies accumulation across multiple calls.
+- Added `updateUsageCounters_nullNode_doesNothing()` — verifies null-safety guard.
+
+All checks pass: `static` ✅, `unit` ✅.
+
+Verdict: changes_made

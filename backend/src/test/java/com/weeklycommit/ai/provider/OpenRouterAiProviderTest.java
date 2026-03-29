@@ -87,6 +87,72 @@ class OpenRouterAiProviderTest {
 		assertThat(provider.getTotalRequests()).isZero();
 	}
 
+	@Test
+	void cacheCounters_startAtZero() {
+		OpenRouterAiProvider provider = makeProvider("key");
+		assertThat(provider.getCacheCreationTokens()).isZero();
+		assertThat(provider.getCacheReadTokens()).isZero();
+	}
+
+	// ── Cache counter tests ──────────────────────────────────────────────
+
+	@Test
+	void updateUsageCounters_withCacheFields_updatesCacheCounters() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+
+		com.fasterxml.jackson.databind.node.ObjectNode usage = objectMapper.createObjectNode();
+		usage.put("total_tokens", 100);
+		usage.put("cache_creation_input_tokens", 80);
+		usage.put("cache_read_input_tokens", 20);
+
+		provider.updateUsageCounters(usage);
+
+		assertThat(provider.getTotalTokensUsed()).isEqualTo(100);
+		assertThat(provider.getCacheCreationTokens()).isEqualTo(80);
+		assertThat(provider.getCacheReadTokens()).isEqualTo(20);
+	}
+
+	@Test
+	void updateUsageCounters_withoutCacheFields_cacheCountersRemainZero() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+
+		com.fasterxml.jackson.databind.node.ObjectNode usage = objectMapper.createObjectNode();
+		usage.put("total_tokens", 50);
+
+		provider.updateUsageCounters(usage);
+
+		assertThat(provider.getTotalTokensUsed()).isEqualTo(50);
+		assertThat(provider.getCacheCreationTokens()).isZero();
+		assertThat(provider.getCacheReadTokens()).isZero();
+	}
+
+	@Test
+	void updateUsageCounters_calledMultipleTimes_accumulatesCounters() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+
+		com.fasterxml.jackson.databind.node.ObjectNode usage1 = objectMapper.createObjectNode();
+		usage1.put("cache_creation_input_tokens", 50);
+		usage1.put("cache_read_input_tokens", 10);
+
+		com.fasterxml.jackson.databind.node.ObjectNode usage2 = objectMapper.createObjectNode();
+		usage2.put("cache_creation_input_tokens", 30);
+		usage2.put("cache_read_input_tokens", 5);
+
+		provider.updateUsageCounters(usage1);
+		provider.updateUsageCounters(usage2);
+
+		assertThat(provider.getCacheCreationTokens()).isEqualTo(80);
+		assertThat(provider.getCacheReadTokens()).isEqualTo(15);
+	}
+
+	@Test
+	void updateUsageCounters_nullNode_doesNothing() {
+		OpenRouterAiProvider provider = makeProvider("key");
+		provider.updateUsageCounters(null);
+		assertThat(provider.getCacheCreationTokens()).isZero();
+		assertThat(provider.getCacheReadTokens()).isZero();
+	}
+
 	// ── parseResponse: valid JSON response ──────────────────────────────
 
 	@Test

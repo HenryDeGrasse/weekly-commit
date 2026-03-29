@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "completed",
-  "updatedAt": "2026-03-29T21:50:30.718Z",
+  "updatedAt": "2026-03-29T21:52:20.572Z",
   "runId": "2026-03-29T18-32-40-613Z-32faa966",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -216,10 +216,8 @@
   },
   "planSourcePath": "duet-plan-ai-enhancements.md",
   "stepIndex": 13,
-  "round": 5,
   "activeSummary": {
-    "stepId": "step-13",
-    "stepTitle": "Add plan recommendations UI — frontend",
+    "stepTitle": "All steps complete",
     "gateResults": [
       {
         "id": "lint",
@@ -237,7 +235,6 @@
         "id": "git-diff-check",
         "passed": true
       }
-    ],
-    "lastVerdict": "approve"
+    ]
   }
 }

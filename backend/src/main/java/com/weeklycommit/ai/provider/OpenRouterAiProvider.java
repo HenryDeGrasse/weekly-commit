@@ -68,6 +68,10 @@ public class OpenRouterAiProvider implements AiProvider {
 	private final AtomicLong totalTokensUsed = new AtomicLong(0);
 	private final AtomicLong totalRequests = new AtomicLong(0);
 
+	/** Prompt-cache token counters (Anthropic models via OpenRouter). */
+	private final AtomicLong cacheCreationTokens = new AtomicLong(0);
+	private final AtomicLong cacheReadTokens = new AtomicLong(0);
+
 	public OpenRouterAiProvider(@Value("${ai.openrouter.api-key:}") String apiKey,
 			@Value("${ai.openrouter.model:anthropic/claude-sonnet-4-20250514}") String model,
 			@Value("${ai.openrouter.max-tokens:1024}") int maxTokens,
@@ -85,6 +89,7 @@ public class OpenRouterAiProvider implements AiProvider {
 		} else {
 			log.info("OpenRouterAiProvider initialized: model={}, maxTokens={}", model, maxTokens);
 		}
+		log.info("Prompt caching enabled for Anthropic models");
 	}
 
 	// ── AiProvider contract ──────────────────────────────────────────────
@@ -176,7 +181,12 @@ public class OpenRouterAiProvider implements AiProvider {
 		responseFormat.put("type", "json_object");
 
 		ArrayNode messages = body.putArray("messages");
-		messages.addObject().put("role", "system").put("content", systemPrompt);
+		ObjectNode systemMsg = messages.addObject();
+		systemMsg.put("role", "system");
+		systemMsg.put("content", systemPrompt);
+		if (model.startsWith("anthropic/")) {
+			systemMsg.putObject("cache_control").put("type", "ephemeral");
+		}
 		messages.addObject().put("role", "user").put("content", userMessage);
 
 		String json = objectMapper.writeValueAsString(body);
@@ -196,8 +206,8 @@ public class OpenRouterAiProvider implements AiProvider {
 		try {
 			JsonNode respNode = objectMapper.readTree(response.body());
 			JsonNode usage = respNode.get("usage");
-			if (usage != null && usage.has("total_tokens")) {
-				totalTokensUsed.addAndGet(usage.get("total_tokens").asLong());
+			if (usage != null) {
+				updateUsageCounters(usage);
 			}
 		} catch (Exception ignored) {
 		}
@@ -206,6 +216,37 @@ public class OpenRouterAiProvider implements AiProvider {
 	}
 
 	// ── Response parsing ─────────────────────────────────────────────────
+
+	/**
+	 * Updates token counters from the OpenRouter {@code usage} JSON node.
+	 *
+	 * <p>
+	 * Handles standard {@code total_tokens} as well as Anthropic prompt-cache
+	 * fields ({@code cache_creation_input_tokens},
+	 * {@code cache_read_input_tokens}). Logs cache metrics at DEBUG level.
+	 *
+	 * <p>
+	 * Package-private for testing.
+	 */
+	void updateUsageCounters(JsonNode usage) {
+		if (usage == null) {
+			return;
+		}
+		if (usage.has("total_tokens")) {
+			totalTokensUsed.addAndGet(usage.get("total_tokens").asLong());
+		}
+		long creation = 0;
+		long read = 0;
+		if (usage.has("cache_creation_input_tokens")) {
+			creation = usage.get("cache_creation_input_tokens").asLong();
+			cacheCreationTokens.addAndGet(creation);
+		}
+		if (usage.has("cache_read_input_tokens")) {
+			read = usage.get("cache_read_input_tokens").asLong();
+			cacheReadTokens.addAndGet(read);
+		}
+		log.debug("Cache metrics: cache_creation_input_tokens={}, cache_read_input_tokens={}", creation, read);
+	}
 
 	/**
 	 * Parses the OpenRouter response body and returns an
@@ -365,6 +406,16 @@ public class OpenRouterAiProvider implements AiProvider {
 	/** Total requests made (for metrics). */
 	public long getTotalRequests() {
 		return totalRequests.get();
+	}
+
+	/** Total tokens used for prompt-cache creation (Anthropic models). */
+	public long getCacheCreationTokens() {
+		return cacheCreationTokens.get();
+	}
+
+	/** Total tokens served from prompt cache (Anthropic models). */
+	public long getCacheReadTokens() {
+		return cacheReadTokens.get();
 	}
 
 	// ── Inner types ──────────────────────────────────────────────────────

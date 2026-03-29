@@ -38,13 +38,9 @@ Add Anthropic prompt caching support to the OpenRouter provider. When the model 
   - The system message should be: `{"role": "system", "content": "...", "cache_control": {"type": "ephemeral"}}`
   - Add a log line at INFO level on first startup: `"Prompt caching enabled for Anthropic models"`
   - Track cache hit metrics: parse the response `usage` object for `cache_creation_input_tokens` and `cache_read_input_tokens` fields, log them, and expose via atomic counters (like existing `totalTokensUsed`)
-  - Note: `callOpenRouter()` currently uses the `this.model` field directly. The `cache_control` check should use the same model field. This will be refactored in Step 4 to accept a `modelOverride` parameter — the `cache_control` logic should use whichever model is actually being used.
 
 **Files to modify for test:**
-- `backend/src/test/java/com/weeklycommit/ai/provider/OpenRouterAiProviderTest.java` — add tests verifying:
-  - `cache_control` is added for anthropic models (verify via inspecting the request body — note: currently tests don't verify request body construction since `callOpenRouter` is private; add a package-private helper or test via `parseResponse` for the cache metrics parsing)
-  - Cache metric counters are incremented when response contains `cache_creation_input_tokens` / `cache_read_input_tokens`
-  - Cache metric counters default to zero
+- `backend/src/test/java/com/weeklycommit/ai/provider/OpenRouterAiProviderTest.java` — if this file exists, add a test verifying cache_control is added for anthropic models and NOT added for non-anthropic models
 
 **Checks:** static, unit
 
@@ -56,36 +52,35 @@ Create a lightweight experiment service that assigns variants based on configura
 
 **Files to create:**
 - `backend/src/main/java/com/weeklycommit/ai/experiment/ExperimentConfig.java`
-  - Use `@Configuration` + `@ConfigurationProperties(prefix = "ai.experiments")` (matching the existing pattern in `FeatureFlagProperties.java`)
+  - A `@ConfigurationProperties(prefix = "ai.experiments")` class
   - Contains a `Map<String, ExperimentDefinition> experiments` (keyed by experiment name)
-  - `ExperimentDefinition` is a nested static class with: `boolean enabled`, `double controlWeight` (0.0–1.0, default 1.0 = all traffic goes to control), `String controlValue`, `String treatmentValue`, `List<String> appliesTo` (list of suggestion types this experiment affects, empty = all)
-  - Must have getters/setters (not a record) since Spring Boot `@ConfigurationProperties` binding requires mutable beans
+  - `ExperimentDefinition` has: `boolean enabled`, `double controlWeight` (0.0–1.0, default 1.0 = all traffic goes to control), `String controlValue`, `String treatmentValue`, `List<String> appliesTo` (list of suggestion types this experiment affects, empty = all)
+  - Add `@EnableConfigurationProperties(ExperimentConfig.class)` annotation
 
 - `backend/src/main/java/com/weeklycommit/ai/experiment/ExperimentService.java`
   - `@Service` class
   - `public ExperimentAssignment assign(String experimentName, UUID userId)` — returns which variant to use based on:
-    1. Environment variable override: `AB_FORCE_{EXPERIMENT_NAME}=control|treatment` (for eval runs, e.g. `AB_FORCE_EMBEDDING_MODEL=treatment`)
+    1. Environment variable override: `AB_FORCE_{EXPERIMENT_NAME}=control|treatment` (for eval runs)
     2. Config weight: `Math.random() < controlWeight ? CONTROL : TREATMENT`
   - `ExperimentAssignment` record: `String experimentName, String variant, String value`
   - `public boolean isEnabled(String experimentName)` — checks if experiment exists and is enabled
   - `public String resolveValue(String experimentName, UUID userId)` — convenience: returns the value (controlValue or treatmentValue) for the assigned variant
   - `public Map<String, String> getActiveAssignments(UUID userId)` — returns all active experiment assignments for recording in audit
-  - Note: the `Math.random()` approach means the same user may get different assignments on different requests. This is acceptable for the initial implementation since the goal is aggregate A/B comparison, not per-user consistency. For deterministic testing, use the env var override.
 
 **Files to modify:**
-- `backend/src/main/resources/application.yml` — add experiment config block under the existing `ai:` key:
+- `backend/src/main/resources/application.yml` — add experiment config block:
   ```yaml
   ai:
     experiments:
       experiments:
         embedding-model:
           enabled: false
-          control-weight: 1.0
+          control-weight: 0.5
           control-value: "openai/text-embedding-3-small"
           treatment-value: "openai/text-embedding-3-large"
         llm-model:
           enabled: false
-          control-weight: 1.0
+          control-weight: 0.5
           control-value: "anthropic/claude-sonnet-4"
           treatment-value: "google/gemini-2.5-flash-preview"
           applies-to:
@@ -94,21 +89,19 @@ Create a lightweight experiment service that assigns variants based on configura
             - RAG_QUERY
         hyde:
           enabled: false
-          control-weight: 1.0
+          control-weight: 0.5
           control-value: "disabled"
           treatment-value: "enabled"
           applies-to:
             - RAG_QUERY
   ```
-  Note: `control-weight: 1.0` (not 0.5) ensures all traffic defaults to control (current behavior preserved) when an experiment is first enabled. Operators explicitly set `control-weight: 0.5` when ready to start A/B testing.
 
 **Files to create for test:**
 - `backend/src/test/java/com/weeklycommit/ai/experiment/ExperimentServiceTest.java`
-  - Test default behavior (disabled experiments return control value)
-  - Test enabled experiment with `controlWeight=1.0` always returns control
-  - Test env var override forces specific variant
-  - Test `getActiveAssignments` returns only enabled experiments
-  - Test `isEnabled` returns false for non-existent experiments
+  - Test default behavior (disabled experiments return control)
+  - Test env var override
+  - Test weight-based assignment
+  - Test `getActiveAssignments`
 
 **Checks:** static, unit
 
@@ -122,10 +115,8 @@ Modify `EmbeddingService` to support configurable model selection via the experi
 - `backend/src/main/java/com/weeklycommit/ai/rag/EmbeddingService.java`
   - Add a new method: `public float[] embed(String text, String modelOverride)` that uses the specified model instead of the default
   - The original `embed(String text)` delegates to the new method with `this.model` as the default
-  - The new method replaces the `model` field in the request body JSON with `modelOverride`
   - Add an `int getDimensions(String model)` method that returns 1536 for text-embedding-3-small, 3072 for text-embedding-3-large (used by callers that need to know vector size)
   - Track per-model call counts via atomic counters for observability
-  - **Important consideration:** Switching embedding models mid-stream means the query embedding dimensions won't match stored index vectors (which are 1536-d from text-embedding-3-small). This is an inherent A/B testing limitation — the embedding model experiment should only be used with a separate Pinecone index pre-populated with the treatment model's embeddings, OR the plan should document this as a limitation. For the initial implementation, document this constraint in the config comments.
 
 **Files to create:**
 - `backend/src/main/java/com/weeklycommit/ai/rag/ChunkSizeAnalyzer.java`
@@ -133,25 +124,19 @@ Modify `EmbeddingService` to support configurable model selection via the experi
   - `public ChunkStats analyze(ChunkBuilder.ChunkData chunk)` — estimates token count (~4 chars per token), text length in chars, metadata key count
   - `ChunkStats` record: `int estimatedTokens, int charLength, int metadataKeyCount, boolean exceedsRecommendedSize`
   - `exceedsRecommendedSize` is true when estimatedTokens > 625 (= 2500 chars / 4, the "context cliff" threshold from research)
-  - Integrate with Micrometer (already in build.gradle.kts as `io.micrometer:micrometer-registry-prometheus`): inject `MeterRegistry` and register a `DistributionSummary` named `ai.chunk.tokens` that records the token count of each analyzed chunk
+  - Integrate with Micrometer: register a `DistributionSummary` named `ai.chunk.tokens` that records the token count of each analyzed chunk
   - `public void logWarningIfOversized(ChunkBuilder.ChunkData chunk)` — logs WARN if chunk exceeds threshold
 
 **Files to modify:**
 - `backend/src/main/java/com/weeklycommit/ai/rag/SemanticIndexService.java`
   - In `upsertChunk()`, after building the chunk, call `chunkSizeAnalyzer.analyze(chunk)` and `chunkSizeAnalyzer.logWarningIfOversized(chunk)` to track chunk sizes
-  - Inject `ChunkSizeAnalyzer` via constructor — note: the existing constructor has 13 parameters, adding one more. This is a known code smell but consistent with the existing pattern.
+  - Inject `ChunkSizeAnalyzer` via constructor
 
 **Files to create for test:**
 - `backend/src/test/java/com/weeklycommit/ai/rag/ChunkSizeAnalyzerTest.java`
-  - Test token estimation accuracy
-  - Test warning threshold boundary (exactly at 625, above 625, below 625)
-  - Test with a mock `MeterRegistry` to verify metrics recording
-  - Test with null/empty chunk text
-
-**Files to modify for test:**
-- `backend/src/test/java/com/weeklycommit/ai/rag/EmbeddingServiceTest.java`
-  - Add test for `embed(text, modelOverride)` — verify the request body uses the override model
-  - Add test for `getDimensions()` returning correct values
+  - Test token estimation
+  - Test warning threshold
+  - Test with real ChunkBuilder output (build a commit chunk with full enrichment and verify size)
 
 **Checks:** static, unit
 
@@ -159,41 +144,33 @@ Modify `EmbeddingService` to support configurable model selection via the experi
 
 Modify the AI provider to support per-request model override driven by experiments. Wire experiment assignments into audit records.
 
-**Scope:** Modify `OpenRouterAiProvider.java`, `AiProviderRegistry.java`, `AiProvider.java`, and `AiSuggestionResult.java`.
+**Scope:** Modify `OpenRouterAiProvider.java` and `AiProviderRegistry.java`. Do NOT modify `SemanticQueryService` yet.
 
 **Files to modify:**
-- `backend/src/main/java/com/weeklycommit/ai/provider/AiProvider.java`
-  - Add a default method: `default AiSuggestionResult generateSuggestion(AiContext context, String modelOverride) { return generateSuggestion(context); }`
-  - This ensures backward compatibility — `StubAiProvider` inherits the default without modification
-
-- `backend/src/main/java/com/weeklycommit/ai/provider/AiSuggestionResult.java`
-  - Add an optional `Map<String, String> experimentAssignments` field as a 7th parameter to the canonical constructor
-  - Add backwards-compatible constructors: the existing 6-param and 5-param constructors delegate to the 7-param with `Map.of()`
-  - Update `unavailable()` factory to include `Map.of()`
-  - Note: This is a record, so the canonical constructor changes. All existing call sites using 5/6-param constructors will still work via the compact constructors.
-
 - `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java`
-  - Override the new `generateSuggestion(AiContext context, String modelOverride)` method
-  - Refactor `callOpenRouter()` to accept a `String effectiveModel` parameter instead of always using `this.model`
-  - The original `generateSuggestion(AiContext context)` calls the new method with `null`
-  - **Important:** When `effectiveModel` does NOT start with `anthropic/`, do NOT add `cache_control` to the system message
-  - Also: `parseResponse` currently hardcodes `model` in the result — when `modelOverride` is set, use that instead
-  - For `response_format: json_object` — keep it for all models through OpenRouter (OpenRouter handles format compatibility). If issues arise with specific models, handle in a follow-up.
-  - Log the actual model used at DEBUG level
+  - Add a new method: `public AiSuggestionResult generateSuggestion(AiContext context, String modelOverride)`
+  - The original `generateSuggestion(AiContext context)` calls the new method with `null` (use default)
+  - In `callOpenRouter()`, accept a `modelOverride` parameter. When non-null, use it instead of `this.model`
+  - **Important:** When `modelOverride` is set and does NOT start with `anthropic/`, do NOT add `cache_control` to the system message (cache_control is Anthropic-specific)
+  - Also: when using non-Anthropic models, do NOT set `response_format: json_object` unless the model supports it. For `google/gemini-*` models, this is supported. Log the actual model used.
 
 - `backend/src/main/java/com/weeklycommit/ai/provider/AiProviderRegistry.java`
-  - Inject `ExperimentService` via constructor — add it as a constructor parameter with `@Autowired(required = false)` to avoid breaking existing tests that construct with just `List<AiProvider>` (or update the test)
+  - Inject `ExperimentService`
   - Add a new method: `public AiSuggestionResult generateSuggestion(AiContext context, UUID userId)`
   - This method:
     1. Checks if the `llm-model` experiment is enabled and applies to this suggestion type
     2. If yes, resolves the variant and calls `provider.generateSuggestion(context, modelOverride)`
     3. If no, calls the normal `provider.generateSuggestion(context)`
-    4. Attaches experiment assignments to the result's metadata
+    4. Records experiment assignments in the result's metadata
   - The original `generateSuggestion(AiContext)` is unchanged (backward compatible)
 
-**Files to modify for test:**
-- `backend/src/test/java/com/weeklycommit/ai/provider/OpenRouterAiProviderTest.java` — add test for model override in parseResponse (verify the overridden model appears in the result's `modelVersion`)
-- `backend/src/test/java/com/weeklycommit/ai/provider/AiProviderRegistryTest.java` — update constructor calls to handle the new `ExperimentService` parameter; add test for experiment-aware `generateSuggestion(context, userId)` method
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiProvider.java`
+  - Add a default method: `default AiSuggestionResult generateSuggestion(AiContext context, String modelOverride) { return generateSuggestion(context); }`
+
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiSuggestionResult.java`
+  - Add an optional `Map<String, String> experimentAssignments` field (6th parameter)
+  - Add a backwards-compatible constructor that defaults to `Map.of()`
+  - Update `unavailable()` factory
 
 **Checks:** static, unit
 
@@ -201,7 +178,7 @@ Modify the AI provider to support per-request model override driven by experimen
 
 Create two new pipeline components: HyDE for improved embedding, and SQL query routing for analytical questions.
 
-**Scope:** Create 3 new files + 2 new prompt templates. Do NOT modify `SemanticQueryService` yet — that's Step 6.
+**Scope:** Create 3 new files + 1 new prompt template. Do NOT modify `SemanticQueryService` yet — that's Step 6.
 
 **Files to create:**
 - `backend/src/main/resources/prompts/hyde.txt`
@@ -215,6 +192,14 @@ Create two new pipeline components: HyDE for improved embedding, and SQL query r
   Respond with ONLY valid JSON (no markdown fences):
   {"hypotheticalAnswer": "A 2-3 sentence answer with plausible planning details"}
   ```
+
+- `backend/src/main/java/com/weeklycommit/ai/rag/HydeService.java`
+  - `@Service` class
+  - `public HydeResult generateHypothetical(String question, UUID userId)` — calls the LLM with the hyde prompt template to generate a hypothetical answer
+  - `HydeResult` record: `boolean available, String hypotheticalAnswer`
+  - Uses `AiProviderRegistry.generateSuggestion()` with type `"HYDE"`
+  - Graceful degradation: if LLM call fails, returns `HydeResult(false, null)`
+  - Add `TYPE_HYDE = "HYDE"` constant to `AiContext`
 
 - `backend/src/main/resources/prompts/sql-synthesis.txt`
   ```
@@ -241,24 +226,18 @@ Create two new pipeline components: HyDE for improved embedding, and SQL query r
   }
   ```
 
-- `backend/src/main/java/com/weeklycommit/ai/rag/HydeService.java`
-  - `@Service` class
-  - `public HydeResult generateHypothetical(String question, UUID userId)` — calls the LLM with the hyde prompt template to generate a hypothetical answer
-  - `HydeResult` record: `boolean available, String hypotheticalAnswer`
-  - Uses `AiProviderRegistry.generateSuggestion()` with type `AiContext.TYPE_HYDE`
-  - Builds an `AiContext` with the question in `additionalContext`
-  - Graceful degradation: if LLM call fails or returns unparseable JSON, returns `HydeResult(false, null)`
-
 - `backend/src/main/java/com/weeklycommit/ai/rag/SqlQueryRouter.java`
   - `@Service` class  
-  - Dependencies: `TeamMembershipRepository` (to resolve team members for user-scoped repositories), `UserWeekFactRepository`, `TeamWeekRollupRepository`, `RcdoWeekRollupRepository`, `CarryForwardFactRepository`, `ComplianceFactRepository`, `AiProviderRegistry`, `ObjectMapper`
-  - `public boolean canHandle(String intent, List<String> keywords)` — returns true for:
+  - `public boolean canHandle(String intent, List<String> keywords)` — returns true for intent types that map to analytical queries:
     - `"analytical"` intent (new)
     - `"status_query"` with aggregation keywords: "total", "average", "most", "least", "how many", "percentage", "rate", "trend", "compare", "ranking"
     - `"compliance_query"` (new)
   - `public SqlQueryResult query(String question, String intent, List<String> keywords, UUID teamId, String timeRangeFrom, String timeRangeTo, UUID userId)` — executes the appropriate read model queries and synthesizes an answer via LLM
-  - **Critical implementation detail:** `UserWeekFactRepository` and `ComplianceFactRepository` query by `userId`, not `teamId`. The router must first resolve team member user IDs via `TeamMembershipRepository.findByTeamId(teamId)` to get user IDs, then query fact tables with those IDs. `TeamWeekRollupRepository` and `RcdoWeekRollupRepository` have `teamId`/`rcdoNodeId` based queries respectively.
-  - **Time range parsing:** `timeRangeFrom` and `timeRangeTo` come as ISO date strings from intent classification — need `LocalDate.parse()` with null-safety for repository method calls.
+  - Internally:
+    1. Maps intent+keywords to which read model(s) to query
+    2. Executes JPA queries against: `UserWeekFactRepository`, `TeamWeekRollupRepository`, `RcdoWeekRollupRepository`, `CarryForwardFactRepository`, `ComplianceFactRepository`
+    3. Formats query results as JSON context
+    4. Calls LLM with `sql-synthesis.txt` prompt template for natural language answer
   - `SqlQueryResult` record: `boolean available, String answer, String dataSource, double confidence, UUID suggestionId`
   - Intent → read model mapping:
     - Keywords contain "carry forward" / "CF" → `CarryForwardFactRepository`
@@ -268,14 +247,16 @@ Create two new pipeline components: HyDE for improved embedding, and SQL query r
     - Default for user-specific: `UserWeekFactRepository`
 
 **Files to modify:**
-- `backend/src/main/java/com/weeklycommit/ai/provider/AiContext.java` — add `public static final String TYPE_HYDE = "HYDE";` and `public static final String TYPE_SQL_SYNTHESIS = "SQL_SYNTHESIS";` constants
-- `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java` — add `case AiContext.TYPE_HYDE -> "hyde";` and `case AiContext.TYPE_SQL_SYNTHESIS -> "sql-synthesis";` to both `loadPromptTemplate()` and `resolvePromptVersion()` switch expressions
-- `backend/src/main/java/com/weeklycommit/ai/provider/StubAiProvider.java` — add stub responses for `TYPE_HYDE` and `TYPE_SQL_SYNTHESIS` in the `generateSuggestion()` switch to prevent falling to the unknown default (which returns `confidence: 0.0`)
-- `backend/src/main/resources/prompts/rag-intent.txt` — add two new intent types `"analytical"` and `"compliance_query"` to the classification rules, response spec intent enum, and examples
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiContext.java` — add `TYPE_HYDE = "HYDE"` and `TYPE_SQL_SYNTHESIS = "SQL_SYNTHESIS"` constants
+- `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java` — add `case AiContext.TYPE_HYDE -> "hyde";` and `case AiContext.TYPE_SQL_SYNTHESIS -> "sql-synthesis";` to `loadPromptTemplate()` and `resolvePromptVersion()`
+- `backend/src/main/resources/prompts/rag-intent.txt` — add two new intent types `"analytical"` (for aggregate/comparison questions) and `"compliance_query"` to the classification rules and examples:
+  - Add this example: `Question: "Who carried forward the most last quarter?" → {"intent":"analytical","userFilter":"team","entityTypes":["carry_forward"],...,"keywords":["carried forward","most","quarter"]}`
+  - Add this example: `Question: "What's our team's lock compliance rate?" → {"intent":"compliance_query","userFilter":"team","entityTypes":[],...,"keywords":["lock","compliance","rate"]}`
+  - Add this to the `intent` enum in the response spec: `"analytical|compliance_query"`
 
 **Files to create for test:**
-- `backend/src/test/java/com/weeklycommit/ai/rag/HydeServiceTest.java` — test with mock AiProviderRegistry
-- `backend/src/test/java/com/weeklycommit/ai/rag/SqlQueryRouterTest.java` — test `canHandle()` intent detection and keyword matching (unit test with mocked repositories)
+- `backend/src/test/java/com/weeklycommit/ai/rag/HydeServiceTest.java` — test with stub provider
+- `backend/src/test/java/com/weeklycommit/ai/rag/SqlQueryRouterTest.java` — test intent detection, keyword matching
 
 **Checks:** static, unit
 
@@ -287,39 +268,64 @@ Integrate all new components into the RAG query pipeline with experiment-aware r
 
 **Files to modify:**
 - `backend/src/main/java/com/weeklycommit/ai/rag/SemanticQueryService.java`
-  - Add constructor dependencies: `ExperimentService`, `HydeService`, `SqlQueryRouter`
-  - Note: constructor already has 10 parameters; adding 3 more brings it to 13. This is a known code smell but consistent with the service's responsibility as the pipeline orchestrator.
+  - Add constructor dependencies: `ExperimentService`, `HydeService`, `SqlQueryRouter`, `ChunkSizeAnalyzer`
   - Modify the `query()` method pipeline to add these steps between intent classification and Pinecone query:
 
-  **Step 2.5 — SQL routing check (after intent classification, before embedding):**
-  - If `sqlQueryRouter.canHandle(intent.intent(), intent.keywords())`, call `sqlQueryRouter.query(...)` and return early if result is available
-  - Fall through to vector search if SQL routing fails or is unavailable
-  - **Note:** `RagQueryResult` has a `ConfidenceTier` field — for SQL routing results, use `ConfidenceTier.HIGH` since structured data answers are inherently more precise than vector search
+  **Step 2.5 — SQL routing check:**
+  ```java
+  // After intent classification, before embedding
+  if (sqlQueryRouter.canHandle(intent.intent(), intent.keywords())) {
+      SqlQueryResult sqlResult = sqlQueryRouter.query(question, intent.intent(), 
+          intent.keywords(), teamId, intent.timeRangeFrom(), intent.timeRangeTo(), userId);
+      if (sqlResult.available()) {
+          return new RagQueryResult(true, sqlResult.answer(), List.of(), 
+              sqlResult.confidence(), sqlResult.suggestionId());
+      }
+      // Fall through to vector search if SQL routing fails
+  }
+  ```
 
-  **Step 3a — HyDE experiment check (before embedding):**
-  - Check if `hyde` experiment is enabled and assigned variant is `"enabled"`
-  - If so, call `hydeService.generateHypothetical(question, userId)` and use the hypothetical answer as the text to embed
-  - Fall through to original question embedding if HyDE fails
+  **Step 3 — HyDE experiment check:**
+  ```java
+  // Before embedding, check HyDE experiment
+  String textToEmbed = question;
+  if (experimentService.isEnabled("hyde")) {
+      String hydeVariant = experimentService.resolveValue("hyde", userId);
+      if ("enabled".equals(hydeVariant)) {
+          HydeResult hydeResult = hydeService.generateHypothetical(question, userId);
+          if (hydeResult.available()) {
+              textToEmbed = hydeResult.hypotheticalAnswer();
+              log.debug("SemanticQueryService: using HyDE — embedding hypothetical answer");
+          }
+      }
+  }
+  ```
 
-  **Step 3b — Embedding model experiment check (before embedding):**
-  - Check if `embedding-model` experiment is enabled
-  - If so, resolve the variant value and pass as `modelOverride` to `embeddingService.embed(textToEmbed, embeddingModel)`
-  - Otherwise use the default `embeddingService.embed(textToEmbed)`
+  **Step 3 — Embedding model experiment check:**
+  ```java
+  // Before embedding, check embedding model experiment
+  String embeddingModel = null;
+  if (experimentService.isEnabled("embedding-model")) {
+      embeddingModel = experimentService.resolveValue("embedding-model", userId);
+  }
+  float[] vector = embeddingModel != null 
+      ? embeddingService.embed(textToEmbed, embeddingModel)
+      : embeddingService.embed(textToEmbed);
+  ```
 
   **Step 6 — LLM model experiment for answer generation:**
-  - Use `aiProviderRegistry.generateSuggestion(ragContext, userId)` instead of `aiProviderRegistry.generateSuggestion(ragContext)`
+  ```java
+  // Use experiment-aware provider for RAG answer generation
+  AiSuggestionResult llmResult = aiProviderRegistry.generateSuggestion(ragContext, userId);
+  ```
 
   - Record experiment assignments in the audit context string
 
-**Files to modify for test:**
-- `backend/src/test/java/com/weeklycommit/ai/rag/SemanticQueryServiceTest.java`
-  - Update constructor in `setUp()` to include new dependencies (mock `ExperimentService`, `HydeService`, `SqlQueryRouter`)
-  - All existing tests must continue passing with experiments disabled (mocked `ExperimentService.isEnabled()` returns `false`)
-  - Add new tests:
-    - Test SQL routing bypass (analytical intent routes to SQL router, skips Pinecone)
-    - Test HyDE path (when experiment enabled, hypothetical answer is used for embedding)
-    - Test default path unchanged when all experiments disabled
-    - Test graceful degradation when SQL router fails (falls through to vector search)
+**Files to create for test:**
+- `backend/src/test/java/com/weeklycommit/ai/rag/SemanticQueryServiceIntegrationTest.java`
+  - Test SQL routing bypass (analytical query goes to SQL router, not Pinecone)
+  - Test HyDE path (when experiment enabled, hypothetical answer is generated)
+  - Test default path unchanged when experiments disabled
 
 **Checks:** static, unit
 
@@ -327,11 +333,11 @@ Integrate all new components into the RAG query pipeline with experiment-aware r
 
 Add an A/B comparison mode to the eval runner that runs each test case against two model variants and compares scores.
 
-**Scope:** Create 1 new test file + modify build.gradle.kts. Do NOT modify `PromptEvalRunner.java` — create a separate runner.
+**Scope:** Create 1 new test file. Do NOT modify `PromptEvalRunner.java` — create a separate runner.
 
 **Files to create:**
 - `backend/src/test/java/com/weeklycommit/ai/eval/AbComparisonRunner.java`
-  - `@Tag("ab-eval")` — separate from normal eval and regular test runs
+  - `@Tag("ab-eval")` — separate from normal eval runs
   - Reads the same golden datasets as `PromptEvalRunner`
   - For each case, runs against TWO models: the control and treatment (configured via env vars `AB_CONTROL_MODEL` and `AB_TREATMENT_MODEL`)
   - Creates two `OpenRouterAiProvider` instances, one per model
@@ -341,8 +347,7 @@ Add an A/B comparison mode to the eval runner that runs each test case against t
     - Aggregate: mean score per model, win rate, statistical summary
   - Similarly supports `AB_CONTROL_EMBEDDING` and `AB_TREATMENT_EMBEDDING` for embedding model comparison
 
-**Files to modify:**
-- `backend/build.gradle.kts`
+- Add to `backend/build.gradle.kts`:
   - A new task `abEvalTest` that includes the `ab-eval` tag:
     ```kotlin
     tasks.register<Test>("abEvalTest") {
@@ -357,6 +362,5 @@ Add an A/B comparison mode to the eval runner that runs each test case against t
         environment("AB_TREATMENT_MODEL", System.getenv("AB_TREATMENT_MODEL") ?: "google/gemini-2.5-flash-preview")
     }
     ```
-  - Also update the main `test` task's `excludeTags` to include `"ab-eval"` alongside the existing `"eval"` exclusion
 
 **Checks:** static

@@ -1,0 +1,20 @@
+I found one genuine blocker; otherwise the plan is a reasonable implementation path.
+
+The main issue is the **embedding-model A/B path**. In the current codebase:
+
+- `backend/src/main/java/com/weeklycommit/ai/rag/PineconeClient.java` hardcodes Pinecone index creation to **1536 dimensions**
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticIndexService.java` always indexes chunks via the default `embeddingService.embed(chunk.text())`
+
+So Step 6’s proposal to sometimes query with `openai/text-embedding-3-large` (3072-d) against the existing Pinecone index / corpus is not safe:
+- best case: Pinecone rejects the query due to dimension mismatch
+- worst case: even with same dimensions in a future model swap, query embeddings and stored document embeddings would be from different vector spaces, making retrieval invalid
+
+That means the plan needs one explicit step for the treatment arm: e.g. separate Pinecone index + reindex/dual-write strategy + query routing to the matching index, or else the embedding-model experiment must be limited to offline eval only.
+
+Non-blocking suggestions:
+- Normalize `AB_FORCE_*` env var lookup from experiment names with hyphens to shell-safe underscores.
+- For SQL routing, sanity-check the table mapping during implementation: `CarryForwardFact` does not contain team/user ownership directly, so “who carried forward the most” style questions may need `UserWeekFact` (or joins through other repos) rather than only `CarryForwardFact`.
+
+Verdict: changes_requested
+Blocking issues:
+- The embedding-model A/B steps are incomplete/incompatible with the current RAG storage architecture: `PineconeClient` is fixed to a 1536-d index and `SemanticIndexService` only writes default-model embeddings, so routing live queries to `text-embedding-3-large` would fail or produce invalid retrievals unless the plan adds a matching treatment index/reindex/dual-write strategy (or removes live embedding-model routing).

@@ -1,0 +1,26 @@
+Reviewed the diff in:
+
+- `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java`
+- `backend/src/test/java/com/weeklycommit/ai/provider/OpenRouterAiProviderTest.java`
+
+What I checked:
+- Anthropic `cache_control` is added to the system message in `callOpenRouter()`
+- cache usage fields are parsed and accumulated via new `AtomicLong` counters
+- counters are exposed with getters
+- constructor INFO log is present
+- tests cover zero defaults and cache usage parsing/accumulation
+- required checks ran successfully:
+  - `npm run check:static` ✅
+  - `npm test` ✅
+
+Assessment:
+- The step requirements are met.
+- I did not find a material defect in the previous agent’s changes.
+- No code changes were needed.
+
+```observations
+- [low] frontend/src/components/myweek/PlanHistoryView.tsx: React test output reports a missing unique "key" prop warning during unit tests.
+- [low] frontend/src/components/notifications/NotificationPanel.tsx: Multiple frontend tests emit React act(...) warnings, suggesting asynchronous state updates in tests are not fully wrapped.
+```
+
+Verdict: approve
