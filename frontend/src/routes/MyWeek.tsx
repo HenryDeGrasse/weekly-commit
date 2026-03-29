@@ -4,7 +4,7 @@
  */
 import { useState, useCallback, useMemo, useEffect, useRef, Component, type ErrorInfo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Lock, AlertTriangle, Check, X, ArrowRight, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, AlertTriangle, Check, X, ArrowRight, Sparkles, CalendarDays } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card.js";
@@ -31,6 +31,7 @@ import { AiLintPanel } from "../components/ai/AiLintPanel.js";
 import { CollapsibleSection } from "../components/shared/CollapsibleSection.js";
 import { PlanHeaderSkeleton } from "../components/shared/skeletons/PlanHeaderSkeleton.js";
 import { CommitListSkeleton } from "../components/shared/skeletons/CommitListSkeleton.js";
+import { EmptyState } from "../components/shared/EmptyState.js";
 import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
 import { ProactiveRiskBanner } from "../components/ai/ProactiveRiskBanner.js";
 import { WhatIfPanel } from "../components/ai/WhatIfPanel.js";
@@ -465,6 +466,23 @@ export default function MyWeek() {
         </div>
       )}
 
+      {/* No-plan empty state — when loading finished but no plan exists for this week */}
+      {!planLoading && !planError && !plan && (
+        <EmptyState
+          data-testid="my-week-empty"
+          icon={<CalendarDays className="h-10 w-10" />}
+          title="Start your week"
+          description="Add your first commitment to begin planning."
+          action={
+            <Button variant="primary" onClick={handleOpenCreate} data-testid="empty-add-commit-btn">
+              {aiComposerEnabled ? (
+                <><Sparkles className="h-3.5 w-3.5 mr-1" aria-hidden="true" />Add Commit</>
+              ) : "+ Add Commit"}
+            </Button>
+          }
+        />
+      )}
+
       {/* Plan header */}
       {plan && (
         <Card data-testid="plan-header">
@@ -625,6 +643,7 @@ export default function MyWeek() {
           rcdoLabels={rcdoLabels}
           onViewLineage={(commitId) => setLineageCommitId(commitId)}
           onCreateTicket={handleCreateTicketFromCommit}
+          onAddCommit={handleOpenCreate}
         />
       )}
 

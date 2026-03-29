@@ -4,11 +4,12 @@
  */
 import { useState, useCallback } from "react";
 import { Skeleton } from "../components/ui/Skeleton.js";
-import { Target } from "lucide-react";
+import { Target, Network } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
 import { Badge } from "../components/ui/Badge.js";
 import { useHostContext } from "../host/HostProvider.js";
+import { EmptyState } from "../components/shared/EmptyState.js";
 import { useRcdoTree, useRcdoApi } from "../api/rcdoHooks.js";
 import { RcdoTreeView, type StatusFilter } from "../components/rcdo/RcdoTreeView.js";
 import { RcdoBreadcrumb } from "../components/rcdo/RcdoBreadcrumb.js";
@@ -182,6 +183,25 @@ export default function Rcdos() {
             </div>
           ) : error ? (
             <div role="alert" className="text-sm text-foreground font-semibold">Failed to load: {error.message}</div>
+          ) : nodes.length === 0 ? (
+            <EmptyState
+              data-testid="rcdo-tree-empty"
+              icon={<Network className="h-9 w-9" />}
+              title="No strategy nodes"
+              description="Create your first Rally Cry to get started building your strategic hierarchy."
+              action={
+                perms.canCreateRallyCry ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => { setCreateNodeType("RALLY_CRY"); setCreateParentId(null); setPanelMode("create"); }}
+                    data-testid="empty-create-rally-cry-btn"
+                  >
+                    + Create Rally Cry
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
             <RcdoTreeView nodes={nodes} selectedId={selectedId} onSelect={handleSelect} statusFilter={statusFilter} searchQuery={searchQuery} />
           )}

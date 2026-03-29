@@ -8,8 +8,10 @@
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ReportChartSkeleton } from "../components/shared/skeletons/ReportChartSkeleton.js";
+import { EmptyState } from "../components/shared/EmptyState.js";
 import {
   BarChart3,
+  BarChart2,
   TrendingUp,
   TrendingDown,
   RotateCcw,
@@ -211,7 +213,16 @@ export default function Reports() {
         </div>
       )}
 
-      {!loading && !error && (
+      {!loading && !error && pva.length === 0 && compliance.length === 0 && cf.length === 0 && (
+        <EmptyState
+          data-testid="reports-empty"
+          icon={<BarChart2 className="h-10 w-10" />}
+          title="Not enough data yet"
+          description="Reports will populate after your first reconciled week. Lock and reconcile your weekly plan to start tracking progress."
+        />
+      )}
+
+      {!loading && !error && (pva.length > 0 || compliance.length > 0 || cf.length > 0) && (
         <>
           {/* ── Row 1: Hero velocity ──────────────────────────────── */}
           <VelocityTrendChart data={pva} />

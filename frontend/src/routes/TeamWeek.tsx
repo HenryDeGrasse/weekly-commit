@@ -4,7 +4,7 @@
  */
 import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { cn } from "../lib/utils.js";
 import { useHostBridge } from "../host/HostProvider.js";
@@ -25,6 +25,7 @@ import { ManagerAiSummaryCard } from "../components/ai/ManagerAiSummaryCard.js";
 import { TeamRiskSummaryBanner } from "../components/ai/TeamRiskSummaryBanner.js";
 import { CollapsibleSection } from "../components/shared/CollapsibleSection.js";
 import { TeamWeekSkeleton } from "../components/shared/skeletons/TeamWeekSkeleton.js";
+import { EmptyState } from "../components/shared/EmptyState.js";
 
 function getWeekStartDate(offsetWeeks = 0): string {
   const now = new Date();
@@ -119,9 +120,12 @@ export default function TeamWeek() {
       </div>
 
       {!teamId && (
-        <div data-testid="no-team-selected" className="py-8 text-center text-sm text-muted rounded-default border border-border bg-surface">
-          No team selected. Please select a team to view the dashboard.
-        </div>
+        <EmptyState
+          data-testid="no-team-selected"
+          icon={<Users className="h-10 w-10" />}
+          title="No team selected"
+          description="Please select a team from the navigation to view the weekly dashboard."
+        />
       )}
       {teamId && (teamLoading || exceptionsLoading) && (
         <div data-testid="team-week-loading">

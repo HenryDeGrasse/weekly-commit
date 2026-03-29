@@ -1,0 +1,348 @@
+
+> weekly-commit-monorepo@1.0.0 test
+> npm run test -w frontend -- --run && npm run test -w @weekly-commit/shared -- --run && cd backend && ./gradlew test && cd .. && node --test scripts/__tests__/*.test.js
+
+
+> frontend@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/henrydegrasse/Development/GauntletAi/HPP/ST6V2/frontend
+
+ ✓ src/__tests__/CollapsibleSection.test.tsx (19 tests) 61ms
+ ✓ src/__tests__/SemanticSearchInput.test.tsx (17 tests) 74ms
+ ✓ src/__tests__/PreLockValidation.test.tsx (13 tests) 49ms
+ ✓ src/__tests__/ProactiveRiskBanner.test.tsx (19 tests) 106ms
+ ✓ src/__tests__/QueryAnswerCard.test.tsx (24 tests) 187ms
+ ✓ src/__tests__/InsightPanel.test.tsx (19 tests) 73ms
+ ✓ src/__tests__/RcdoTreeView.test.tsx (20 tests) 323ms
+ ✓ src/__tests__/RcdoNodeForm.test.tsx (23 tests) 340ms
+ ✓ src/__tests__/AiCommitComposer.test.tsx (27 tests) 397ms
+ ✓ src/__tests__/CommitList.test.tsx (30 tests) 333ms
+ ✓ src/__tests__/TicketsPage.test.tsx (30 tests) 530ms
+ ✓ src/__tests__/ReconcilePage.test.tsx (37 tests) 544ms
+ ✓ src/__tests__/RcdoPage.test.tsx (27 tests) 583ms
+ ✓ src/__tests__/MyWeekPage.test.tsx (55 tests) 870ms
+ ✓ src/__tests__/CapacityMeter.test.tsx (16 tests) 70ms
+ ✓ src/__tests__/ApiClient.test.ts (8 tests) 5ms
+ ✓ src/__tests__/TeamHistoryView.test.tsx (13 tests) 46ms
+ ✓ src/__tests__/PlanHistoryView.test.tsx (16 tests) 65ms
+ ✓ src/__tests__/ManagerAiSummaryCard.test.tsx (16 tests) 41ms
+ ✓ src/__tests__/ScopeChangeDialog.test.tsx (12 tests) 90ms
+ ✓ src/__tests__/CarryForwardLineageView.test.tsx (13 tests) 33ms
+ ✓ src/__tests__/LockConfirmDialog.test.tsx (8 tests) 39ms
+ ✓ src/__tests__/MoveNodeDialog.test.tsx (8 tests) 97ms
+ ✓ src/__tests__/FilterBar.test.tsx (22 tests) 68ms
+ ✓ src/__tests__/ui/Button.test.tsx (17 tests) 99ms
+ ✓ src/__tests__/CommitForm.test.tsx (33 tests) 697ms
+ ✓ src/__tests__/ui/Toast.test.tsx (9 tests) 40ms
+ ✓ src/__tests__/ui/Badge.test.tsx (14 tests) 25ms
+ ✓ src/__tests__/Header.test.tsx (13 tests) 132ms
+ ✓ src/__tests__/EmptyState.test.tsx (10 tests) 68ms
+ ✓ src/__tests__/ui/Card.test.tsx (10 tests) 72ms
+ ✓ src/__tests__/ui/Input.test.tsx (15 tests) 88ms
+ ✓ src/__tests__/Breadcrumb.test.tsx (8 tests) 63ms
+ ❯ src/__tests__/Flows.test.tsx (41 tests | 1 failed) 2483ms
+   ✓ Fix 1 — Navigation: sidebar links route to correct pages > renders Reconcile at /weekly/reconcile 383ms
+   ✓ Fix 1 — Navigation: sidebar links route to correct pages > renders Tickets at /weekly/tickets 665ms
+   × Fix 1 — Navigation: sidebar links route to correct pages > renders RCDOs at /weekly/rcdos 1009ms
+     → Unable to find an element by: [data-testid="page-rcdos"]
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"flex h-screen flex-col overflow-hidden bg-background text-foreground"[39m
+      [33mdata-testid[39m=[32m"app-shell"[39m
+      [33mstyle[39m=[32m"--font-family-base: 'Inter', 'Geist Sans', system-ui, sans-serif; --font-size-base: 16px; --border-radius: 0px; --spacing-unit: 8px; --color-primary: #737373; --color-secondary: #f5f5f5; --color-background: #ffffff; --color-surface: #ffffff; --color-text: #0a0a0a; --color-text-muted: #717171; --color-border: #e5e5e5; --color-success: #3D7A4A; --color-warning: #7A6520; --color-danger: #9B3B3B; font-family: var(--font-family-base); font-size: var(--font-size-base);"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"flex h-14 items-center justify-between border-b border-border bg-surface px-4 gap-4"[39m
+        [33mrole[39m=[32m"banner"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center gap-3 min-w-0"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"group relative inline-flex"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33maria-label[39m=[32m"Collapse sidebar"[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 text-foreground hover:bg-muted-bg active:bg-muted-bg/80 h-9 w-9 rounded-default shrink-0"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-panel-left-close h-4 w-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<rect[39m
+                  [33mheight[39m=[32m"18"[39m
+                  [33mrx[39m=[32m"2"[39m
+                  [33mwidth[39m=[32m"18"[39m
+                  [33mx[39m=[32m"3"[39m
+                  [33my[39m=[32m"3"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M9 3v18"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m16 15-3-3 3-3"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-sm bg-foreground px-2 py-1 text-xs text-surface opacity-0 shadow-md transition-opacity group-hover:opacity-100 bottom-full mb-1.5"[39m
+              [33mrole[39m=[32m"tooltip"[39m
+            [36m>[39m
+              [0mCollapse sidebar[0m
+            [36m</span>[39m
+          [36m</span>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-2 shrink-0"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-calendar h-5 w-5 text-primary"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M8 2v4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 2v4"[39m
+              [36m/>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"18"[39m
+                [33mrx[39m=[32m"2"[39m
+                [33mwidth[39m=[32m"18"[39m
+                [33mx[39m=[32m"3"[39m
+                [33my[39m=[32m"4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M3 10h18"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"text-sm font-bold tracking-tight hidden sm:inline"[39m
+            [36m>[39m
+              [0mWeekly Commit[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"hidden md:block"[39m
+          [36m>[39m
+            [36m<nav[39m
+              [33maria-label[39m=[32m"Breadcrumb"[39m
+              [33mclass[39m=[32m"flex items-center gap-1 text-sm text-muted"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"flex items-center gap-1"[39m
+              [36m>[39m
+                [36m<a[39m
+                  [33mclass[39m=[32m"hover:text-primary transition-colors"[39m
+                  [33mdata-discover[39m=[32m"true"[39m
+                  [33mhref[39m=[32m"/weekly"[39m
+                [36m>[39m
+                  [0mWeekly Commit[0m
+                [36m</a>[39m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"flex items-center gap-1"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-chevron-right h-3.5 w-3.5 text-border"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"24"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"24"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"m9 18 6-6-6-6"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"font-medium text-foreground"[39m
+                [36m>[39m
+                  [0mRCDOs[0m
+                [36m</span>[39m
+  ...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"flex h-screen flex-col overflow-hidden bg-background text-foreground"[39m
+      [33mdata-testid[39m=[32m"app-shell"[39m
+      [33mstyle[39m=[32m"--font-family-base: 'Inter', 'Geist Sans', system-ui, sans-serif; --font-size-base: 16px; --border-radius: 0px; --spacing-unit: 8px; --color-primary: #737373; --color-secondary: #f5f5f5; --color-background: #ffffff; --color-surface: #ffffff; --color-text: #0a0a0a; --color-text-muted: #717171; --color-border: #e5e5e5; --color-success: #3D7A4A; --color-warning: #7A6520; --color-danger: #9B3B3B; font-family: var(--font-family-base); font-size: var(--font-size-base);"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"flex h-14 items-center justify-between border-b border-border bg-surface px-4 gap-4"[39m
+        [33mrole[39m=[32m"banner"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center gap-3 min-w-0"[39m
+        [36m>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"group relative inline-flex"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33maria-label[39m=[32m"Collapse sidebar"[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 text-foreground hover:bg-muted-bg active:bg-muted-bg/80 h-9 w-9 rounded-default shrink-0"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-panel-left-close h-4 w-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<rect[39m
+                  [33mheight[39m=[32m"18"[39m
+                  [33mrx[39m=[32m"2"[39m
+                  [33mwidth[39m=[32m"18"[39m
+                  [33mx[39m=[32m"3"[39m
+                  [33my[39m=[32m"3"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M9 3v18"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m16 15-3-3 3-3"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"pointer-events-none absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-sm bg-foreground px-2 py-1 text-xs text-surface opacity-0 shadow-md transition-opacity group-hover:opacity-100 bottom-full mb-1.5"[39m
+              [33mrole[39m=[32m"tooltip"[39m
+            [36m>[39m
+              [0mCollapse sidebar[0m
+            [36m</span>[39m
+          [36m</span>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-2 shrink-0"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-calendar h-5 w-5 text-primary"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M8 2v4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 2v4"[39m
+              [36m/>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"18"[39m
+                [33mrx[39m=[32m"2"[39m
+                [33mwidth[39m=[32m"18"[39m
+                [33mx[39m=[32m"3"[39m
+                [33my[39m=[32m"4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M3 10h18"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"text-sm font-bold tracking-tight hidden sm:inline"[39m
+            [36m>[39m
+              [0mWeekly Commit[0m
+            [36m</span>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"hidden md:block"[39m
+          [36m>[39m
+            [36m<nav[39m
+              [33maria-label[39m=[32m"Breadcrumb"[39m
+              [33mclass[39m=[32m"flex items-center gap-1 text-sm text-muted"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"flex items-center gap-1"[39m
+              [36m>[39m
+                [36m<a[39m
+                  [33mclass[39m=[32m"hover:text-primary transition-colors"[39m
+                  [33mdata-discover[39m=[32m"true"[39m
+                  [33mhref[39m=[32m"/weekly"[39m
+                [36m>[39m
+                  [0mWeekly Commit[0m
+                [36m</a>[39m
+              [36m</span>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"flex items-center gap-1"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-chevron-right h-3.5 w-3.5 text-border"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"24"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"24"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"m9 18 6-6-6-6"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"font-medium text-foreground"[39m
+                [36m>[39m
+                  [0mRCDOs[0m
+                [36m</span>[39m
+  ...
+ ✓ src/__tests__/HostProvider.test.tsx (4 tests) 21ms
+ ✓ src/__tests__/ui/Dialog.test.tsx (9 tests) 94ms
+ ✓ src/__tests__/Navigation.test.tsx (9 tests) 128ms
+ ✓ src/__tests__/TeamWeekPage.test.tsx (76 tests) 869ms
+ ✓ src/__tests__/QueryHooks.test.tsx (1 test) 17ms
+ ✓ src/__tests__/useBalancedText.test.ts (6 tests) 1ms
+ ✓ src/__tests__/ui/Skeleton.test.tsx (4 tests) 17ms
+ ✓ src/__tests__/ui/Select.test.tsx (7 tests) 111ms
+ ✓ src/__tests__/AppShell.test.tsx (9 tests) 194ms
+ ✓ src/App.test.tsx (1 test) 199ms
+ ✓ src/__tests__/Router.test.tsx (9 tests) 365ms
+
+ Test Files  1 failed | 44 passed (45)
+      Tests  1 failed | 796 passed (797)
+   Start at  01:59:34
+   Duration  10.92s (transform 27.82s, setup 8.97s, collect 81.28s, tests 10.81s, environment 15.15s, prepare 9.76s)
+

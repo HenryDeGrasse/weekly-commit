@@ -19,9 +19,10 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, ChevronUp, ChevronDown, Pencil, Trash2, Ticket, Target } from "lucide-react";
+import { GripVertical, ChevronUp, ChevronDown, Pencil, Trash2, Ticket, Target, ListTodo } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Badge } from "../ui/Badge.js";
+import { EmptyState } from "../shared/EmptyState.js";
 import { cn } from "../../lib/utils.js";
 import type { CommitResponse, PlanState, ChessPiece } from "../../api/planTypes.js";
 
@@ -195,9 +196,10 @@ export interface CommitListProps {
   readonly rcdoLabels?: Record<string, string>;
   readonly onViewLineage?: (commitId: string) => void;
   readonly onCreateTicket?: (commit: CommitResponse) => void;
+  readonly onAddCommit?: () => void;
 }
 
-export function CommitList({ commits, planState, onReorder, onEdit, onDelete, rcdoLabels = {}, onViewLineage, onCreateTicket }: CommitListProps) {
+export function CommitList({ commits, planState, onReorder, onEdit, onDelete, rcdoLabels = {}, onViewLineage, onCreateTicket, onAddCommit }: CommitListProps) {
   const isDraft = planState === "DRAFT";
   const [localCommits, setLocalCommits] = useState<CommitResponse[]>(() => [...commits].sort((a, b) => a.priorityOrder - b.priorityOrder));
 
@@ -246,9 +248,25 @@ export function CommitList({ commits, planState, onReorder, onEdit, onDelete, rc
 
   if (localCommits.length === 0) {
     return (
-      <div data-testid="commit-list-empty" className="py-8 text-center text-sm text-muted">
-        {isDraft ? "No commits yet. Add your first commit for this week!" : "No commits in this plan."}
-      </div>
+      <EmptyState
+        data-testid="commit-list-empty"
+        icon={<ListTodo className="h-9 w-9" />}
+        title={isDraft ? "No commits yet" : "No commits in this plan."}
+        {...(isDraft
+          ? {
+              description: "Add your first commitment to start planning your week.",
+            }
+          : {})}
+        {...(isDraft && onAddCommit
+          ? {
+              action: (
+                <Button variant="primary" onClick={onAddCommit} data-testid="commit-list-add-btn">
+                  + Add Commit
+                </Button>
+              ),
+            }
+          : {})}
+      />
     );
   }
 

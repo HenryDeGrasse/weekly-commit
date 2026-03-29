@@ -133,11 +133,19 @@ describe("CommitList — rendering", () => {
     );
   });
 
+  it("shows add button in draft empty state when onAddCommit is provided", () => {
+    const onAddCommit = vi.fn();
+    renderList([], "DRAFT", { onAddCommit });
+    fireEvent.click(screen.getByTestId("commit-list-add-btn"));
+    expect(onAddCommit).toHaveBeenCalledTimes(1);
+  });
+
   it("shows different empty message in non-DRAFT state", () => {
     renderList([], "LOCKED");
     expect(screen.getByTestId("commit-list-empty")).toHaveTextContent(
       "No commits in this plan",
     );
+    expect(screen.queryByTestId("commit-list-add-btn")).not.toBeInTheDocument();
   });
 });
 

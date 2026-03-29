@@ -1,10 +1,11 @@
 /**
  * TicketListView — sortable, paginated table of tickets.
  */
-import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Ticket as TicketIcon } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Badge } from "../ui/Badge.js";
 import { Skeleton } from "../ui/Skeleton.js";
+import { EmptyState } from "../shared/EmptyState.js";
 import { cn } from "../../lib/utils.js";
 import type { TicketSummaryResponse, TicketStatus, TicketPriority } from "../../api/ticketTypes.js";
 import { TICKET_STATUS_LABELS, TICKET_PRIORITY_LABELS } from "../../api/ticketTypes.js";
@@ -72,7 +73,12 @@ export function TicketListView({ tickets, total, page, pageSize, sortBy, sortDir
       )}
 
       {!loading && tickets.length === 0 && (
-        <div data-testid="ticket-list-empty" className="py-8 text-center text-sm text-muted">No tickets found matching your filters.</div>
+        <EmptyState
+          data-testid="ticket-list-empty"
+          icon={<TicketIcon className="h-9 w-9" />}
+          title="No tickets found"
+          description="No tickets match your current filters. Try adjusting your search or creating a new ticket."
+        />
       )}
 
       {!loading && tickets.length > 0 && (
