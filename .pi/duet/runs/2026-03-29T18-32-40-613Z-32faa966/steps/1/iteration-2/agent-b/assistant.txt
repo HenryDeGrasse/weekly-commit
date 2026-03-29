@@ -1,0 +1,27 @@
+Reviewed:
+- `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java`
+- `backend/src/test/java/com/weeklycommit/ai/provider/OpenRouterAiProviderTest.java`
+
+What I verified:
+- Regex fence parsing and rationale extraction helpers are removed
+- `response_format: { "type": "json_object" }` is added to the OpenRouter request
+- `generateSuggestion()` now retries once on parse failure and otherwise degrades to `AiSuggestionResult.unavailable()`
+- `parseResponse()` now parses JSON directly with Jackson and pulls `rationale` from the JSON payload or defaults correctly
+- Tests cover valid JSON, rationale extraction, empty response handling, and malformed/non-JSON content behavior
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅
+- `npm run build` ✅
+
+Assessment:
+- The diff is correct for Step 1 and all required checks pass
+- I did not make any changes
+
+```observations
+- [low] backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java: Class Javadoc still says "10 req/min default" while `MAX_REQUESTS_PER_MINUTE` is 30; cosmetic mismatch only
+- [low] frontend/src/**: Pre-existing lint warnings and React test `act(...)` warnings are still present, but they do not fail checks and are outside this step's scope
+```
+
+Verdict: approve

@@ -1,5 +1,6 @@
 package com.weeklycommit.ai.provider;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -35,6 +36,9 @@ import org.springframework.stereotype.Component;
  * <li>Cached health check (60 s TTL) to avoid hammering the API</li>
  * <li>Simple rate limiting via token-bucket (10 req/min default)</li>
  * <li>Token counting from response headers for cost tracking</li>
+ * <li>Structured output mode (response_format=json_object) eliminates markdown
+ * fence parsing</li>
+ * <li>One-retry fallback if the model returns non-JSON content</li>
  * </ul>
  */
 @Component
@@ -131,19 +135,32 @@ public class OpenRouterAiProvider implements AiProvider {
 			return AiSuggestionResult.unavailable();
 		}
 
-		try {
-			String promptVersion = resolvePromptVersion(context.suggestionType());
-			String systemPrompt = loadPromptTemplate(context.suggestionType());
-			String userMessage = buildUserMessage(context);
+		String promptVersion = resolvePromptVersion(context.suggestionType());
+		String systemPrompt = loadPromptTemplate(context.suggestionType());
+		String userMessage = buildUserMessage(context);
 
-			String responseBody = callOpenRouter(systemPrompt, userMessage);
-			totalRequests.incrementAndGet();
-
-			return parseResponse(responseBody, context.suggestionType(), promptVersion);
-		} catch (Exception e) {
-			log.warn("OpenRouter request failed for type={}: {}", context.suggestionType(), e.getMessage());
-			return AiSuggestionResult.unavailable();
+		// Retry loop: if the model returns non-JSON content, retry once
+		for (int attempt = 1; attempt <= 2; attempt++) {
+			try {
+				String responseBody = callOpenRouter(systemPrompt, userMessage);
+				totalRequests.incrementAndGet();
+				return parseResponse(responseBody, context.suggestionType(), promptVersion);
+			} catch (ParseException e) {
+				if (attempt < 2) {
+					log.warn("OpenRouter response parse failed for type={} (attempt {}), retrying: {}",
+							context.suggestionType(), attempt, e.getMessage());
+				} else {
+					log.warn("OpenRouter response parse failed after retry for type={}: {}", context.suggestionType(),
+							e.getMessage());
+					return AiSuggestionResult.unavailable();
+				}
+			} catch (Exception e) {
+				log.warn("OpenRouter request failed for type={}: {}", context.suggestionType(), e.getMessage());
+				return AiSuggestionResult.unavailable();
+			}
 		}
+
+		return AiSuggestionResult.unavailable();
 	}
 
 	// ── HTTP call ────────────────────────────────────────────────────────
@@ -152,6 +169,11 @@ public class OpenRouterAiProvider implements AiProvider {
 		ObjectNode body = objectMapper.createObjectNode();
 		body.put("model", model);
 		body.put("max_tokens", maxTokens);
+
+		// Structured output: forces the model to return valid JSON without markdown
+		// fences
+		ObjectNode responseFormat = body.putObject("response_format");
+		responseFormat.put("type", "json_object");
 
 		ArrayNode messages = body.putArray("messages");
 		messages.addObject().put("role", "system").put("content", systemPrompt);
@@ -185,31 +207,60 @@ public class OpenRouterAiProvider implements AiProvider {
 
 	// ── Response parsing ─────────────────────────────────────────────────
 
-	private AiSuggestionResult parseResponse(String responseBody, String suggestionType, String promptVersion) {
+	/**
+	 * Parses the OpenRouter response body and returns an
+	 * {@link AiSuggestionResult}.
+	 *
+	 * <p>
+	 * With {@code response_format=json_object}, the model content is expected to be
+	 * valid JSON directly — no markdown fence stripping needed.
+	 *
+	 * @throws ParseException
+	 *             if the response content cannot be parsed as valid JSON (caller
+	 *             should retry)
+	 *
+	 *             <p>
+	 *             Package-private for testing.
+	 */
+	AiSuggestionResult parseResponse(String responseBody, String suggestionType, String promptVersion)
+			throws ParseException {
+		JsonNode root;
 		try {
-			JsonNode root = objectMapper.readTree(responseBody);
-			JsonNode choices = root.get("choices");
-			if (choices == null || choices.isEmpty()) {
-				return AiSuggestionResult.unavailable();
-			}
-
-			String content = choices.get(0).path("message").path("content").asText("");
-			if (content.isBlank()) {
-				return AiSuggestionResult.unavailable();
-			}
-
-			// The model should return JSON. Extract it — handle markdown code fences.
-			String jsonPayload = extractJson(content);
-			String rationale = extractRationale(content, jsonPayload);
-
-			// Validate it's parseable JSON
-			objectMapper.readTree(jsonPayload);
-
-			return new AiSuggestionResult(true, jsonPayload, rationale, 0.85, model, promptVersion);
+			root = objectMapper.readTree(responseBody);
 		} catch (Exception e) {
-			log.warn("Failed to parse OpenRouter response for {}: {}", suggestionType, e.getMessage());
+			// The outer response envelope itself is malformed — not retry-worthy
+			log.warn("Failed to parse OpenRouter response envelope for {}: {}", suggestionType, e.getMessage());
 			return AiSuggestionResult.unavailable();
 		}
+
+		JsonNode choices = root.get("choices");
+		if (choices == null || choices.isEmpty()) {
+			return AiSuggestionResult.unavailable();
+		}
+
+		String content = choices.get(0).path("message").path("content").asText("");
+		if (content.isBlank()) {
+			return AiSuggestionResult.unavailable();
+		}
+
+		// With response_format=json_object the content should be valid JSON directly.
+		// If it isn't, signal a retry-worthy failure via ParseException.
+		JsonNode contentNode;
+		try {
+			contentNode = objectMapper.readTree(content);
+		} catch (JsonProcessingException e) {
+			throw new ParseException("Model returned non-JSON content for " + suggestionType + ": "
+					+ content.substring(0, Math.min(200, content.length())), e);
+		}
+
+		// Extract rationale from the JSON payload if the model provided one
+		String rationale = "AI-generated suggestion";
+		JsonNode rationaleNode = contentNode.get("rationale");
+		if (rationaleNode != null && !rationaleNode.isNull() && !rationaleNode.asText("").isBlank()) {
+			rationale = rationaleNode.asText();
+		}
+
+		return new AiSuggestionResult(true, content, rationale, 0.85, model, promptVersion);
 	}
 
 	// ── Prompt construction ──────────────────────────────────────────────
@@ -282,50 +333,6 @@ public class OpenRouterAiProvider implements AiProvider {
 		return base + "-v1";
 	}
 
-	// ── Helpers ──────────────────────────────────────────────────────────
-
-	/**
-	 * Extracts JSON from model output, handling ```json fences.
-	 */
-	private String extractJson(String content) {
-		String trimmed = content.trim();
-		// Handle ```json ... ``` fences
-		if (trimmed.contains("```json")) {
-			int start = trimmed.indexOf("```json") + 7;
-			int end = trimmed.indexOf("```", start);
-			if (end > start) {
-				return trimmed.substring(start, end).trim();
-			}
-		}
-		if (trimmed.contains("```")) {
-			int start = trimmed.indexOf("```") + 3;
-			// Skip optional language identifier on the same line
-			int lineEnd = trimmed.indexOf('\n', start);
-			if (lineEnd > start) {
-				start = lineEnd + 1;
-			}
-			int end = trimmed.indexOf("```", start);
-			if (end > start) {
-				return trimmed.substring(start, end).trim();
-			}
-		}
-		// Try to find raw JSON object
-		int braceStart = trimmed.indexOf('{');
-		int braceEnd = trimmed.lastIndexOf('}');
-		if (braceStart >= 0 && braceEnd > braceStart) {
-			return trimmed.substring(braceStart, braceEnd + 1);
-		}
-		return trimmed;
-	}
-
-	private String extractRationale(String fullContent, String jsonPayload) {
-		// Everything outside the JSON is rationale
-		String without = fullContent.replace(jsonPayload, "").trim();
-		// Strip markdown fences
-		without = without.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
-		return without.isBlank() ? "AI-generated suggestion" : without.substring(0, Math.min(500, without.length()));
-	}
-
 	private boolean tryAcquireRate() {
 		long now = System.currentTimeMillis();
 		long windowMs = 60_000;
@@ -346,5 +353,21 @@ public class OpenRouterAiProvider implements AiProvider {
 	/** Total requests made (for metrics). */
 	public long getTotalRequests() {
 		return totalRequests.get();
+	}
+
+	// ── Inner types ──────────────────────────────────────────────────────
+
+	/**
+	 * Thrown by {@link #parseResponse} when the model response content is not valid
+	 * JSON. The caller should retry the request.
+	 *
+	 * <p>
+	 * Package-private for testing.
+	 */
+	static class ParseException extends Exception {
+
+		ParseException(String message, Throwable cause) {
+			super(message, cause);
+		}
 	}
 }

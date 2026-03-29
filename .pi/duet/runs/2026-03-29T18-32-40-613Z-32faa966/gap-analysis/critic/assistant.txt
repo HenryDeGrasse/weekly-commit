@@ -1,0 +1,14 @@
+I found 2 genuine blockers after checking the codebase.
+
+Blocking issues:
+- **Step 6 assumes a WebFlux/Reactor stack that is not present.** `backend/build.gradle.kts` includes `spring-boot-starter-web` but not `spring-boot-starter-webflux` or `reactor-core`, and the backend currently has no `Flux` usage. So `Flux<ServerSentEvent<...>>` is not implementable as written unless the plan explicitly adds the needed dependency/runtime change, or switches the design to MVC-native `SseEmitter`.
+- **Step 8 overstates what can be derived from `user_week_fact`.** The actual schema/entity (`backend/src/main/java/com/weeklycommit/domain/entity/UserWeekFact.java`, plus `V6__add_derived_read_models.sql`) only has overall planned/achieved totals, carry-forward count, scope-change count, and `king_count`/`queen_count`. It does **not** store per-chess-piece achieved/planned outcomes or per-piece estimate history, so the planned `chessPieceAchievementRates` and `avgEstimateByPiece` fields cannot be computed from `user_week_fact` alone as described. The plan needs to either (a) explicitly supplement calibration with `weekly_commit`/`weekly_plan` history queries, or (b) reduce those deliverables.
+
+Non-blocking suggestions:
+- Step 12/13 should decide how recommendation cards get a feedback target, since `AiFeedbackButtons` expects a persisted `suggestionId` and the proposed `PlanRecommendation` shape currently has no id.
+- Step 9/11/7 would be cleaner if the plan explicitly says whether streaming responses emit `confidenceTier` too, or whether the frontend derives a tier from numeric confidence for the streaming path.
+
+Verdict: changes_requested
+Blocking issues:
+- Step 6 requires WebFlux/Reactor types that are not on the current backend classpath; the plan must either add the dependency/build change or switch to MVC `SseEmitter`.
+- Step 8 cannot derive per-chess-piece achievement rates and per-piece average estimates from `user_week_fact` as currently modeled; the plan must explicitly use additional commit/plan history data or narrow the calibration outputs.

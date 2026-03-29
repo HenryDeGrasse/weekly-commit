@@ -1,6 +1,7 @@
 package com.weeklycommit.ai.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -8,9 +9,12 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for OpenRouterAiProvider. Tests the provider logic without making
- * real HTTP calls — focuses on availability checks, rate limiting, and
- * configuration.
+ * Unit tests for OpenRouterAiProvider.
+ *
+ * <p>
+ * Tests the provider logic without making real HTTP calls — covers availability
+ * checks, rate limiting, configuration, structured-output parsing, retry
+ * behaviour, and rationale extraction.
  */
 class OpenRouterAiProviderTest {
 
@@ -19,6 +23,8 @@ class OpenRouterAiProviderTest {
 	private OpenRouterAiProvider makeProvider(String apiKey) {
 		return new OpenRouterAiProvider(apiKey, "test-model", 256, "http://localhost:0", objectMapper);
 	}
+
+	// ── Basic provider contract ──────────────────────────────────────────
 
 	@Test
 	void getName_returnsOpenrouter() {
@@ -79,5 +85,146 @@ class OpenRouterAiProviderTest {
 		OpenRouterAiProvider provider = makeProvider("key");
 		assertThat(provider.getTotalTokensUsed()).isZero();
 		assertThat(provider.getTotalRequests()).isZero();
+	}
+
+	// ── parseResponse: valid JSON response ──────────────────────────────
+
+	@Test
+	void parseResponse_validJson_returnsAvailableResult() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": [{
+				    "message": {
+				      "role": "assistant",
+				      "content": "{\\"suggestion\\": \\"be more specific\\", \\"rationale\\": \\"Clarity improves outcomes\\"}"
+				    }
+				  }],
+				  "usage": {"total_tokens": 42}
+				}
+				""";
+
+		AiSuggestionResult result = provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1");
+
+		assertThat(result.available()).isTrue();
+		assertThat(result.payload()).contains("suggestion");
+		assertThat(result.modelVersion()).isEqualTo("test-model");
+		assertThat(result.promptVersion()).isEqualTo("v1");
+	}
+
+	@Test
+	void parseResponse_validJson_extractsRationaleFromJsonField() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": [{
+				    "message": {
+				      "role": "assistant",
+				      "content": "{\\"suggestion\\": \\"reduce scope\\", \\"rationale\\": \\"Historical data shows 60% completion\\"}"
+				    }
+				  }]
+				}
+				""";
+
+		AiSuggestionResult result = provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1");
+
+		assertThat(result.available()).isTrue();
+		assertThat(result.rationale()).isEqualTo("Historical data shows 60% completion");
+	}
+
+	@Test
+	void parseResponse_validJsonNoRationaleField_usesDefaultRationale() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": [{
+				    "message": {
+				      "role": "assistant",
+				      "content": "{\\"suggestion\\": \\"add more detail\\"}"
+				    }
+				  }]
+				}
+				""";
+
+		AiSuggestionResult result = provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1");
+
+		assertThat(result.available()).isTrue();
+		assertThat(result.rationale()).isEqualTo("AI-generated suggestion");
+	}
+
+	// ── parseResponse: empty / missing content ───────────────────────────
+
+	@Test
+	void parseResponse_noChoices_returnsUnavailable() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": []
+				}
+				""";
+
+		AiSuggestionResult result = provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1");
+
+		assertThat(result.available()).isFalse();
+	}
+
+	@Test
+	void parseResponse_blankContent_returnsUnavailable() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": [{
+				    "message": {
+				      "role": "assistant",
+				      "content": ""
+				    }
+				  }]
+				}
+				""";
+
+		AiSuggestionResult result = provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1");
+
+		assertThat(result.available()).isFalse();
+	}
+
+	// ── parseResponse: malformed JSON content triggers ParseException ────
+
+	@Test
+	void parseResponse_malformedJsonContent_throwsParseException() {
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": [{
+				    "message": {
+				      "role": "assistant",
+				      "content": "This is plain text, not JSON at all"
+				    }
+				  }]
+				}
+				""";
+
+		assertThatThrownBy(() -> provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1"))
+				.isInstanceOf(OpenRouterAiProvider.ParseException.class).hasMessageContaining("non-JSON content");
+	}
+
+	@Test
+	void parseResponse_markdownFenceContent_throwsParseException() {
+		// With response_format=json_object the model should not return fences.
+		// If it does anyway, we treat it as a retry-worthy parse failure rather than
+		// trying to strip the fences.
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": [{
+				    "message": {
+				      "role": "assistant",
+				      "content": "```json\\n{\\"suggestion\\": \\"ok\\"}\\n```"
+				    }
+				  }]
+				}
+				""";
+
+		assertThatThrownBy(() -> provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1"))
+				.isInstanceOf(OpenRouterAiProvider.ParseException.class);
 	}
 }

@@ -1,0 +1,248 @@
+{
+  "version": 1,
+  "phase": "plan_approved",
+  "updatedAt": "2026-03-29T19:11:20.783Z",
+  "runId": "2026-03-29T18-32-40-613Z-32faa966",
+  "handoffMode": "summary",
+  "postPlanMode": "review",
+  "activeConfig": {
+    "sideA": {
+      "label": "Claude Opus 4.6",
+      "model": "anthropic/claude-opus-4-6",
+      "thinking": "high"
+    },
+    "sideB": {
+      "label": "GPT-5.4",
+      "model": "openai-codex/gpt-5.4",
+      "thinking": "high"
+    },
+    "planner": {
+      "label": "Claude Opus 4.6",
+      "model": "anthropic/claude-opus-4-6",
+      "thinking": "high"
+    },
+    "critic": {
+      "label": "GPT-5.4",
+      "model": "openai-codex/gpt-5.4",
+      "thinking": "high"
+    },
+    "implementer": {
+      "label": "Claude Sonnet 4.6",
+      "model": "anthropic/claude-sonnet-4-6",
+      "thinking": "high"
+    },
+    "reviewer": {
+      "label": "GPT-5.4",
+      "model": "openai-codex/gpt-5.4",
+      "thinking": "high"
+    },
+    "executionMode": "relay",
+    "startImplementer": "A",
+    "maxPlanRounds": 10,
+    "maxExecutionRounds": 10,
+    "alternateByStep": true,
+    "checks": {
+      "lint": {
+        "cmd": "npm run lint",
+        "timeoutSec": 300
+      },
+      "typecheck": {
+        "cmd": "npm run typecheck",
+        "timeoutSec": 300
+      },
+      "unit": {
+        "cmd": "npm test",
+        "timeoutSec": 600
+      },
+      "build": {
+        "cmd": "npm run build",
+        "timeoutSec": 600
+      }
+    },
+    "repo": {
+      "requireGit": true,
+      "requireCleanStart": false,
+      "enforceCleanAfterStep": false,
+      "captureDiffCheck": true,
+      "commitPerStep": true
+    },
+    "persistSessionAcrossSteps": true
+  },
+  "goal": "Implement the research-validated AI enhancement roadmap (P0–P3) for the Weekly Commit Module. This covers: fixing critical AI bugs (P0), upgrading RAG quality with hybrid retrieval + reranking + streaming (P1), adding predictive calibration + query rewriting + evidence-based confidence (P2), and wiring cross-capability typed workflow orchestration (P3). All changes must preserve existing test suites, maintain graceful AI degradation, and follow the established modular monolith patterns.\n\nConstraints:\n- Backend is Java 21 / Spring Boot 3.4 — follow existing package-per-bounded-context patterns in com.weeklycommit.ai.*\n- Frontend is React 18 / TypeScript strict / Tailwind CSS 4 — follow existing component patterns in frontend/src/components/ai/\n- No new database migrations — prefer application-level changes\n- AI must always degrade gracefully — if any new service (reranker, hybrid search) is unavailable, fall back to current behavior\n- Do NOT modify frontend/src/ in backend-only steps or backend/src/ in frontend-only steps\n- Do NOT change the database schema — all read models and tables remain as-is\n- Preserve all existing tests — new code needs new tests; existing tests must still pass\n- OpenRouter is the LLM proxy — all structured output changes go through OpenRouter's API\n- Pinecone is the vector store — hybrid search uses Pinecone's native sparse+dense support",
+  "plan": {
+    "goal": "Implement the research-validated AI enhancement roadmap (P0–P3) for the Weekly Commit Module. This covers: fixing critical AI bugs (P0), upgrading RAG quality with hybrid retrieval + reranking + streaming (P1), adding predictive calibration + query rewriting + evidence-based confidence (P2), and wiring cross-capability typed workflow orchestration (P3). All changes must preserve existing test suites, maintain graceful AI degradation, and follow the established modular monolith patterns.\n\nConstraints:\n- Backend is Java 21 / Spring Boot 3.4 — follow existing package-per-bounded-context patterns in com.weeklycommit.ai.*\n- Frontend is React 18 / TypeScript strict / Tailwind CSS 4 — follow existing component patterns in frontend/src/components/ai/\n- No new database migrations — prefer application-level changes\n- AI must always degrade gracefully — if any new service (reranker, hybrid search) is unavailable, fall back to current behavior\n- Do NOT modify frontend/src/ in backend-only steps or backend/src/ in frontend-only steps\n- Do NOT change the database schema — all read models and tables remain as-is\n- Preserve all existing tests — new code needs new tests; existing tests must still pass\n- OpenRouter is the LLM proxy — all structured output changes go through OpenRouter's API\n- Pinecone is the vector store — hybrid search uses Pinecone's native sparse+dense support",
+    "steps": [
+      {
+        "id": "step-1",
+        "title": "Fix OpenRouterAiProvider — Replace regex JSON extraction with structured output mode",
+        "description": "Replace the fragile extractJson() markdown-fence regex parsing in OpenRouterAiProvider.java with OpenRouter's native structured output support. Add proper Jackson deserialization with a one-retry fallback.\n\nScope: Only backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java and its test backend/src/test/java/com/weeklycommit/ai/provider/OpenRouterAiProviderTest.java. Do NOT modify any other files.\n\nDeliverables:\n- Remove the extractJson() method and all regex-based fence parsing\n- In callOpenRouter(), add `response_format: { type: \"json_object\" }` to the request body JSON (OpenRouter's supported mode for Claude models). This ensures the LLM returns valid JSON without fences.\n- In parseResponse(), parse the response content directly with Jackson objectMapper.readTree() — no fence extraction needed\n- Remove the extractRationale() method. Set rationale to either a \"rationale\" field extracted from the LLM's JSON response (if present), or the default string \"AI-generated suggestion\" when absent.\n- Keep the hard-coded 0.85 confidence for now (Step 9 addresses this properly)\n- Update OpenRouterAiProviderTest.java to test: valid JSON response, malformed JSON fallback to unavailable(), empty response handling, and rationale extraction from JSON payload\n- Add a one-retry fallback: if Jackson parsing fails on the response content, retry the callOpenRouter() call once with the same prompt. If second attempt also fails, return AiSuggestionResult.unavailable(). Restructure generateSuggestion() to wrap the call+parse in a retry loop.",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-2",
+        "title": "Fix CommitDraftAssistService — Bound historical queries to 12 weeks",
+        "description": "Fix the unbounded findByOwnerUserId() call that loads ALL past commits for a user into the prompt context.\n\nScope: Only backend/src/main/java/com/weeklycommit/ai/service/CommitDraftAssistService.java, backend/src/main/java/com/weeklycommit/domain/repository/WeeklyCommitRepository.java, and backend/src/test/java/com/weeklycommit/ai/service/CommitDraftAssistServiceTest.java.\n\nDeliverables:\n- Add a new repository method to WeeklyCommitRepository.java: `List<WeeklyCommit> findByOwnerUserIdAndCreatedAtAfter(UUID ownerUserId, Instant cutoff)` — the WeeklyCommit entity has a `createdAt` field (Instant), so this Spring Data derived query will work.\n- In CommitDraftAssistService.assist(), replace `commitRepo.findByOwnerUserId(plan.getOwnerUserId())` with the bounded query using `Instant.now().minus(84, ChronoUnit.DAYS)` (12 weeks) as cutoff\n- Update CommitDraftAssistServiceTest.java to verify the bounded query is used (mock should expect the time-bounded call, not the unbounded one)",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-3",
+        "title": "Fix CommitLintService — Remove wasted LLM call and fix RiskDetectionService context persistence",
+        "description": "Fix two bugs: (1) CommitLintService.enrichSoftGuidanceFromAi() calls the LLM but discards the output. (2) RiskDetectionService persists AI suggestions with empty prompt '{}' instead of the full context.\n\nScope: Only backend/src/main/java/com/weeklycommit/ai/service/CommitLintService.java, backend/src/main/java/com/weeklycommit/ai/service/RiskDetectionService.java, and their corresponding test files.\n\nDeliverables:\n- In CommitLintService.java: Remove the enrichSoftGuidanceFromAi() method entirely and its call in lint(). The rules-based lint is sufficient.\n- In CommitLintService.java: Keep the AiProviderRegistry dependency because lint() may use registry.isAiEnabled().\n- In RiskDetectionService.java: In the detectAndStoreRiskSignals() method, the loop that persists signals currently sets s.setPrompt(\"{}\") for all signals. For AI-generated signals (those from detectAiRiskSignals()), serialize the full AiContext that was built in detectAiRiskSignals() and use it as the prompt. Add a `String prompt` field to the private RawSignal record: `record RawSignal(String type, UUID commitId, String rationale, String prompt)`. Rules-based signals pass \"{}\" as prompt; AI signals pass the serialized AiContext.\n- Update CommitLintServiceTest.java to remove test expectations about AI provider generateSuggestion() calls\n- Update RiskDetectionServiceTest.java to verify that AI-generated risk signals are stored with serialized context in the prompt field (not empty \"{}\")",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-4",
+        "title": "Add Pinecone hybrid search support — sparse vector generation and RRF fusion",
+        "description": "Add hybrid retrieval (BM25-style sparse + dense vectors) to the Pinecone integration using Pinecone's native sparse-dense support.\n\nScope: Only files in backend/src/main/java/com/weeklycommit/ai/rag/ and their test counterparts. Do NOT modify any frontend files, controllers, or non-RAG backend files.\n\nDeliverables:\n- Create backend/src/main/java/com/weeklycommit/ai/rag/SparseEncoder.java that generates sparse vector representations from chunk text. Use a simple TF-IDF/BM25-style term-frequency approach: tokenize text, compute term frequencies, return Map<Integer, Float> (token hash → weight). Include domain-specific token normalization for terms like \"RCDO\", \"carry-forward\", chess piece names (KING, QUEEN, etc.). This is a local computation — no external API calls.\n- Modify PineconeClient.java:\n  - The current PineconeVector record is `record PineconeVector(String id, float[] values, Map<String, Object> metadata)`. Add a new 4-arg record: replace with `record PineconeVector(String id, float[] values, Map<String, Object> metadata, Map<Integer, Float> sparseValues)` and add a backward-compatible 3-arg constructor: `public PineconeVector(String id, float[] values, Map<String, Object> metadata) { this(id, values, metadata, null); }` — ensures all existing callers compile.\n  - In upsert(), include `sparse_values: { indices: [...], values: [...] }` in the Pinecone request body when sparseValues is non-null.\n  - Add a new overloaded query() method that also accepts Map<Integer, Float> sparseVector. When present, include both `vector` (dense) and `sparse_vector` in the query body. Keep the existing `query(namespace, vector, topK, filter)` signature unchanged for backward compatibility.\n- Modify SemanticIndexService.java: Inject SparseEncoder. In upsertChunk(), generate sparse vectors and use the new 4-arg PineconeVector constructor.\n- Modify SemanticQueryService.java: Inject SparseEncoder. In query(), generate a sparse vector for the question and pass it to pineconeClient.query() using the new overloaded method. Graceful degradation: if SparseEncoder fails, fall back to dense-only.\n- Add test: SparseEncoderTest.java — test tokenization, domain term normalization, sparse vector generation\n- Update PineconeClientTest.java — test upsert/query include sparse vectors when present, and fall back gracefully when absent",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-5",
+        "title": "Add cross-encoder reranking service",
+        "description": "Add a reranking layer between Pinecone retrieval and LLM context assembly.\n\nScope: Only files in backend/src/main/java/com/weeklycommit/ai/rag/ and test counterparts. Do NOT modify frontend or non-RAG files.\n\nDeliverables:\n- Create backend/src/main/java/com/weeklycommit/ai/rag/RerankService.java:\n  - Interface: `List<RankedChunk> rerank(String query, List<PineconeClient.PineconeMatch> candidates, int topN)`\n  - `RankedChunk` record: `record RankedChunk(String id, double score, Map<String, Object> metadata, double rerankScore)`\n  - Default implementation uses the LLM (via AiProviderRegistry) as a batch reranker: send ALL candidate chunks in a single LLM prompt with the query, asking the LLM to return a JSON array of {chunkId, relevanceScore}. Parse scores and re-order. This is ONE LLM call, not one per chunk.\n  - Alternatively, if Cohere Rerank API is available via `ai.rerank.api-key` config property, call that instead. Fall back to LLM-based reranking if the Cohere key is absent.\n  - Include @Value(\"${ai.rerank.enabled:false}\") feature flag — DEFAULTS TO FALSE. When false, skip reranking entirely (pass-through: just truncate to top-N by Pinecone score). Teams opt-in to reranking once a Cohere API key is configured. LLM-based reranking is the last-resort fallback, not the intended production path — it adds a third LLM call per RAG query (on top of intent classification + answer generation) and can add 5-30s of latency. The intended production path is: (1) Cohere Rerank API if ai.rerank.api-key is set, (2) disabled/pass-through otherwise. LLM-based reranking exists only as a development/testing fallback when Cohere is unavailable but reranking is explicitly enabled.\n  - Include @Value(\"${ai.rerank.top-n:20}\") for configurable top-N\n  - Graceful degradation: if reranking fails for any reason, return the original candidates unchanged (truncated to topN) with a log warning\n- Modify SemanticQueryService.java:\n  - Inject RerankService. After Pinecone retrieval, call rerankService.rerank(question, matches, topN)\n  - Increase TOP_K from 40 to 80 (retrieve more candidates for the reranker to filter)\n  - Pass only the reranked top-N results to the RAG prompt context\n- Add RerankServiceTest.java: reranking re-orders chunks; feature flag disabled → pass-through; reranking failure → graceful fallback\n- Update SemanticQueryServiceTest.java to inject and mock RerankService",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-6",
+        "title": "Add SSE streaming endpoint for RAG queries — backend (using Spring MVC SseEmitter)",
+        "description": "Add a Server-Sent Events endpoint that streams RAG answers using Spring MVC's native SseEmitter class. IMPORTANT: Do NOT add spring-boot-starter-webflux. Do NOT use Flux or Reactor types. The backend uses spring-boot-starter-web (MVC) only. SseEmitter is available from org.springframework.web.servlet.mvc.method.annotation.SseEmitter which requires NO new dependencies.\n\nScope: Only backend files. Do NOT modify any frontend files.\n\nDeliverables:\n- Create backend/src/main/java/com/weeklycommit/ai/controller/AiStreamController.java:\n  - @GetMapping(value = \"/api/ai/rag/stream\", produces = MediaType.TEXT_EVENT_STREAM_VALUE)\n  - Accept query params: question, teamId, userId\n  - Return SseEmitter (from org.springframework.web.servlet.mvc.method.annotation.SseEmitter)\n  - Event types:\n    - \"delta\" — incremental answer text tokens\n    - \"sources\" — JSON array of source citations (sent after answer completes)\n    - \"confidence\" — confidence score (sent last)\n    - \"done\" — empty data, signals stream end\n    - \"error\" — error message if anything fails\n  - Implementation: create the SseEmitter with 60-second timeout, then submit work to an ExecutorService (or use @Async) that calls SemanticQueryService.query() to get the full response, splits the answer text into word-level chunks, and emits them as \"delta\" events via emitter.send(). After all deltas, send sources, confidence, done events, and call emitter.complete(). Wrap everything in try-catch; on error send an \"error\" event and call emitter.completeWithError().\n  - Add response headers: X-Accel-Buffering: no (for Nginx), Cache-Control: no-cache. Use a HandlerInterceptor or set headers via HttpServletResponse parameter.\n- Add backend/src/test/java/com/weeklycommit/ai/controller/AiStreamControllerTest.java:\n  - Test: SSE endpoint returns correct event types in order (use MockMvc with asyncDispatch)\n  - Test: error handling returns error event\n  - Test: missing params return 400",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-7",
+        "title": "Add SSE streaming support — frontend",
+        "description": "Connect the frontend RAG components to the new streaming endpoint.\n\nScope: Only frontend files. Do NOT modify any backend files.\n\nDeliverables:\n- Create frontend/src/api/ragStreamApi.ts:\n  - streamRagQuery(question, teamId, userId, onDelta, onSources, onConfidence, onDone, onError): AbortController\n  - Uses fetch() with ReadableStream to parse SSE events (not EventSource, to support POST if needed later)\n  - Returns an AbortController so the caller can cancel the stream\n- Create frontend/src/api/ragStreamHooks.ts:\n  - useStreamingRagQuery() hook that wraps streamRagQuery with React state: { answer, sources, confidence, isStreaming, error, startStream, cancel }\n  - Appends delta text to answer state incrementally\n  - Cleans up AbortController on unmount\n  - Needs teamId and userId from host bridge context — accept these as hook parameters\n- Modify frontend/src/components/ai/QueryAnswerCard.tsx:\n  - Accept a `streaming` prop (default false): when true, render the answer text as it arrives, show a typing indicator while isStreaming, and render sources + confidence after the done event\n  - When streaming is false, keep current behavior (backward compatible)\n  - Current props { answer, sources, confidence, suggestionId, className } must remain backward-compatible\n- Modify frontend/src/components/ai/SemanticSearchInput.tsx:\n  - Add toggle or automatic detection: use the streaming hook instead of the batch useSemanticQuery hook when available\n  - Pass streaming={true} to QueryAnswerCard\n- Add frontend/src/__tests__/RagStreamHooks.test.ts:\n  - Test: hook state transitions (idle → streaming → done)\n  - Test: delta events accumulate into answer\n  - Test: cancel aborts the stream\n  - Test: error event sets error state",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit"
+        ]
+      },
+      {
+        "id": "step-8",
+        "title": "Add statistical predictive calibration service — backend",
+        "description": "Build a completion-rate model from historical data for predictive planning intelligence.\n\nIMPORTANT DATA MODEL NOTE: The UserWeekFact entity only stores aggregate fields: totalPlannedPoints, totalAchievedPoints, commitCount, carryForwardCount, scopeChangeCount, kingCount, and queenCount. It does NOT store per-chess-piece achievement/planned data or per-piece estimates. Therefore, per-chess-piece achievement rates and average estimates MUST be computed from WeeklyCommit data directly (which has chessPiece, estimatePoints, and outcome fields).\n\nScope: Only backend files. Do NOT modify any frontend files.\n\nDeliverables:\n- Create backend/src/main/java/com/weeklycommit/ai/service/CalibrationService.java:\n  - CalibrationProfile getCalibration(UUID userId) — returns rolling achievement stats\n  - CalibrationProfile record contains:\n    - overallAchievementRate (double) — totalAchievedPoints / totalPlannedPoints over last 12 weeks from UserWeekFact rows\n    - Map<ChessPiece, Double> chessPieceAchievementRates — per-chess-piece calibration. Computed from WeeklyCommit data: query commits via WeeklyCommitRepository for the user's last 12 weeks (join through plan's weekStartDate or filter by createdAt). Group by chessPiece, count ACHIEVED vs total outcomes.\n    - double carryForwardProbability — carryForwardCount / commitCount from UserWeekFact rows\n    - int weeksOfData — number of UserWeekFact rows found\n    - Map<ChessPiece, Double> avgEstimateByPiece — average estimatePoints per chess piece from WeeklyCommit data\n    - confidenceTier (enum CalibrationConfidenceTier: HIGH, MEDIUM, LOW, INSUFFICIENT) — based on weeksOfData (<8 = INSUFFICIENT, 8-15 = LOW, 15-30 = MEDIUM, 30+ = HIGH). Named CalibrationConfidenceTier to avoid collision with the evidence-based ConfidenceTier from Step 9.\n  - Inject both UserWeekFactRepository and WeeklyCommitRepository\n  - Query UserWeekFactRepository.findByUserIdAndWeekStartBetween() for aggregate stats\n  - Add a new repository method to WeeklyCommitRepository: a native SQL @Query that finds commits by ownerUserId where the commit's plan has weekStartDate within a date range. IMPORTANT: WeeklyCommit.planId is a raw UUID column, NOT a @ManyToOne JPA relationship, so JPQL JOIN ... ON will not compile. Use a native query instead: `@Query(value = \"SELECT c.* FROM weekly_commit c JOIN weekly_plan p ON c.plan_id = p.id WHERE c.owner_user_id = :userId AND p.week_start_date >= :from AND p.week_start_date <= :to\", nativeQuery = true)`. The return type is still List<WeeklyCommit> since Spring Data maps native results back to the entity.\n  - Returns CalibrationProfile.insufficient() when <8 weeks of data\n- Create backend/src/main/java/com/weeklycommit/ai/dto/CalibrationProfileResponse.java — API response DTO\n- Add endpoint to AiController.java: GET /api/ai/calibration/{userId} → returns CalibrationProfileResponse\n- Add backend/src/test/java/com/weeklycommit/ai/service/CalibrationServiceTest.java:\n  - Test: 12 weeks of data produces valid rates\n  - Test: <8 weeks returns insufficient\n  - Test: per-chess-piece rates computed correctly (mock both UserWeekFactRepository and WeeklyCommitRepository)\n  - Test: carry-forward probability matches historical frequency",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-9",
+        "title": "Add evidence-based confidence tiers and integrate calibration into prompts — backend",
+        "description": "Replace the hard-coded 0.85 confidence with structured evidence-based tiers. Integrate calibration data into AI prompts.\n\nScope: Only backend files in backend/src/main/java/com/weeklycommit/ai/. Do NOT modify frontend files.\n\nDeliverables:\n- Create backend/src/main/java/com/weeklycommit/ai/evidence/ConfidenceTierCalculator.java:\n  - ConfidenceTier calculate(List<PineconeClient.PineconeMatch> matches) — simplified signature using only Pinecone matches for RAG context\n  - Enum ConfidenceTier { HIGH, MEDIUM, LOW, INSUFFICIENT } with display labels\n  - Logic: HIGH ≥3 matches >0.8; MEDIUM ≥1 match >0.8 or ≥5 matches >0.5; LOW only matches <0.5; INSUFFICIENT no matches\n  - Overloaded method accepting StructuredEvidence for richer tier calculation\n  - Pure computation — no external calls\n- Modify OpenRouterAiProvider.java:\n  - In parseResponse(), attempt to read a \"confidence\" field from the LLM's JSON response. If present and between 0.0-1.0, use it. If absent or out of range, use 0.5 as default. This replaces the hard-coded 0.85.\n- Modify SemanticQueryService.java:\n  - Inject ConfidenceTierCalculator. After reranking, compute ConfidenceTier from the reranked matches.\n  - Add a confidenceTier field to RagQueryResult record. Update the record definition, the query() method return, and the unavailable() factory method.\n- Modify RagQueryResponse.java DTO: add `String confidenceTier` field. Update AiController.ragQuery() to map result.confidenceTier().name() into the response.\n- Modify CommitDraftAssistService.java: Inject CalibrationService and include CalibrationProfile in additionalContext map as \"calibration\" (serialized).\n- Modify RiskDetectionService.java: Inject CalibrationService and include calibration data in detectAiRiskSignals() method's additionalContext.\n- Add ConfidenceTierCalculatorTest.java: test all 4 tier conditions\n- Update SemanticQueryServiceTest.java to inject and mock ConfidenceTierCalculator",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-10",
+        "title": "Add targeted query rewriting for RAG — backend",
+        "description": "Implement domain-specific query normalization before embedding, improving retrieval precision.\n\nScope: Only files in backend/src/main/java/com/weeklycommit/ai/rag/ and test counterparts. Do NOT modify frontend or non-RAG files.\n\nDeliverables:\n- Create backend/src/main/java/com/weeklycommit/ai/rag/QueryRewriter.java:\n  - String rewrite(String originalQuery) — pure string transformation, no LLM call\n  - Domain-specific normalizations: expand acronyms (CF → carry-forward, RCDO → Rally Cry Defining Objective Outcome hierarchy), normalize chess terms (king commit → KING chess piece commit), normalize time expressions (prev week → last week), expand shorthand (pts → points, est → estimate), strip filler words that hurt embedding quality (can you tell me, I want to know, please show me)\n  - List<String> decompose(String query) — for multi-hop questions. Detect compound questions (contains \"and also\", \"as well as\", \"plus\", or multiple question marks). Split into sub-queries, capped at MAX_SUB_QUERIES = 3 to prevent pathological cases (each sub-query requires a separate embedding + Pinecone call). If the split produces more than 3 sub-queries, keep only the first 3. Return single-element list for simple questions.\n- Modify SemanticQueryService.java:\n  - Inject QueryRewriter. Before embedding the question, call queryRewriter.rewrite(question)\n  - If decompose() returns multiple sub-queries, embed each, query Pinecone for each, merge results (union + deduplicate by chunk ID, keep highest score), then rerank the merged set\n  - Error handling: if one sub-query fails, proceed with successful ones. If all fail, return RagQueryResult.unavailable().\n- Add QueryRewriterTest.java: test acronym expansion, chess term normalization, filler word stripping, multi-hop decomposition, simple query passthrough\n- Update SemanticQueryServiceTest.java to inject and mock QueryRewriter",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-11",
+        "title": "Add calibration display and confidence tiers — frontend",
+        "description": "Surface the predictive calibration data and evidence-based confidence tiers in the UI.\n\nScope: Only frontend files. Do NOT modify any backend files.\n\nDeliverables:\n- Create frontend/src/api/calibrationApi.ts: fetchCalibration(userId) with TypeScript types matching the backend DTO (overallAchievementRate, chessPieceAchievementRates, carryForwardProbability, weeksOfData, confidenceTier). Use existing ApiClient pattern (see ragApi.ts).\n- Create frontend/src/api/calibrationHooks.ts: useCalibration(userId) hook using the useQuery pattern from hooks.ts\n- Create frontend/src/components/ai/CalibrationCard.tsx: Displays calibration profile — overall achievement rate, per-chess-piece rates as progress bars, carry-forward probability, confidence tier badge. Shows \"Based on N weeks of data\" messaging. INSUFFICIENT tier shows \"Not enough data yet — needs 8+ weeks\". Uses existing UI components (Card, Badge, Skeleton).\n- Create frontend/src/components/ai/ConfidenceBadge.tsx: Renders confidence tier as a colored badge (HIGH=green, MEDIUM=yellow, LOW=orange, INSUFFICIENT=gray) with tooltip.\n- Modify frontend/src/components/ai/QueryAnswerCard.tsx: Accept optional confidenceTier prop. When present, render ConfidenceBadge instead of numeric confidence. When absent, keep current display.\n- Modify frontend/src/api/ragApi.ts: Add confidenceTier?: string to the RagQueryResponse interface.\n- Modify frontend/src/routes/MyWeek.tsx: Mount CalibrationCard in the insights/AI section. Only show when user has ≥8 weeks of data.\n- Add frontend/src/__tests__/CalibrationCard.test.tsx and ConfidenceBadge.test.tsx",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit"
+        ]
+      },
+      {
+        "id": "step-12",
+        "title": "Add typed workflow orchestration — risk→what-if→recommendation pipeline (backend)",
+        "description": "Wire RiskDetectionService and WhatIfService into a typed workflow that produces actionable recommendations when risks are detected.\n\nScope: Only backend files in backend/src/main/java/com/weeklycommit/ai/. Do NOT modify frontend files.\n\nDeliverables:\n- Create backend/src/main/java/com/weeklycommit/ai/service/PlanRecommendationService.java:\n  - List<PlanRecommendation> generateRecommendations(UUID planId, UUID userId) — userId needed for risk signal access and WhatIfRequest\n  - PlanRecommendation record: record PlanRecommendation(UUID suggestionId, String riskType, String description, String suggestedAction, WhatIfResponse whatIfResult, String narrative, ConfidenceTier confidence). The suggestionId field is the primary key of the persisted AiSuggestion row for this recommendation (see persistence step below). It is required so the frontend can post feedback via AiFeedbackButtons and track per-recommendation dismissal.\n  - Two public methods:\n    a. List<PlanRecommendation> generateAndPersistRecommendations(UUID planId, UUID userId) — the generation method. Follows the same delete-then-regenerate pattern as RiskDetectionService.detectAndStoreRiskSignals():\n       1. Delete any existing PLAN_RECOMMENDATION rows for this plan: suggestionRepo.findByPlanIdAndSuggestionType(planId, \"PLAN_RECOMMENDATION\") → suggestionRepo.deleteAll(existing).\n       2. Call RiskDetectionService.getRiskSignals(planId, userId) to get current risk signals. If none stored, call detectAndStoreRiskSignalsById(planId) first.\n       3. For OVERCOMMIT/UNDERCOMMIT: identify lowest-priority commit (PAWN first) via WeeklyCommitRepository.findByPlanIdOrderByPriorityOrder(), call WhatIfService.simulate(WhatIfRequest) with REMOVE_COMMIT mutation.\n       4. For REPEATED_CARRY_FORWARD: call CalibrationService for carry-forward probability, call WhatIfService to simulate modifying the commit (reduce estimate).\n       5. Assemble PlanRecommendation objects with what-if narrative.\n       6. Persist each PlanRecommendation as an AiSuggestion row via AiSuggestionService.storeSuggestion() with suggestionType \"PLAN_RECOMMENDATION\". Set the prompt to the serialized risk+calibration context and the suggestionPayload to the JSON-serialized recommendation. The returned AiSuggestion.getId() becomes the PlanRecommendation.suggestionId.\n       7. Return empty list when no risks detected.\n    b. List<PlanRecommendation> getRecommendations(UUID planId) — the retrieval method. Reads persisted PLAN_RECOMMENDATION rows from AiSuggestionRepository.findByPlanIdAndSuggestionType(planId, \"PLAN_RECOMMENDATION\"), deserializes each row's suggestionPayload back into PlanRecommendation (with the row's id as suggestionId). Returns stable IDs across repeated calls — no regeneration, no new rows.\n  - The GET endpoint calls getRecommendations() (read-only). A separate POST endpoint or an explicit ?refresh=true query param triggers generateAndPersistRecommendations(). This ensures the suggestionId is stable across page loads and refetches, making localStorage-based dismissal and AiFeedbackButtons reliable.\n  - Graceful degradation: if WhatIfService or CalibrationService fails, return risk signal without recommendation (still persisted as a partial AiSuggestion so it gets a suggestionId).\n  - Inject WeeklyCommitRepository to load commits for the plan.\n  - Inject AiSuggestionService for persisting recommendation audit rows.\n- Create backend/src/main/java/com/weeklycommit/ai/dto/PlanRecommendationResponse.java — API response DTO. Must include a UUID suggestionId field so the frontend can reference it for AiFeedbackButtons and per-recommendation dismissal.\n- Add endpoints to AiController.java:\n  - GET /api/ai/plans/{planId}/recommendations with X-Actor-User-Id header → returns List<PlanRecommendationResponse> by reading persisted rows (stable IDs, no regeneration).\n  - POST /api/ai/plans/{planId}/recommendations/refresh with X-Actor-User-Id header → triggers generateAndPersistRecommendations(), deletes stale rows, persists fresh ones, returns the new list. Called when the plan changes or the user explicitly requests a refresh.\n- Add PlanRecommendationServiceTest.java: OVERCOMMIT produces recommendation; no risks → empty; WhatIfService failure → risk without recommendation; multiple risks → multiple recommendations; getRecommendations returns stable IDs from persisted rows without regeneration; generateAndPersistRecommendations deletes stale rows before persisting new ones",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit",
+          "build"
+        ]
+      },
+      {
+        "id": "step-13",
+        "title": "Add plan recommendations UI — frontend",
+        "description": "Surface the typed workflow recommendations on the My Week page.\n\nScope: Only frontend files. Do NOT modify any backend files.\n\nDeliverables:\n- Create frontend/src/api/recommendationApi.ts: fetchPlanRecommendations(planId) with TypeScript types matching the backend DTO. The PlanRecommendation TypeScript type must include suggestionId: string (UUID from the backend). Use ApiClient pattern.\n- Create frontend/src/api/recommendationHooks.ts: usePlanRecommendations(planId) hook using useQuery pattern\n- Create frontend/src/components/ai/PlanRecommendationCard.tsx: Renders a single recommendation — risk type badge, description, suggested action, what-if narrative with before/after numbers, confidence tier via ConfidenceBadge. \"Apply suggestion\" button shows confirmation dialog (actual mutation out of scope). AiFeedbackButtons attached using the recommendation's suggestionId prop (returned by the backend in PlanRecommendationResponse) for accept/dismiss tracking via the existing POST /api/ai/feedback endpoint. Per-recommendation dismissal tracked by storing dismissed suggestionId values in localStorage via a useDismissedIds(key) utility hook.\n- Modify frontend/src/routes/MyWeek.tsx: Mount PlanRecommendationCard list in AI section below ProactiveRiskBanner. Only fetch when plan is DRAFT or LOCKED. Use the GET endpoint (read-only, stable IDs) for display; add a \"Refresh recommendations\" button that calls the POST refresh endpoint when the user wants updated recommendations. Skeleton loader while loading, hide section when empty.\n- Add frontend/src/__tests__/PlanRecommendationCard.test.tsx: renders recommendation with all fields; dismiss removes card; feedback buttons present",
+        "requiredChecks": [
+          "lint",
+          "typecheck",
+          "unit"
+        ]
+      }
+    ]
+  },
+  "planSourcePath": "duet-plan-ai-enhancements.md",
+  "stepIndex": 1,
+  "round": 2,
+  "resumeAction": "run",
+  "activeSummary": {
+    "stepId": "step-1",
+    "stepTitle": "Fix OpenRouterAiProvider — Replace regex JSON extraction with structured output mode",
+    "gateResults": [
+      {
+        "id": "lint",
+        "passed": true
+      },
+      {
+        "id": "typecheck",
+        "passed": true
+      },
+      {
+        "id": "unit",
+        "passed": true
+      },
+      {
+        "id": "build",
+        "passed": true
+      },
+      {
+        "id": "git-diff-check",
+        "passed": true
+      }
+    ],
+    "lastVerdict": "approve"
+  }
+}

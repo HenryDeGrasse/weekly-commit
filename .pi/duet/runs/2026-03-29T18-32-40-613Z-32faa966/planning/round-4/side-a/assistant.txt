@@ -1,0 +1,18 @@
+All three issues addressed. Here's a summary:
+
+### Changes made
+
+**🔴 Step 8 — Fixed JPQL JOIN that won't compile:**
+- `WeeklyCommit.planId` is a raw `UUID` column, not a `@ManyToOne` JPA relationship, so `JPQL JOIN ... ON` won't work
+- Changed to native SQL query: `@Query(value = "SELECT c.* FROM weekly_commit c JOIN weekly_plan p ON c.plan_id = p.id WHERE ...", nativeQuery = true)`
+- Added explicit explanation of *why* JPQL fails so the implementing agent doesn't try to "fix" it back
+
+**🟡 Step 5 — Flipped reranking default to `false`, clarified latency:**
+- Changed `ai.rerank.enabled:true` → `ai.rerank.enabled:false`
+- Documented the intended production path: Cohere API when configured, disabled/pass-through otherwise
+- Clarified LLM reranking is a development/testing last resort (adds a 3rd LLM call, 5-30s latency)
+
+**🟡 Step 10 — Added max sub-query cap of 3:**
+- `decompose()` now specifies `MAX_SUB_QUERIES = 3` constant
+- If split produces >3 sub-queries, truncate to the first 3
+- Rationale documented: each sub-query costs an embedding + Pinecone call

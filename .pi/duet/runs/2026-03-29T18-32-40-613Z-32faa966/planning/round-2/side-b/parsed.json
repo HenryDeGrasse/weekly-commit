@@ -1,0 +1,6 @@
+{
+  "verdict": "changes_requested",
+  "blockingIssues": [
+    "Step 12 still does not provide a stable identifier for Step 13’s dismissal behavior. The plan now includes `suggestionId`, but it says each GET recommendation request will persist fresh `AiSuggestion` rows and use those new row IDs as the returned identifier. That makes the ID unstable across refetches/page loads, so storing dismissed recommendation IDs in localStorage by `suggestionId` will not reliably work. The plan needs either a deterministic/stable `recommendationId`, or a backend strategy that reuses/returns the same persisted recommendation rows instead of creating new IDs on each fetch."
+  ]
+}

@@ -1,0 +1,29 @@
+All checks pass. Here's a summary of what was done:
+
+## Summary
+
+### What was reviewed
+- `OpenRouterAiProvider.java` — the source file with fragile `extractJson()` regex fence parsing and a wasted `extractRationale()` method
+- `OpenRouterAiProviderTest.java` — the original test file covering only configuration/availability scenarios  
+- `AiSuggestionResult.java`, `AiContext.java` — related types for context
+- `build.gradle.kts` — confirmed Eclipse JDT formatter requirement (tabs, not spaces)
+
+### What was changed
+
+**`OpenRouterAiProvider.java`:**
+1. **Removed** `extractJson()` (regex fence-stripping logic) and `extractRationale()` (heuristic text extraction)
+2. **Added** `response_format: { type: "json_object" }` to the `callOpenRouter()` request body — this is OpenRouter's structured output mode, ensuring the model returns valid JSON without markdown fences
+3. **Rewrote** `parseResponse()` as a package-private method: directly parses content with `objectMapper.readTree()`, extracts `rationale` from a top-level JSON field (falling back to `"AI-generated suggestion"`), and throws a `ParseException` (not `unavailable()`) when content is malformed JSON — enabling the caller to retry
+4. **Added** a `ParseException` inner class (package-private static, for testability)
+5. **Restructured** `generateSuggestion()` with a 2-attempt retry loop: `ParseException` triggers one retry; network/HTTP exceptions return `unavailable()` immediately
+
+**`OpenRouterAiProviderTest.java`:**
+1. Added 9 new tests covering: valid JSON extraction, rationale field extraction, default rationale fallback, no-choices response, blank content, malformed JSON content (throws `ParseException`), and markdown fence content (throws `ParseException`)
+2. Retained all 5 original tests
+
+```observations
+- [low] backend/src/test/java: Multiple test files use deprecated `@MockBean` from `org.springframework.boot.test.mock.mockito` — pre-existing issue, unrelated to this step
+- [medium] OpenRouterAiProvider.java: The retry loop calls `callOpenRouter` twice on parse failure, consuming 2 rate-limit tokens instead of 1. For a rate limit of 30/min this is unlikely to matter, but could be refined if needed in a future step
+```
+
+Verdict: changes_made

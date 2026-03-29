@@ -1,0 +1,10 @@
+The revised plan mostly works, and it does address the earlier gap by adding a `suggestionId` to the recommendation contract. However, there is still one blocking issue with how that ID is produced.
+
+Non-blocking suggestions:
+- In Step 7, explicitly route the streaming request through the same auth-token pattern as the rest of the frontend API layer.
+- In Step 8, consider clarifying whether `/api/ai/calibration/{userId}` should follow the same privacy/header pattern as other user-specific AI endpoints.
+- In Step 12, clarify whether recommendation generation should reuse existing recommendation rows or refresh them on some cadence, to avoid uncontrolled growth in `ai_suggestion`.
+
+Verdict: changes_requested
+Blocking issues:
+- Step 12 still does not provide a stable identifier for Step 13’s dismissal behavior. The plan now includes `suggestionId`, but it says each GET recommendation request will persist fresh `AiSuggestion` rows and use those new row IDs as the returned identifier. That makes the ID unstable across refetches/page loads, so storing dismissed recommendation IDs in localStorage by `suggestionId` will not reliably work. The plan needs either a deterministic/stable `recommendationId`, or a backend strategy that reuses/returns the same persisted recommendation rows instead of creating new IDs on each fetch.

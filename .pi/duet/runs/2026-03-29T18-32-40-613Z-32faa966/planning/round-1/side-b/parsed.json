@@ -1,0 +1,6 @@
+{
+  "verdict": "changes_requested",
+  "blockingIssues": [
+    "Steps 12 and 13 are missing the identifier needed to make recommendations actionable in the existing frontend architecture. `PlanRecommendation`/`PlanRecommendationResponse` do not include any stable `recommendationId`, `riskSignalId`, or `suggestionId`, but Step 13 requires per-recommendation dismissal by ID and `AiFeedbackButtons`, which currently post feedback against a `suggestionId`. As written, the frontend step cannot fully implement its own deliverables without extra backend changes outside the plan."
+  ]
+}
