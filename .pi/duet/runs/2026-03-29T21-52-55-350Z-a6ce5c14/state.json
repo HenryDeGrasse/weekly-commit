@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "phase": "plan_approved",
-  "updatedAt": "2026-03-29T22:55:09.092Z",
+  "phase": "completed",
+  "updatedAt": "2026-03-29T23:08:28.361Z",
   "runId": "2026-03-29T21-52-55-350Z-a6ce5c14",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -129,19 +129,14 @@
     ]
   },
   "planSourcePath": "duet-plan-ai-optimization.md",
-  "stepIndex": 6,
-  "round": 2,
-  "resumeAction": "run",
+  "stepIndex": 7,
+  "round": 3,
   "activeSummary": {
-    "stepId": "step-6",
-    "stepTitle": "Wire HyDE, SQL Routing, and LLM A/B into SemanticQueryService",
+    "stepId": "step-7",
+    "stepTitle": "A/B Comparison Eval Runner",
     "gateResults": [
       {
         "id": "static",
-        "passed": true
-      },
-      {
-        "id": "unit",
         "passed": true
       },
       {

@@ -1,0 +1,34 @@
+Everything looks correct. Here's a summary of what was implemented:
+
+## Summary
+
+### `AbComparisonRunner.java` (new)
+
+`@Tag("ab-eval") @TestInstance(PER_CLASS)` class in `com.weeklycommit.ai.eval` package.
+
+**Setup (`@BeforeAll`):**
+- Reads `OPENROUTER_API_KEY` (skips gracefully if absent)
+- Reads `AB_CONTROL_MODEL` (default: `anthropic/claude-sonnet-4`), `AB_TREATMENT_MODEL` (default: `google/gemini-2.5-flash-preview`)
+- Reads `AB_CONTROL_EMBEDDING` (default: `openai/text-embedding-3-small`), `AB_TREATMENT_EMBEDDING` (default: `openai/text-embedding-3-large`)
+- Creates two separate `OpenRouterAiProvider` instances (one per LLM model) and two `EmbeddingService` instances (one per embedding model)
+
+**`@Test runLlmAbComparison()`:**
+- Loops over `commit-draft-assist` and `rag-query` golden datasets
+- For each case, invokes both control and treatment providers, records: schema validity, latency, token delta (via `getTotalTokensUsed()` before/after), winner determination (schema first, latency as tiebreak)
+
+**`@Test runEmbeddingAbComparison()`:**
+- Derives test queries from rag-query cases (falls back to hardcoded defaults)
+- Calls both `EmbeddingService` instances for each query, records: dimensions, success, latency, L2 magnitude
+- Correctly notes that cross-dimension cosine similarity is not computed, and treatment is offline-only
+
+**`@AfterAll writeReport()`:**
+- Writes `build/eval-results/ab-comparison-{timestamp}.json` with per-case details and aggregate summary (schema pass rate, win rate, mean latency, total tokens, success rates)
+- Logs a readable summary to stdout
+
+### `build.gradle.kts` changes
+1. Updated `test` task's `excludeTags` from `"eval"` to `"eval", "ab-eval"` — ensures `AbComparisonRunner` never runs in normal CI
+2. Added new `abEvalTest` task: `includeTags("ab-eval")`, 300s timeout, forwards `OPENROUTER_API_KEY` and all `AB_*` env vars
+
+**Checks:** `static` ✅, `unit` ✅ (all 22 JS + all Java tests pass; `ab-eval` correctly excluded from `./gradlew test`)
+
+Verdict: changes_made

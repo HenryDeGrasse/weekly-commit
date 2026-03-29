@@ -1,0 +1,51 @@
+Reviewed the Step 7 diff in:
+
+- `backend/build.gradle.kts`
+- `backend/src/test/java/com/weeklycommit/ai/eval/AbComparisonRunner.java`
+
+I found material gaps in the new runner, so I fixed them directly.
+
+What I changed:
+- Expanded `AbComparisonRunner` to read the same golden datasets used by `PromptEvalRunner`, not just a subset:
+  - commit-draft-assist
+  - commit-lint
+  - rcdo-suggest
+  - risk-signal
+  - reconcile-assist
+  - rag-query
+  - what-if
+- Added judge-score comparison support:
+  - commit-draft-assist reuses the existing title/criteria judge prompts
+  - rag-query reuses the faithfulness judge prompt
+- Improved winner selection to use:
+  - schema validity first
+  - judge score when available
+  - latency as tiebreaker
+- Upgraded embedding A/B from dimension/magnitude-only reporting to actual offline retrieval-quality comparison using rag-query fixtures:
+  - cosine-similarity ranking
+  - MRR
+  - recall@3
+- Added aggregate/statistical summary fields to the report for both LLM and embedding comparisons.
+- Fixed a runtime defect in report generation where `Map.of(...)` could throw on null summary values.
+- Fixed embedding latency measurement so it reflects the full offline retrieval-quality evaluation path, not just the initial query embedding.
+
+What I verified:
+- `build.gradle.kts` correctly excludes `ab-eval` from normal `test`
+- `abEvalTest` exists, includes only `ab-eval`, uses 300s timeout, and forwards the required env vars
+- `abEvalTest` runs successfully without an API key and skips gracefully
+
+Checks:
+- `npm run check:static` ✅
+- `npm test` ✅
+- `cd backend && ./gradlew abEvalTest --no-daemon` ✅
+
+Assessment:
+- The original round had missing Step 7 functionality.
+- After these fixes, the step requirements are met and checks pass.
+
+```observations
+- [low] frontend/src/components/myweek/PlanHistoryView.tsx: Existing test output still reports a missing React `key` warning.
+- [low] frontend/src/components/notifications/NotificationPanel.tsx: Existing test output still reports repeated React `act(...)` warnings.
+```
+
+Verdict: changes_made

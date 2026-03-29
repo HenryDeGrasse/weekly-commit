@@ -36,8 +36,8 @@ dependencies {
 
 tasks.named<Test>("test") {
     useJUnitPlatform {
-        // Exclude eval tests from normal test runs — they call real LLM APIs
-        excludeTags("eval")
+        // Exclude eval and ab-eval tests from normal test runs — they call real LLM APIs
+        excludeTags("eval", "ab-eval")
     }
 }
 
@@ -58,6 +58,27 @@ tasks.register<Test>("evalTest") {
     // Forward env vars
     environment("OPENROUTER_API_KEY", System.getenv("OPENROUTER_API_KEY") ?: "")
     environment("OPENROUTER_MODEL", System.getenv("OPENROUTER_MODEL") ?: "anthropic/claude-sonnet-4-20250514")
+}
+
+// Dedicated task for running offline A/B model comparison evaluation
+tasks.register<Test>("abEvalTest") {
+    description = "Run offline A/B model comparison eval (requires OPENROUTER_API_KEY and AB_* env vars)"
+    group = "verification"
+
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform {
+        includeTags("ab-eval")
+    }
+    // A/B eval calls two models per case — allow generous timeouts
+    systemProperty("junit.jupiter.execution.timeout.default", "300s")
+    // Forward API key and all AB_* configuration env vars
+    environment("OPENROUTER_API_KEY", System.getenv("OPENROUTER_API_KEY") ?: "")
+    environment("AB_CONTROL_MODEL", System.getenv("AB_CONTROL_MODEL") ?: "")
+    environment("AB_TREATMENT_MODEL", System.getenv("AB_TREATMENT_MODEL") ?: "")
+    environment("AB_CONTROL_EMBEDDING", System.getenv("AB_CONTROL_EMBEDDING") ?: "")
+    environment("AB_TREATMENT_EMBEDDING", System.getenv("AB_TREATMENT_EMBEDDING") ?: "")
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
