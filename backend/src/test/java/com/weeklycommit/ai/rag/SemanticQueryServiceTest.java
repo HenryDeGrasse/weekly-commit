@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.evidence.ConfidenceTierCalculator;
 import com.weeklycommit.ai.evidence.ConfidenceTierCalculator.ConfidenceTier;
+import com.weeklycommit.ai.experiment.ExperimentService;
 import com.weeklycommit.ai.provider.AiContext;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.ai.provider.AiSuggestionResult;
@@ -72,13 +73,23 @@ class SemanticQueryServiceTest {
 	@Mock
 	private QueryRewriter queryRewriter;
 
+	@Mock
+	private ExperimentService experimentService;
+
+	@Mock
+	private HydeService hydeService;
+
+	@Mock
+	private SqlQueryRouter sqlQueryRouter;
+
 	private SemanticQueryService service;
 
 	@BeforeEach
 	void setUp() {
 		// SparseEncoder is pure computation — use the real instance (no mock needed)
 		service = new SemanticQueryService(pineconeClient, embeddingService, aiProviderRegistry, aiSuggestionService,
-				objectMapper, teamRepo, new SparseEncoder(), rerankService, confidenceTierCalculator, queryRewriter);
+				objectMapper, teamRepo, new SparseEncoder(), rerankService, confidenceTierCalculator, queryRewriter,
+				experimentService, hydeService, sqlQueryRouter);
 		lenient()
 				.when(confidenceTierCalculator
 						.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
@@ -86,6 +97,10 @@ class SemanticQueryServiceTest {
 		// Default: QueryRewriter is a no-op passthrough for existing tests
 		lenient().when(queryRewriter.rewrite(anyString())).thenAnswer(inv -> inv.getArgument(0));
 		lenient().when(queryRewriter.decompose(anyString())).thenAnswer(inv -> List.of((String) inv.getArgument(0)));
+		// Default: all experiments disabled so existing tests are unaffected
+		lenient().when(experimentService.isEnabled(anyString())).thenReturn(false);
+		// Default: SQL router does not handle anything (falls through to vector search)
+		lenient().when(sqlQueryRouter.canHandle(anyString(), any())).thenReturn(false);
 	}
 
 	// ── Availability guards ───────────────────────────────────────────────
@@ -215,7 +230,7 @@ class SemanticQueryServiceTest {
 				  "confidence": 0.85
 				}
 				""";
-		when(aiProviderRegistry.generateSuggestion(argOfType(AiContext.TYPE_RAG_QUERY)))
+		when(aiProviderRegistry.generateSuggestion(argOfType(AiContext.TYPE_RAG_QUERY), any()))
 				.thenReturn(new AiSuggestionResult(true, answerWithSource.trim(), "RAG answer", 0.85, "stub-v1"));
 		stubSuggestionStore(UUID.randomUUID());
 
@@ -375,7 +390,8 @@ class SemanticQueryServiceTest {
 	private void mockRagAnswer(String answer, double confidence) throws Exception {
 		String payload = objectMapper
 				.writeValueAsString(Map.of("answer", answer, "sources", List.of(), "confidence", confidence));
-		when(aiProviderRegistry.generateSuggestion(argOfType(AiContext.TYPE_RAG_QUERY)))
+		// The service calls the 2-arg experiment-aware overload for answer generation
+		when(aiProviderRegistry.generateSuggestion(argOfType(AiContext.TYPE_RAG_QUERY), any()))
 				.thenReturn(new AiSuggestionResult(true, payload, "rag answer", confidence, "stub-v1"));
 	}
 
@@ -427,5 +443,112 @@ class SemanticQueryServiceTest {
 	/** Matches an AiContext by its suggestionType for Mockito. */
 	private static AiContext argOfType(String type) {
 		return org.mockito.ArgumentMatchers.argThat(ctx -> ctx != null && type.equals(ctx.suggestionType()));
+	}
+
+	// ── SQL routing ───────────────────────────────────────────────────────
+
+	@Test
+	void query_sqlRouterHandlesAnalyticalIntent_returnsSqlResultEarly() throws Exception {
+		setUpAvailableServices();
+		// No setUpTeam() — resolveNamespace is never reached when SQL routing returns
+		// early
+		mockIntentResponse(intentPayload("analytical", "team", null, null, List.of("total", "rate")));
+		when(sqlQueryRouter.canHandle(eq("analytical"), any())).thenReturn(true);
+		SqlQueryRouter.SqlQueryResult sqlResult = new SqlQueryRouter.SqlQueryResult(true,
+				"The carry-forward rate is 18%.", "teamWeekRollups", 0.9, "model-v1");
+		when(sqlQueryRouter.query(anyString(), anyString(), any(), any(), any(), any(), any())).thenReturn(sqlResult);
+
+		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
+
+		assertThat(result.available()).isTrue();
+		assertThat(result.answer()).isEqualTo("The carry-forward rate is 18%.");
+		assertThat(result.confidenceTier()).isEqualTo(ConfidenceTier.HIGH);
+		// Embedding and Pinecone should NOT be called when SQL router handles the query
+		verify(embeddingService, never()).embed(anyString());
+		verify(pineconeClient, never()).query(anyString(), any(), anyInt(), any(), any());
+	}
+
+	@Test
+	void query_sqlRouterReturnsUnavailable_fallsThroughToVectorSearch() throws Exception {
+		setUpAvailableServices();
+		setUpTeam();
+		mockIntentResponse(intentPayload("analytical", "team", null, null, List.of("total")));
+		when(sqlQueryRouter.canHandle(eq("analytical"), any())).thenReturn(true);
+		when(sqlQueryRouter.query(anyString(), anyString(), any(), any(), any(), any(), any()))
+				.thenReturn(SqlQueryRouter.SqlQueryResult.unavailable());
+		when(embeddingService.embed(anyString())).thenReturn(new float[]{0.1f});
+		mockPineconeMatches(List.of(), List.of());
+		mockRagAnswer("Fallback answer.", 0.7);
+		stubSuggestionStore(UUID.randomUUID());
+
+		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
+
+		// Falls through to vector search
+		assertThat(result.available()).isTrue();
+		verify(embeddingService).embed(anyString());
+	}
+
+	// ── HyDE experiment ───────────────────────────────────────────────────
+
+	@Test
+	void query_hydeExperimentEnabled_usesHypotheticalAnswerForEmbedding() throws Exception {
+		setUpAvailableServices();
+		setUpTeam();
+		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
+		String hypothetical = "The team committed to 8 work items with 2 KING priorities.";
+		when(experimentService.isEnabled("hyde")).thenReturn(true);
+		when(experimentService.resolveValue(eq("hyde"), anyString())).thenReturn("enabled");
+		when(hydeService.generateHypothetical(eq(QUESTION), any()))
+				.thenReturn(new HydeService.HydeResult(true, hypothetical));
+		when(embeddingService.embed(hypothetical)).thenReturn(new float[]{0.5f, 0.6f});
+		mockPineconeMatches(List.of(), List.of());
+		mockRagAnswer("Answer based on HyDE.", 0.8);
+		stubSuggestionStore(UUID.randomUUID());
+
+		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
+
+		assertThat(result.available()).isTrue();
+		// Verify embedding was called with the hypothetical, not the original question
+		verify(embeddingService).embed(hypothetical);
+		verify(embeddingService, never()).embed(QUESTION);
+	}
+
+	@Test
+	void query_hydeExperimentEnabled_butHydeFails_fallsBackToOriginalQuestion() throws Exception {
+		setUpAvailableServices();
+		setUpTeam();
+		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
+		when(experimentService.isEnabled("hyde")).thenReturn(true);
+		when(experimentService.resolveValue(eq("hyde"), anyString())).thenReturn("enabled");
+		when(hydeService.generateHypothetical(eq(QUESTION), any())).thenReturn(HydeService.HydeResult.unavailable());
+		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
+		mockPineconeMatches(List.of(), List.of());
+		mockRagAnswer("Fallback answer.", 0.7);
+		stubSuggestionStore(UUID.randomUUID());
+
+		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
+
+		assertThat(result.available()).isTrue();
+		// Fallback to original question when HyDE unavailable
+		verify(embeddingService).embed(QUESTION);
+	}
+
+	@Test
+	void query_hydeExperimentDisabled_usesOriginalQuestionForEmbedding() throws Exception {
+		setUpAvailableServices();
+		setUpTeam();
+		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
+		// experimentService.isEnabled("hyde") returns false by default (setUp lenient
+		// stub)
+		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
+		mockPineconeMatches(List.of(), List.of());
+		mockRagAnswer("Normal answer.", 0.8);
+		stubSuggestionStore(UUID.randomUUID());
+
+		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
+
+		assertThat(result.available()).isTrue();
+		verify(embeddingService).embed(QUESTION);
+		verify(hydeService, never()).generateHypothetical(anyString(), any());
 	}
 }

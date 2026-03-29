@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-29T22:46:01.682Z",
+  "updatedAt": "2026-03-29T22:55:09.092Z",
   "runId": "2026-03-29T21-52-55-350Z-a6ce5c14",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -129,12 +129,12 @@
     ]
   },
   "planSourcePath": "duet-plan-ai-optimization.md",
-  "stepIndex": 5,
-  "round": 3,
+  "stepIndex": 6,
+  "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-5",
-    "stepTitle": "HyDE Service + SQL Query Router",
+    "stepId": "step-6",
+    "stepTitle": "Wire HyDE, SQL Routing, and LLM A/B into SemanticQueryService",
     "gateResults": [
       {
         "id": "static",

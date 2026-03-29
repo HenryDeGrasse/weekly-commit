@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weeklycommit.ai.evidence.ConfidenceTierCalculator;
 import com.weeklycommit.ai.evidence.ConfidenceTierCalculator.ConfidenceTier;
+import com.weeklycommit.ai.experiment.ExperimentService;
 import com.weeklycommit.ai.provider.AiContext;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.ai.provider.AiSuggestionResult;
@@ -105,11 +106,15 @@ public class SemanticQueryService {
 	private final RerankService rerankService;
 	private final ConfidenceTierCalculator confidenceTierCalculator;
 	private final QueryRewriter queryRewriter;
+	private final ExperimentService experimentService;
+	private final HydeService hydeService;
+	private final SqlQueryRouter sqlQueryRouter;
 
 	public SemanticQueryService(PineconeClient pineconeClient, EmbeddingService embeddingService,
 			AiProviderRegistry aiProviderRegistry, AiSuggestionService aiSuggestionService, ObjectMapper objectMapper,
 			TeamRepository teamRepo, SparseEncoder sparseEncoder, RerankService rerankService,
-			ConfidenceTierCalculator confidenceTierCalculator, QueryRewriter queryRewriter) {
+			ConfidenceTierCalculator confidenceTierCalculator, QueryRewriter queryRewriter,
+			ExperimentService experimentService, HydeService hydeService, SqlQueryRouter sqlQueryRouter) {
 		this.pineconeClient = pineconeClient;
 		this.embeddingService = embeddingService;
 		this.aiProviderRegistry = aiProviderRegistry;
@@ -120,6 +125,9 @@ public class SemanticQueryService {
 		this.rerankService = rerankService;
 		this.confidenceTierCalculator = confidenceTierCalculator;
 		this.queryRewriter = queryRewriter;
+		this.experimentService = experimentService;
+		this.hydeService = hydeService;
+		this.sqlQueryRouter = sqlQueryRouter;
 	}
 
 	// ── Public API ────────────────────────────────────────────────────────
@@ -156,24 +164,51 @@ public class SemanticQueryService {
 			// Step 2: intent classification (uses the full rewritten question)
 			IntentResult intent = classifyIntent(rewritten, teamId, userId);
 
+			// Step 2.5: SQL routing — prefer read-model aggregate queries over vector
+			// search
+			if (sqlQueryRouter.canHandle(intent.intent(), intent.keywords())) {
+				SqlQueryRouter.SqlQueryResult sqlResult = sqlQueryRouter.query(rewritten, intent.intent(),
+						intent.keywords(), teamId, intent.timeRangeFrom(), intent.timeRangeTo(), userId);
+				if (sqlResult.available()) {
+					log.debug("SemanticQueryService: SQL route handled analytical query — skipping vector search");
+					return new RagQueryResult(true, sqlResult.answer(), List.of(), sqlResult.confidence(), null,
+							ConfidenceTier.HIGH);
+				}
+				log.debug("SemanticQueryService: SQL route unsuccessful — falling through to vector search");
+			}
+
 			// Step 3: build metadata filter
 			Map<String, Object> filter = buildFilter(intent, teamId, userId);
 
 			// Step 4: resolve namespace
 			String namespace = resolveNamespace(teamId);
 
+			// Step 4.5: HyDE experiment — optionally replace embed text with a
+			// hypothetical document for improved semantic retrieval
+			String textToEmbed = rewritten;
+			if (experimentService.isEnabled("hyde")) {
+				String hydeValue = experimentService.resolveValue("hyde", userId != null ? userId.toString() : "");
+				if ("enabled".equals(hydeValue)) {
+					HydeService.HydeResult hydeResult = hydeService.generateHypothetical(rewritten, userId);
+					if (hydeResult.available() && hydeResult.hypotheticalAnswer() != null) {
+						textToEmbed = hydeResult.hypotheticalAnswer();
+						log.debug("SemanticQueryService: HyDE active — embedding hypothetical document");
+					}
+				}
+			}
+
 			// Step 5: embed and query Pinecone — single query or multi-hop
 			List<PineconeClient.PineconeMatch> matches;
 			if (subQueries.size() <= 1) {
 				// Single query path
-				float[] vector = embeddingService.embed(rewritten);
+				float[] vector = embeddingService.embed(textToEmbed);
 				if (vector.length == 0) {
 					log.debug("SemanticQueryService: embedding returned empty vector — unavailable");
 					return RagQueryResult.unavailable();
 				}
 				java.util.Map<Integer, Float> sparseVector = null;
 				try {
-					java.util.Map<Integer, Float> sv = sparseEncoder.encode(rewritten);
+					java.util.Map<Integer, Float> sv = sparseEncoder.encode(textToEmbed);
 					if (!sv.isEmpty()) {
 						sparseVector = sv;
 					}
@@ -198,11 +233,16 @@ public class SemanticQueryService {
 			ConfidenceTier confidenceTier = confidenceTierCalculator.calculate(toConfidenceMatches(reranked));
 
 			// Step 6 & 7: build RAG prompt context from reranked results and generate
-			// answer
+			// answer using experiment-aware model selection
 			String contextString = buildContextString(rewritten, matches);
 			AiContext ragContext = new AiContext(AiContext.TYPE_RAG_QUERY, userId, null, null, Map.of(), Map.of(),
 					List.of(), List.of(), buildRagAdditionalContextReranked(rewritten, reranked));
-			AiSuggestionResult llmResult = aiProviderRegistry.generateSuggestion(ragContext);
+			AiSuggestionResult llmResult = aiProviderRegistry.generateSuggestion(ragContext, userId);
+
+			// Record experiment assignments in audit context string
+			if (llmResult.available() && !llmResult.experimentAssignments().isEmpty()) {
+				contextString = enrichContextWithExperiments(contextString, llmResult.experimentAssignments());
+			}
 
 			// Step 7: parse the answer
 			RagAnswer ragAnswer = parseRagAnswer(llmResult);
@@ -490,6 +530,23 @@ public class SemanticQueryService {
 		// Return merged results sorted by score descending
 		return best.values().stream().sorted(Comparator.comparingDouble(PineconeClient.PineconeMatch::score).reversed())
 				.toList();
+	}
+
+	/**
+	 * Enriches the audit context string with experiment assignment data. Silently
+	 * returns the original string on any parse/serialisation failure.
+	 */
+	private String enrichContextWithExperiments(String contextString, Map<String, String> experiments) {
+		try {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> ctx = objectMapper.readValue(contextString, Map.class);
+			ctx.put("experimentAssignments", experiments);
+			return objectMapper.writeValueAsString(ctx);
+		} catch (Exception e) {
+			log.debug("SemanticQueryService: could not enrich context with experiment assignments — {}",
+					e.getMessage());
+			return contextString;
+		}
 	}
 
 	// ── Private helper records ────────────────────────────────────────────
