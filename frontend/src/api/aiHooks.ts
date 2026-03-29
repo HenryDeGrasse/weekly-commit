@@ -6,6 +6,21 @@ import { useHostBridge } from "../host/HostProvider.js";
 import { createApiClient } from "./client.js";
 import { useQuery, type QueryState } from "./hooks.js";
 import { createAiApi, type AiApi, type AiStatusResponse, type PlanRiskSignalsResponse, type ReconcileAssistResponse, type ManagerAiSummaryResponse } from "./aiApi.js";
+import { createWhatIfApi, type WhatIfApi } from "./whatIfApi.js";
+
+/** Returns a stable WhatIfApi instance bound to the current user's auth token. */
+export function useWhatIfApi(): WhatIfApi {
+  const bridge = useHostBridge();
+  const { authToken, authenticatedUser } = bridge.context;
+  return useMemo(() => {
+    const client = createApiClient({
+      baseUrl: "/api",
+      getAuthToken: () => bridge.context.authToken,
+    });
+    return createWhatIfApi(client, authenticatedUser.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken, authenticatedUser.id]);
+}
 
 /** Returns a stable AiApi instance bound to the current user's auth token. */
 export function useAiApi(): AiApi {

@@ -30,6 +30,7 @@ import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { AiLintPanel } from "../components/ai/AiLintPanel.js";
 import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
 import { ProactiveRiskBanner } from "../components/ai/ProactiveRiskBanner.js";
+import { WhatIfPanel } from "../components/ai/WhatIfPanel.js";
 import { useAiStatus } from "../api/aiHooks.js";
 import type {
   CommitResponse, PlanState, LockValidationError,
@@ -488,6 +489,13 @@ export default function MyWeek() {
           onViewLineage={(commitId) => setLineageCommitId(commitId)}
           onCreateTicket={handleCreateTicketFromCommit}
         />
+      )}
+
+      {/* What-If Planner — available in both DRAFT and LOCKED states */}
+      {aiAssistanceEnabled && plan && (isDraft || isLocked) && (
+        <AiErrorBoundary>
+          <WhatIfPanel planId={plan.id} currentCommits={commits} />
+        </AiErrorBoundary>
       )}
 
       {/* Scope change timeline */}

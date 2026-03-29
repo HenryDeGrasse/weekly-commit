@@ -55,6 +55,8 @@ vi.mock("../api/aiHooks.js", () => ({
   useManagerAiSummary: vi.fn(() => ({ data: undefined, loading: false, error: null })),
   // Default: no risk signals (banner renders nothing)
   useRiskSignals: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
+  // WhatIfPanel calls this; return a stable mock so no TypeError inside AiErrorBoundary
+  useWhatIfApi: vi.fn(() => ({ simulate: vi.fn() })),
 }));
 
 vi.mock("../api/ticketHooks.js", () => ({
