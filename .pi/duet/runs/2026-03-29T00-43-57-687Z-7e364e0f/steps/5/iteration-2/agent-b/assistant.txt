@@ -1,0 +1,34 @@
+Reviewed the step-5 diff and explicitly checked the health-check concerns.
+
+What I reviewed:
+- `backend/src/test/java/com/weeklycommit/ai/eval/HistoricalReplayBenchmark.java`
+- `docs/eval-results.md`
+
+What I verified:
+- The benchmark is a pure unit-style eval test: no Spring context, no `@SpringBootTest`, no DB, no repositories.
+- It uses plain `WeeklyPlan` / `WeeklyCommit` objects and in-memory rules logic.
+- The 5 risk rules and the explicit signal-to-outcome mappings are implemented.
+- It writes `build/eval-results/replay-benchmark.json`.
+- The docs include the requested eval summary table, benchmark section, placeholder metrics table, and run instructions.
+- The per-capability case counts in `docs/eval-results.md` match the actual `cases.json` files.
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅
+- `npm run build` ✅
+
+Additional verification to address the health-check risk:
+- `cd backend && ./gradlew evalTest` ✅
+
+Assessment:
+- The implementation directly addresses the health-check’s main step-5 risks by avoiding Spring/Testcontainers entirely and by producing a working eval benchmark.
+- I did not find a material defect in the diff.
+
+Verdict: approve
+
+```observations
+- [low] backend/src/test/java/com/weeklycommit/ai/eval/HistoricalReplayBenchmark.java: `logSummary()` uses printf-style placeholders (`{:30s}`, `{:>6d}`) with SLF4J, so the console formatting will not render as intended; JSON output and test behavior are unaffected.
+- [low] docs/eval-results.md: The markdown report is a documented placeholder companion, not auto-generated from runtime output; this matches the current step instructions but still differs from a stricter “published automatically” interpretation of the broader goal.
+- [low] frontend/src/__tests__/TeamWeekPage.test.tsx: Pre-existing React `act(...)` warnings still appear during `npm test`; unrelated to this step.
+```

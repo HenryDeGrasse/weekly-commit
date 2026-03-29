@@ -1,0 +1,8 @@
+ M .pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/cost.json
+ M .pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/observations.jsonl
+ M .pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/sessions/continuous/relay-a/2026-03-29T01-38-32-791Z_770ad88b-73f9-41bd-b173-003141923a9c.jsonl
+ M .pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/sessions/continuous/relay-b/2026-03-29T01-46-02-281Z_703119a5-a2fb-4f86-a6c1-58e5136412ff.jsonl
+ M .pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/state.json
+?? .pi/duet/runs/2026-03-29T00-43-57-687Z-7e364e0f/steps/5/
+?? backend/src/test/java/com/weeklycommit/ai/eval/HistoricalReplayBenchmark.java
+?? docs/eval-results.md
