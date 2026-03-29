@@ -43,6 +43,9 @@ class CommitDraftAssistServiceTest {
 	@Mock
 	private WeeklyCommitRepository commitRepo;
 
+	@Mock
+	private CalibrationService calibrationService;
+
 	private CommitDraftAssistService service;
 
 	private UUID planId;
@@ -51,7 +54,8 @@ class CommitDraftAssistServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new CommitDraftAssistService(registry, suggestionService, planRepo, commitRepo, new ObjectMapper());
+		service = new CommitDraftAssistService(registry, suggestionService, planRepo, commitRepo, new ObjectMapper(),
+				calibrationService);
 		planId = UUID.randomUUID();
 		userId = UUID.randomUUID();
 

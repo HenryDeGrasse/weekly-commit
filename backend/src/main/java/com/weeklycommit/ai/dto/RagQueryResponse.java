@@ -19,12 +19,15 @@ import java.util.UUID;
  *            ID of the persisted
  *            {@link com.weeklycommit.domain.entity.AiSuggestion} audit row
  *            (null when unavailable)
+ * @param confidenceTier
+ *            evidence-quality tier: HIGH, MEDIUM, LOW, or INSUFFICIENT (null
+ *            when unavailable)
  */
 public record RagQueryResponse(boolean aiAvailable, String answer, List<RagSourceDto> sources, double confidence,
-		UUID suggestionId) {
+		UUID suggestionId, String confidenceTier) {
 
 	/** Convenience factory for a degraded/unavailable response. */
 	public static RagQueryResponse unavailable() {
-		return new RagQueryResponse(false, null, List.of(), 0.0, null);
+		return new RagQueryResponse(false, null, List.of(), 0.0, null, null);
 	}
 }

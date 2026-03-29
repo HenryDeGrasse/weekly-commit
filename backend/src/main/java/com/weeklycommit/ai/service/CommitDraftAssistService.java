@@ -44,14 +44,17 @@ public class CommitDraftAssistService {
 	private final WeeklyPlanRepository planRepo;
 	private final WeeklyCommitRepository commitRepo;
 	private final ObjectMapper objectMapper;
+	private final CalibrationService calibrationService;
 
 	public CommitDraftAssistService(AiProviderRegistry registry, AiSuggestionService suggestionService,
-			WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo, ObjectMapper objectMapper) {
+			WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo, ObjectMapper objectMapper,
+			CalibrationService calibrationService) {
 		this.registry = registry;
 		this.suggestionService = suggestionService;
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.objectMapper = objectMapper;
+		this.calibrationService = calibrationService;
 	}
 
 	/**
@@ -95,10 +98,28 @@ public class CommitDraftAssistService {
 			historical.add(entry);
 		}
 
+		// Include calibration profile in additionalContext so the LLM can ground
+		// suggestions in the user's historical achievement rates.
+		CalibrationService.CalibrationProfile calibration = null;
+		try {
+			calibration = calibrationService.getCalibration(plan.getOwnerUserId());
+		} catch (Exception ex) {
+			log.debug("CommitDraftAssistService: calibration lookup failed — {}", ex.getMessage());
+		}
+
+		Map<String, Object> additionalContext = new HashMap<>();
+		if (calibration != null && !calibration.isInsufficient()) {
+			try {
+				additionalContext.put("calibration", objectMapper.writeValueAsString(calibration));
+			} catch (JsonProcessingException ex) {
+				log.debug("CommitDraftAssistService: failed to serialize calibration — {}", ex.getMessage());
+			}
+		}
+
 		String contextJson = toJson(Map.of("commit", commitData, "plan", planData));
 
 		AiContext context = new AiContext(AiContext.TYPE_COMMIT_DRAFT, request.userId(), request.planId(),
-				request.commitId(), commitData, planData, historical, List.of(), Map.of());
+				request.commitId(), commitData, planData, historical, List.of(), additionalContext);
 
 		AiSuggestionResult result = registry.generateSuggestion(context);
 		if (!result.available()) {

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.weeklycommit.ai.evidence.ConfidenceTierCalculator.ConfidenceTier;
 import com.weeklycommit.ai.rag.SemanticQueryService;
 import java.util.List;
 import java.util.UUID;
@@ -86,7 +87,7 @@ class AiStreamControllerTest {
 		UUID userId = UUID.randomUUID();
 
 		SemanticQueryService.RagQueryResult result = new SemanticQueryService.RagQueryResult(true,
-				"The team committed to shipping the new API.", List.of(), 0.85, UUID.randomUUID());
+				"The team committed to shipping the new API.", List.of(), 0.85, UUID.randomUUID(), ConfidenceTier.HIGH);
 		when(semanticQueryService.query(any(), any(), any())).thenReturn(result);
 
 		MvcResult mvcResult = mockMvc
@@ -108,7 +109,7 @@ class AiStreamControllerTest {
 		UUID userId = UUID.randomUUID();
 
 		SemanticQueryService.RagQueryResult result = new SemanticQueryService.RagQueryResult(true, "Hello world",
-				List.of(), 0.9, UUID.randomUUID());
+				List.of(), 0.9, UUID.randomUUID(), ConfidenceTier.MEDIUM);
 		when(semanticQueryService.query(any(), any(), any())).thenReturn(result);
 
 		MvcResult mvcResult = mockMvc.perform(get("/api/ai/rag/stream").param("question", "test")

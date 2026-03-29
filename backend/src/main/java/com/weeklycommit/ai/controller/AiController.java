@@ -237,8 +237,9 @@ public class AiController {
 			}
 			List<RagSourceDto> sources = result.sources().stream()
 					.map(s -> new RagSourceDto(s.entityType(), s.entityId(), s.weekStartDate(), s.snippet())).toList();
-			return ResponseEntity.ok(
-					new RagQueryResponse(true, result.answer(), sources, result.confidence(), result.suggestionId()));
+			String tierName = result.confidenceTier() != null ? result.confidenceTier().name() : null;
+			return ResponseEntity.ok(new RagQueryResponse(true, result.answer(), sources, result.confidence(),
+					result.suggestionId(), tierName));
 		} catch (Exception ex) {
 			log.warn("RAG query failed: {}", ex.getMessage());
 			return ResponseEntity.ok(RagQueryResponse.unavailable());

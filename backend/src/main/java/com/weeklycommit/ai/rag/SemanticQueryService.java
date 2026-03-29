@@ -2,6 +2,8 @@ package com.weeklycommit.ai.rag;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weeklycommit.ai.evidence.ConfidenceTierCalculator;
+import com.weeklycommit.ai.evidence.ConfidenceTierCalculator.ConfidenceTier;
 import com.weeklycommit.ai.provider.AiContext;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.ai.provider.AiSuggestionResult;
@@ -81,11 +83,11 @@ public class SemanticQueryService {
 	 *            (null when unavailable)
 	 */
 	public record RagQueryResult(boolean available, String answer, List<RagSource> sources, double confidence,
-			UUID suggestionId) {
+			UUID suggestionId, ConfidenceTier confidenceTier) {
 
 		/** Convenience factory for a degraded/unavailable result. */
 		public static RagQueryResult unavailable() {
-			return new RagQueryResult(false, null, List.of(), 0.0, null);
+			return new RagQueryResult(false, null, List.of(), 0.0, null, ConfidenceTier.INSUFFICIENT);
 		}
 	}
 
@@ -99,10 +101,12 @@ public class SemanticQueryService {
 	private final TeamRepository teamRepo;
 	private final SparseEncoder sparseEncoder;
 	private final RerankService rerankService;
+	private final ConfidenceTierCalculator confidenceTierCalculator;
 
 	public SemanticQueryService(PineconeClient pineconeClient, EmbeddingService embeddingService,
 			AiProviderRegistry aiProviderRegistry, AiSuggestionService aiSuggestionService, ObjectMapper objectMapper,
-			TeamRepository teamRepo, SparseEncoder sparseEncoder, RerankService rerankService) {
+			TeamRepository teamRepo, SparseEncoder sparseEncoder, RerankService rerankService,
+			ConfidenceTierCalculator confidenceTierCalculator) {
 		this.pineconeClient = pineconeClient;
 		this.embeddingService = embeddingService;
 		this.aiProviderRegistry = aiProviderRegistry;
@@ -111,6 +115,7 @@ public class SemanticQueryService {
 		this.teamRepo = teamRepo;
 		this.sparseEncoder = sparseEncoder;
 		this.rerankService = rerankService;
+		this.confidenceTierCalculator = confidenceTierCalculator;
 	}
 
 	// ── Public API ────────────────────────────────────────────────────────
@@ -169,6 +174,9 @@ public class SemanticQueryService {
 			// Step 5b: rerank candidates to find the most relevant top-N
 			List<RerankService.RankedChunk> reranked = rerankService.rerank(question, matches, rerankService.getTopN());
 
+			// Step 5c: compute evidence-based confidence tier from the reranked chunks
+			ConfidenceTier confidenceTier = confidenceTierCalculator.calculate(toConfidenceMatches(reranked));
+
 			// Step 6 & 7: build RAG prompt context from reranked results and generate
 			// answer
 			String contextString = buildContextString(question, matches);
@@ -191,7 +199,7 @@ public class SemanticQueryService {
 			// Step 9: return result
 			UUID suggestionId = stored != null ? stored.getId() : null;
 			return new RagQueryResult(true, ragAnswer.answer(), ragAnswer.sources(), ragAnswer.confidence(),
-					suggestionId);
+					suggestionId, confidenceTier);
 
 		} catch (Exception e) {
 			log.warn("SemanticQueryService: query failed — {}", e.getMessage());
@@ -356,6 +364,15 @@ public class SemanticQueryService {
 		ctx.put("currentDate", java.time.LocalDate.now().toString());
 		ctx.put("retrievedChunks", chunks);
 		return ctx;
+	}
+
+	private List<PineconeClient.PineconeMatch> toConfidenceMatches(List<RerankService.RankedChunk> reranked) {
+		if (reranked == null || reranked.isEmpty()) {
+			return List.of();
+		}
+		return reranked.stream()
+				.map(chunk -> new PineconeClient.PineconeMatch(chunk.id(), chunk.rerankScore(), chunk.metadata()))
+				.toList();
 	}
 
 	private RagAnswer parseRagAnswer(AiSuggestionResult result) {

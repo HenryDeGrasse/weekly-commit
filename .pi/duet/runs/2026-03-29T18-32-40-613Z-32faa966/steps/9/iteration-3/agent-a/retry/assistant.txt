@@ -1,0 +1,31 @@
+All test classes are present including `ConfidenceTierCalculatorTest` and `SemanticQueryServiceTest`. The build is fully successful.
+
+## Summary
+
+I reviewed all the Step 9 deliverables:
+
+1. **`ConfidenceTierCalculator.java`** — Correctly implements all 4 tier conditions (HIGH/MEDIUM/LOW/INSUFFICIENT) with both `List<PineconeMatch>` and `StructuredEvidence` overloads. Pure computation, no external calls.
+
+2. **`SemanticQueryService.java`** — `ConfidenceTierCalculator` is injected and called correctly on **reranked** match scores (via `toConfidenceMatches()` converting `rerankScore` to the match score field). The `RagQueryResult` record includes `confidenceTier`.
+
+3. **`RagQueryResponse.java`** — Has the new `confidenceTier` field and `unavailable()` factory.
+
+4. **`AiController.java`** — Maps `result.confidenceTier().name()` into the response correctly.
+
+5. **`ConfidenceTierCalculatorTest.java`** — Tests all 4 tier conditions.
+
+6. **`SemanticQueryServiceTest.java`** — Mocks `ConfidenceTierCalculator`, adds regression test verifying confidence is computed from reranked scores.
+
+All checks pass:
+- **lint** ✅ (0 errors)
+- **typecheck** ✅
+- **unit** ✅ (full backend suite, including new `ConfidenceTierCalculatorTest` and updated `SemanticQueryServiceTest`)
+- **build** ✅
+
+No material defects found. Nothing to change.
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java: Pre-existing retry loop still double-counts rate-limit tokens on parse failure; out of scope for this step
+```
+
+Verdict: approve

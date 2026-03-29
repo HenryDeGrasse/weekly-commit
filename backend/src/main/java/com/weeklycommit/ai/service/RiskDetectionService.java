@@ -89,11 +89,13 @@ public class RiskDetectionService {
 	private final AuthorizationService authService;
 	private final AiProviderRegistry aiProviderRegistry;
 	private final ObjectMapper objectMapper;
+	private final CalibrationService calibrationService;
 
 	public RiskDetectionService(WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			WorkItemRepository workItemRepo, WorkItemStatusHistoryRepository statusHistoryRepo,
 			ScopeChangeEventRepository scopeChangeRepo, AiSuggestionRepository suggestionRepo,
-			AuthorizationService authService, AiProviderRegistry aiProviderRegistry, ObjectMapper objectMapper) {
+			AuthorizationService authService, AiProviderRegistry aiProviderRegistry, ObjectMapper objectMapper,
+			CalibrationService calibrationService) {
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.workItemRepo = workItemRepo;
@@ -103,6 +105,7 @@ public class RiskDetectionService {
 		this.authService = authService;
 		this.aiProviderRegistry = aiProviderRegistry;
 		this.objectMapper = objectMapper;
+		this.calibrationService = calibrationService;
 	}
 
 	// -------------------------------------------------------------------------
@@ -326,6 +329,19 @@ public class RiskDetectionService {
 				m.put("reason", sc.getReason());
 				return m;
 			}).toList());
+
+			// Include calibration profile so the LLM can see the user's historical
+			// achievement rates and carry-forward probability when assessing risks.
+			try {
+				CalibrationService.CalibrationProfile calibration = calibrationService
+						.getCalibration(plan.getOwnerUserId());
+				if (!calibration.isInsufficient()) {
+					additionalContext.put("calibration", objectMapper.writeValueAsString(calibration));
+				}
+			} catch (Exception ex) {
+				log.debug("RiskDetectionService: calibration lookup failed for plan {} \u2014 {}", plan.getId(),
+						ex.getMessage());
+			}
 
 			AiContext context = new AiContext(AiContext.TYPE_RISK_SIGNAL, plan.getOwnerUserId(), plan.getId(), null,
 					Map.of(), planData, commitDataList, List.of(), additionalContext);

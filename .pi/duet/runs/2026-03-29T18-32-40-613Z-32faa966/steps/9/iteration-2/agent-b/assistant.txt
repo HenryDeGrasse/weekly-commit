@@ -1,0 +1,38 @@
+Reviewed the Step 9 backend diff, especially:
+
+- `backend/src/main/java/com/weeklycommit/ai/evidence/ConfidenceTierCalculator.java`
+- `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticQueryService.java`
+- `backend/src/main/java/com/weeklycommit/ai/dto/RagQueryResponse.java`
+- `backend/src/main/java/com/weeklycommit/ai/controller/AiController.java`
+- `backend/src/main/java/com/weeklycommit/ai/service/CommitDraftAssistService.java`
+- `backend/src/main/java/com/weeklycommit/ai/service/RiskDetectionService.java`
+- `backend/src/test/java/com/weeklycommit/ai/evidence/ConfidenceTierCalculatorTest.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/SemanticQueryServiceTest.java`
+- related updated tests
+
+What I changed:
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticQueryService.java`
+  - Fixed a material logic defect: `confidenceTier` was being calculated from the raw Pinecone matches instead of the reranked result set.
+  - Now the tier is computed from the reranked chunks actually used for answer generation.
+
+- `backend/src/test/java/com/weeklycommit/ai/rag/SemanticQueryServiceTest.java`
+  - Updated the test setup to inject a mocked `ConfidenceTierCalculator` as required by the step.
+  - Added a regression test verifying confidence is computed from reranked scores, not the original retrieval scores.
+
+Assessment:
+- The previous implementation was close, but this was a real step-requirement mismatch and could over-report confidence.
+- After the fix, the Step 9 backend work is aligned with the spec and checks are green.
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅
+- `npm run build` ✅
+
+```observations
+- [medium] backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java: Pre-existing retry loop still double-counts rate-limit tokens on parse failure; out of scope for this step
+- [low] frontend/src/**: Pre-existing lint warnings and React test `act(...)` warnings still appear during repo-wide checks, but they do not fail checks and are outside this backend step
+```
+
+Verdict: changes_made

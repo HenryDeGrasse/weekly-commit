@@ -6,11 +6,14 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.weeklycommit.ai.evidence.ConfidenceTierCalculator;
+import com.weeklycommit.ai.evidence.ConfidenceTierCalculator.ConfidenceTier;
 import com.weeklycommit.ai.provider.AiContext;
 import com.weeklycommit.ai.provider.AiProviderRegistry;
 import com.weeklycommit.ai.provider.AiSuggestionResult;
@@ -63,13 +66,20 @@ class SemanticQueryServiceTest {
 	@Mock
 	private RerankService rerankService;
 
+	@Mock
+	private ConfidenceTierCalculator confidenceTierCalculator;
+
 	private SemanticQueryService service;
 
 	@BeforeEach
 	void setUp() {
 		// SparseEncoder is pure computation — use the real instance (no mock needed)
 		service = new SemanticQueryService(pineconeClient, embeddingService, aiProviderRegistry, aiSuggestionService,
-				objectMapper, teamRepo, new SparseEncoder(), rerankService);
+				objectMapper, teamRepo, new SparseEncoder(), rerankService, confidenceTierCalculator);
+		lenient()
+				.when(confidenceTierCalculator
+						.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
+				.thenReturn(ConfidenceTier.MEDIUM);
 	}
 
 	// ── Availability guards ───────────────────────────────────────────────
@@ -148,6 +158,39 @@ class SemanticQueryServiceTest {
 		assertThat(result.answer()).isEqualTo("The team committed to deploying the new API.");
 		assertThat(result.confidence()).isEqualTo(0.9);
 		assertThat(result.suggestionId()).isNotNull();
+	}
+
+	@Test
+	void query_confidenceTier_isComputedFromRerankedMatches() throws Exception {
+		setUpAvailableServices();
+		setUpTeam();
+		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
+		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
+
+		List<PineconeClient.PineconeMatch> matches = List.of(
+				new PineconeClient.PineconeMatch("commit:high-1", 0.95, Map.of()),
+				new PineconeClient.PineconeMatch("commit:high-2", 0.93, Map.of()),
+				new PineconeClient.PineconeMatch("commit:high-3", 0.91, Map.of()));
+		when(pineconeClient.query(anyString(), any(), anyInt(), any(), any())).thenReturn(matches);
+		when(rerankService.getTopN()).thenReturn(20);
+		when(rerankService.rerank(anyString(), any(), anyInt()))
+				.thenReturn(List.of(new RerankService.RankedChunk("commit:high-1", 0.95, Map.of(), 0.20),
+						new RerankService.RankedChunk("commit:high-2", 0.93, Map.of(), 0.15)));
+		when(confidenceTierCalculator
+				.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>argThat(
+						rerankedMatches -> rerankedMatches != null && rerankedMatches.size() == 2
+								&& rerankedMatches.get(0).score() == 0.20 && rerankedMatches.get(1).score() == 0.15)))
+				.thenReturn(ConfidenceTier.LOW);
+		mockRagAnswer("Answer.", 0.6);
+		stubSuggestionStore(UUID.randomUUID());
+
+		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
+
+		assertThat(result.confidenceTier()).isEqualTo(ConfidenceTier.LOW);
+		verify(confidenceTierCalculator)
+				.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>argThat(
+						rerankedMatches -> rerankedMatches != null && rerankedMatches.size() == 2
+								&& rerankedMatches.get(0).score() == 0.20 && rerankedMatches.get(1).score() == 0.15));
 	}
 
 	@Test

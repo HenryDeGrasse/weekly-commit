@@ -260,7 +260,19 @@ public class OpenRouterAiProvider implements AiProvider {
 			rationale = rationaleNode.asText();
 		}
 
-		return new AiSuggestionResult(true, content, rationale, 0.85, model, promptVersion);
+		// Extract confidence from the JSON payload; default to 0.5 if absent or
+		// out-of-range. Services with richer evidence context (RAG, risk) will
+		// override this with an evidence-based tier in their own pipelines.
+		double confidence = 0.5;
+		JsonNode confidenceNode = contentNode.get("confidence");
+		if (confidenceNode != null && !confidenceNode.isNull() && confidenceNode.isNumber()) {
+			double parsed = confidenceNode.asDouble();
+			if (parsed >= 0.0 && parsed <= 1.0) {
+				confidence = parsed;
+			}
+		}
+
+		return new AiSuggestionResult(true, content, rationale, confidence, model, promptVersion);
 	}
 
 	// ── Prompt construction ──────────────────────────────────────────────

@@ -75,10 +75,13 @@ class RiskDetectionServiceTest {
 	@Mock
 	private AiProvider aiProvider;
 
+	@Mock
+	private CalibrationService calibrationService;
+
 	@BeforeEach
 	void setUp() {
 		service = new RiskDetectionService(planRepo, commitRepo, workItemRepo, statusHistoryRepo, scopeChangeRepo,
-				suggestionRepo, authService, aiProviderRegistry, new ObjectMapper());
+				suggestionRepo, authService, aiProviderRegistry, new ObjectMapper(), calibrationService);
 		planId = UUID.randomUUID();
 		userId = UUID.randomUUID();
 
