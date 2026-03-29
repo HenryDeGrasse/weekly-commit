@@ -281,6 +281,118 @@ class PineconeClientTest {
 		assertThat(body.has("filter")).isFalse();
 	}
 
+	// ── upsert — sparse values ───────────────────────────────────────────
+
+	@Test
+	void upsert_withSparseValues_includesSparseValuesInBody() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		Map<Integer, Float> sparseValues = Map.of(100, 0.5f, 200, 0.3f);
+		PineconeClient.PineconeVector vec = new PineconeClient.PineconeVector("doc-1", new float[]{0.1f}, Map.of(),
+				sparseValues);
+		client.upsert("ns", List.of(vec));
+
+		JsonNode body = objectMapper.readTree(readRequestBody(captor.getValue()));
+		JsonNode sparseNode = body.path("vectors").get(0).path("sparse_values");
+		assertThat(sparseNode.has("indices")).isTrue();
+		assertThat(sparseNode.has("values")).isTrue();
+		assertThat(sparseNode.path("indices")).hasSize(2);
+		assertThat(sparseNode.path("values")).hasSize(2);
+	}
+
+	@Test
+	void upsert_withNullSparseValues_noSparseValuesKey() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		// 3-arg constructor → sparseValues is null
+		PineconeClient.PineconeVector vec = new PineconeClient.PineconeVector("doc-1", new float[]{0.1f}, Map.of());
+		client.upsert("ns", List.of(vec));
+
+		JsonNode body = objectMapper.readTree(readRequestBody(captor.getValue()));
+		assertThat(body.path("vectors").get(0).has("sparse_values")).isFalse();
+	}
+
+	@Test
+	void upsert_sparseValues_sortedByIndex() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		// Entries in reverse order to verify sorting
+		Map<Integer, Float> sparseValues = new java.util.LinkedHashMap<>();
+		sparseValues.put(300, 0.1f);
+		sparseValues.put(100, 0.5f);
+		sparseValues.put(200, 0.3f);
+		PineconeClient.PineconeVector vec = new PineconeClient.PineconeVector("doc-1", new float[]{0.1f}, Map.of(),
+				sparseValues);
+		client.upsert("ns", List.of(vec));
+
+		JsonNode body = objectMapper.readTree(readRequestBody(captor.getValue()));
+		JsonNode indices = body.path("vectors").get(0).path("sparse_values").path("indices");
+		assertThat(indices.get(0).asInt()).isEqualTo(100);
+		assertThat(indices.get(1).asInt()).isEqualTo(200);
+		assertThat(indices.get(2).asInt()).isEqualTo(300);
+	}
+
+	// ── query — sparse vector ─────────────────────────────────────────────
+
+	@Test
+	void query_withSparseVector_includesSparseVectorInBody() throws Exception {
+		String responseJson = buildQueryResponse(List.of("id-1"), List.of(0.9));
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(responseJson);
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		Map<Integer, Float> sparseVector = Map.of(42, 0.8f, 99, 0.4f);
+		client.query("ns", new float[]{0.1f}, 5, null, sparseVector);
+
+		JsonNode body = objectMapper.readTree(readRequestBody(captor.getValue()));
+		assertThat(body.has("sparse_vector")).isTrue();
+		assertThat(body.path("sparse_vector").path("indices")).hasSize(2);
+		assertThat(body.path("sparse_vector").path("values")).hasSize(2);
+	}
+
+	@Test
+	void query_withNullSparseVector_noSparseVectorKey() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn("{\"matches\":[]}");
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		client.query("ns", new float[]{0.1f}, 5, null, null);
+
+		JsonNode body = objectMapper.readTree(readRequestBody(captor.getValue()));
+		assertThat(body.has("sparse_vector")).isFalse();
+	}
+
+	@Test
+	void query_hybridOverload_parsesMatchesCorrectly() throws Exception {
+		String responseJson = buildQueryResponse(List.of("doc-a", "doc-b"), List.of(0.95, 0.80));
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(responseJson);
+		when(httpClient.send(any(HttpRequest.class), any())).thenAnswer(inv -> httpResponse);
+
+		Map<Integer, Float> sparseVector = Map.of(10, 0.5f);
+		List<PineconeClient.PineconeMatch> matches = client.query("ns", new float[]{0.1f}, 10, null, sparseVector);
+
+		assertThat(matches).hasSize(2);
+		assertThat(matches.get(0).id()).isEqualTo("doc-a");
+		assertThat(matches.get(0).score()).isEqualTo(0.95);
+	}
+
+	@Test
+	void query_hybridOverload_blankKey_returnsEmptyList() {
+		PineconeClient noKey = new PineconeClient("", INDEX_NAME, ENVIRONMENT, objectMapper, httpClient);
+		List<PineconeClient.PineconeMatch> result = noKey.query("ns", new float[]{0.1f}, 5, null, Map.of(1, 0.5f));
+		assertThat(result).isEmpty();
+		verifyNoInteractions(httpClient);
+	}
+
 	// ── deleteByIds ───────────────────────────────────────────────────────
 
 	@Test

@@ -51,8 +51,23 @@ public class PineconeClient {
 
 	// ── Inner records ────────────────────────────────────────────────────
 
-	/** A single vector to be stored in Pinecone. */
-	public record PineconeVector(String id, float[] values, Map<String, Object> metadata) {
+	/**
+	 * A single vector to be stored in Pinecone.
+	 *
+	 * <p>
+	 * {@code sparseValues} is optional: when non-null, the vector is stored as a
+	 * hybrid dense+sparse vector for Pinecone's native hybrid search.
+	 */
+	public record PineconeVector(String id, float[] values, Map<String, Object> metadata,
+			Map<Integer, Float> sparseValues) {
+
+		/**
+		 * Backward-compatible 3-arg constructor — {@code sparseValues} defaults to
+		 * {@code null} (dense-only).
+		 */
+		public PineconeVector(String id, float[] values, Map<String, Object> metadata) {
+			this(id, values, metadata, null);
+		}
 	}
 
 	/** A single match returned from a Pinecone query. */
@@ -177,6 +192,9 @@ public class PineconeClient {
 				if (v.metadata() != null && !v.metadata().isEmpty()) {
 					vNode.set("metadata", objectMapper.valueToTree(v.metadata()));
 				}
+				if (v.sparseValues() != null && !v.sparseValues().isEmpty()) {
+					vNode.set("sparse_values", buildSparseValuesNode(v.sparseValues()));
+				}
 			}
 			String json = objectMapper.writeValueAsString(body);
 			HttpRequest req = dataRequest("POST", "/vectors/upsert", json);
@@ -192,7 +210,7 @@ public class PineconeClient {
 	}
 
 	/**
-	 * Queries the index for the nearest neighbours of {@code vector}.
+	 * Queries the index for the nearest neighbours of {@code vector} (dense-only).
 	 *
 	 * @param namespace
 	 *            Pinecone namespace
@@ -205,6 +223,38 @@ public class PineconeClient {
 	 * @return list of matches, empty on error
 	 */
 	public List<PineconeMatch> query(String namespace, float[] vector, int topK, Map<String, Object> filter) {
+		return executeQuery(namespace, vector, topK, filter, null);
+	}
+
+	/**
+	 * Queries the index using hybrid dense+sparse search.
+	 *
+	 * <p>
+	 * When {@code sparseVector} is non-null and non-empty, both the dense vector
+	 * and sparse vector are sent to Pinecone for hybrid retrieval. When
+	 * {@code sparseVector} is {@code null} or empty, this behaves identically to
+	 * the dense-only overload.
+	 *
+	 * @param namespace
+	 *            Pinecone namespace
+	 * @param vector
+	 *            dense query vector
+	 * @param topK
+	 *            maximum number of results
+	 * @param filter
+	 *            optional metadata filter (may be null or empty)
+	 * @param sparseVector
+	 *            optional sparse vector (token index → weight); may be null
+	 * @return list of matches, empty on error
+	 */
+	public List<PineconeMatch> query(String namespace, float[] vector, int topK, Map<String, Object> filter,
+			Map<Integer, Float> sparseVector) {
+		return executeQuery(namespace, vector, topK, filter, sparseVector);
+	}
+
+	/** Shared implementation for both {@code query()} overloads. */
+	private List<PineconeMatch> executeQuery(String namespace, float[] vector, int topK, Map<String, Object> filter,
+			Map<Integer, Float> sparseVector) {
 		if (!isAvailable() || vector == null || vector.length == 0) {
 			return Collections.emptyList();
 		}
@@ -224,6 +274,9 @@ public class PineconeClient {
 			}
 			if (filter != null && !filter.isEmpty()) {
 				body.set("filter", objectMapper.valueToTree(filter));
+			}
+			if (sparseVector != null && !sparseVector.isEmpty()) {
+				body.set("sparse_vector", buildSparseValuesNode(sparseVector));
 			}
 			String json = objectMapper.writeValueAsString(body);
 			HttpRequest req = dataRequest("POST", "/query", json);
@@ -345,6 +398,24 @@ public class PineconeClient {
 			builder.method(method, HttpRequest.BodyPublishers.noBody());
 		}
 		return builder.build();
+	}
+
+	/**
+	 * Serialises a sparse vector ({@code index → weight}) into the Pinecone JSON
+	 * format: {@code {"indices":[...], "values":[...]}}.
+	 *
+	 * <p>
+	 * Entries are sorted by index for deterministic output.
+	 */
+	private com.fasterxml.jackson.databind.node.ObjectNode buildSparseValuesNode(Map<Integer, Float> sparseValues) {
+		com.fasterxml.jackson.databind.node.ObjectNode node = objectMapper.createObjectNode();
+		ArrayNode indicesNode = node.putArray("indices");
+		ArrayNode valuesNode = node.putArray("values");
+		sparseValues.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> {
+			indicesNode.add(e.getKey());
+			valuesNode.add(e.getValue());
+		});
+		return node;
 	}
 
 	/** Exposed for testing — allows pre-seeding the resolved index host. */

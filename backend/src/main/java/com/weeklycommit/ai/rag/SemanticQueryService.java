@@ -94,16 +94,18 @@ public class SemanticQueryService {
 	private final AiSuggestionService aiSuggestionService;
 	private final ObjectMapper objectMapper;
 	private final TeamRepository teamRepo;
+	private final SparseEncoder sparseEncoder;
 
 	public SemanticQueryService(PineconeClient pineconeClient, EmbeddingService embeddingService,
 			AiProviderRegistry aiProviderRegistry, AiSuggestionService aiSuggestionService, ObjectMapper objectMapper,
-			TeamRepository teamRepo) {
+			TeamRepository teamRepo, SparseEncoder sparseEncoder) {
 		this.pineconeClient = pineconeClient;
 		this.embeddingService = embeddingService;
 		this.aiProviderRegistry = aiProviderRegistry;
 		this.aiSuggestionService = aiSuggestionService;
 		this.objectMapper = objectMapper;
 		this.teamRepo = teamRepo;
+		this.sparseEncoder = sparseEncoder;
 	}
 
 	// ── Public API ────────────────────────────────────────────────────────
@@ -144,9 +146,20 @@ public class SemanticQueryService {
 			// Step 4: build metadata filter
 			Map<String, Object> filter = buildFilter(intent, teamId, userId);
 
-			// Step 5: query Pinecone
+			// Step 5: query Pinecone with hybrid sparse+dense when available
 			String namespace = resolveNamespace(teamId);
-			List<PineconeClient.PineconeMatch> matches = pineconeClient.query(namespace, vector, TOP_K, filter);
+			java.util.Map<Integer, Float> sparseVector = null;
+			try {
+				java.util.Map<Integer, Float> sv = sparseEncoder.encode(question);
+				if (!sv.isEmpty()) {
+					sparseVector = sv;
+				}
+			} catch (Exception ex) {
+				log.debug("SemanticQueryService: sparse encoding failed — falling back to dense-only: {}",
+						ex.getMessage());
+			}
+			List<PineconeClient.PineconeMatch> matches = pineconeClient.query(namespace, vector, TOP_K, filter,
+					sparseVector);
 
 			// Step 6 & 7: build RAG prompt context and generate answer
 			String contextString = buildContextString(question, matches);

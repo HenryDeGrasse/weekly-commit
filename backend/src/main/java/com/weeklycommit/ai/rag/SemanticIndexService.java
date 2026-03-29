@@ -64,6 +64,7 @@ public class SemanticIndexService {
 	private final PineconeClient pineconeClient;
 	private final EmbeddingService embeddingService;
 	private final ChunkBuilder chunkBuilder;
+	private final SparseEncoder sparseEncoder;
 	private final WeeklyPlanRepository planRepo;
 	private final WeeklyCommitRepository commitRepo;
 	private final ScopeChangeEventRepository scopeChangeRepo;
@@ -79,11 +80,12 @@ public class SemanticIndexService {
 			ChunkBuilder chunkBuilder, WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
 			ScopeChangeEventRepository scopeChangeRepo, CarryForwardLinkRepository carryForwardLinkRepo,
 			ManagerCommentRepository commentRepo, WorkItemRepository workItemRepo, TeamRepository teamRepo,
-			RcdoNodeRepository rcdoNodeRepo, UserAccountRepository userRepo,
+			RcdoNodeRepository rcdoNodeRepo, UserAccountRepository userRepo, SparseEncoder sparseEncoder,
 			@Qualifier("taskExecutor") Executor taskExecutor) {
 		this.pineconeClient = pineconeClient;
 		this.embeddingService = embeddingService;
 		this.chunkBuilder = chunkBuilder;
+		this.sparseEncoder = sparseEncoder;
 		this.planRepo = planRepo;
 		this.commitRepo = commitRepo;
 		this.scopeChangeRepo = scopeChangeRepo;
@@ -597,6 +599,19 @@ public class SemanticIndexService {
 		}
 		Map<String, Object> meta = new HashMap<>(chunk.metadata());
 		meta.put("text", chunk.text());
-		pineconeClient.upsert(namespace, List.of(new PineconeClient.PineconeVector(chunk.id(), embedding, meta)));
+
+		// Generate sparse vector for hybrid retrieval (graceful degradation on failure)
+		java.util.Map<Integer, Float> sparseVector = null;
+		try {
+			java.util.Map<Integer, Float> sv = sparseEncoder.encode(chunk.text());
+			if (!sv.isEmpty()) {
+				sparseVector = sv;
+			}
+		} catch (Exception e) {
+			log.debug("SemanticIndexService: sparse encoding failed for chunk '{}' — {}", chunk.id(), e.getMessage());
+		}
+
+		pineconeClient.upsert(namespace,
+				List.of(new PineconeClient.PineconeVector(chunk.id(), embedding, meta, sparseVector)));
 	}
 }

@@ -1,0 +1,34 @@
+Reviewed:
+- `backend/src/main/java/com/weeklycommit/ai/rag/SparseEncoder.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/PineconeClient.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticIndexService.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/SemanticQueryService.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/SparseEncoderTest.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/PineconeClientTest.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/SemanticQueryServiceTest.java`
+
+What I verified:
+- `SparseEncoder` exists and provides local sparse-vector generation with domain-specific normalization
+- `PineconeClient.PineconeVector` now supports the 4-arg sparse form plus the backward-compatible 3-arg constructor
+- `PineconeClient.upsert()` includes `sparse_values` only when present
+- `PineconeClient` has the new overloaded hybrid `query(..., sparseVector)` while preserving the existing dense-only signature
+- `SemanticIndexService` generates sparse vectors during upsert and degrades gracefully on sparse encoding failure
+- `SemanticQueryService` generates sparse vectors for questions, uses the hybrid Pinecone query path, and falls back to dense-only on sparse encoding failure
+- Tests cover sparse encoding behavior, Pinecone sparse request bodies, and hybrid-query wiring
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅
+- `npm run build` ✅
+
+Assessment:
+- Step 4 is implemented correctly
+- No material defects found in the diff
+- I made no changes
+
+```observations
+- [low] frontend/src/**: Pre-existing lint warnings and React test `act(...)` warnings remain, but checks pass and they are outside this backend-only step
+```
+
+Verdict: approve

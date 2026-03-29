@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-29T19:25:37.605Z",
+  "updatedAt": "2026-03-29T19:39:34.081Z",
   "runId": "2026-03-29T18-32-40-613Z-32faa966",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -215,12 +215,12 @@
     ]
   },
   "planSourcePath": "duet-plan-ai-enhancements.md",
-  "stepIndex": 3,
+  "stepIndex": 4,
   "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-3",
-    "stepTitle": "Fix CommitLintService — Remove wasted LLM call and fix RiskDetectionService context persistence",
+    "stepId": "step-4",
+    "stepTitle": "Add Pinecone hybrid search support — sparse vector generation and RRF fusion",
     "gateResults": [
       {
         "id": "lint",
