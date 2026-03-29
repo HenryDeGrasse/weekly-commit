@@ -365,6 +365,8 @@ public class OpenRouterAiProvider implements AiProvider {
 			case AiContext.TYPE_TEAM_INSIGHT -> "team-insight.txt";
 			case AiContext.TYPE_PERSONAL_INSIGHT -> "personal-insight.txt";
 			case AiContext.TYPE_WHAT_IF -> "what-if.txt";
+			case AiContext.TYPE_HYDE -> "hyde.txt";
+			case AiContext.TYPE_SQL_SYNTHESIS -> "sql-synthesis.txt";
 			case "FAITHFULNESS_EVAL" -> "faithfulness-eval.txt";
 			default -> "generic.txt";
 		};
@@ -411,6 +413,8 @@ public class OpenRouterAiProvider implements AiProvider {
 			case AiContext.TYPE_TEAM_INSIGHT -> "team-insight";
 			case AiContext.TYPE_PERSONAL_INSIGHT -> "personal-insight";
 			case AiContext.TYPE_WHAT_IF -> "what-if";
+			case AiContext.TYPE_HYDE -> "hyde";
+			case AiContext.TYPE_SQL_SYNTHESIS -> "sql-synthesis";
 			default -> "generic";
 		};
 		// commit-draft-assist was updated to v2 (added title length rule + example).

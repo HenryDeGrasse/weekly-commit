@@ -1,0 +1,47 @@
+Reviewed the step-5 diff in:
+
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiContext.java`
+- `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java`
+- `backend/src/main/java/com/weeklycommit/ai/provider/StubAiProvider.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/HydeService.java`
+- `backend/src/main/java/com/weeklycommit/ai/rag/SqlQueryRouter.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/HydeServiceTest.java`
+- `backend/src/test/java/com/weeklycommit/ai/rag/SqlQueryRouterTest.java`
+- `backend/src/main/resources/prompts/rag-intent.txt`
+- `backend/src/main/resources/prompts/hyde.txt`
+- `backend/src/main/resources/prompts/sql-synthesis.txt`
+
+What I found:
+- The overall step was mostly implemented correctly.
+- I found two material gaps:
+  1. `HydeService` and `SqlQueryRouter` were ignoring the new experiment-aware provider path by calling `AiProviderRegistry.generateSuggestion(context)` instead of the `userId` overload.
+  2. `SqlQueryRouter` injected `RcdoWeekRollupRepository` but never used it, so RCDO analytical questions were not actually routed to the RCDO read model.
+
+What I changed:
+- `backend/src/main/java/com/weeklycommit/ai/rag/HydeService.java`
+  - switched to `aiProviderRegistry.generateSuggestion(context, userId)`
+- `backend/src/main/java/com/weeklycommit/ai/rag/SqlQueryRouter.java`
+  - switched to `aiProviderRegistry.generateSuggestion(context, userId)`
+  - added RCDO-focused read-model routing via `RcdoWeekRollupRepository`
+  - added team-scoped filtering for RCDO rollups using `teamContributionBreakdown`
+  - added `rcdoWeekRollups` mapping into AI context payload
+- `backend/src/test/java/com/weeklycommit/ai/rag/HydeServiceTest.java`
+  - updated mocks/verifications for the `generateSuggestion(context, userId)` overload
+- `backend/src/test/java/com/weeklycommit/ai/rag/SqlQueryRouterTest.java`
+  - updated mocks for the experiment-aware overload
+  - added a regression test covering RCDO analytical routing
+
+Checks:
+- `npm run check:static` ✅
+- `npm test` ✅
+
+Assessment:
+- Step 5 is now complete and aligned with the experiment-aware provider chain and the intended read-model routing behavior.
+
+```observations
+- [low] backend/src/main/java/com/weeklycommit/ai/rag/SqlQueryRouter.java: `SqlQueryResult.suggestionId` is currently populated from `result.modelVersion()`, which appears semantically mismatched with the field name.
+- [low] frontend/src/components/myweek/PlanHistoryView.tsx: Existing test output still reports a missing React `key` warning.
+- [low] frontend/src/components/notifications/NotificationPanel.tsx: Existing test output still reports repeated React `act(...)` warnings.
+```
+
+Verdict: changes_made

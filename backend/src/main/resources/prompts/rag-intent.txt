@@ -46,9 +46,21 @@ Question: "What did Alice work on this month?"
 Question: "What scope changes happened recently?"
 {"intent":"scope_change_query","userFilter":"team","entityTypes":["scope_change"],"timeRange":{"from":"2026-03-16","to":"2026-03-26"},"keywords":["scope","changes","recent"]}
 
+Question: "What is the average carry-forward rate this quarter?"
+{"intent":"analytical","userFilter":"team","entityTypes":["carry_forward","plan_summary"],"timeRange":{"from":"2025-12-22","to":"2026-03-26"},"keywords":["average","carry-forward","rate","quarter"]}
+
+Question: "How many team members locked their plans on time last month?"
+{"intent":"compliance_query","userFilter":"team","entityTypes":["plan_summary"],"timeRange":{"from":"2026-02-23","to":"2026-03-22"},"keywords":["locked","on time","compliance","last month"]}
+
+Question: "Which RCDO nodes had the most points committed this quarter?"
+{"intent":"analytical","userFilter":"team","entityTypes":["commit","plan_summary"],"timeRange":{"from":"2025-12-22","to":"2026-03-26"},"keywords":["RCDO","most","points","quarter","ranking"]}
+
+Question: "What percentage of plans were reconciled last week?"
+{"intent":"compliance_query","userFilter":"team","entityTypes":["plan_summary"],"timeRange":{"from":"2026-03-16","to":"2026-03-22"},"keywords":["percentage","reconciled","compliance","last week"]}
+
 Respond with ONLY a JSON object (no markdown fences):
 {
-  "intent": "status_query|risk_query|carry_forward_query|plan_summary_query|ticket_query|scope_change_query|general_query",
+  "intent": "status_query|risk_query|carry_forward_query|plan_summary_query|ticket_query|scope_change_query|analytical|compliance_query|general_query",
   "userFilter": "self|team|null",
   "entityTypes": ["one to three entity types"],
   "timeRange": { "from": "YYYY-MM-DD", "to": "YYYY-MM-DD" },

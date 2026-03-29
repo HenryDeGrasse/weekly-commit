@@ -60,4 +60,10 @@ public record AiContext(
 
 	/** Suggestion type constant — what-if plan simulation narration. */
 	public static final String TYPE_WHAT_IF = "WHAT_IF";
+
+	/** Suggestion type constant — HyDE hypothetical answer generation for RAG. */
+	public static final String TYPE_HYDE = "HYDE";
+
+	/** Suggestion type constant — SQL/read-model analytical answer synthesis. */
+	public static final String TYPE_SQL_SYNTHESIS = "SQL_SYNTHESIS";
 }

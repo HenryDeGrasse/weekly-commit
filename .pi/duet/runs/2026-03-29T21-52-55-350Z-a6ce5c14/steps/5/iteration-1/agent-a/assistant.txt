@@ -1,0 +1,33 @@
+All checks pass. Here's a summary of what was implemented:
+
+## Summary
+
+### New prompt templates
+- **`hyde.txt`** — instructs the LLM to generate a 2-3 sentence hypothetical answer for HyDE, with planning-specific details (chess pieces, points, rates). Returns `{"hypotheticalAnswer": "..."}`.
+- **`sql-synthesis.txt`** — instructs the LLM to answer analytical questions from pre-fetched read model data. Returns `{"answer": "...", "dataSource": "...", "confidence": 0.85}`.
+
+### `AiContext.java`
+Added `TYPE_HYDE = "HYDE"` and `TYPE_SQL_SYNTHESIS = "SQL_SYNTHESIS"` constants.
+
+### `OpenRouterAiProvider.java`
+Added `TYPE_HYDE → "hyde.txt"` and `TYPE_SQL_SYNTHESIS → "sql-synthesis.txt"` entries in both `loadPromptTemplate()` and `resolvePromptVersion()` switches.
+
+### `StubAiProvider.java`
+Added stub responses for `TYPE_HYDE` (returns a plausible `hypotheticalAnswer`) and `TYPE_SQL_SYNTHESIS` (returns a placeholder `answer`, `dataSource`, `confidence`).
+
+### `rag-intent.txt`
+Added `"analytical"` and `"compliance_query"` to the intent enum. Added 4 example Q&A pairs illustrating aggregate/compliance questions.
+
+### `HydeService.java`
+`@Service` that calls `AiProviderRegistry.generateSuggestion()` with `TYPE_HYDE`, parses the `hypotheticalAnswer` field, and returns a `HydeResult` record. Gracefully degrades on null/blank question, unavailable provider, or missing field.
+
+### `SqlQueryRouter.java`
+`@Service` with:
+- `canHandle(intent, keywords)` — returns true for `"analytical"`, `"compliance_query"`, or `"status_query"` with aggregation keywords (total, average, most, least, how many, percentage, rate, trend, compare, ranking, count, sum, ratio, highest, lowest, across, breakdown).
+- `query(...)` — resolves team members, fetches relevant fact tables (TeamWeekRollup, UserWeekFact, CarryForwardFact, ComplianceFact) based on intent/keywords, builds AI context with read model data, calls LLM for synthesis, returns `SqlQueryResult` record.
+
+### Tests
+- **`HydeServiceTest.java`** — 9 tests: null/blank question guard, unavailable provider, happy path, correct `TYPE_HYDE` context type, question in additionalContext, null userId, missing field, malformed JSON, `HydeResult.unavailable()` factory.
+- **`SqlQueryRouterTest.java`** — 19 tests: all intent/keyword combinations for `canHandle`, provider unavailable, empty data, successful response, `SqlQueryResult.unavailable()` factory.
+
+Verdict: changes_made

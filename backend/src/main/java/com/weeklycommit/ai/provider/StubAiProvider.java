@@ -173,6 +173,25 @@ public class StubAiProvider implements AiProvider {
 						""";
 				rationale = "Stub what-if narration generated for simulation result.";
 			}
+			case AiContext.TYPE_HYDE -> {
+				payload = """
+						{
+						  "hypotheticalAnswer": "The team committed to 10 work items last week including 2 KING priorities and 3 QUEEN items. Total planned points were 24 with an 80% achievement rate and 15% carry-forward rate."
+						}
+						""";
+				rationale = "Stub hypothetical answer for HyDE semantic search enhancement.";
+			}
+			case AiContext.TYPE_SQL_SYNTHESIS -> {
+				payload = """
+						{
+						  "answer": "Based on the team's planning data, the requested analytical summary is not available in stub mode.",
+						  "dataSource": "teamWeekRollups",
+						  "confidence": 0.5
+						}
+						""";
+				rationale = "Stub SQL synthesis answer generated from read model data.";
+				confidence = 0.5;
+			}
 			default -> {
 				payload = "{}";
 				rationale = "Unknown suggestion type.";
