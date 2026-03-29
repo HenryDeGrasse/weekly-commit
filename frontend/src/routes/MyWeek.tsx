@@ -35,10 +35,13 @@ import { CommitListSkeleton } from "../components/shared/skeletons/CommitListSke
 import { EmptyState } from "../components/shared/EmptyState.js";
 import { AiCommitComposer } from "../components/ai/AiCommitComposer.js";
 import { ProactiveRiskBanner } from "../components/ai/ProactiveRiskBanner.js";
+import { PlanRecommendationCard } from "../components/ai/PlanRecommendationCard.js";
 import { WhatIfPanel } from "../components/ai/WhatIfPanel.js";
 import { useAiStatus } from "../api/aiHooks.js";
 import { useCalibration } from "../api/calibrationHooks.js";
+import { usePlanRecommendations, useRecommendationApi } from "../api/recommendationHooks.js";
 import { useDismissMemory } from "../lib/useDismissMemory.js";
+import { useDismissedIds } from "../lib/useDismissedIds.js";
 import { useAiMode } from "../lib/useAiMode.js";
 import type {
   CommitResponse, PlanState, LockValidationError,
@@ -208,6 +211,8 @@ export default function MyWeek() {
   const [lintRefreshKey, setLintRefreshKey] = useState(0);
   const [lintHintCount, setLintHintCount] = useState<number | null>(null);
   const [riskSignalCount, setRiskSignalCount] = useState<number | null>(null);
+  const [recommendationRefreshKey, setRecommendationRefreshKey] = useState(0);
+  const [recommendationRefreshing, setRecommendationRefreshing] = useState(false);
   /** Pre-filled values passed from AI composer → CommitForm when user switches to manual. */
   const [commitFormInitialValues, setCommitFormInitialValues] = useState<
     Partial<CreateCommitPayload>
@@ -218,6 +223,31 @@ export default function MyWeek() {
   const effectivePreLockErrors = useMemo(() => getEffectivePreLockErrors(commits, lockValidationErrors), [commits, lockValidationErrors]);
   const isDraft = plan?.state === "DRAFT";
   const isLocked = plan?.state === "LOCKED";
+
+  // Recommendations — only fetch for DRAFT or LOCKED plans
+  const canShowRecommendations = aiAssistanceEnabled && plan != null && (isDraft || isLocked);
+  const { data: recommendationsData, loading: recommendationsLoading, refetch: refetchRecommendations } =
+    usePlanRecommendations(canShowRecommendations ? plan.id : null);
+  const recommendationApi = useRecommendationApi();
+  const { dismissedIds: dismissedRecommendationIds, dismiss: dismissRecommendation } =
+    useDismissedIds("plan-recommendations");
+  const visibleRecommendations = (recommendationsData ?? []).filter(
+    (r) => !dismissedRecommendationIds.has(r.suggestionId),
+  );
+
+  const handleRefreshRecommendations = useCallback(async () => {
+    if (!plan) return;
+    setRecommendationRefreshing(true);
+    try {
+      await recommendationApi.refreshRecommendations(plan.id);
+      refetchRecommendations();
+    } catch {
+      // Silently degrade — non-critical
+    } finally {
+      setRecommendationRefreshing(false);
+      setRecommendationRefreshKey((k) => k + 1);
+    }
+  }, [plan, recommendationApi, refetchRecommendations]);
 
   // ── Soft-warning derived state (for CollapsibleSection defaultExpanded) ──
   const hasSoftWarnings = useMemo(() => {
@@ -546,6 +576,67 @@ export default function MyWeek() {
         >
           <AiErrorBoundary>
             <ProactiveRiskBanner planId={plan.id} onSignalCount={setRiskSignalCount} />
+          </AiErrorBoundary>
+        </CollapsibleSection>
+      )}
+
+      {/* Plan recommendations — shown for DRAFT and LOCKED plans when AI is on */}
+      {canShowRecommendations && (recommendationsLoading || visibleRecommendations.length > 0) && (
+        <CollapsibleSection
+          id="plan-recommendations"
+          title="Plan Recommendations"
+          defaultExpanded={aiMode !== "on-demand"}
+          overrideExpanded={sectionsOverride}
+          badge={
+            !recommendationsLoading && visibleRecommendations.length > 0 ? (
+              <span className="text-[0.65rem] font-bold px-1.5 py-0.5 rounded-sm bg-info-bg text-info border border-info-border">
+                {visibleRecommendations.length}
+              </span>
+            ) : undefined
+          }
+        >
+          <AiErrorBoundary>
+            <div className="flex flex-col gap-2" data-testid="plan-recommendations-section">
+              {/* Refresh button */}
+              <div className="flex justify-end">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void handleRefreshRecommendations()}
+                  disabled={recommendationRefreshing}
+                  data-testid="refresh-recommendations-btn"
+                >
+                  {recommendationRefreshing ? "Refreshing…" : "Refresh recommendations"}
+                </Button>
+              </div>
+
+              {/* Skeleton while loading */}
+              {recommendationsLoading && (
+                <div
+                  data-testid="recommendations-loading"
+                  role="status"
+                  aria-label="Loading recommendations"
+                  className="flex flex-col gap-2"
+                >
+                  {[0, 1].map((i) => (
+                    <div
+                      key={i}
+                      className="h-24 rounded-default border border-border bg-muted-bg animate-pulse"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Recommendation cards */}
+              {!recommendationsLoading &&
+                visibleRecommendations.map((rec) => (
+                  <PlanRecommendationCard
+                    key={`${rec.suggestionId}-${recommendationRefreshKey}`}
+                    recommendation={rec}
+                    onDismiss={dismissRecommendation}
+                  />
+                ))}
+            </div>
           </AiErrorBoundary>
         </CollapsibleSection>
       )}

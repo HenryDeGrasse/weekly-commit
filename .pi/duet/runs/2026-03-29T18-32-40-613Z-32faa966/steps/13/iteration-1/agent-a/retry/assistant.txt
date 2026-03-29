@@ -1,0 +1,34 @@
+All checks pass:
+- **typecheck**: clean (0 errors)
+- **lint**: 0 errors (13 pre-existing warnings only)
+- **unit**: 22 backend + 859 frontend = all passing, 0 failures
+
+---
+
+## Summary
+
+**Files created:**
+
+1. **`frontend/src/api/recommendationApi.ts`** — API client with `PlanRecommendation` TypeScript type (matching backend DTO including `suggestionId: string`, `whatIfResult: WhatIfResponse | null`, etc.) and `createRecommendationApi()` factory with `getRecommendations()` (GET, read-only) and `refreshRecommendations()` (POST, re-generation).
+
+2. **`frontend/src/api/recommendationHooks.ts`** — `useRecommendationApi()` base hook and `usePlanRecommendations(planId)` query hook using the `useQuery` pattern from the codebase.
+
+3. **`frontend/src/lib/useDismissedIds.ts`** — `useDismissedIds(key)` utility hook that persists dismissed IDs as a JSON array in localStorage under `wc-dismissed-<key>`.
+
+4. **`frontend/src/components/ai/PlanRecommendationCard.tsx`** — Renders a single recommendation with: risk type badge, description, suggested action, what-if summary (before/after points + resolved/new risks), confidence tier via `ConfidenceBadge`, `AiFeedbackButtons` using the stable `suggestionId`, dismiss button, and an "Apply suggestion" button that opens an informational confirmation dialog.
+
+5. **`frontend/src/__tests__/PlanRecommendationCard.test.tsx`** — 21 tests covering: all field rendering, dismiss calls `onDismiss` with correct `suggestionId`, feedback buttons present, what-if summary shows before/after numbers and risk deltas, apply button opens dialog + close dismisses it, null `whatIfResult` handled gracefully.
+
+**Files modified:**
+
+6. **`frontend/src/routes/MyWeek.tsx`** — Added imports, `useDismissedIds` for per-recommendation dismissal tracking, `usePlanRecommendations` + `useRecommendationApi` hooks, `visibleRecommendations` filtering, `handleRefreshRecommendations` callback, and a `CollapsibleSection` below the ProactiveRiskBanner that renders: a "Refresh recommendations" button, skeleton loader while loading, and `PlanRecommendationCard` per visible recommendation. Section only appears for DRAFT/LOCKED plans with AI enabled.
+
+7. **`frontend/src/__tests__/MyWeekPage.test.tsx`** — Added mock for `recommendationHooks.js` to prevent unmocked async hook calls causing `act()` warnings in existing tests.
+
+```observations
+- [MEDIUM] frontend/src/routes/MyWeek.tsx: The `recommendationRefreshKey` state variable is set but the `usePlanRecommendations` hook already uses `refetch()` for cache-busting. The key is used as part of the React `key` prop to force card unmount/remount after refresh — this is intentional but the state could be simplified if remounting is not actually needed.
+- [MEDIUM] backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java: Pre-existing retry loop double-counts rate-limit tokens on parse failure (noted in steps 1-12, out of scope here).
+- [MEDIUM] backend/src/main/java/com/weeklycommit/ai/service/PlanRecommendationService.java: `getRecommendations()` returns `whatIfResult = null` for all persisted rows (noted in step 12). The frontend now handles this gracefully — shows the card without the what-if summary section, and the user can click "Refresh recommendations" to get populated simulation data via the POST endpoint.
+```
+
+Verdict: changes_made

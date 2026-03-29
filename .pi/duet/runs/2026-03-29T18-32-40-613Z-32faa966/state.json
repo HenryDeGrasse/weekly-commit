@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "phase": "plan_approved",
-  "updatedAt": "2026-03-29T21:32:12.631Z",
+  "phase": "completed",
+  "updatedAt": "2026-03-29T21:50:30.718Z",
   "runId": "2026-03-29T18-32-40-613Z-32faa966",
   "handoffMode": "summary",
   "postPlanMode": "review",
@@ -215,12 +215,11 @@
     ]
   },
   "planSourcePath": "duet-plan-ai-enhancements.md",
-  "stepIndex": 12,
-  "round": 3,
-  "resumeAction": "run",
+  "stepIndex": 13,
+  "round": 5,
   "activeSummary": {
-    "stepId": "step-12",
-    "stepTitle": "Add typed workflow orchestration — risk→what-if→recommendation pipeline (backend)",
+    "stepId": "step-13",
+    "stepTitle": "Add plan recommendations UI — frontend",
     "gateResults": [
       {
         "id": "lint",
@@ -232,10 +231,6 @@
       },
       {
         "id": "unit",
-        "passed": true
-      },
-      {
-        "id": "build",
         "passed": true
       },
       {

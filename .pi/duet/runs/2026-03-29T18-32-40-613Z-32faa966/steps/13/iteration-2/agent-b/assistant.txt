@@ -1,0 +1,38 @@
+Reviewed:
+- `frontend/src/api/recommendationApi.ts`
+- `frontend/src/api/recommendationHooks.ts`
+- `frontend/src/components/ai/PlanRecommendationCard.tsx`
+- `frontend/src/lib/useDismissedIds.ts`
+- `frontend/src/routes/MyWeek.tsx`
+- `frontend/src/__tests__/PlanRecommendationCard.test.tsx`
+- `frontend/src/__tests__/MyWeekPage.test.tsx`
+
+What I changed:
+- `frontend/src/routes/MyWeek.tsx`
+  - Fixed a material UX/logic defect: the recommendations section was hidden when the GET endpoint returned no persisted rows, which also hid the only “Refresh recommendations” control.
+  - That made first-time recommendation generation unreachable from the UI.
+  - The section now renders for eligible plans even when empty, with:
+    - the refresh button always available
+    - a small empty-state message when there are no recommendations yet
+
+- `frontend/src/__tests__/MyWeekPage.test.tsx`
+  - Added coverage to verify:
+    - the recommendations section and refresh button are visible even when there are no recommendations yet
+    - clicking refresh calls the POST refresh endpoint and triggers refetch
+
+Assessment:
+- The rest of the Step 13 implementation looked sound
+- I found one material defect that blocked initial feature access and fixed it
+- After the fix, the step is in good shape
+
+Checks run:
+- `npm run lint` ✅
+- `npm run typecheck` ✅
+- `npm test` ✅
+
+```observations
+- [low] frontend/src/**: Pre-existing lint warnings and React test `act(...)` warnings still appear during repo-wide checks, but they do not fail checks and are outside this step’s scope.
+- [medium] backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java: Pre-existing retry loop still double-counts rate-limit tokens on parse failure; out of scope here.
+```
+
+Verdict: changes_made
