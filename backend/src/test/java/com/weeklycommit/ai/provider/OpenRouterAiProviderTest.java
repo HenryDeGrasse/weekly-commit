@@ -293,4 +293,48 @@ class OpenRouterAiProviderTest {
 		assertThatThrownBy(() -> provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1"))
 				.isInstanceOf(OpenRouterAiProvider.ParseException.class);
 	}
+
+	// ── parseResponse: model override ───────────────────────────────────
+
+	@Test
+	void parseResponse_withModelOverride_usesOverrideForModelVersion() throws Exception {
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": [{
+				    "message": {
+				      "role": "assistant",
+				      "content": "{\\"suggestion\\": \\"ok\\"}"
+				    }
+				  }]
+				}
+				""";
+
+		AiSuggestionResult result = provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1",
+				"google/gemini-2.5-flash");
+
+		assertThat(result.available()).isTrue();
+		assertThat(result.modelVersion()).isEqualTo("google/gemini-2.5-flash");
+	}
+
+	@Test
+	void parseResponse_threeParamOverload_usesProviderModel() throws Exception {
+		// The 3-param backward-compat overload should use this.model ("test-model")
+		OpenRouterAiProvider provider = makeProvider("key");
+		String responseBody = """
+				{
+				  "choices": [{
+				    "message": {
+				      "role": "assistant",
+				      "content": "{\\"suggestion\\": \\"ok\\"}"
+				    }
+				  }]
+				}
+				""";
+
+		AiSuggestionResult result = provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1");
+
+		assertThat(result.available()).isTrue();
+		assertThat(result.modelVersion()).isEqualTo("test-model");
+	}
 }

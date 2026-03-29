@@ -37,4 +37,24 @@ public interface AiProvider {
 	 * @return the suggestion result, never {@code null}
 	 */
 	AiSuggestionResult generateSuggestion(AiContext context);
+
+	/**
+	 * Generates a suggestion using the given {@code modelOverride} instead of the
+	 * provider's configured default model.
+	 *
+	 * <p>
+	 * Providers that support per-request model selection (e.g.
+	 * {@code OpenRouterAiProvider}) should override this method. The default
+	 * implementation ignores the override and delegates to
+	 * {@link #generateSuggestion(AiContext)}.
+	 *
+	 * @param context
+	 *            the input context
+	 * @param modelOverride
+	 *            the model identifier to use, or {@code null} to use the default
+	 * @return the suggestion result, never {@code null}
+	 */
+	default AiSuggestionResult generateSuggestion(AiContext context, String modelOverride) {
+		return generateSuggestion(context);
+	}
 }

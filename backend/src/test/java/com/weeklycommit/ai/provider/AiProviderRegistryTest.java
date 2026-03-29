@@ -2,11 +2,17 @@ package com.weeklycommit.ai.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.weeklycommit.ai.experiment.ExperimentAssignment;
+import com.weeklycommit.ai.experiment.ExperimentService;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +24,9 @@ class AiProviderRegistryTest {
 
 	@Mock
 	private AiProvider mockProvider;
+
+	@Mock
+	private ExperimentService experimentService;
 
 	private AiProviderRegistry registry;
 
@@ -152,5 +161,107 @@ class AiProviderRegistryTest {
 			assertThat(res.available()).as("Expected available=true for type %s", type).isTrue();
 			assertThat(res.payload()).as("Expected non-null payload for type %s", type).isNotNull();
 		}
+	}
+
+	// -------------------------------------------------------------------------
+	// generateSuggestion(AiContext, UUID) — experiment-aware overload
+	// -------------------------------------------------------------------------
+
+	@Test
+	void generateSuggestionWithUserId_noExperimentService_callsProviderWithNullOverride() {
+		registry.setAiEnabled(true);
+		// No experimentService wired (stays null)
+		when(mockProvider.isAvailable()).thenReturn(true);
+		AiSuggestionResult expected = new AiSuggestionResult(true, "{}", "rationale", 0.9, "model-v1");
+		when(mockProvider.generateSuggestion(any(), isNull())).thenReturn(expected);
+		AiContext context = new AiContext(AiContext.TYPE_COMMIT_DRAFT, null, null, null, null, null, null, null, null);
+
+		AiSuggestionResult result = registry.generateSuggestion(context, UUID.randomUUID());
+
+		assertThat(result.available()).isTrue();
+		verify(mockProvider).generateSuggestion(any(), isNull());
+	}
+
+	@Test
+	void generateSuggestionWithUserId_controlVariant_callsProviderWithNullOverride() {
+		registry.setAiEnabled(true);
+		registry.setExperimentService(experimentService);
+		when(mockProvider.isAvailable()).thenReturn(true);
+		when(experimentService.isEnabled("llm-model")).thenReturn(true);
+		UUID userId = UUID.randomUUID();
+		ExperimentAssignment controlAssignment = new ExperimentAssignment("llm-model", "control",
+				"anthropic/claude-sonnet-4");
+		when(experimentService.assign(eq("llm-model"), anyString())).thenReturn(controlAssignment);
+		AiSuggestionResult expected = new AiSuggestionResult(true, "{}", "rationale", 0.9, "model-v1");
+		when(mockProvider.generateSuggestion(any(), isNull())).thenReturn(expected);
+		AiContext context = new AiContext(AiContext.TYPE_COMMIT_DRAFT, null, null, null, null, null, null, null, null);
+
+		AiSuggestionResult result = registry.generateSuggestion(context, userId);
+
+		// Control variant → no override (null passed to provider)
+		verify(mockProvider).generateSuggestion(any(), isNull());
+		// Assignment still recorded
+		assertThat(result.experimentAssignments()).containsEntry("llm-model", "control");
+	}
+
+	@Test
+	void generateSuggestionWithUserId_treatmentVariant_callsProviderWithModelOverride() {
+		registry.setAiEnabled(true);
+		registry.setExperimentService(experimentService);
+		when(mockProvider.isAvailable()).thenReturn(true);
+		when(experimentService.isEnabled("llm-model")).thenReturn(true);
+		UUID userId = UUID.randomUUID();
+		String treatmentModel = "google/gemini-2.5-flash-preview";
+		ExperimentAssignment treatmentAssignment = new ExperimentAssignment("llm-model", "treatment", treatmentModel);
+		when(experimentService.assign(eq("llm-model"), anyString())).thenReturn(treatmentAssignment);
+		AiSuggestionResult base = new AiSuggestionResult(true, "{}", "rationale", 0.9, treatmentModel);
+		when(mockProvider.generateSuggestion(any(), eq(treatmentModel))).thenReturn(base);
+		AiContext context = new AiContext(AiContext.TYPE_COMMIT_DRAFT, null, null, null, null, null, null, null, null);
+
+		AiSuggestionResult result = registry.generateSuggestion(context, userId);
+
+		// Treatment variant → model override passed
+		verify(mockProvider).generateSuggestion(any(), eq(treatmentModel));
+		assertThat(result.experimentAssignments()).containsEntry("llm-model", "treatment");
+	}
+
+	@Test
+	void generateSuggestionWithUserId_aiDisabled_returnsUnavailable() {
+		registry.setAiEnabled(false);
+		AiContext context = new AiContext(AiContext.TYPE_COMMIT_DRAFT, null, null, null, null, null, null, null, null);
+
+		AiSuggestionResult result = registry.generateSuggestion(context, UUID.randomUUID());
+
+		assertThat(result.available()).isFalse();
+		verify(mockProvider, never()).generateSuggestion(any(), any());
+	}
+
+	@Test
+	void generateSuggestionWithUserId_disabledExperiment_skipsAssignmentAndOverride() {
+		registry.setAiEnabled(true);
+		registry.setExperimentService(experimentService);
+		when(mockProvider.isAvailable()).thenReturn(true);
+		when(experimentService.isEnabled("llm-model")).thenReturn(false);
+		AiSuggestionResult expected = new AiSuggestionResult(true, "{}", "rationale", 0.9, "model-v1");
+		when(mockProvider.generateSuggestion(any(), isNull())).thenReturn(expected);
+		AiContext context = new AiContext(AiContext.TYPE_COMMIT_DRAFT, null, null, null, null, null, null, null, null);
+
+		AiSuggestionResult result = registry.generateSuggestion(context, UUID.randomUUID());
+
+		verify(mockProvider).generateSuggestion(any(), isNull());
+		verify(experimentService, never()).assign(anyString(), anyString());
+		assertThat(result.experimentAssignments()).isEmpty();
+	}
+
+	@Test
+	void generateSuggestionWithUserId_providerThrows_returnsUnavailable() {
+		registry.setAiEnabled(true);
+		when(mockProvider.isAvailable()).thenReturn(true);
+		when(mockProvider.generateSuggestion(any(), any())).thenThrow(new RuntimeException("provider error"));
+		AiContext context = new AiContext(AiContext.TYPE_COMMIT_DRAFT, null, null, null, null, null, null, null, null);
+
+		AiSuggestionResult result = registry.generateSuggestion(context, UUID.randomUUID());
+
+		assertThat(result.available()).isFalse();
 	}
 }

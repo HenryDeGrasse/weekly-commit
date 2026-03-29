@@ -1,5 +1,7 @@
 package com.weeklycommit.ai.provider;
 
+import java.util.Map;
+
 /**
  * Result returned by an {@link AiProvider}.
  *
@@ -29,19 +31,34 @@ public record AiSuggestionResult(
 		 * Prompt template version identifier for A/B testing (e.g.
 		 * "commit-draft-assist-v1"). May be null for older results.
 		 */
-		String promptVersion) {
+		String promptVersion,
+		/**
+		 * Experiment variant assignments active for this request, keyed by experiment
+		 * name (e.g. {@code "llm-model"} → {@code "treatment"}). Empty when no
+		 * experiments were evaluated.
+		 */
+		Map<String, String> experimentAssignments) {
 
 	/**
-	 * Backwards-compatible constructor for callers that do not yet provide a prompt
-	 * version.
+	 * Backward-compatible constructor for callers that provide a prompt version but
+	 * no experiment assignments.
+	 */
+	public AiSuggestionResult(boolean available, String payload, String rationale, double confidence,
+			String modelVersion, String promptVersion) {
+		this(available, payload, rationale, confidence, modelVersion, promptVersion, Map.of());
+	}
+
+	/**
+	 * Backward-compatible constructor for callers that do not yet provide a prompt
+	 * version or experiment assignments.
 	 */
 	public AiSuggestionResult(boolean available, String payload, String rationale, double confidence,
 			String modelVersion) {
-		this(available, payload, rationale, confidence, modelVersion, null);
+		this(available, payload, rationale, confidence, modelVersion, null, Map.of());
 	}
 
 	/** Convenience factory for an unavailable (degraded) result. */
 	public static AiSuggestionResult unavailable() {
-		return new AiSuggestionResult(false, "{}", "AI provider unavailable", 0.0, "none", null);
+		return new AiSuggestionResult(false, "{}", "AI provider unavailable", 0.0, "none", null, Map.of());
 	}
 }

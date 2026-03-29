@@ -130,6 +130,11 @@ public class OpenRouterAiProvider implements AiProvider {
 
 	@Override
 	public AiSuggestionResult generateSuggestion(AiContext context) {
+		return generateSuggestion(context, null);
+	}
+
+	@Override
+	public AiSuggestionResult generateSuggestion(AiContext context, String modelOverride) {
 		if (apiKey == null || apiKey.isBlank()) {
 			return AiSuggestionResult.unavailable();
 		}
@@ -140,6 +145,7 @@ public class OpenRouterAiProvider implements AiProvider {
 			return AiSuggestionResult.unavailable();
 		}
 
+		String effectiveModel = (modelOverride != null && !modelOverride.isBlank()) ? modelOverride : this.model;
 		String promptVersion = resolvePromptVersion(context.suggestionType());
 		String systemPrompt = loadPromptTemplate(context.suggestionType());
 		String userMessage = buildUserMessage(context);
@@ -147,9 +153,9 @@ public class OpenRouterAiProvider implements AiProvider {
 		// Retry loop: if the model returns non-JSON content, retry once
 		for (int attempt = 1; attempt <= 2; attempt++) {
 			try {
-				String responseBody = callOpenRouter(systemPrompt, userMessage);
+				String responseBody = callOpenRouter(systemPrompt, userMessage, effectiveModel);
 				totalRequests.incrementAndGet();
-				return parseResponse(responseBody, context.suggestionType(), promptVersion);
+				return parseResponse(responseBody, context.suggestionType(), promptVersion, effectiveModel);
 			} catch (ParseException e) {
 				if (attempt < 2) {
 					log.warn("OpenRouter response parse failed for type={} (attempt {}), retrying: {}",
@@ -170,9 +176,10 @@ public class OpenRouterAiProvider implements AiProvider {
 
 	// ── HTTP call ────────────────────────────────────────────────────────
 
-	private String callOpenRouter(String systemPrompt, String userMessage) throws IOException, InterruptedException {
+	private String callOpenRouter(String systemPrompt, String userMessage, String effectiveModel)
+			throws IOException, InterruptedException {
 		ObjectNode body = objectMapper.createObjectNode();
-		body.put("model", model);
+		body.put("model", effectiveModel);
 		body.put("max_tokens", maxTokens);
 
 		// Structured output: forces the model to return valid JSON without markdown
@@ -184,7 +191,7 @@ public class OpenRouterAiProvider implements AiProvider {
 		ObjectNode systemMsg = messages.addObject();
 		systemMsg.put("role", "system");
 		systemMsg.put("content", systemPrompt);
-		if (model.startsWith("anthropic/")) {
+		if (effectiveModel.startsWith("anthropic/")) {
 			systemMsg.putObject("cache_control").put("type", "ephemeral");
 		}
 		messages.addObject().put("role", "user").put("content", userMessage);
@@ -263,8 +270,35 @@ public class OpenRouterAiProvider implements AiProvider {
 	 *             <p>
 	 *             Package-private for testing.
 	 */
+	/**
+	 * Backward-compatible 3-param overload; uses {@code this.model} as the
+	 * effective model version recorded in the result.
+	 */
 	AiSuggestionResult parseResponse(String responseBody, String suggestionType, String promptVersion)
 			throws ParseException {
+		return parseResponse(responseBody, suggestionType, promptVersion, this.model);
+	}
+
+	/**
+	 * Parses the OpenRouter response body and returns an
+	 * {@link AiSuggestionResult}.
+	 *
+	 * <p>
+	 * With {@code response_format=json_object}, the model content is expected to be
+	 * valid JSON directly — no markdown fence stripping needed.
+	 *
+	 * @param effectiveModel
+	 *            the model actually used for this request (may differ from
+	 *            {@code this.model} when a per-request override is active)
+	 * @throws ParseException
+	 *             if the response content cannot be parsed as valid JSON (caller
+	 *             should retry)
+	 *
+	 *             <p>
+	 *             Package-private for testing.
+	 */
+	AiSuggestionResult parseResponse(String responseBody, String suggestionType, String promptVersion,
+			String effectiveModel) throws ParseException {
 		JsonNode root;
 		try {
 			root = objectMapper.readTree(responseBody);
@@ -313,7 +347,7 @@ public class OpenRouterAiProvider implements AiProvider {
 			}
 		}
 
-		return new AiSuggestionResult(true, content, rationale, confidence, model, promptVersion);
+		return new AiSuggestionResult(true, content, rationale, confidence, effectiveModel, promptVersion);
 	}
 
 	// ── Prompt construction ──────────────────────────────────────────────

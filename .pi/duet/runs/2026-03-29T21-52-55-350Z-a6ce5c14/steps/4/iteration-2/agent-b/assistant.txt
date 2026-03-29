@@ -1,0 +1,34 @@
+Reviewed the step-4 diff in:
+
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiProvider.java`
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiSuggestionResult.java`
+- `backend/src/main/java/com/weeklycommit/ai/provider/OpenRouterAiProvider.java`
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiProviderRegistry.java`
+- `backend/src/test/java/com/weeklycommit/ai/provider/OpenRouterAiProviderTest.java`
+- `backend/src/test/java/com/weeklycommit/ai/provider/AiProviderRegistryTest.java`
+
+What I found:
+- Most of the step was implemented correctly.
+- I found one material issue in `AiProviderRegistry`: it was recording `llm-model` experiment assignments whenever `ExperimentService` was present, even if the experiment was disabled. That breaks the “default-off / unchanged unless enabled” requirement.
+
+What I changed:
+- `backend/src/main/java/com/weeklycommit/ai/provider/AiProviderRegistry.java`
+  - gated experiment resolution on `experimentService.isEnabled("llm-model")`
+- `backend/src/test/java/com/weeklycommit/ai/provider/AiProviderRegistryTest.java`
+  - updated existing experiment-aware tests to stub `isEnabled("llm-model")`
+  - added coverage for the disabled-experiment case to ensure no assignment is attached and no override is passed
+
+Checks:
+- `npm run check:static` ✅
+- `npm test` ✅
+
+Assessment:
+- After the fix, the step requirements are met and the default-off behavior is preserved.
+
+```observations
+- [low] frontend/src/components/myweek/PlanHistoryView.tsx: Existing test output still reports a missing React `key` warning.
+- [low] frontend/src/components/notifications/NotificationPanel.tsx: Existing test output still reports repeated React `act(...)` warnings.
+- [low] backend/src/test/java/com/weeklycommit/ai/controller/AiControllerTest.java: Backend test compilation emits Spring `@MockBean` deprecation warnings.
+```
+
+Verdict: changes_made

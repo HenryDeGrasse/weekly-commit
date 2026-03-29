@@ -1,9 +1,14 @@
 package com.weeklycommit.ai.provider;
 
+import com.weeklycommit.ai.experiment.ExperimentAssignment;
+import com.weeklycommit.ai.experiment.ExperimentService;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +36,9 @@ public class AiProviderRegistry {
 	private boolean aiEnabled;
 
 	private final List<AiProvider> providers;
+
+	@Autowired(required = false)
+	private ExperimentService experimentService;
 
 	public AiProviderRegistry(List<AiProvider> providers) {
 		this.providers = providers != null ? providers : List.of();
@@ -83,6 +91,58 @@ public class AiProviderRegistry {
 		}
 	}
 
+	/**
+	 * Experiment-aware variant of {@link #generateSuggestion(AiContext)}.
+	 *
+	 * <p>
+	 * When an {@link ExperimentService} is wired and the {@code llm-model}
+	 * experiment is enabled, the active variant's model value is passed to the
+	 * provider as a per-request override. The variant assignment is recorded in
+	 * {@link AiSuggestionResult#experimentAssignments()} for audit/observability.
+	 *
+	 * <p>
+	 * Falls back to the same graceful-degradation behaviour as the base overload.
+	 *
+	 * @param context
+	 *            the input context
+	 * @param userId
+	 *            caller identity used for experiment assignment (may be
+	 *            {@code null})
+	 * @return suggestion result, never {@code null}
+	 */
+	public AiSuggestionResult generateSuggestion(AiContext context, UUID userId) {
+		Optional<AiProvider> provider = getActiveProvider();
+		if (provider.isEmpty()) {
+			log.debug("No active AI provider; returning unavailable result for type={}", context.suggestionType());
+			return AiSuggestionResult.unavailable();
+		}
+
+		String modelOverride = null;
+		Map<String, String> assignments = Map.of();
+
+		if (experimentService != null && experimentService.isEnabled("llm-model")) {
+			String userKey = userId != null ? userId.toString() : "";
+			ExperimentAssignment assignment = experimentService.assign("llm-model", userKey);
+			assignments = Map.of("llm-model", assignment.variant());
+			if (assignment.isTreatment() && assignment.value() != null) {
+				modelOverride = assignment.value();
+				log.debug("LLM A/B: using treatment model '{}' for userId={}", modelOverride, userId);
+			}
+		}
+
+		try {
+			AiSuggestionResult base = provider.get().generateSuggestion(context, modelOverride);
+			if (!assignments.isEmpty()) {
+				return new AiSuggestionResult(base.available(), base.payload(), base.rationale(), base.confidence(),
+						base.modelVersion(), base.promptVersion(), assignments);
+			}
+			return base;
+		} catch (Exception ex) {
+			log.warn("AI provider threw exception for type={}: {}", context.suggestionType(), ex.getMessage());
+			return AiSuggestionResult.unavailable();
+		}
+	}
+
 	// Visible for testing
 	boolean isAiEnabledFlag() {
 		return aiEnabled;
@@ -90,5 +150,10 @@ public class AiProviderRegistry {
 
 	void setAiEnabled(boolean aiEnabled) {
 		this.aiEnabled = aiEnabled;
+	}
+
+	// Visible for testing
+	void setExperimentService(ExperimentService experimentService) {
+		this.experimentService = experimentService;
 	}
 }
