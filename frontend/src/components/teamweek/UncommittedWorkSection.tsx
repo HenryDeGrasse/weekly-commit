@@ -16,12 +16,17 @@ export interface UncommittedWorkSectionProps {
   readonly assignedTickets: UncommittedTicketSummary[];
   readonly unassignedTickets: UncommittedTicketSummary[];
   readonly onQuickAssign?: (ticketId: string, assigneeUserId: string) => Promise<void>;
+  /** userId → displayName map so the Assignee column shows names instead of UUIDs. */
+  readonly memberNames?: Readonly<Record<string, string>>;
 }
 
 const thCls = "px-3 py-1.5 text-left text-[0.65rem] font-semibold uppercase tracking-wider text-muted border-b border-border";
 const tdCls = "px-3 py-2 text-sm border-b border-border";
 
-function TicketRow({ ticket, testIdPrefix }: { ticket: UncommittedTicketSummary; testIdPrefix: string }) {
+function TicketRow({ ticket, testIdPrefix, memberNames }: { ticket: UncommittedTicketSummary; testIdPrefix: string; memberNames?: Readonly<Record<string, string>> }) {
+  const assigneeName = ticket.assigneeUserId
+    ? (memberNames?.[ticket.assigneeUserId] ?? ticket.assigneeUserId)
+    : null;
   return (
     <tr data-testid={`${testIdPrefix}-ticket-${ticket.id}`}>
       <td className={tdCls}><span className="font-mono text-xs font-bold text-primary">{ticket.key}</span></td>
@@ -31,7 +36,7 @@ function TicketRow({ ticket, testIdPrefix }: { ticket: UncommittedTicketSummary;
           <Badge variant="primary" className="ml-1.5 text-[0.65rem]">{ticket.estimatePoints}pt</Badge>
         )}
       </td>
-      <td className={cn(tdCls, "text-xs text-muted")}>{ticket.assigneeUserId ?? <em>Unassigned</em>}</td>
+      <td className={cn(tdCls, "text-xs text-muted")}>{assigneeName ?? <em>Unassigned</em>}</td>
       <td className={tdCls}><Badge variant={STATUS_VARIANT[ticket.status]}>{ticket.status}</Badge></td>
       <td className={cn(tdCls, "text-xs text-muted")}>{ticket.targetWeekStartDate ?? "—"}</td>
     </tr>
@@ -89,7 +94,7 @@ function TableHeader({ showAssignCol }: { showAssignCol: boolean }) {
   );
 }
 
-export function UncommittedWorkSection({ assignedTickets, unassignedTickets, onQuickAssign }: UncommittedWorkSectionProps) {
+export function UncommittedWorkSection({ assignedTickets, unassignedTickets, onQuickAssign, memberNames }: UncommittedWorkSectionProps) {
   const isEmpty = assignedTickets.length === 0 && unassignedTickets.length === 0;
 
   if (isEmpty) {
@@ -107,7 +112,7 @@ export function UncommittedWorkSection({ assignedTickets, unassignedTickets, onQ
       <div className="flex flex-col gap-4">
         {/* Assigned but no commit */}
         <div data-testid="assigned-uncommitted-section" className="rounded-default border border-border bg-surface overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2.5 bg-neutral-100 border-b border-border">
+          <div className="flex items-center justify-between px-3 py-2.5 bg-foreground/8 border-b border-border">
             <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
               Assigned — no commit planned
@@ -119,14 +124,14 @@ export function UncommittedWorkSection({ assignedTickets, unassignedTickets, onQ
           ) : (
             <table data-testid="assigned-uncommitted-table" className="w-full border-collapse" aria-label="Assigned tickets without commits">
               <thead><TableHeader showAssignCol={false} /></thead>
-              <tbody>{assignedTickets.map((t) => <TicketRow key={t.id} ticket={t} testIdPrefix="assigned" />)}</tbody>
+              <tbody>{assignedTickets.map((t) => <TicketRow key={t.id} ticket={t} testIdPrefix="assigned" {...(memberNames ? { memberNames } : {})} />)}</tbody>
             </table>
           )}
         </div>
 
         {/* Unassigned */}
         <div data-testid="unassigned-section" className="rounded-default border border-border bg-surface overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2.5 bg-neutral-200 border-b border-border">
+          <div className="flex items-center justify-between px-3 py-2.5 bg-foreground/12 border-b border-border">
             <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
               Unassigned — targeted this week

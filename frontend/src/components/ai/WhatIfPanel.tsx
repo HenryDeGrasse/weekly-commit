@@ -148,7 +148,7 @@ export function WhatIfPanel({ planId, currentCommits }: WhatIfPanelProps) {
         data-testid="whatif-expand-btn"
       >
         <Sparkles className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-        🔮 What-If Planner
+        What-If Planner
       </Button>
     );
   }

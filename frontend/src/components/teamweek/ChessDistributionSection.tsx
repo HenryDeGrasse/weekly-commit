@@ -29,7 +29,7 @@ export function ChessDistributionSection({ chessDistribution }: ChessDistributio
       <h3 id="chess-dist-heading" className="m-0 mb-3 text-sm font-bold">Chess Distribution</h3>
       <div className="rounded-default border border-border bg-surface p-4 flex flex-col gap-3.5">
         {criticalPct > 0 && (
-          <div data-testid="critical-work-summary" className={cn("flex gap-2 items-center px-3 py-2 rounded-default text-xs font-semibold", criticalPct >= 50 ? "bg-neutral-100 text-foreground" : "bg-neutral-50 text-muted")}>
+          <div data-testid="critical-work-summary" className={cn("flex gap-2 items-center px-3 py-2 rounded-default text-xs font-semibold", criticalPct >= 50 ? "bg-foreground/8 text-foreground" : "bg-foreground/5 text-muted")}>
             <span>♔♕ Critical work (King + Queen):</span>
             <span data-testid="critical-work-pct">{criticalPct}% of planned points</span>
           </div>
@@ -63,7 +63,7 @@ export function ChessDistributionSection({ chessDistribution }: ChessDistributio
               const isCritical = CRITICAL_PIECES.has(e.chessPiece);
               return (
                 <tr key={e.chessPiece} data-testid={`chess-row-${e.chessPiece.toLowerCase()}`}
-                  className={cn("border-b border-border", isCritical && e.totalPoints > 0 && "bg-neutral-50", e.commitCount === 0 && "opacity-40")}>
+                  className={cn("border-b border-border", isCritical && e.totalPoints > 0 && "bg-foreground/5", e.commitCount === 0 && "opacity-40")}>
                   <td className="px-2 py-1.5">
                     <span className="flex items-center gap-1.5">
                       <span className="inline-block h-2.5 w-2.5 rounded-[2px] shrink-0" style={{ background: PIECE_COLORS[e.chessPiece] }} />

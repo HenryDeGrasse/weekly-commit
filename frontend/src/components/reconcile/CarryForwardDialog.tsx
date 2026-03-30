@@ -25,7 +25,10 @@ function getWeekStart(offsetWeeks = 0): string {
   const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(now);
   monday.setDate(now.getDate() + daysToMonday + offsetWeeks * 7);
-  return monday.toISOString().slice(0, 10);
+  const yyyy = monday.getFullYear();
+  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function formatWeekLabel(isoDate: string): string {

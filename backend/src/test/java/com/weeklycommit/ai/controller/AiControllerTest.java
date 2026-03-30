@@ -82,6 +82,12 @@ class AiControllerTest {
 	@MockBean
 	private PlanRecommendationService planRecommendationService;
 
+	@MockBean
+	private com.weeklycommit.ai.rag.InsightGenerationService insightGenerationService;
+
+	@MockBean
+	private com.weeklycommit.domain.repository.WeeklyPlanRepository planRepository;
+
 	@Test
 	void getRiskSignals_requiresActorHeader() throws Exception {
 		mockMvc.perform(get("/api/plans/" + UUID.randomUUID() + "/risk-signals")).andExpect(status().isBadRequest());

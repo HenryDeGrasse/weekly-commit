@@ -64,8 +64,8 @@ ai:
     voyage-index-name: ${PINECONE_VOYAGE_INDEX_NAME:weekly-commit-voyage}
     voyage-dimensions: ${PINECONE_VOYAGE_DIMENSIONS:1024}
   embedding:
-    model: openai/text-embedding-3-small
-    dimensions: 1536
+    model: voyage-4
+    dimensions: 1024
   experiments:
     experiments:
       embedding-model:

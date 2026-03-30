@@ -5,20 +5,49 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Navigation } from "../components/Navigation.js";
+import { MockHostProvider, mockHostBridge } from "../host/MockHostProvider.js";
+import type { HostBridge } from "../host/HostProvider.js";
 
-function renderNav(props: { collapsed?: boolean } = {}) {
+/** Default mock bridge has managerReviewEnabled + rcdoAdminEnabled = true (manager). */
+function renderNav(props: { collapsed?: boolean; bridge?: HostBridge } = {}) {
+  const bridge = props.bridge ?? mockHostBridge;
   return render(
     <MemoryRouter initialEntries={["/weekly/my-week"]}>
-      <Navigation {...props} />
+      <MockHostProvider bridge={bridge}>
+        {props.collapsed !== undefined ? <Navigation collapsed={props.collapsed} /> : <Navigation />}
+      </MockHostProvider>
     </MemoryRouter>,
   );
 }
 
+/** Build a bridge with IC flags (managerReviewEnabled=false, rcdoAdminEnabled=false). */
+function buildIcBridge(): HostBridge {
+  return {
+    ...mockHostBridge,
+    context: {
+      ...mockHostBridge.context,
+      featureFlags: {
+        ...mockHostBridge.context.featureFlags,
+        managerReviewEnabled: false,
+        rcdoAdminEnabled: false,
+      },
+    },
+  };
+}
+
 describe("Navigation", () => {
-  it("renders 7 navigation links", () => {
+  it("renders 7 navigation links for managers", () => {
     renderNav();
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(7);
+  });
+
+  it("renders 5 navigation links for ICs (hides Team Week and Admin)", () => {
+    renderNav({ bridge: buildIcBridge() });
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(5);
+    expect(screen.queryByText("Team Week")).not.toBeInTheDocument();
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
   });
 
   it("renders correct nav labels", () => {

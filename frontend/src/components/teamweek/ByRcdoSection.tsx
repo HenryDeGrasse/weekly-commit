@@ -16,8 +16,8 @@ interface PointsMap { [rcdoNodeId: string]: number; }
 
 const TYPE_BADGE: Record<string, string> = {
   RALLY_CRY: "bg-foreground text-background",
-  DEFINING_OBJECTIVE: "bg-neutral-400 text-background",
-  OUTCOME: "bg-neutral-200 text-neutral-700",
+  DEFINING_OBJECTIVE: "bg-foreground/40 text-background",
+  OUTCOME: "bg-foreground/10 text-foreground",
 };
 const TYPE_ABBR: Record<string, string> = { RALLY_CRY: "RC", DEFINING_OBJECTIVE: "DO", OUTCOME: "OUT" };
 
@@ -39,7 +39,7 @@ function RcdoRow({ node, rollupMap, achievedPointsMap, depth }: { node: RcdoTree
       <tr data-testid={`rcdo-row-${node.id}`} className={cn("border-b border-border", node.status === "ARCHIVED" && "opacity-50")}>
         <td className="px-3 py-2" style={{ paddingLeft: `${0.75 + depth * 1.25}rem` }}>
           <div className="flex items-center gap-2">
-            <span className={cn("text-[0.6rem] font-bold px-1.5 py-px rounded-full uppercase tracking-wider shrink-0", TYPE_BADGE[node.nodeType] ?? "bg-neutral-100 text-neutral-600")}>
+            <span className={cn("text-[0.6rem] font-bold px-1.5 py-px rounded-full uppercase tracking-wider shrink-0", TYPE_BADGE[node.nodeType] ?? "bg-foreground/10 text-foreground")}>
               {TYPE_ABBR[node.nodeType] ?? node.nodeType}
             </span>
             <span className={cn("text-sm", depth === 0 ? "font-bold" : depth === 1 ? "font-semibold" : "font-normal", !hasCoverage && totalCommits === 0 && "text-muted")}>
@@ -63,8 +63,8 @@ function RcdoRow({ node, rollupMap, achievedPointsMap, depth }: { node: RcdoTree
         </td>
         <td className="px-3 py-2 min-w-[140px]">
           <div data-testid={`rcdo-progress-${node.id}`} aria-label={`${node.title} planned versus achieved`} className="flex flex-col gap-1">
-            <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
-              <div className={cn("h-full transition-[width] duration-200", achievedPoints > 0 ? "bg-foreground" : "bg-neutral-300")} style={{ width: `${achievedPct}%` }} />
+            <div className="h-2 rounded-full bg-foreground/10 overflow-hidden">
+              <div className={cn("h-full transition-[width] duration-200", achievedPoints > 0 ? "bg-foreground" : "bg-foreground/20")} style={{ width: `${achievedPct}%` }} />
             </div>
             <span className="text-[0.65rem] text-muted text-right">{totalPoints > 0 ? `${Math.round(achievedPct)}%` : "—"}</span>
           </div>

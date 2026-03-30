@@ -69,13 +69,15 @@ class EmbeddingServiceTest {
 
 	@Test
 	void isAvailable_blankKey_returnsFalse() {
-		EmbeddingService noKey = new EmbeddingService("", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL, objectMapper, httpClient);
+		EmbeddingService noKey = new EmbeddingService("", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL,
+				objectMapper, httpClient);
 		assertThat(noKey.isAvailable()).isFalse();
 	}
 
 	@Test
 	void isAvailable_whitespaceKey_returnsFalse() {
-		EmbeddingService wsKey = new EmbeddingService("   ", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL, objectMapper, httpClient);
+		EmbeddingService wsKey = new EmbeddingService("   ", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL,
+				objectMapper, httpClient);
 		assertThat(wsKey.isAvailable()).isFalse();
 	}
 
@@ -83,7 +85,8 @@ class EmbeddingServiceTest {
 
 	@Test
 	void embed_blankApiKey_returnsEmptyArrayWithoutHttpCall() {
-		EmbeddingService noKey = new EmbeddingService("", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL, objectMapper, httpClient);
+		EmbeddingService noKey = new EmbeddingService("", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL,
+				objectMapper, httpClient);
 
 		float[] result = noKey.embed("some text");
 
@@ -415,8 +418,7 @@ class EmbeddingServiceTest {
 
 		service.embed("test input", "voyage-4");
 
-		assertThat(captor.getValue().headers().firstValue("Authorization"))
-				.hasValue("Bearer " + VOYAGE_API_KEY);
+		assertThat(captor.getValue().headers().firstValue("Authorization")).hasValue("Bearer " + VOYAGE_API_KEY);
 	}
 
 	@Test
@@ -434,8 +436,8 @@ class EmbeddingServiceTest {
 
 	@Test
 	void embed_voyageModel_withBlankVoyageKey_returnsEmptyWithoutHttpCall() {
-		EmbeddingService noVoyage = new EmbeddingService(API_KEY, BASE_URL, MODEL, "", VOYAGE_BASE_URL,
-				objectMapper, httpClient);
+		EmbeddingService noVoyage = new EmbeddingService(API_KEY, BASE_URL, MODEL, "", VOYAGE_BASE_URL, objectMapper,
+				httpClient);
 
 		float[] result = noVoyage.embed("test", "voyage-4");
 
@@ -450,8 +452,8 @@ class EmbeddingServiceTest {
 
 	@Test
 	void isVoyageAvailable_withBlankVoyageKey_returnsFalse() {
-		EmbeddingService noVoyage = new EmbeddingService(API_KEY, BASE_URL, MODEL, "", VOYAGE_BASE_URL,
-				objectMapper, httpClient);
+		EmbeddingService noVoyage = new EmbeddingService(API_KEY, BASE_URL, MODEL, "", VOYAGE_BASE_URL, objectMapper,
+				httpClient);
 		assertThat(noVoyage.isVoyageAvailable()).isFalse();
 	}
 

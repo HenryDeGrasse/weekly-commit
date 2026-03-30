@@ -40,6 +40,7 @@ import com.weeklycommit.ai.service.RcdoSuggestService;
 import com.weeklycommit.ai.service.ReconcileAssistService;
 import com.weeklycommit.ai.service.RiskDetectionService;
 import com.weeklycommit.ai.service.WhatIfService;
+import com.weeklycommit.ai.rag.InsightGenerationService;
 import com.weeklycommit.domain.entity.AiSuggestion;
 import com.weeklycommit.domain.repository.AiSuggestionRepository;
 import jakarta.validation.Valid;
@@ -89,6 +90,8 @@ public class AiController {
 	private final WhatIfService whatIfService;
 	private final CalibrationService calibrationService;
 	private final PlanRecommendationService planRecommendationService;
+	private final InsightGenerationService insightGenerationService;
+	private final com.weeklycommit.domain.repository.WeeklyPlanRepository planRepository;
 	private final ObjectMapper objectMapper;
 
 	public AiController(CommitDraftAssistService draftAssistService, CommitLintService lintService,
@@ -98,7 +101,8 @@ public class AiController {
 			SemanticIndexService semanticIndexService, SemanticQueryService semanticQueryService,
 			AiSuggestionRepository suggestionRepo, StructuredEvidenceService evidenceService,
 			WhatIfService whatIfService, CalibrationService calibrationService,
-			PlanRecommendationService planRecommendationService, ObjectMapper objectMapper) {
+			PlanRecommendationService planRecommendationService, InsightGenerationService insightGenerationService,
+			com.weeklycommit.domain.repository.WeeklyPlanRepository planRepository, ObjectMapper objectMapper) {
 		this.draftAssistService = draftAssistService;
 		this.lintService = lintService;
 		this.rcdoSuggestService = rcdoSuggestService;
@@ -114,6 +118,8 @@ public class AiController {
 		this.whatIfService = whatIfService;
 		this.calibrationService = calibrationService;
 		this.planRecommendationService = planRecommendationService;
+		this.insightGenerationService = insightGenerationService;
+		this.planRepository = planRepository;
 		this.objectMapper = objectMapper;
 	}
 
@@ -322,6 +328,51 @@ public class AiController {
 						? "Indexing " + count + " plans in background. Check server logs for completion."
 						: "Pinecone not configured.");
 		return ResponseEntity.ok(result);
+	}
+
+	// -------------------------------------------------------------------------
+	// Admin: generate insights for all locked/reconciled plans
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Triggers insight generation for all plans that lack personal insights. Useful
+	 * after seeding data or when Pinecone was previously unavailable.
+	 */
+	@PostMapping("/api/admin/ai/generate-insights")
+	public ResponseEntity<java.util.Map<String, Object>> triggerInsightGeneration() {
+		log.info("Admin insight generation triggered — backfilling all plans without insights");
+		int generated = 0;
+		int skipped = 0;
+		try {
+			for (var plan : planRepository.findAll()) {
+				if (plan.getState() == com.weeklycommit.domain.enums.PlanState.LOCKED
+						|| plan.getState() == com.weeklycommit.domain.enums.PlanState.RECONCILED) {
+					var existing = suggestionRepo.findByPlanIdAndSuggestionType(plan.getId(),
+							AiContext.TYPE_PERSONAL_INSIGHT);
+					if (existing.isEmpty()) {
+						try {
+							insightGenerationService.generatePersonalInsights(plan.getId());
+							generated++;
+						} catch (Exception ex) {
+							log.warn("Insight generation failed for plan {}: {}", plan.getId(), ex.getMessage());
+						}
+					} else {
+						skipped++;
+					}
+				}
+			}
+			java.util.LinkedHashMap<String, Object> result = new java.util.LinkedHashMap<>();
+			result.put("status", "completed");
+			result.put("generated", generated);
+			result.put("skippedAlreadyExist", skipped);
+			return ResponseEntity.ok(result);
+		} catch (Exception ex) {
+			log.warn("Admin insight generation failed: {}", ex.getMessage());
+			java.util.LinkedHashMap<String, Object> result = new java.util.LinkedHashMap<>();
+			result.put("status", "failed");
+			result.put("message", ex.getMessage());
+			return ResponseEntity.status(500).body(result);
+		}
 	}
 
 	// -------------------------------------------------------------------------

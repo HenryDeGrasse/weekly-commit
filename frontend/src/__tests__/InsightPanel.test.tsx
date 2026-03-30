@@ -291,7 +291,7 @@ describe("InsightPanel", () => {
     );
   });
 
-  it("shows empty state when no insights returned (personal)", () => {
+  it("renders nothing when no insights returned (personal)", () => {
     vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
       data: { aiAvailable: true, insights: [] },
       loading: false,
@@ -301,7 +301,7 @@ describe("InsightPanel", () => {
 
     renderPersonal();
 
-    expect(screen.getByTestId("insight-panel-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("insight-panel-empty")).not.toBeInTheDocument();
   });
 
   // ── AI unavailable ─────────────────────────────────────────────────────
@@ -321,7 +321,7 @@ describe("InsightPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows unavailable message when aiAvailable=false (personal)", () => {
+  it("renders nothing when aiAvailable=false (personal)", () => {
     vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
       data: { aiAvailable: false, insights: [] },
       loading: false,
@@ -332,8 +332,8 @@ describe("InsightPanel", () => {
     renderPersonal();
 
     expect(
-      screen.getByTestId("insight-panel-unavailable"),
-    ).toBeInTheDocument();
+      screen.queryByTestId("insight-panel-unavailable"),
+    ).not.toBeInTheDocument();
   });
 
   it("does not render cards when AI unavailable", () => {

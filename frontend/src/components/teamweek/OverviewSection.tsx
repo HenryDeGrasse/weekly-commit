@@ -49,8 +49,8 @@ function PointsCard({ plannedPoints, achievedPoints }: { plannedPoints: number; 
 
 const SEVERITY_BADGE: Record<ExceptionSeverity, string> = {
   HIGH: "bg-foreground text-background",
-  MEDIUM: "bg-neutral-400 text-background",
-  LOW: "bg-neutral-200 text-neutral-700",
+  MEDIUM: "bg-foreground/50 text-background",
+  LOW: "bg-foreground/15 text-foreground",
 };
 
 function ExceptionsCard({ exceptions }: { exceptions: ExceptionResponse[] }) {

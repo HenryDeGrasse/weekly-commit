@@ -187,7 +187,7 @@ export function RcdoNodeForm(props: RcdoNodeFormProps) {
       </div>
 
       {submitError && (
-        <div role="alert" className="mb-4 rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-foreground font-semibold">{submitError}</div>
+        <div role="alert" className="mb-4 rounded-default border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-foreground font-semibold">{submitError}</div>
       )}
 
       <div className="flex gap-2 justify-end">

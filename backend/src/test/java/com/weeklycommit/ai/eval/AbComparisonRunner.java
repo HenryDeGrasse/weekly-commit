@@ -116,10 +116,10 @@ class AbComparisonRunner {
 		controlProvider = new OpenRouterAiProvider(apiKey, controlModel, MAX_TOKENS, OPENROUTER_BASE_URL, objectMapper);
 		treatmentProvider = new OpenRouterAiProvider(apiKey, treatmentModel, MAX_TOKENS, OPENROUTER_BASE_URL,
 				objectMapper);
-		controlEmbeddingService = new EmbeddingService(apiKey, OPENROUTER_BASE_URL, controlEmbeddingModel,
-				"", "https://api.voyageai.com/v1", objectMapper);
-		treatmentEmbeddingService = new EmbeddingService(apiKey, OPENROUTER_BASE_URL, treatmentEmbeddingModel,
-				"", "https://api.voyageai.com/v1", objectMapper);
+		controlEmbeddingService = new EmbeddingService(apiKey, OPENROUTER_BASE_URL, controlEmbeddingModel, "",
+				"https://api.voyageai.com/v1", objectMapper);
+		treatmentEmbeddingService = new EmbeddingService(apiKey, OPENROUTER_BASE_URL, treatmentEmbeddingModel, "",
+				"https://api.voyageai.com/v1", objectMapper);
 
 		providerAvailable = true;
 		log.info("A/B Comparison Runner initialised:");

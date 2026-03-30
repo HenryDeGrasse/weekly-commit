@@ -1,5 +1,5 @@
 /**
- * AiCommitComposer — freeform "describe → structure" commit creation modal.
+ * CommitComposer — freeform "describe → structure" commit creation modal.
  *
  * Phase 1: User describes their work in a textarea.
  * Phase 2: AI structures it — title, chess piece, RCDO link, estimate, success criteria.
@@ -13,9 +13,12 @@ import { Button } from "../ui/Button.js";
 import { cn } from "../../lib/utils.js";
 import { useAiApi, useAiStatus } from "../../api/aiHooks.js";
 import { useHostBridge } from "../../host/HostProvider.js";
+import { useRcdoTree } from "../../api/rcdoHooks.js";
+import { RcdoTreeView } from "../rcdo/RcdoTreeView.js";
 import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
 import { AiSuggestedBadge } from "./AiSuggestedBadge.js";
 import type { RcdoSuggestResponse } from "../../api/aiApi.js";
+import type { RcdoTreeNode } from "../../api/rcdoTypes.js";
 import type {
   CreateCommitPayload,
   CommitResponse,
@@ -38,6 +41,17 @@ const VALID_POINTS = [1, 2, 3, 5, 8] as const;
 const MAX_KING_PER_WEEK = 1;
 const MAX_QUEEN_PER_WEEK = 2;
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function findNodeById(nodes: RcdoTreeNode[], id: string): RcdoTreeNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const found = findNodeById(node.children, id);
+    if (found) return found;
+  }
+  return null;
+}
+
 // ── Internal draft state ──────────────────────────────────────────────────────
 
 interface AiDraft {
@@ -51,6 +65,8 @@ interface AiDraft {
   rcdoRationale: string;
   rcdoConfidence?: number | undefined;
   successCriteria: string;
+  /** Whether the RCDO was AI-suggested (vs manually picked). */
+  rcdoAiSuggested: boolean;
   /** Suggestion id for draft-assist feedback. */
   draftSuggestionId?: string | undefined;
   /** Suggestion id for RCDO-suggest feedback. */
@@ -63,7 +79,7 @@ export interface AiCommitComposerProps {
   planId: string;
   existingCommits: CommitResponse[];
   /**
-   * Called when the user accepts the AI-structured draft and wants to create
+   * Called when the user accepts the structured draft and wants to create
    * the commit.
    */
   onSubmit: (payload: CreateCommitPayload) => Promise<void>;
@@ -88,14 +104,17 @@ export function AiCommitComposer({
   const bridge = useHostBridge();
   const userId = bridge.context.authenticatedUser.id;
   const { data: aiStatus } = useAiStatus();
+  const { data: rcdoTree } = useRcdoTree();
 
   const [freeformText, setFreeformText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<AiDraft | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showRcdoPicker, setShowRcdoPicker] = useState(false);
 
   const isAvailable = aiStatus?.available ?? false;
+  const nodes = rcdoTree ?? [];
 
   const existingKings = existingCommits.filter((c) => c.chessPiece === "KING").length;
   const existingQueens = existingCommits.filter((c) => c.chessPiece === "QUEEN").length;
@@ -108,6 +127,7 @@ export function AiCommitComposer({
     setLoading(true);
     setError(null);
     setDraft(null);
+    setShowRcdoPicker(false);
 
     try {
       // Call both APIs in parallel; RCDO suggest failure is non-fatal.
@@ -128,6 +148,11 @@ export function AiCommitComposer({
         return;
       }
 
+      const rcdoSuggested =
+        rcdoResponse.aiAvailable &&
+        rcdoResponse.suggestionAvailable &&
+        !!rcdoResponse.suggestedRcdoNodeId;
+
       const newDraft: AiDraft = {
         title: draftResponse.suggestedTitle ?? text,
         description: draftResponse.suggestedDescription ?? "",
@@ -137,26 +162,11 @@ export function AiCommitComposer({
           draftResponse.suggestedEstimatePoints != null
             ? String(draftResponse.suggestedEstimatePoints)
             : "",
-        rcdoNodeId:
-          rcdoResponse.aiAvailable &&
-          rcdoResponse.suggestionAvailable &&
-          rcdoResponse.suggestedRcdoNodeId
-            ? rcdoResponse.suggestedRcdoNodeId
-            : "",
-        rcdoTitle:
-          rcdoResponse.aiAvailable &&
-          rcdoResponse.suggestionAvailable &&
-          rcdoResponse.rcdoTitle
-            ? rcdoResponse.rcdoTitle
-            : "",
-        rcdoRationale:
-          rcdoResponse.aiAvailable && rcdoResponse.suggestionAvailable
-            ? (rcdoResponse.rationale ?? "")
-            : "",
-        rcdoConfidence:
-          rcdoResponse.aiAvailable && rcdoResponse.suggestionAvailable
-            ? rcdoResponse.confidence
-            : undefined,
+        rcdoNodeId: rcdoSuggested ? (rcdoResponse.suggestedRcdoNodeId ?? "") : "",
+        rcdoTitle: rcdoSuggested ? (rcdoResponse.rcdoTitle ?? "") : "",
+        rcdoRationale: rcdoSuggested ? (rcdoResponse.rationale ?? "") : "",
+        rcdoConfidence: rcdoSuggested ? rcdoResponse.confidence : undefined,
+        rcdoAiSuggested: rcdoSuggested,
         successCriteria: draftResponse.suggestedSuccessCriteria ?? "",
         draftSuggestionId: draftResponse.suggestionId,
         rcdoSuggestionId:
@@ -223,6 +233,23 @@ export function AiCommitComposer({
     onSwitchToManual(buildPreFilled());
   }, [buildPreFilled, onSwitchToManual]);
 
+  // ── RCDO selection handlers ────────────────────────────────────────────────
+
+  const handleSelectRcdo = useCallback((id: string) => {
+    const node = findNodeById(nodes, id);
+    setDraft((d) =>
+      d ? { ...d, rcdoNodeId: id, rcdoTitle: node?.title ?? "", rcdoRationale: "", rcdoAiSuggested: false } : d,
+    );
+    setShowRcdoPicker(false);
+  }, [nodes]);
+
+  const handleClearRcdo = useCallback(() => {
+    setDraft((d) =>
+      d ? { ...d, rcdoNodeId: "", rcdoTitle: "", rcdoRationale: "", rcdoAiSuggested: false } : d,
+    );
+    setShowRcdoPicker(false);
+  }, []);
+
   // ── Chess piece limit warnings ─────────────────────────────────────────────
 
   const chessPieceWarning =
@@ -240,7 +267,7 @@ export function AiCommitComposer({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="AI Commit Composer"
+      aria-label="Commit Composer"
       data-testid="ai-commit-composer"
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/35 backdrop-blur-[2px]"
     >
@@ -250,7 +277,7 @@ export function AiCommitComposer({
         <div className="flex items-center justify-between mb-5">
           <h3 className="m-0 text-lg font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
-            AI Commit Composer
+            Commit Composer
           </h3>
           <Button
             variant="ghost"
@@ -477,55 +504,81 @@ export function AiCommitComposer({
                 </div>
               )}
 
-              {/* RCDO Link */}
-              {draft.rcdoNodeId && (
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-semibold text-muted uppercase tracking-wider m-0">
-                    RCDO Link
-                  </p>
+              {/* RCDO Link — always shown; AI suggestion pre-fills it, tree picker as fallback */}
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-semibold text-muted uppercase tracking-wider m-0">
+                  RCDO Link
+                </p>
+
+                {draft.rcdoNodeId ? (
+                  /* Selected / AI-suggested state */
                   <div className="flex items-center gap-2 px-3 py-2 rounded-default border border-foreground/20 bg-foreground/5 text-sm flex-wrap">
-                    <Check
-                      className="h-3.5 w-3.5 text-foreground shrink-0"
-                      aria-hidden="true"
-                    />
+                    <Check className="h-3.5 w-3.5 text-foreground shrink-0" aria-hidden="true" />
                     <span className="flex-1" data-testid="ai-composer-rcdo-title">
                       {draft.rcdoTitle || draft.rcdoNodeId.slice(0, 8) + "…"}
                     </span>
-                    {draft.rcdoRationale && (
-                      <span className="text-[0.65rem] text-muted italic">
-                        {draft.rcdoRationale}
-                      </span>
-                    )}
-                    {draft.rcdoConfidence != null && (
-                      <span
-                        className="text-[0.65rem] text-muted"
-                        data-testid="ai-composer-rcdo-confidence"
-                      >
-                        {Math.round(draft.rcdoConfidence * 100)}% confidence
-                      </span>
-                    )}
-                    <AiSuggestedBadge />
-                    {draft.rcdoSuggestionId && (
-                      <AiFeedbackButtons suggestionId={draft.rcdoSuggestionId} />
+                    {draft.rcdoAiSuggested && (
+                      <>
+                        {draft.rcdoRationale && (
+                          <span className="text-[0.65rem] text-muted italic">
+                            {draft.rcdoRationale}
+                          </span>
+                        )}
+                        {draft.rcdoConfidence != null && (
+                          <span
+                            className="text-[0.65rem] text-muted"
+                            data-testid="ai-composer-rcdo-confidence"
+                          >
+                            {Math.round(draft.rcdoConfidence * 100)}% confidence
+                          </span>
+                        )}
+                        <AiSuggestedBadge />
+                        {draft.rcdoSuggestionId && (
+                          <AiFeedbackButtons suggestionId={draft.rcdoSuggestionId} />
+                        )}
+                      </>
                     )}
                     <Button
                       variant="ghost"
                       size="icon"
                       type="button"
-                      onClick={() =>
-                        setDraft((d) =>
-                          d ? { ...d, rcdoNodeId: "", rcdoTitle: "", rcdoRationale: "" } : d,
-                        )
-                      }
-                      aria-label="Clear RCDO suggestion"
+                      onClick={handleClearRcdo}
+                      aria-label="Clear RCDO"
                       className="h-6 w-6 text-muted shrink-0"
                       data-testid="ai-composer-clear-rcdo"
                     >
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
-                </div>
-              )}
+                ) : (
+                  /* No selection yet — show picker toggle */
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    onClick={() => setShowRcdoPicker((v) => !v)}
+                    data-testid="ai-composer-rcdo-picker-toggle"
+                    aria-expanded={showRcdoPicker}
+                  >
+                    {showRcdoPicker ? "Close RCDO picker" : "Browse RCDO nodes"}
+                  </Button>
+                )}
+
+                {showRcdoPicker && nodes.length > 0 && (
+                  <div
+                    data-testid="ai-composer-rcdo-picker"
+                    className="mt-1 rounded-default border border-border p-3 max-h-[220px] overflow-y-auto"
+                  >
+                    <RcdoTreeView
+                      nodes={nodes}
+                      selectedId={draft.rcdoNodeId || null}
+                      onSelect={handleSelectRcdo}
+                      statusFilter="active-only"
+                      searchQuery=""
+                    />
+                  </div>
+                )}
+              </div>
 
               {/* Success Criteria */}
               {draft.successCriteria && (
@@ -596,7 +649,7 @@ export function AiCommitComposer({
               </button>
               <button
                 type="button"
-                onClick={() => setDraft(null)}
+                onClick={() => { setDraft(null); setShowRcdoPicker(false); }}
                 className="text-xs text-muted hover:text-foreground cursor-pointer bg-transparent border-none p-0 ml-auto"
                 data-testid="ai-composer-regenerate-btn"
                 aria-label="Regenerate"

@@ -5,6 +5,7 @@
 import { useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { useSelectedWeek } from "../lib/WeekContext.js";
 import { Button } from "../components/ui/Button.js";
 import { cn } from "../lib/utils.js";
 import { useHostBridge } from "../host/HostProvider.js";
@@ -33,7 +34,11 @@ function getWeekStartDate(offsetWeeks = 0): string {
   const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(now);
   monday.setDate(now.getDate() + daysToMonday + offsetWeeks * 7);
-  return monday.toISOString().slice(0, 10);
+  // Use local date parts — toISOString() converts to UTC and can shift the day.
+  const yyyy = monday.getFullYear();
+  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function formatWeekLabel(isoDate: string): string {
@@ -60,8 +65,8 @@ export default function TeamWeek() {
 
   const aiAssistanceEnabled = bridge.context.featureFlags.aiAssistanceEnabled;
 
-  const [weekOffset, setWeekOffset] = useState(0);
-  const weekStartDate = getWeekStartDate(weekOffset);
+  const { selectedWeek: weekStartDate, setSelectedWeek } = useSelectedWeek();
+
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [insightsExpanded, setInsightsExpanded] = useState(false);
   const [managerSummaryPreview, setManagerSummaryPreview] = useState<string | null>(null);
@@ -107,15 +112,15 @@ export default function TeamWeek() {
 
       {/* Week selector */}
       <div data-testid="team-week-selector" className="flex items-center gap-2 flex-wrap">
-        <Button variant="secondary" size="sm" onClick={() => setWeekOffset((o) => o - 1)} aria-label="Previous week" data-testid="team-prev-week-btn">
+        <Button variant="secondary" size="sm" onClick={() => { const d = new Date(weekStartDate + "T00:00:00"); d.setDate(d.getDate() - 7); setSelectedWeek(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`); }} aria-label="Previous week" data-testid="team-prev-week-btn">
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span data-testid="team-week-label" className="font-semibold text-sm min-w-[14rem] text-center">{formatWeekLabel(weekStartDate)}</span>
-        <Button variant="secondary" size="sm" onClick={() => setWeekOffset((o) => o + 1)} aria-label="Next week" data-testid="team-next-week-btn">
+        <Button variant="secondary" size="sm" onClick={() => { const d = new Date(weekStartDate + "T00:00:00"); d.setDate(d.getDate() + 7); setSelectedWeek(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`); }} aria-label="Next week" data-testid="team-next-week-btn">
           <ChevronRight className="h-4 w-4" />
         </Button>
-        {weekOffset !== 0 && (
-          <Button variant="secondary" size="sm" onClick={() => setWeekOffset(0)} data-testid="team-current-week-btn">Today</Button>
+        {weekStartDate !== getWeekStartDate(0) && (
+          <Button variant="secondary" size="sm" onClick={() => setSelectedWeek(getWeekStartDate(0))} data-testid="team-current-week-btn">Today</Button>
         )}
       </div>
 
@@ -224,7 +229,7 @@ export default function TeamWeek() {
             {activeTab === "by-person" && <ByPersonSection memberViews={teamWeekData.memberViews} complianceSummary={teamWeekData.complianceSummary} />}
             {activeTab === "by-rcdo" && <ByRcdoSection rcdoRollup={teamWeekData.rcdoRollup} rcdoTree={rcdoTree ?? []} memberViews={teamWeekData.memberViews} />}
             {activeTab === "chess" && <ChessDistributionSection chessDistribution={teamWeekData.chessDistribution} />}
-            {activeTab === "uncommitted" && <UncommittedWorkSection assignedTickets={teamWeekData.uncommittedAssignedTickets} unassignedTickets={teamWeekData.uncommittedUnassignedTickets} onQuickAssign={handleQuickAssign} />}
+            {activeTab === "uncommitted" && <UncommittedWorkSection assignedTickets={teamWeekData.uncommittedAssignedTickets} unassignedTickets={teamWeekData.uncommittedUnassignedTickets} onQuickAssign={handleQuickAssign} memberNames={Object.fromEntries(teamWeekData.memberViews.map((m) => [m.userId, m.displayName]))} />}
             {activeTab === "exceptions" && <ExceptionQueueSection exceptions={exceptions ?? []} actorUserId={userId} onResolve={handleResolveException} onAddComment={handleAddComment} />}
             {activeTab === "history" && <TeamHistoryView entries={teamHistory?.entries ?? []} loading={historyLoading} />}
           </div>

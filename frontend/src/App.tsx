@@ -96,7 +96,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Navigate to="/weekly" replace />} />
-            <Route path="/weekly/*" element={<WeeklyCommitRoutes bridge={bridge} />} />
+            <Route path="/weekly/*" element={<WeeklyCommitRoutes key={activeUser.id} bridge={bridge} />} />
           </Routes>
         </BrowserRouter>
       </div>

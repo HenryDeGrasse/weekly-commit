@@ -323,8 +323,13 @@ describe("MyWeekPage — plan state badge", () => {
   });
 
   it("renders non-compliant badge for a non-compliant plan", () => {
+    // Use commits that actually fail pre-lock validation (KING missing successCriteria)
+    const nonCompliantCommits = [
+      makeCommit("c-1", 1, { title: "Alpha", chessPiece: "KING", estimatePoints: 3, rcdoNodeId: "rcdo-3" }),
+      makeCommit("c-2", 2, { title: "Bravo", chessPiece: "PAWN", estimatePoints: 2, rcdoNodeId: "rcdo-3" }),
+    ];
     vi.mocked(useCurrentPlan).mockReturnValue(
-      makePlanState({ ...DRAFT_PLAN, compliant: false }, twoCommits),
+      makePlanState({ ...DRAFT_PLAN, compliant: false }, nonCompliantCommits),
     );
     renderPage();
     expect(screen.getByTestId("compliance-badge-warn")).toBeInTheDocument();
@@ -703,7 +708,7 @@ describe("MyWeekPage — inline AI lint panel", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText("3 hints")).toBeInTheDocument();
+      expect(screen.getByText("3 issues")).toBeInTheDocument();
     });
   });
 });

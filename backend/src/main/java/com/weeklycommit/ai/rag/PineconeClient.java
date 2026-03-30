@@ -91,8 +91,7 @@ public class PineconeClient {
 			@Value("${ai.pinecone.environment:us-east-1}") String environment,
 			@Value("${ai.embedding.dimensions:1536}") int dimension,
 			@Value("${ai.pinecone.voyage-index-name:weekly-commit-voyage}") String voyageIndexName,
-			@Value("${ai.pinecone.voyage-dimensions:1024}") int voyageDimension,
-			ObjectMapper objectMapper) {
+			@Value("${ai.pinecone.voyage-dimensions:1024}") int voyageDimension, ObjectMapper objectMapper) {
 		this(apiKey, indexName, environment, dimension, voyageIndexName, voyageDimension, objectMapper,
 				HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
 	}
@@ -124,8 +123,8 @@ public class PineconeClient {
 		if (apiKey == null || apiKey.isBlank()) {
 			log.warn("PineconeClient: API key is blank — vector operations will be no-ops");
 		} else {
-			log.info("PineconeClient initialized: indexName={} ({}d), voyageIndex={} ({}d), environment={}",
-					indexName, dimension, voyageIndexName, voyageDimension, environment);
+			log.info("PineconeClient initialized: indexName={} ({}d), voyageIndex={} ({}d), environment={}", indexName,
+					dimension, voyageIndexName, voyageDimension, environment);
 		}
 	}
 
@@ -289,8 +288,7 @@ public class PineconeClient {
 	 *            optional metadata filter (may be null or empty)
 	 * @return list of matches, empty on error
 	 */
-	public List<PineconeMatch> queryVoyage(String namespace, float[] vector, int topK,
-			Map<String, Object> filter) {
+	public List<PineconeMatch> queryVoyage(String namespace, float[] vector, int topK, Map<String, Object> filter) {
 		if (!isAvailable() || vector == null || vector.length == 0) {
 			return Collections.emptyList();
 		}

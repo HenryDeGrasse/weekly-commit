@@ -6,8 +6,6 @@
  *   - Renders hard errors section when errors present
  *   - Lock is blocked when hard errors exist (no continue button)
  *   - Shows soft warnings (derived from commits)
- *   - AI lint panel auto-runs (autoRun=true) — unavailable state shows without button click
- *   - AiLintPanel manual mode (autoRun=false) — shows Run button when AI is available
  *   - Loading state
  */
 import { describe, it, expect, vi } from "vitest";
@@ -132,15 +130,6 @@ describe("PreLockValidationPanel", () => {
     expect(screen.getByText(/Primary RCDO link is required at lock time/)).toBeInTheDocument();
   });
 
-  it("auto-runs lint (autoRun=true) — shows unavailable state without any button click", () => {
-    renderPanel({ errors: [], commits: twoCommits });
-    // PreLockValidationPanel passes autoRun=true to AiLintPanel.
-    // AI is mocked as unavailable, so the unavailable banner appears immediately —
-    // no "Run AI Quality Check" button is ever shown.
-    expect(screen.getByTestId("ai-lint-unavailable")).toBeInTheDocument();
-    expect(screen.queryByTestId("ai-lint-run-btn")).not.toBeInTheDocument();
-  });
-
   it("renders both hard errors and soft warnings simultaneously", () => {
     const errors: LockValidationError[] = [
       { field: "commits.king", message: "Maximum 1 King commit per week" },
@@ -151,6 +140,12 @@ describe("PreLockValidationPanel", () => {
     render(<MockHostProvider><PreLockValidationPanel errors={errors} commits={commits} /></MockHostProvider>);
     expect(screen.getByTestId("pre-lock-hard-errors")).toBeInTheDocument();
     expect(screen.getByTestId("pre-lock-soft-warnings")).toBeInTheDocument();
+  });
+
+  it("does not render the AI lint panel", () => {
+    renderPanel({ errors: [], commits: twoCommits });
+    expect(screen.queryByTestId("ai-lint-unavailable")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ai-lint-run-btn")).not.toBeInTheDocument();
   });
 });
 

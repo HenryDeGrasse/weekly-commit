@@ -77,7 +77,7 @@ function ExpandedCommitList({ commits }: { commits: MemberWeekView["commits"] })
           {c.estimatePoints != null && <span className="text-muted">({c.estimatePoints} pt)</span>}
           {c.outcome && (
             <span className={cn("text-[0.65rem] px-1.5 py-px rounded-full font-medium",
-              c.outcome === "ACHIEVED" ? "bg-foreground/10 text-foreground font-bold" : c.outcome === "PARTIALLY_ACHIEVED" ? "bg-neutral-200 text-neutral-600" : "bg-neutral-300 text-foreground font-bold underline",
+              c.outcome === "ACHIEVED" ? "bg-foreground/10 text-foreground font-bold" : c.outcome === "PARTIALLY_ACHIEVED" ? "bg-foreground/10 text-muted" : "bg-foreground/8 text-foreground font-bold underline",
             )}>
               {c.outcome}
             </span>
@@ -145,7 +145,7 @@ export function ByPersonSection({ memberViews, complianceSummary, onViewMemberPl
                           <span className="font-semibold">{member.displayName}</span>
                         )}
                         {maxStreak >= 1 && (
-                          <span data-testid={`cf-streak-${member.userId}`} title={`Max carry-forward streak: ${maxStreak}`} className={cn("text-[0.65rem] px-1.5 py-px rounded-full font-bold", maxStreak >= 2 ? "bg-foreground/10 text-foreground" : "bg-neutral-200 text-neutral-600")}>
+                          <span data-testid={`cf-streak-${member.userId}`} title={`Max carry-forward streak: ${maxStreak}`} className={cn("text-[0.65rem] px-1.5 py-px rounded-full font-bold", maxStreak >= 2 ? "bg-foreground/10 text-foreground" : "bg-foreground/10 text-muted")}>
                             🔁{maxStreak}
                           </span>
                         )}

@@ -27,7 +27,7 @@ export function SoftWarningsPanel({ commits }: SoftWarningsPanelProps) {
         <div
           role="status"
           data-testid="warning-too-many-commits"
-          className="flex items-start gap-2 px-3 py-2.5 rounded-default border border-neutral-300 bg-neutral-100 text-sm text-foreground"
+          className="flex items-start gap-2 px-3 py-2.5 rounded-default border border-warning/30 bg-warning/5 text-sm text-foreground"
         >
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-neutral-500" aria-hidden="true" />
           <span>

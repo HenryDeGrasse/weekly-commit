@@ -25,7 +25,7 @@ import { PreLockValidationPanel } from "../components/lock/PreLockValidationPane
 import { LockConfirmDialog } from "../components/lock/LockConfirmDialog.js";
 import { ScopeChangeDialog } from "../components/lock/ScopeChangeDialog.js";
 import { ScopeChangeTimeline } from "../components/lock/ScopeChangeTimeline.js";
-import { getEffectivePreLockErrors } from "../components/lock/lockValidation.js";
+import { getEffectivePreLockErrors, derivePreLockHardErrors } from "../components/lock/lockValidation.js";
 import { InsightPanel } from "../components/ai/InsightPanel.js";
 import { CalibrationCard } from "../components/ai/CalibrationCard.js";
 import { AiLintPanel } from "../components/ai/AiLintPanel.js";
@@ -43,6 +43,7 @@ import { usePlanRecommendations, useRecommendationApi } from "../api/recommendat
 import { useDismissMemory } from "../lib/useDismissMemory.js";
 import { useDismissedIds } from "../lib/useDismissedIds.js";
 import { useAiMode } from "../lib/useAiMode.js";
+import { useSelectedWeek } from "../lib/WeekContext.js";
 import type {
   CommitResponse, PlanState, LockValidationError,
   ScopeChangeEventResponse, UpdateCommitPayload, CreateCommitPayload,
@@ -56,7 +57,11 @@ function getWeekStartDate(offsetWeeks = 0): string {
   const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(now);
   monday.setDate(now.getDate() + daysToMonday + offsetWeeks * 7);
-  return monday.toISOString().slice(0, 10);
+  // Use local date parts — toISOString() converts to UTC and can shift the day.
+  const yyyy = monday.getFullYear();
+  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function formatWeekLabel(isoDate: string): string {
@@ -88,6 +93,17 @@ function ComplianceBadge({ compliant }: { readonly compliant: boolean }) {
   );
 }
 
+/** For DRAFT plans, derive compliance from client-side pre-lock validation. */
+function useDraftCompliance(plan: { state: PlanState; compliant: boolean } | undefined, commits: CommitResponse[]): boolean {
+  return useMemo(() => {
+    if (!plan) return true;
+    // For non-DRAFT plans, trust the server value (set at lock time).
+    if (plan.state !== "DRAFT") return plan.compliant;
+    // For DRAFT, run the same pre-lock hard-error checks the lock button uses.
+    return derivePreLockHardErrors(commits).length === 0;
+  }, [plan, commits]);
+}
+
 // ── DeleteConfirmDialog ─────────────────────────────────────────────────────
 
 function DeleteConfirmDialog({ title, onConfirm, onCancel }: { readonly title: string; readonly onConfirm: () => void; readonly onCancel: () => void }) {
@@ -117,8 +133,14 @@ class AiErrorBoundary extends Component<{ children: ReactNode }, { hasError: boo
 // ── MyWeek Page ─────────────────────────────────────────────────────────────
 
 export default function MyWeek() {
-  const [weekOffset, setWeekOffset] = useState(0);
-  const weekStartDate = getWeekStartDate(weekOffset);
+  const { selectedWeek: weekStartDate, setSelectedWeek } = useSelectedWeek();
+
+  // Derive offset from selectedWeek so the Today button still works
+  const weekOffset = (() => {
+    const base = new Date(getWeekStartDate(0) + 'T00:00:00');
+    const sel = new Date(weekStartDate + 'T00:00:00');
+    return Math.round((sel.getTime() - base.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  })();
 
   const bridge = useHostBridge();
   const currentUserId = bridge.context.authenticatedUser.id;
@@ -197,12 +219,9 @@ export default function MyWeek() {
 
   const { data: aiStatus } = useAiStatus();
   const { aiMode } = useAiMode();
-  const { shouldAutoCollapse: shouldAutoCollapseLint, recordDismiss: recordLintDismiss } =
+  const { recordDismiss: recordLintDismiss } =
     useDismissMemory("ai-lint");
-  const {
-    shouldAutoCollapse: shouldAutoCollapseInsights,
-    recordDismiss: recordInsightsDismiss,
-  } = useDismissMemory("ai-insights");
+  const { recordDismiss: recordInsightsDismiss } = useDismissMemory("ai-insights");
   /** True when the feature flag is on AND the provider is reachable. */
   const aiComposerEnabled = aiAssistanceEnabled && (aiStatus?.available ?? false);
 
@@ -221,6 +240,7 @@ export default function MyWeek() {
   const plan = planData?.plan;
   const commits = useMemo(() => planData?.commits ?? [], [planData]);
   const effectivePreLockErrors = useMemo(() => getEffectivePreLockErrors(commits, lockValidationErrors), [commits, lockValidationErrors]);
+  const draftCompliant = useDraftCompliance(plan, commits);
   const isDraft = plan?.state === "DRAFT";
   const isLocked = plan?.state === "LOCKED";
 
@@ -477,15 +497,15 @@ export default function MyWeek() {
 
       {/* Week selector */}
       <div data-testid="week-selector" className="flex items-center gap-2 flex-wrap">
-        <Button variant="secondary" size="sm" onClick={() => setWeekOffset((o) => o - 1)} aria-label="Previous week" data-testid="prev-week-btn">
+        <Button variant="secondary" size="sm" onClick={() => { const d = new Date(weekStartDate + "T00:00:00"); d.setDate(d.getDate() - 7); setSelectedWeek(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`); }} aria-label="Previous week" data-testid="prev-week-btn">
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span data-testid="week-label" className="font-semibold text-sm min-w-[14rem] text-center">{formatWeekLabel(weekStartDate)}</span>
-        <Button variant="secondary" size="sm" onClick={() => setWeekOffset((o) => o + 1)} aria-label="Next week" data-testid="next-week-btn">
+        <Button variant="secondary" size="sm" onClick={() => { const d = new Date(weekStartDate + "T00:00:00"); d.setDate(d.getDate() + 7); setSelectedWeek(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`); }} aria-label="Next week" data-testid="next-week-btn">
           <ChevronRight className="h-4 w-4" />
         </Button>
         {weekOffset !== 0 && (
-          <Button variant="secondary" size="sm" onClick={() => setWeekOffset(0)} data-testid="current-week-btn">Today</Button>
+          <Button variant="secondary" size="sm" onClick={() => setSelectedWeek(getWeekStartDate(0))} data-testid="current-week-btn">Today</Button>
         )}
       </div>
 
@@ -528,7 +548,7 @@ export default function MyWeek() {
           <CardHeader>
             <div className="flex items-center gap-2.5">
               <PlanStateBadge state={plan.state} />
-              <ComplianceBadge compliant={plan.compliant} />
+              <ComplianceBadge compliant={draftCompliant} />
             </div>
             <div className="flex items-center gap-2">
               {actionError && (
@@ -641,46 +661,12 @@ export default function MyWeek() {
         </CollapsibleSection>
       )}
 
-      {/* Personal AI insights — collapsed by default to reduce overwhelm */}
-      {aiAssistanceEnabled && plan && (
-        <CollapsibleSection
-          id="ai-insights"
-          title="AI Insights"
-          defaultExpanded={aiMode === "on-demand" ? false : shouldAutoCollapseInsights ? false : false}
-          overrideExpanded={sectionsOverride}
-          onToggle={(expanded) => {
-            if (!expanded) recordInsightsDismiss();
-          }}
-        >
-          <InsightPanel mode="personal" planId={plan.id} />
-        </CollapsibleSection>
-      )}
 
-      {/* Calibration profile — only shown when user has ≥8 weeks of data */}
-      {aiAssistanceEnabled && showCalibration && (
-        <AiErrorBoundary>
-          <CalibrationCard
-            profile={
-              calibrationData ?? {
-                available: false,
-                overallAchievementRate: 0,
-                chessPieceAchievementRates: {},
-                carryForwardProbability: 0,
-                weeksOfData: 0,
-                avgEstimateByPiece: {},
-                confidenceTier: "INSUFFICIENT",
-              }
-            }
-            loading={calibrationLoading}
-            data-testid="my-week-calibration-card"
-          />
-        </AiErrorBoundary>
-      )}
 
       {/* Auto-lock system banner */}
       {plan?.systemLockedWithErrors && (
-        <div data-testid="auto-lock-banner" role="alert" className="flex items-start gap-2 rounded-default border border-neutral-300 bg-neutral-100 px-4 py-3 text-sm text-neutral-900">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-neutral-500" aria-hidden="true" />
+        <div data-testid="auto-lock-banner" role="alert" className="flex items-start gap-2 rounded-default border border-warning-border bg-warning-bg px-4 py-3 text-sm text-foreground">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" aria-hidden="true" />
           <span><strong>System-locked with errors</strong> — this plan was automatically locked at the deadline. Some validation issues were present at lock time. Please review and reconcile.</span>
         </div>
       )}
@@ -722,37 +708,6 @@ export default function MyWeek() {
         </CollapsibleSection>
       )}
 
-      {/* AI Quality Check — collapsed by default; auto-runs lint when opened */}
-      {aiAssistanceEnabled && isDraft && plan && commits.length > 0 && (
-        <CollapsibleSection
-          id="ai-lint"
-          title="AI Quality Check"
-          defaultExpanded={aiMode === "on-demand" ? false : shouldAutoCollapseLint ? false : false}
-          badge={
-            lintHintCount != null ? (
-              <Badge variant="draft">
-                {lintHintCount} {lintHintCount === 1 ? "hint" : "hints"}
-              </Badge>
-            ) : undefined
-          }
-          testId="inline-ai-lint-panel"
-          overrideExpanded={sectionsOverride}
-          onToggle={(expanded) => {
-            if (!expanded) recordLintDismiss();
-          }}
-        >
-          <AiErrorBoundary>
-            <AiLintPanel
-              planId={plan.id}
-              userId={currentUserId}
-              autoRun={aiMode !== "on-demand"}
-              refreshKey={lintRefreshKey}
-              onHintCountChange={setLintHintCount}
-            />
-          </AiErrorBoundary>
-        </CollapsibleSection>
-      )}
-
       {/* Commit list */}
       {plan && (
         <CommitList
@@ -766,6 +721,70 @@ export default function MyWeek() {
           onCreateTicket={handleCreateTicketFromCommit}
           onAddCommit={handleOpenCreate}
         />
+      )}
+
+      {/* ── Plan Intelligence: consolidated AI section ─────────────── */}
+      {aiAssistanceEnabled && plan && (
+        <CollapsibleSection
+          id="plan-intelligence"
+          title="Plan Intelligence"
+          defaultExpanded={aiMode !== "on-demand"}
+          overrideExpanded={sectionsOverride}
+          badge={
+            lintHintCount != null && lintHintCount > 0 ? (
+              <Badge variant="draft">
+                {lintHintCount} {lintHintCount === 1 ? "issue" : "issues"}
+              </Badge>
+            ) : undefined
+          }
+          onToggle={(expanded) => {
+            if (!expanded) {
+              recordLintDismiss();
+              recordInsightsDismiss();
+            }
+          }}
+        >
+          <div className="flex flex-col gap-4">
+            {/* Quality Check — shown for DRAFT plans with commits */}
+            {isDraft && commits.length > 0 && (
+              <AiErrorBoundary>
+                <div data-testid="inline-ai-lint-panel">
+                  <AiLintPanel
+                    planId={plan.id}
+                    userId={currentUserId}
+                    autoRun={aiMode !== "on-demand"}
+                    refreshKey={lintRefreshKey}
+                    onHintCountChange={setLintHintCount}
+                  />
+                </div>
+              </AiErrorBoundary>
+            )}
+
+            {/* Calibration profile — only shown when user has 8+ weeks of data */}
+            {showCalibration && (
+              <AiErrorBoundary>
+                <CalibrationCard
+                  profile={
+                    calibrationData ?? {
+                      available: false,
+                      overallAchievementRate: 0,
+                      chessPieceAchievementRates: {},
+                      carryForwardProbability: 0,
+                      weeksOfData: 0,
+                      avgEstimateByPiece: {},
+                      confidenceTier: "INSUFFICIENT",
+                    }
+                  }
+                  loading={calibrationLoading}
+                  data-testid="my-week-calibration-card"
+                />
+              </AiErrorBoundary>
+            )}
+
+            {/* Personal insights */}
+            <InsightPanel mode="personal" planId={plan.id} />
+          </div>
+        </CollapsibleSection>
       )}
 
       {/* What-If Planner — collapsed by default */}

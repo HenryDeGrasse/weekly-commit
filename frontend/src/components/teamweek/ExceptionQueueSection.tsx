@@ -10,8 +10,8 @@ import type { ExceptionResponse, ExceptionSeverity, ExceptionType, AddCommentPay
 
 const SEVERITY_CLS: Record<ExceptionSeverity, string> = {
   HIGH: "bg-foreground text-background",
-  MEDIUM: "bg-neutral-400 text-background",
-  LOW: "bg-neutral-200 text-neutral-700",
+  MEDIUM: "bg-foreground/50 text-background",
+  LOW: "bg-foreground/15 text-foreground",
 };
 const SEVERITY_LABELS: Record<ExceptionSeverity, string> = { HIGH: "HIGH", MEDIUM: "MED", LOW: "LOW" };
 const SEVERITY_ORDER: Record<ExceptionSeverity, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
@@ -143,11 +143,11 @@ export function ExceptionQueueSection({ exceptions, actorUserId, onResolve, onAd
                   </div>
                   <p className="m-0 mb-1 text-xs">{exception.description}</p>
                   <div className="flex gap-3 text-[0.65rem] text-muted flex-wrap">
-                    <span data-testid={`exception-user-${exception.id}`}>User: {exception.userId}</span>
+                    <span data-testid={`exception-user-${exception.id}`}>{exception.displayName ?? exception.userId}</span>
                     <span data-testid={`exception-date-${exception.id}`}>{new Date(exception.createdAt).toLocaleDateString()}</span>
                   </div>
                   {exception.resolved && exception.resolution && (
-                    <div data-testid={`exception-resolution-${exception.id}`} className="mt-1.5 px-2.5 py-1.5 rounded-default bg-neutral-100 text-xs text-foreground">
+                    <div data-testid={`exception-resolution-${exception.id}`} className="mt-1.5 px-2.5 py-1.5 rounded-default bg-foreground/8 text-xs text-foreground">
                       ✓ {exception.resolution}
                     </div>
                   )}
@@ -173,7 +173,7 @@ export function ExceptionQueueSection({ exceptions, actorUserId, onResolve, onAd
       )}
 
       {resolvingException && (
-        <ResolveDialog exception={resolvingException} onConfirm={(resolution) => onResolve!(resolvingException.id, { resolverId: actorUserId, resolution })} onCancel={() => setResolvingId(null)} />
+        <ResolveDialog exception={resolvingException} onConfirm={async (resolution) => { await onResolve!(resolvingException.id, { resolverId: actorUserId, resolution }); setResolvingId(null); }} onCancel={() => setResolvingId(null)} />
       )}
       {commentingException && (
         <CommentDialog exception={commentingException} onConfirm={(text) => onAddComment!({ managerId: actorUserId, ...(commentingException.planId ? { planId: commentingException.planId } : {}), text })} onCancel={() => setCommentingId(null)} />

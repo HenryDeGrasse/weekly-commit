@@ -25,7 +25,11 @@ function getWeekMonday(date: Date): string {
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
-  return d.toISOString().slice(0, 10);
+  // Use local date parts — toISOString() converts to UTC and can shift the day.
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 /** Format a Monday ISO date as a short label. */
@@ -65,13 +69,19 @@ export function Header({
   function prevWeek() {
     const d = new Date(`${selectedWeek}T00:00:00`);
     d.setDate(d.getDate() - 7);
-    onWeekChange(d.toISOString().slice(0, 10));
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    onWeekChange(`${yyyy}-${mm}-${dd}`);
   }
 
   function nextWeek() {
     const d = new Date(`${selectedWeek}T00:00:00`);
     d.setDate(d.getDate() + 7);
-    onWeekChange(d.toISOString().slice(0, 10));
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    onWeekChange(`${yyyy}-${mm}-${dd}`);
   }
 
   // User initials fallback

@@ -22,15 +22,17 @@ export function derivePreLockHardErrors(
   let queenCount = 0;
 
   for (const commit of commits) {
-    const prefix = `commit[${commit.id}]`;
+    const label = commit.title?.trim()
+      ? `"${commit.title}"`
+      : `Commit #${commit.priorityOrder}`;
 
     if (!commit.title?.trim()) {
-      errors.push({ field: `${prefix}.title`, message: "Title is required" });
+      errors.push({ field: label, message: "Title is required" });
     }
 
     if (!commit.chessPiece) {
       errors.push({
-        field: `${prefix}.chessPiece`,
+        field: label,
         message: "Chess piece is required",
       });
       continue;
@@ -38,26 +40,26 @@ export function derivePreLockHardErrors(
 
     if (commit.priorityOrder < 1) {
       errors.push({
-        field: `${prefix}.priorityOrder`,
+        field: label,
         message: "Priority order must be ≥ 1",
       });
     }
 
     if (!commit.rcdoNodeId) {
       errors.push({
-        field: `${prefix}.rcdoNodeId`,
+        field: label,
         message: "Primary RCDO link is required at lock time",
       });
     }
 
     if (commit.estimatePoints == null) {
       errors.push({
-        field: `${prefix}.estimatePoints`,
+        field: label,
         message: "Estimate points are required at lock time",
       });
     } else if (!VALID_ESTIMATE_POINTS.has(commit.estimatePoints)) {
       errors.push({
-        field: `${prefix}.estimatePoints`,
+        field: label,
         message: "Estimate points must be one of {1, 2, 3, 5, 8}",
       });
     }
@@ -67,7 +69,7 @@ export function derivePreLockHardErrors(
       !commit.successCriteria?.trim()
     ) {
       errors.push({
-        field: `${prefix}.successCriteria`,
+        field: label,
         message: `Success criteria required for ${commit.chessPiece} commits`,
       });
     }

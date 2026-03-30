@@ -140,6 +140,7 @@ function makeException(
     teamId: "team-1",
     planId: `plan-user-1`,
     userId: "user-1",
+    displayName: "User One",
     exceptionType: "MISSED_LOCK",
     severity: "HIGH",
     description: "Plan was not locked on time",

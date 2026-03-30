@@ -139,7 +139,15 @@ public class ManagerReviewService {
 		List<ManagerReviewException> exceptions = exceptionRepo.findByTeamIdAndWeekStartDateAndResolved(teamId,
 				weekStart, false);
 
-		return exceptions.stream().sorted(exceptionComparator()).map(ExceptionResponse::from).toList();
+		// Resolve display names in bulk to avoid N+1 queries
+		java.util.Set<UUID> userIds = exceptions.stream().map(ManagerReviewException::getUserId)
+				.collect(java.util.stream.Collectors.toSet());
+		java.util.Map<UUID, String> displayNames = userRepo.findAllById(userIds).stream()
+				.collect(java.util.stream.Collectors.toMap(UserAccount::getId, UserAccount::getDisplayName));
+
+		return exceptions.stream().sorted(exceptionComparator())
+				.map(e -> ExceptionResponse.from(e, displayNames.get(e.getUserId())))
+				.toList();
 	}
 
 	// -------------------------------------------------------------------------
@@ -291,7 +299,9 @@ public class ManagerReviewService {
 		exception.setResolvedById(resolverId);
 		ManagerReviewException saved = exceptionRepo.save(exception);
 
-		return ExceptionResponse.from(saved);
+		String displayName = userRepo.findById(saved.getUserId())
+				.map(UserAccount::getDisplayName).orElse(null);
+		return ExceptionResponse.from(saved, displayName);
 	}
 
 	// -------------------------------------------------------------------------

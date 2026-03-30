@@ -234,26 +234,13 @@ function PersonalInsightPanel({ planId }: { planId?: string }) {
   }
 
   if (!data?.aiAvailable) {
-    return (
-      <div
-        className="flex items-center gap-2 rounded-default border border-dashed border-border bg-background/60 px-3 py-2.5 text-xs text-muted italic"
-        data-testid="insight-panel-unavailable"
-      >
-        <Bot className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        AI insights are currently unavailable.
-      </div>
-    );
+    // Silently hide when AI not available — avoids noise in consolidated sections
+    return null;
   }
 
   if (data.insights.length === 0) {
-    return (
-      <p
-        className="text-sm text-muted"
-        data-testid="insight-panel-empty"
-      >
-        No AI insights available for this period.
-      </p>
-    );
+    // Return null when empty — parent section handles the "nothing here" state
+    return null;
   }
 
   return <BalancedInsightCardList insights={data.insights} />;

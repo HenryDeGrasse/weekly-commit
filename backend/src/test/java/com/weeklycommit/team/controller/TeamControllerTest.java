@@ -100,7 +100,7 @@ class TeamControllerTest {
 	@Test
 	void getExceptionQueue_returnsExceptions() throws Exception {
 		when(managerReviewService.getExceptionQueue(eq(teamId), eq(weekStart), any()))
-				.thenReturn(List.of(new ExceptionResponse(UUID.randomUUID(), teamId, null, userId,
+				.thenReturn(List.of(new ExceptionResponse(UUID.randomUUID(), teamId, null, userId, "Test User",
 						ExceptionType.MISSED_LOCK, ExceptionSeverity.HIGH, "User missed lock deadline", weekStart,
 						false, null, null, null, Instant.now())));
 
@@ -159,7 +159,7 @@ class TeamControllerTest {
 	void resolveException_returnsResolvedResponse() throws Exception {
 		UUID exceptionId = UUID.randomUUID();
 		when(managerReviewService.resolveException(eq(exceptionId), eq("Addressed in standup"), eq(managerId)))
-				.thenReturn(new ExceptionResponse(exceptionId, teamId, null, userId, ExceptionType.MISSED_LOCK,
+				.thenReturn(new ExceptionResponse(exceptionId, teamId, null, userId, "Test User", ExceptionType.MISSED_LOCK,
 						ExceptionSeverity.HIGH, "Missed lock", weekStart, true, "Addressed in standup", Instant.now(),
 						managerId, Instant.now()));
 

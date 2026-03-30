@@ -143,7 +143,7 @@ describe("AiCommitComposer — dialog", () => {
     renderComposer();
     expect(screen.getByRole("dialog")).toHaveAttribute(
       "aria-label",
-      "AI Commit Composer",
+      "Commit Composer",
     );
   });
 

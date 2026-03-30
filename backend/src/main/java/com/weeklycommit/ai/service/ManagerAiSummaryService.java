@@ -141,16 +141,62 @@ public class ManagerAiSummaryService {
 		// Top RCDO branches by planned points
 		List<String> topRcdoBranches = deriveTopRcdoBranches(allCommits);
 
-		// Build context for AI
+		// ── Plan-level aggregates for the prompt's planData field ──────────────────
+		long lockedPlanCount = plans.stream()
+				.filter(p -> p.getState() != null
+						&& !p.getState().name().equals("DRAFT"))
+				.count();
+		long reconciledPlanCount = plans.stream()
+				.filter(p -> p.getState() != null && p.getState().name().equals("RECONCILED"))
+				.count();
+		int totalPlannedPoints = allCommits.stream()
+				.mapToInt(c -> c.getEstimatePoints() != null ? c.getEstimatePoints() : 0).sum();
+		int totalAchievedPoints = allCommits.stream()
+				.filter(c -> c.getOutcome() != null && c.getOutcome().name().equals("ACHIEVED"))
+				.mapToInt(c -> c.getEstimatePoints() != null ? c.getEstimatePoints() : 0).sum();
+
+		Map<String, Object> planData = new HashMap<>();
+		planData.put("teamMemberCount", memberships.size());
+		planData.put("lockedPlanCount", lockedPlanCount);
+		planData.put("reconciledPlanCount", reconciledPlanCount);
+		planData.put("totalPlannedPoints", totalPlannedPoints);
+		planData.put("totalAchievedPoints", totalAchievedPoints);
+		planData.put("weekStart", weekStart.toString());
+
+		// ── Commits serialised for the prompt's historicalCommits field ────────────
+		Map<UUID, UUID> ownerByPlanId = new HashMap<>();
+		for (WeeklyPlan plan : plans) {
+			ownerByPlanId.put(plan.getId(), plan.getOwnerUserId());
+		}
+		List<Map<String, Object>> historicalCommits = allCommits.stream().map(c -> {
+			Map<String, Object> m = new HashMap<>();
+			m.put("ownerUserId", ownerByPlanId.getOrDefault(c.getPlanId(), c.getPlanId()).toString());
+			m.put("title", c.getTitle());
+			m.put("chessPiece", c.getChessPiece() != null ? c.getChessPiece().name() : null);
+			m.put("estimatePoints", c.getEstimatePoints());
+			m.put("outcome", c.getOutcome() != null ? c.getOutcome().name() : null);
+			m.put("carryForwardStreak", c.getCarryForwardStreak());
+			return m;
+		}).toList();
+
+		// ── Additional context — manager dashboard aggregates ──────────────────────
+		long missedLocks = (memberships.size() - plans.size())
+				+ plans.stream().filter(p -> p.getState() != null && p.getState().name().equals("DRAFT")).count();
+		long missedReconciles = plans.stream()
+				.filter(p -> p.getState() != null
+						&& (p.getState().name().equals("LOCKED") || p.getState().name().equals("RECONCILING")))
+				.count();
+
 		Map<String, Object> additionalCtx = new HashMap<>();
-		additionalCtx.put("unresolvedExceptions", unresolvedExceptionIds.size());
+		additionalCtx.put("exceptionCount", unresolvedExceptionIds.size());
+		additionalCtx.put("missedLocks", missedLocks);
+		additionalCtx.put("missedReconciles", missedReconciles);
+		additionalCtx.put("topRcdoBranches", topRcdoBranches);
 		additionalCtx.put("carryForwardPatterns", carryForwardPatterns);
 		additionalCtx.put("criticalBlockedItems", criticalBlockedItemIds.size());
-		additionalCtx.put("memberCount", memberships.size());
-		additionalCtx.put("topRcdoBranches", topRcdoBranches);
 
 		AiContext context = new AiContext(AiContext.TYPE_TEAM_SUMMARY, callerId, null, null, Map.of(),
-				Map.of("weekStart", weekStart.toString(), "teamId", teamId.toString()), List.of(), List.of(),
+				planData, historicalCommits, List.of(),
 				additionalCtx);
 
 		AiSuggestionResult result = registry.generateSuggestion(context);

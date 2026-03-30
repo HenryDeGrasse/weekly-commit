@@ -122,6 +122,8 @@ export interface ExceptionResponse {
   readonly teamId: string;
   readonly planId: string | null;
   readonly userId: string;
+  /** Human-readable display name — resolved by the backend. Falls back to userId if null. */
+  readonly displayName: string | null;
   readonly exceptionType: ExceptionType;
   readonly severity: ExceptionSeverity;
   readonly description: string;

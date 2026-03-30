@@ -177,11 +177,11 @@ export function AiLintPanel({ planId, userId, autoRun = false, refreshKey = 0, o
 
       {/* Hard validations */}
       {hasHard && (
-        <div className="rounded-sm border border-neutral-300 bg-neutral-100 px-3 py-2" data-testid="ai-lint-hard">
-          <p className="m-0 mb-1 text-xs font-bold text-foreground underline">Hard Issues</p>
+        <div className="rounded-sm border border-danger-border bg-danger-bg px-3 py-2" data-testid="ai-lint-hard">
+          <p className="m-0 mb-1 text-xs font-bold text-danger underline">Hard Issues</p>
           <ul className="m-0 pl-4 flex flex-col gap-0.5">
             {lintResult.hardValidation.map((msg, i) => (
-              <li key={i} className="text-xs text-foreground">{msg.message}</li>
+              <li key={i} className="text-xs text-danger">{msg.message}</li>
             ))}
           </ul>
         </div>
@@ -189,11 +189,11 @@ export function AiLintPanel({ planId, userId, autoRun = false, refreshKey = 0, o
 
       {/* Soft guidance */}
       {hasSoft && (
-        <div className="rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2" data-testid="ai-lint-soft">
-          <p className="m-0 mb-1 text-xs font-semibold text-muted">Suggestions</p>
+        <div className="rounded-sm border border-warning-border bg-warning-bg px-3 py-2" data-testid="ai-lint-soft">
+          <p className="m-0 mb-1 text-xs font-semibold text-warning">Suggestions</p>
           <ul className="m-0 pl-4 flex flex-col gap-0.5">
             {lintResult.softGuidance.map((msg, i) => (
-              <li key={i} className="text-xs text-muted">{msg.message}</li>
+              <li key={i} className="text-xs text-warning">{msg.message}</li>
             ))}
           </ul>
         </div>

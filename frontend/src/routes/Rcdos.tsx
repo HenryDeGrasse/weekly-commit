@@ -123,6 +123,13 @@ export default function Rcdos() {
     finally { setDialogSubmitting(false); }
   }
 
+  async function handleActivate() {
+    if (!selectedId) return;
+    setActionError(null);
+    try { await api.activateNode(selectedId); refetch(); }
+    catch (err) { setActionError(err instanceof Error ? err.message : "Activate failed"); }
+  }
+
   function canEditSelected(): boolean {
     if (!selectedNode) return false;
     switch (selectedNode.nodeType) {
@@ -231,12 +238,15 @@ export default function Rcdos() {
               </div>
 
               {actionError && (
-                <div role="alert" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-foreground font-semibold">{actionError}</div>
+                <div role="alert" className="rounded-default border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-foreground font-semibold">{actionError}</div>
               )}
 
               {!perms.isReadOnly && (
                 <div className="flex gap-2 flex-wrap" data-testid="node-action-buttons">
                   {canEditSelected() && <Button variant="primary" size="sm" onClick={openEdit} data-testid="edit-node-btn">Edit</Button>}
+                  {selectedNode.status === "DRAFT" && (
+                    <Button variant="success" size="sm" onClick={() => void handleActivate()} data-testid="activate-node-btn">Activate</Button>
+                  )}
                   {perms.canArchive && selectedNode.status !== "ARCHIVED" && (
                     <Button variant="danger" size="sm" onClick={() => setShowArchiveDialog(true)} data-testid="archive-node-btn">Archive</Button>
                   )}

@@ -23,10 +23,10 @@ import org.springframework.stereotype.Service;
  *
  * <p>
  * Model routing: any model whose name starts with {@code "voyage"} is sent to
- * {@code https://api.voyageai.com/v1} with the Voyage API key. All other
- * models are sent to the configured OpenRouter base URL. The Voyage AI
- * embeddings endpoint uses the same OpenAI-compatible request/response format,
- * so no separate parsing logic is required.
+ * {@code https://api.voyageai.com/v1} with the Voyage API key. All other models
+ * are sent to the configured OpenRouter base URL. The Voyage AI embeddings
+ * endpoint uses the same OpenAI-compatible request/response format, so no
+ * separate parsing logic is required.
  *
  * <p>
  * Gracefully degrades: returns an empty {@code float[0]} on any error so
@@ -98,6 +98,10 @@ public class EmbeddingService {
 	 * {@link #isVoyageAvailable()}.
 	 */
 	public boolean isAvailable() {
+		// Check the key that matches the default model
+		if (model != null && model.startsWith("voyage")) {
+			return isVoyageAvailable();
+		}
 		return apiKey != null && !apiKey.isBlank();
 	}
 
@@ -167,15 +171,13 @@ public class EmbeddingService {
 			inputArray.add(text);
 			String json = objectMapper.writeValueAsString(body);
 
-			HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
-					.uri(URI.create(effectiveBaseUrl + "/embeddings"))
-					.header("Authorization", "Bearer " + effectiveApiKey)
-					.header("Content-Type", "application/json")
+			HttpRequest.Builder reqBuilder = HttpRequest.newBuilder().uri(URI.create(effectiveBaseUrl + "/embeddings"))
+					.header("Authorization", "Bearer " + effectiveApiKey).header("Content-Type", "application/json")
 					.timeout(Duration.ofSeconds(30));
-			// OpenRouter wants attribution headers; Voyage AI ignores them (harmless to omit)
+			// OpenRouter wants attribution headers; Voyage AI ignores them (harmless to
+			// omit)
 			if (!isVoyageModel) {
-				reqBuilder.header("HTTP-Referer", "https://weeklycommit.dev")
-						.header("X-Title", "Weekly Commit");
+				reqBuilder.header("HTTP-Referer", "https://weeklycommit.dev").header("X-Title", "Weekly Commit");
 			}
 			HttpRequest request = reqBuilder.POST(HttpRequest.BodyPublishers.ofString(json)).build();
 

@@ -11,6 +11,7 @@ import { Header, getWeekMonday } from "./Header.js";
 import { cn } from "../lib/utils.js";
 import { useTheme } from "../lib/useTheme.js";
 import { useAiMode } from "../lib/useAiMode.js";
+import { WeekContext } from "../lib/WeekContext.js";
 
 interface AppShellProps {
   readonly children: ReactNode;
@@ -105,6 +106,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [collapsed]);
 
   return (
+    <WeekContext.Provider value={{ selectedWeek, setSelectedWeek }}>
     <div
       className="flex h-screen flex-col overflow-hidden bg-background text-foreground"
       style={{
@@ -164,5 +166,6 @@ export function AppShell({ children }: AppShellProps) {
         </main>
       </div>
     </div>
+    </WeekContext.Provider>
   );
 }
