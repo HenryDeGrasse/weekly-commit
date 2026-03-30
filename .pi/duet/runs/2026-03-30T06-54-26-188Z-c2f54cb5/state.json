@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "completed",
-  "updatedAt": "2026-03-30T08:02:30.628Z",
+  "updatedAt": "2026-03-30T13:37:42.508Z",
   "runId": "2026-03-30T06-54-26-188Z-c2f54cb5",
   "handoffMode": "summary",
   "postPlanMode": "autorun",
@@ -140,10 +140,8 @@
   },
   "planSourcePath": "duet-bug-sweep.md",
   "stepIndex": 8,
-  "round": 1,
   "activeSummary": {
-    "stepId": "step-8",
-    "stepTitle": "Final sweep: verify all checks pass and fix any regressions",
+    "stepTitle": "All steps complete",
     "gateResults": [
       {
         "id": "static",
@@ -157,7 +155,6 @@
         "id": "git-diff-check",
         "passed": true
       }
-    ],
-    "lastVerdict": "approve"
+    ]
   }
 }

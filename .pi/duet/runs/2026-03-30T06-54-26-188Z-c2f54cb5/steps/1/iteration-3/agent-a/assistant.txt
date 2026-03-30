@@ -1,3 +1,0 @@
-No remaining violations (excluding the intentional `ScopeChangeTimeline` dark dots and `CapacityMeter` bar fills). Static checks pass. The 30 backend test failures are pre-existing H2 integration issues confirmed unchanged by this step's work.
-
-Verdict: approve
