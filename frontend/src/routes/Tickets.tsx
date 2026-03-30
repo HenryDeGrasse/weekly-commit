@@ -15,7 +15,7 @@ import { useTeamMembers } from "../api/teamHooks.js";
 import { TicketListView, type TicketSortColumn } from "../components/tickets/TicketListView.js";
 import { TicketForm } from "../components/tickets/TicketForm.js";
 import { TicketDetailView } from "../components/tickets/TicketDetailView.js";
-import type { TicketListParams, TicketStatus, TicketPriority, CreateTicketPayload } from "../api/ticketTypes.js";
+import type { TicketListParams, TicketStatus, TicketPriority, CreateTicketPayload, UpdateTicketPayload } from "../api/ticketTypes.js";
 import { TICKET_STATUS_LABELS, TICKET_PRIORITY_LABELS } from "../api/ticketTypes.js";
 
 const TICKET_STATUSES: TicketStatus[] = ["TODO", "IN_PROGRESS", "BLOCKED", "DONE", "CANCELED"];
@@ -114,21 +114,29 @@ export default function Tickets() {
   const bridge = useHostBridge();
   const currentUserId = bridge.context.authenticatedUser.id;
   const currentTeamId = bridge.context.currentTeam?.id;
+  const { selectedWeek } = useSelectedWeek();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const listParams = useMemo(() => paramsToListParams(searchParams), [searchParams]);
+  const effectiveListParams = useMemo(
+    () => ({
+      ...listParams,
+      targetWeek: listParams.targetWeek ?? selectedWeek,
+    }),
+    [listParams, selectedWeek],
+  );
   const { data: rcdoTreeData } = useRcdoTree();
   const rcdoLabels = useMemo(() => buildRcdoLabels(rcdoTreeData), [rcdoTreeData]);
-  const { data: ticketPage, loading: ticketsLoading, refetch: refetchTickets } = useTicketList(listParams);
+  const { data: ticketPage, loading: ticketsLoading, refetch: refetchTickets } = useTicketList(effectiveListParams);
   const ticketApi = useTicketApi();
 
-  const { selectedWeek } = useSelectedWeek();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const { data: ticketDetail, loading: detailLoading, refetch: refetchDetail } = useTicket(selectedTicketId);
   const { data: teamMembers } = useTeamMembers(currentTeamId ?? null);
-  type FormMode = "create" | "create-from-commit" | null;
+  type FormMode = "create" | "edit" | null;
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [formInitialValues, setFormInitialValues] = useState<Partial<CreateTicketPayload>>({});
+  const [editingTicketId, setEditingTicketId] = useState<string | null>(null);
 
   const updateParams = useCallback((patch: Partial<ReturnType<typeof paramsToListParams>>) => {
     setSearchParams((prev) => {
@@ -153,9 +161,29 @@ export default function Tickets() {
 
   const handleCreateTicket = useCallback(async (payload: CreateTicketPayload) => {
     await ticketApi.createTicket(payload);
-    setFormMode(null); setFormInitialValues({});
+    setFormMode(null); setFormInitialValues({}); setEditingTicketId(null);
     refetchTickets();
   }, [ticketApi, refetchTickets]);
+
+  const handleUpdateTicket = useCallback(async (payload: CreateTicketPayload) => {
+    if (!editingTicketId) return;
+
+    const updatePayload: UpdateTicketPayload = {
+      title: payload.title,
+      ...(payload.description !== undefined ? { description: payload.description } : {}),
+      ...(payload.status !== undefined ? { status: payload.status } : {}),
+      priority: payload.priority,
+      ...(payload.assigneeUserId !== undefined ? { assigneeUserId: payload.assigneeUserId } : {}),
+      teamId: payload.teamId,
+      ...(payload.rcdoNodeId !== undefined ? { rcdoNodeId: payload.rcdoNodeId } : {}),
+      ...(payload.estimatePoints !== undefined ? { estimatePoints: payload.estimatePoints } : {}),
+      ...(payload.targetWeekStartDate !== undefined ? { targetWeekStartDate: payload.targetWeekStartDate } : {}),
+    };
+
+    await ticketApi.updateTicket(editingTicketId, updatePayload);
+    setFormMode(null); setFormInitialValues({}); setEditingTicketId(null);
+    refetchDetail(); refetchTickets();
+  }, [editingTicketId, ticketApi, refetchDetail, refetchTickets]);
 
   const handleStatusTransition = useCallback(async (ticketId: string, newStatus: TicketStatus) => {
     await ticketApi.transitionStatus(ticketId, newStatus, currentUserId);
@@ -171,7 +199,7 @@ export default function Tickets() {
     <div className="flex flex-col gap-4" data-testid="page-tickets">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="m-0 text-xl font-bold">Tickets</h2>
-        <Button variant="primary" onClick={() => { setFormInitialValues({ reporterUserId: currentUserId, ...(currentTeamId ? { teamId: currentTeamId } : {}) }); setFormMode("create"); }} data-testid="create-ticket-btn">
+        <Button variant="primary" onClick={() => { setEditingTicketId(null); setFormInitialValues({ reporterUserId: currentUserId, ...(currentTeamId ? { teamId: currentTeamId } : {}) }); setFormMode("create"); }} data-testid="create-ticket-btn">
           + Create Ticket
         </Button>
       </div>
@@ -224,6 +252,7 @@ export default function Tickets() {
                 {...(ticketDetail.rcdoNodeId && rcdoLabels[ticketDetail.rcdoNodeId] ? { rcdoPath: rcdoLabels[ticketDetail.rcdoNodeId] } : {})}
                 onClose={() => setSelectedTicketId(null)}
                 onEdit={() => {
+                  setEditingTicketId(ticketDetail.id);
                   setFormInitialValues({
                     title: ticketDetail.title,
                     ...(ticketDetail.description ? { description: ticketDetail.description } : {}),
@@ -234,7 +263,7 @@ export default function Tickets() {
                     ...(ticketDetail.estimatePoints != null ? { estimatePoints: ticketDetail.estimatePoints } : {}),
                     ...(ticketDetail.targetWeekStartDate ? { targetWeekStartDate: ticketDetail.targetWeekStartDate } : {}),
                   });
-                  setFormMode("create");
+                  setFormMode("edit");
                 }}
               />
             )}
@@ -244,13 +273,13 @@ export default function Tickets() {
 
       {formMode !== null && (
         <TicketForm
-          mode="create"
+          mode={formMode}
           initialValues={formInitialValues}
           currentUserId={currentUserId}
           {...(currentTeamId ? { currentTeamId } : {})}
           rcdoTree={rcdoTreeData ?? []}
-          onSubmit={handleCreateTicket}
-          onCancel={() => { setFormMode(null); setFormInitialValues({}); }}
+          onSubmit={formMode === "edit" ? handleUpdateTicket : handleCreateTicket}
+          onCancel={() => { setFormMode(null); setFormInitialValues({}); setEditingTicketId(null); }}
         />
       )}
     </div>

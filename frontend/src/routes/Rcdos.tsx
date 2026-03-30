@@ -96,11 +96,20 @@ export default function Rcdos() {
   }
 
   async function handleCreate(payload: Parameters<ReturnType<typeof useRcdoApi>["createNode"]>[0]) {
+    setActionError(null);
     const created = await api.createNode(payload);
+    let activationError: string | null = null;
     if (created.status === "DRAFT") {
-      await api.activateNode(created.id);
+      try {
+        await api.activateNode(created.id);
+      } catch (err) {
+        activationError = err instanceof Error ? err.message : "Activation failed";
+      }
     }
     refetch(); setSelectedId(created.id); setPanelMode("detail");
+    if (activationError) {
+      setActionError(`Node created, but automatic activation failed: ${activationError}`);
+    }
   }
 
   function openEdit() { if (!selectedNode) return; setPanelMode("edit"); setActionError(null); }

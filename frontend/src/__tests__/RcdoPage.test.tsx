@@ -4,7 +4,7 @@
  * and breadcrumb updates on selection.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { MockHostProvider } from "../host/MockHostProvider.js";
 import type { HostBridge } from "../host/HostProvider.js";
@@ -418,5 +418,36 @@ describe("Rcdos page — create form", () => {
     renderPage();
     fireEvent.click(screen.getByTestId("create-outcome-btn"));
     expect(screen.getByRole("form", { name: "Create Outcome" })).toBeInTheDocument();
+  });
+
+  it("shows a recovery error when auto-activation fails after create", async () => {
+    mockCreateNode.mockResolvedValue({
+      id: "rc-2",
+      nodeType: "RALLY_CRY",
+      status: "DRAFT",
+      title: "Improve Product Quality",
+      children: [],
+    });
+    mockActivateNode.mockRejectedValue(new Error("Activation failed"));
+
+    renderPage(adminBridge);
+    fireEvent.click(screen.getByTestId("create-rally-cry-btn"));
+    fireEvent.change(screen.getByLabelText("Title *"), {
+      target: { value: "Improve Product Quality" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    });
+
+    await waitFor(() => {
+      expect(mockCreateNode).toHaveBeenCalled();
+      expect(mockActivateNode).toHaveBeenCalledWith("rc-2");
+      expect(mockRefetch).toHaveBeenCalled();
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("automatic activation failed");
+    expect(screen.getByRole("alert")).toHaveTextContent("Activation failed");
+    expect(screen.getByTestId("activate-node-btn")).toBeInTheDocument();
   });
 });

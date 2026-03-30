@@ -240,6 +240,13 @@ describe("TicketsPage — filter bar", () => {
     expect(screen.getByTestId("filter-assignee")).toBeInTheDocument();
   });
 
+  it("uses the selected week as the default ticket list filter", () => {
+    renderPage();
+    const calls = vi.mocked(useTicketList).mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall![0]).toMatchObject({ targetWeek: "2026-03-30" });
+  });
+
   it("renders clear-all when no filter active", () => {
     renderPage();
     // No filter active — clear-all should NOT be present
@@ -254,6 +261,11 @@ describe("TicketsPage — filter bar", () => {
     expect(screen.getByTestId("filter-clear-all")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("filter-clear-all"));
     expect(screen.queryByTestId("filter-clear-all")).not.toBeInTheDocument();
+
+    const calls = vi.mocked(useTicketList).mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall![0]).toMatchObject({ targetWeek: "2026-03-30" });
+    expect(lastCall![0]).not.toMatchObject({ status: "TODO" });
   });
 
   it("updates the useTicketList params when status filter changes", () => {
@@ -347,6 +359,33 @@ describe("TicketsPage — ticket detail panel", () => {
     expect(screen.getByTestId("ticket-detail-panel")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("ticket-detail-close-btn"));
     expect(screen.queryByTestId("ticket-detail-panel")).not.toBeInTheDocument();
+  });
+
+  it("editing a ticket submits an update instead of creating a duplicate", async () => {
+    mockTicketApi.updateTicket.mockResolvedValue(
+      makeTicketDetail("t-1", { title: "Updated title" }),
+    );
+    renderPage();
+    fireEvent.click(screen.getByTestId("ticket-row-t-1"));
+    fireEvent.click(screen.getByTestId("ticket-detail-edit-btn"));
+
+    expect(screen.getByRole("dialog", { name: "Edit ticket" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("ticket-form-title"), {
+      target: { value: "Updated title" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("ticket-form-submit"));
+    });
+
+    await waitFor(() =>
+      expect(mockTicketApi.updateTicket).toHaveBeenCalledWith(
+        "t-1",
+        expect.objectContaining({ title: "Updated title" }),
+      ),
+    );
+    expect(mockTicketApi.createTicket).not.toHaveBeenCalled();
   });
 });
 
