@@ -209,7 +209,7 @@ export function EvidenceDrawer({ evidence, className }: EvidenceDrawerProps) {
                       className={cn(
                         "text-[0.5rem] shrink-0",
                         node.outcome === "ACHIEVED" && "bg-foreground/10",
-                        node.outcome === "NOT_ACHIEVED" && "bg-neutral-200",
+                        node.outcome === "NOT_ACHIEVED" && "bg-foreground/12",
                       )}
                     >
                       {node.outcome}

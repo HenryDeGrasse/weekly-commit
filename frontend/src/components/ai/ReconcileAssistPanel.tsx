@@ -286,7 +286,7 @@ export function ReconcileAssistPanel({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleApplyCarryForward(rec)}
-                        className="h-6 text-xs text-foreground hover:bg-neutral-100 shrink-0"
+                        className="h-6 text-xs text-foreground hover:bg-foreground/8 shrink-0"
                         aria-label={`Carry forward ${rec.commitTitle}`}
                         data-testid={`apply-carry-forward-${rec.commitId}`}
                       >

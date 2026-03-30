@@ -12,9 +12,9 @@ export interface CarryForwardLineageViewProps {
 
 const OUTCOME_STYLES: Record<CommitOutcome, { cls: string; label: string }> = {
   ACHIEVED:           { cls: "bg-foreground/10 text-foreground font-bold",   label: "✓ Achieved" },
-  PARTIALLY_ACHIEVED: { cls: "bg-neutral-200 text-neutral-600",              label: "◑ Partial" },
-  NOT_ACHIEVED:       { cls: "bg-neutral-300 text-foreground underline",     label: "✗ Not achieved" },
-  CANCELED:           { cls: "bg-neutral-100 text-neutral-500",              label: "— Canceled" },
+  PARTIALLY_ACHIEVED: { cls: "bg-foreground/12 text-muted",                  label: "◑ Partial" },
+  NOT_ACHIEVED:       { cls: "bg-foreground/20 text-foreground underline",   label: "✗ Not achieved" },
+  CANCELED:           { cls: "bg-foreground/5 text-muted",                   label: "— Canceled" },
 };
 
 function ChainNode({ node, isCurrent }: { readonly node: CarryForwardNode; readonly isCurrent: boolean }) {

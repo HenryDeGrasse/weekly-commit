@@ -190,7 +190,7 @@ export function RcdoSuggestionInline({
           size="icon"
           type="button"
           onClick={handleDismiss}
-          className="h-6 w-6 text-muted hover:bg-neutral-100"
+          className="h-6 w-6 text-muted hover:bg-foreground/8"
           aria-label="Dismiss RCDO suggestion"
           data-testid="rcdo-suggestion-dismiss"
         >

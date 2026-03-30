@@ -87,7 +87,7 @@ export function ScopeChangeDialog({ action, commit, proposedChanges, newCommitTi
         </div>
 
         {/* Locked notice */}
-        <div data-testid="scope-change-locked-notice" className="mb-4 flex items-center gap-2 rounded-default border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-xs text-foreground">
+        <div data-testid="scope-change-locked-notice" className="mb-4 flex items-center gap-2 rounded-default border border-border bg-foreground/5 px-3 py-2.5 text-xs text-foreground">
           <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           This plan is <strong>locked</strong>. This change will be recorded in the scope-change timeline with your reason.
         </div>
@@ -99,7 +99,7 @@ export function ScopeChangeDialog({ action, commit, proposedChanges, newCommitTi
           </div>
         )}
         {action === "REMOVE" && commit && (
-          <div data-testid="scope-change-remove-preview" className="mb-4 rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2.5 text-sm">
+          <div data-testid="scope-change-remove-preview" className="mb-4 rounded-default border border-border bg-foreground/5 px-3 py-2.5 text-sm">
             <span className="font-semibold text-foreground">− Removing:</span> {commit.title}
           </div>
         )}
@@ -120,7 +120,7 @@ export function ScopeChangeDialog({ action, commit, proposedChanges, newCommitTi
                 {fieldChanges.map((change) => (
                   <tr key={change.field} data-testid="scope-change-field-row">
                     <td className="px-2.5 py-1.5 text-xs font-semibold border-b border-border">{change.field}</td>
-                    <td className="px-2.5 py-1.5 text-xs text-foreground bg-neutral-100 border-b border-border line-through">{change.before}</td>
+                    <td className="px-2.5 py-1.5 text-xs text-foreground bg-foreground/5 border-b border-border line-through">{change.before}</td>
                     <td className="px-2.5 py-1.5 text-xs text-foreground bg-foreground/5 border-b border-border font-semibold">{change.after}</td>
                   </tr>
                 ))}

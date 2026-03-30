@@ -145,8 +145,8 @@ export function TicketDetailView({ ticket, onStatusTransition, onAssigneeChange,
                     "px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-opacity",
                     transitioning !== null && "cursor-not-allowed opacity-60",
                     next === "DONE" ? "border-foreground/30 bg-foreground/5 text-foreground font-bold" :
-                    next === "BLOCKED" ? "border-neutral-300 bg-neutral-100 text-foreground" :
-                    next === "CANCELED" ? "border-neutral-200 bg-neutral-100 text-neutral-600" :
+                    next === "BLOCKED" ? "border-border bg-foreground/5 text-foreground" :
+                    next === "CANCELED" ? "border-border bg-foreground/5 text-muted" :
                     "border-border bg-background text-foreground",
                   )}>
                   {transitioning === next ? "…" : `→ ${TICKET_STATUS_LABELS[next]}`}

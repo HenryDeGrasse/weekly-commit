@@ -171,10 +171,10 @@ function SortableItem({ commit, rank, totalCount, isDraft, rcdoLabel, onEdit, on
               </div>
             )}
             {commit.carryForwardStreak > 0 && (
-              <div data-testid={`carry-forward-streak-${commit.id}`} className="flex items-center justify-between gap-2 rounded-default bg-neutral-100 px-3 py-1.5 text-xs text-foreground">
+              <div data-testid={`carry-forward-streak-${commit.id}`} className="flex items-center justify-between gap-2 rounded-default bg-foreground/5 px-3 py-1.5 text-xs text-foreground">
                 <span>🔁 Carried forward {commit.carryForwardStreak} time{commit.carryForwardStreak !== 1 ? "s" : ""}</span>
                 {onViewLineage && (
-                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onViewLineage(commit.id); }} data-testid={`view-lineage-btn-${commit.id}`} className="h-6 px-2 text-xs border border-neutral-300 text-foreground hover:bg-neutral-200">
+                  <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onViewLineage(commit.id); }} data-testid={`view-lineage-btn-${commit.id}`} className="h-6 px-2 text-xs border border-border text-foreground hover:bg-foreground/8">
                     View lineage
                   </Button>
                 )}

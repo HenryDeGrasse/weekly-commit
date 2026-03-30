@@ -139,12 +139,12 @@ export default function TeamWeek() {
         </div>
       )}
       {(teamError ?? exceptionsError) && (
-        <div role="alert" data-testid="team-week-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-foreground font-semibold">
+        <div role="alert" data-testid="team-week-error" className="rounded-default border border-border bg-foreground/5 px-3 py-2 text-sm text-foreground font-semibold">
           Failed to load team data: {(teamError ?? exceptionsError)?.message}
         </div>
       )}
       {actionError && (
-        <div role="alert" data-testid="team-action-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-xs text-foreground font-semibold">{actionError}</div>
+        <div role="alert" data-testid="team-action-error" className="rounded-default border border-border bg-foreground/5 px-3 py-2 text-xs text-foreground font-semibold">{actionError}</div>
       )}
 
       {teamWeekData && (

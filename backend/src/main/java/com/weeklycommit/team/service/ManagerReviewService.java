@@ -146,8 +146,7 @@ public class ManagerReviewService {
 				.collect(java.util.stream.Collectors.toMap(UserAccount::getId, UserAccount::getDisplayName));
 
 		return exceptions.stream().sorted(exceptionComparator())
-				.map(e -> ExceptionResponse.from(e, displayNames.get(e.getUserId())))
-				.toList();
+				.map(e -> ExceptionResponse.from(e, displayNames.get(e.getUserId()))).toList();
 	}
 
 	// -------------------------------------------------------------------------
@@ -299,8 +298,7 @@ public class ManagerReviewService {
 		exception.setResolvedById(resolverId);
 		ManagerReviewException saved = exceptionRepo.save(exception);
 
-		String displayName = userRepo.findById(saved.getUserId())
-				.map(UserAccount::getDisplayName).orElse(null);
+		String displayName = userRepo.findById(saved.getUserId()).map(UserAccount::getDisplayName).orElse(null);
 		return ExceptionResponse.from(saved, displayName);
 	}
 

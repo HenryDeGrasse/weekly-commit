@@ -26,7 +26,7 @@ import {
 
 const PRIORITY_CONFIG = {
   HIGH: { icon: AlertTriangle, className: "text-foreground", bgClassName: "bg-foreground/10" },
-  MEDIUM: { icon: Clock, className: "text-muted", bgClassName: "bg-neutral-100" },
+  MEDIUM: { icon: Clock, className: "text-muted", bgClassName: "bg-foreground/5" },
   LOW: { icon: Info, className: "text-muted", bgClassName: "bg-surface-raised" },
 } as const;
 

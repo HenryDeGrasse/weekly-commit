@@ -159,9 +159,9 @@ class TeamControllerTest {
 	void resolveException_returnsResolvedResponse() throws Exception {
 		UUID exceptionId = UUID.randomUUID();
 		when(managerReviewService.resolveException(eq(exceptionId), eq("Addressed in standup"), eq(managerId)))
-				.thenReturn(new ExceptionResponse(exceptionId, teamId, null, userId, "Test User", ExceptionType.MISSED_LOCK,
-						ExceptionSeverity.HIGH, "Missed lock", weekStart, true, "Addressed in standup", Instant.now(),
-						managerId, Instant.now()));
+				.thenReturn(new ExceptionResponse(exceptionId, teamId, null, userId, "Test User",
+						ExceptionType.MISSED_LOCK, ExceptionSeverity.HIGH, "Missed lock", weekStart, true,
+						"Addressed in standup", Instant.now(), managerId, Instant.now()));
 
 		mockMvc.perform(put("/api/exceptions/" + exceptionId + "/resolve").contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper

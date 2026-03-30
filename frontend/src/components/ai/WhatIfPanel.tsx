@@ -449,7 +449,7 @@ export function WhatIfPanel({ planId, currentCommits }: WhatIfPanelProps) {
             {/* Simulation unavailable */}
             {!result.available && (
               <div
-                className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-xs text-muted"
+                className="rounded-default border border-border bg-foreground/5 px-3 py-2 text-xs text-muted"
                 data-testid="whatif-unavailable"
               >
                 Simulation is currently unavailable.

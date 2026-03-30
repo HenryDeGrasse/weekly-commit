@@ -39,7 +39,7 @@ export function CapacityMeter({ commits, budgetPoints, isManagerOverride = false
         <h3 className="m-0 text-sm font-bold">Capacity</h3>
         <div className="flex items-center gap-2">
           {(isManagerOverride || budgetPoints !== DEFAULT_BUDGET) && (
-            <span data-testid="override-badge" className="text-[0.7rem] font-bold px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-700">
+            <span data-testid="override-badge" className="text-[0.7rem] font-bold px-1.5 py-0.5 rounded-full bg-foreground/12 text-foreground">
               Manager override
             </span>
           )}

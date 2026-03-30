@@ -212,7 +212,7 @@ export function CommitDraftAssistButton({
                   "rounded-sm border px-2.5 py-2 text-xs",
                   isAccepted
                     ? "border-foreground/20 bg-foreground/5"
-                    : "border-neutral-200 bg-white",
+                    : "border-border bg-surface",
                 )}
                 data-testid={`ai-suggestion-${s.label.toLowerCase().replace(/\s/g, "-")}`}
               >
@@ -232,7 +232,7 @@ export function CommitDraftAssistButton({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleAccept(s.label, s.onAccept)}
-                      className="h-6 w-6 text-foreground hover:bg-neutral-100 shrink-0"
+                      className="h-6 w-6 text-foreground hover:bg-foreground/8 shrink-0"
                       aria-label={`Accept ${s.label} suggestion`}
                       data-testid={`ai-accept-${s.label.toLowerCase().replace(/\s/g, "-")}`}
                     >

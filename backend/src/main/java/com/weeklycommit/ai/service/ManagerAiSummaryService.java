@@ -142,13 +142,10 @@ public class ManagerAiSummaryService {
 		List<String> topRcdoBranches = deriveTopRcdoBranches(allCommits);
 
 		// ── Plan-level aggregates for the prompt's planData field ──────────────────
-		long lockedPlanCount = plans.stream()
-				.filter(p -> p.getState() != null
-						&& !p.getState().name().equals("DRAFT"))
+		long lockedPlanCount = plans.stream().filter(p -> p.getState() != null && !p.getState().name().equals("DRAFT"))
 				.count();
 		long reconciledPlanCount = plans.stream()
-				.filter(p -> p.getState() != null && p.getState().name().equals("RECONCILED"))
-				.count();
+				.filter(p -> p.getState() != null && p.getState().name().equals("RECONCILED")).count();
 		int totalPlannedPoints = allCommits.stream()
 				.mapToInt(c -> c.getEstimatePoints() != null ? c.getEstimatePoints() : 0).sum();
 		int totalAchievedPoints = allCommits.stream()
@@ -182,10 +179,8 @@ public class ManagerAiSummaryService {
 		// ── Additional context — manager dashboard aggregates ──────────────────────
 		long missedLocks = (memberships.size() - plans.size())
 				+ plans.stream().filter(p -> p.getState() != null && p.getState().name().equals("DRAFT")).count();
-		long missedReconciles = plans.stream()
-				.filter(p -> p.getState() != null
-						&& (p.getState().name().equals("LOCKED") || p.getState().name().equals("RECONCILING")))
-				.count();
+		long missedReconciles = plans.stream().filter(p -> p.getState() != null
+				&& (p.getState().name().equals("LOCKED") || p.getState().name().equals("RECONCILING"))).count();
 
 		Map<String, Object> additionalCtx = new HashMap<>();
 		additionalCtx.put("exceptionCount", unresolvedExceptionIds.size());
@@ -195,9 +190,8 @@ public class ManagerAiSummaryService {
 		additionalCtx.put("carryForwardPatterns", carryForwardPatterns);
 		additionalCtx.put("criticalBlockedItems", criticalBlockedItemIds.size());
 
-		AiContext context = new AiContext(AiContext.TYPE_TEAM_SUMMARY, callerId, null, null, Map.of(),
-				planData, historicalCommits, List.of(),
-				additionalCtx);
+		AiContext context = new AiContext(AiContext.TYPE_TEAM_SUMMARY, callerId, null, null, Map.of(), planData,
+				historicalCommits, List.of(), additionalCtx);
 
 		AiSuggestionResult result = registry.generateSuggestion(context);
 		if (!result.available()) {

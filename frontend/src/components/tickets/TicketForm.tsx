@@ -172,7 +172,7 @@ export function TicketForm({ mode, initialValues, currentUserId, currentTeamId, 
           <Input id="tf-target-week" label="Target Week (optional)" type="date" value={targetWeek} onChange={(e) => setTargetWeek(e.target.value)} data-testid="ticket-form-target-week" />
 
           {submitError && (
-            <div role="alert" data-testid="ticket-form-submit-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2 text-xs text-foreground font-semibold">{submitError}</div>
+            <div role="alert" data-testid="ticket-form-submit-error" className="rounded-default border border-border bg-foreground/5 px-3 py-2 text-xs text-foreground font-semibold">{submitError}</div>
           )}
 
           <div className="flex gap-2 justify-end mt-1">

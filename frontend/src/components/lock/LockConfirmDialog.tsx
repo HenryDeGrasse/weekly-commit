@@ -59,7 +59,7 @@ export function LockConfirmDialog({ commits, capacityBudgetPoints, weekLabel, on
         <p className="m-0 mb-2 text-xs font-semibold uppercase tracking-wider text-muted">Commit breakdown</p>
         <div data-testid="lock-confirm-piece-breakdown" className="flex flex-wrap gap-1.5">
           {pieceOrder.filter((p) => chessPieceCounts[p] > 0).map((piece) => (
-            <span key={piece} data-testid={`piece-count-${piece.toLowerCase()}`} className="rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs font-semibold text-neutral-800">
+            <span key={piece} data-testid={`piece-count-${piece.toLowerCase()}`} className="rounded-full bg-foreground/12 px-2.5 py-0.5 text-xs font-semibold text-foreground">
               {CHESS_PIECE_ICONS[piece]} {chessPieceCounts[piece]}×{piece.charAt(0) + piece.slice(1).toLowerCase()}
             </span>
           ))}

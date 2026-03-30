@@ -121,9 +121,9 @@ export function PlanHeaderBar({
         <div
           data-testid="auto-lock-banner"
           role="alert"
-          className="flex items-start gap-2 rounded-default border border-neutral-300 bg-neutral-100 px-4 py-3 text-sm text-neutral-900"
+          className="flex items-start gap-2 rounded-default border border-border bg-foreground/5 px-4 py-3 text-sm text-foreground"
         >
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-neutral-500" aria-hidden="true" />
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-muted" aria-hidden="true" />
           <span>
             <strong>System-locked with errors</strong> — this plan was automatically locked at the deadline. Some
             validation issues were present at lock time. Please review and reconcile.

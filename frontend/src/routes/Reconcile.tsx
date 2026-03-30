@@ -58,7 +58,7 @@ function BaselineColumn({ commitView, rcdoLabels }: { readonly commitView: Recon
 
   if (commitView.addedPostLock) {
     return (
-      <div data-testid={`baseline-col-${commitView.commitId}`} className="px-2.5 py-2 rounded-sm bg-neutral-50 text-xs text-muted italic">
+      <div data-testid={`baseline-col-${commitView.commitId}`} className="px-2.5 py-2 rounded-sm bg-foreground/5 text-xs text-muted italic">
         Added post-lock — no baseline
       </div>
     );
@@ -77,16 +77,16 @@ function BaselineColumn({ commitView, rcdoLabels }: { readonly commitView: Recon
 
   return (
     <div data-testid={`baseline-col-${commitView.commitId}`} className="flex flex-col gap-1.5">
-      <div data-testid={`baseline-title-${commitView.commitId}`} className={cn("text-sm font-semibold rounded-sm", titleChanged ? "bg-neutral-200 text-foreground line-through px-1 py-px" : "text-foreground")}>
+      <div data-testid={`baseline-title-${commitView.commitId}`} className={cn("text-sm font-semibold rounded-sm", titleChanged ? "bg-foreground/12 text-foreground line-through px-1 py-px" : "text-foreground")}>
         {baselineTitle ?? "—"}
       </div>
       {baselineChessPiece && (
-        <div data-testid={`baseline-piece-${commitView.commitId}`} className={cn("text-xs rounded-sm", pieceChanged ? "bg-neutral-200 text-foreground line-through px-1 py-px" : "text-muted")}>
+        <div data-testid={`baseline-piece-${commitView.commitId}`} className={cn("text-xs rounded-sm", pieceChanged ? "bg-foreground/12 text-foreground line-through px-1 py-px" : "text-muted")}>
           {CHESS_PIECE_ICONS[baselineChessPiece]} {baselineChessPiece}
         </div>
       )}
       {baselineEstimate != null && (
-        <div data-testid={`baseline-estimate-${commitView.commitId}`} className={cn("text-xs rounded-sm", estimateChanged ? "bg-neutral-200 text-foreground line-through px-1 py-px" : "text-muted")}>
+        <div data-testid={`baseline-estimate-${commitView.commitId}`} className={cn("text-xs rounded-sm", estimateChanged ? "bg-foreground/12 text-foreground line-through px-1 py-px" : "text-muted")}>
           {baselineEstimate} pts
         </div>
       )}
@@ -121,7 +121,7 @@ function CurrentColumn({ commitView }: { readonly commitView: ReconcileCommitVie
         </div>
       )}
       {commitView.linkedTicketStatus && (
-        <span data-testid={`ticket-status-${commitView.commitId}`} className={cn("inline-flex items-center gap-1 px-2 py-px rounded-full text-[0.7rem] font-semibold", commitView.linkedTicketStatus === "DONE" ? "bg-foreground/10 text-foreground" : "bg-neutral-200 text-neutral-700")}>
+        <span data-testid={`ticket-status-${commitView.commitId}`} className={cn("inline-flex items-center gap-1 px-2 py-px rounded-full text-[0.7rem] font-semibold", commitView.linkedTicketStatus === "DONE" ? "bg-foreground/10 text-foreground" : "bg-foreground/12 text-foreground")}>
           🎫 {commitView.linkedTicketStatus}
         </span>
       )}
@@ -254,9 +254,9 @@ function SubmitConfirmDialog({ achievedCount, partialCount, notAchievedCount, ca
 }) {
   const summaryItems = [
     { label: "Achieved", count: achievedCount, cls: "bg-foreground/5 text-foreground" },
-    { label: "Partial", count: partialCount, cls: "bg-neutral-100 text-muted" },
-    { label: "Not Achieved", count: notAchievedCount, cls: "bg-neutral-200 text-foreground" },
-    { label: "Canceled", count: canceledCount, cls: "bg-neutral-100 text-neutral-500" },
+    { label: "Partial", count: partialCount, cls: "bg-foreground/5 text-muted" },
+    { label: "Not Achieved", count: notAchievedCount, cls: "bg-foreground/12 text-foreground" },
+    { label: "Canceled", count: canceledCount, cls: "bg-foreground/5 text-muted" },
   ];
   return (
     <Dialog open onClose={onCancel} aria-label="Submit Reconciliation" data-testid="reconcile-submit-dialog">
@@ -553,7 +553,7 @@ export default function ReconcilePage() {
     return (
       <div data-testid="page-reconcile" className="flex flex-col gap-4">
         <h2 className="m-0 text-xl font-bold">Reconcile</h2>
-        <div role="alert" data-testid="reconcile-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2.5 text-sm text-danger">
+        <div role="alert" data-testid="reconcile-error" className="rounded-default border border-border bg-foreground/5 px-3 py-2.5 text-sm text-danger">
           Failed to load reconciliation view: {error.message}
         </div>
       </div>
@@ -624,7 +624,7 @@ export default function ReconcilePage() {
       )}
 
       {submitError && (
-        <div role="alert" data-testid="reconcile-submit-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2.5 text-sm text-danger">{submitError}</div>
+        <div role="alert" data-testid="reconcile-submit-error" className="rounded-default border border-border bg-foreground/5 px-3 py-2.5 text-sm text-danger">{submitError}</div>
       )}
 
       {isReadOnly && (

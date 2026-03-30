@@ -29,7 +29,7 @@ export function SoftWarningsPanel({ commits }: SoftWarningsPanelProps) {
           data-testid="warning-too-many-commits"
           className="flex items-start gap-2 px-3 py-2.5 rounded-default border border-warning/30 bg-warning/5 text-sm text-foreground"
         >
-          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-neutral-500" aria-hidden="true" />
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-muted" aria-hidden="true" />
           <span>
             <strong>Too many commits:</strong> you have {activeCommits.length} active commits. Consider focusing on
             fewer items for better weekly throughput (recommended: ≤{SOFT_MAX_COMMITS}).
@@ -41,9 +41,9 @@ export function SoftWarningsPanel({ commits }: SoftWarningsPanelProps) {
         <div
           role="status"
           data-testid="warning-pawn-heavy"
-          className="flex items-start gap-2 px-3 py-2.5 rounded-default border border-neutral-300 bg-neutral-100 text-sm text-foreground"
+          className="flex items-start gap-2 px-3 py-2.5 rounded-default border border-border bg-foreground/5 text-sm text-foreground"
         >
-          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-neutral-500" aria-hidden="true" />
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-muted" aria-hidden="true" />
           <span>
             <strong>Pawn-heavy plan:</strong> {Math.round((pawnPoints / totalPoints) * 100)}% of your points are Pawn
             commits. Consider elevating strategic work.

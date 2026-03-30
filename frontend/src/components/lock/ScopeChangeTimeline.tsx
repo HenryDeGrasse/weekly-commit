@@ -76,7 +76,7 @@ export function ScopeChangeTimeline({ events }: ScopeChangeTimelineProps) {
               <p className="m-0 mt-1 text-xs text-muted">{event.reason}</p>
               {event.previousValue != null && event.newValue != null && (
                 <div className="flex gap-1.5 mt-1 items-center text-xs flex-wrap">
-                  <span className="font-mono px-1.5 py-px rounded bg-neutral-100 text-foreground line-through">{event.previousValue}</span>
+                  <span className="font-mono px-1.5 py-px rounded bg-foreground/5 text-foreground line-through">{event.previousValue}</span>
                   <span className="text-muted">→</span>
                   <span className="font-mono px-1.5 py-px rounded bg-foreground/5 text-foreground font-semibold">{event.newValue}</span>
                 </div>
