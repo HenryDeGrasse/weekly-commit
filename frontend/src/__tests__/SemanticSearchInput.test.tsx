@@ -139,7 +139,7 @@ describe("SemanticSearchInput", () => {
   });
 
   it("clicking a suggested question calls startStream", async () => {
-    renderInput();
+    renderInput({ teamId: "team-1" });
 
     const suggestedBtn = screen.getByTestId(
       "suggested-q-what-did-the-team-co",

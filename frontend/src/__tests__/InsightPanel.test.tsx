@@ -291,7 +291,7 @@ describe("InsightPanel", () => {
     );
   });
 
-  it("renders nothing when no insights returned (personal)", () => {
+  it("renders empty state message when no insights returned (personal)", () => {
     vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
       data: { aiAvailable: true, insights: [] },
       loading: false,
@@ -301,7 +301,10 @@ describe("InsightPanel", () => {
 
     renderPersonal();
 
-    expect(screen.queryByTestId("insight-panel-empty")).not.toBeInTheDocument();
+    expect(screen.getByTestId("insight-panel-empty")).toBeInTheDocument();
+    expect(screen.getByTestId("insight-panel-empty")).toHaveTextContent(
+      "No insights available for this period.",
+    );
   });
 
   // ── AI unavailable ─────────────────────────────────────────────────────

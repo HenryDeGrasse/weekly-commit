@@ -112,6 +112,7 @@ export function AiCommitComposer({
   const [draft, setDraft] = useState<AiDraft | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showRcdoPicker, setShowRcdoPicker] = useState(false);
+  const [rcdoSearchQuery, setRcdoSearchQuery] = useState("");
 
   const isAvailable = aiStatus?.available ?? false;
   const nodes = rcdoTree ?? [];
@@ -567,14 +568,22 @@ export function AiCommitComposer({
                 {showRcdoPicker && nodes.length > 0 && (
                   <div
                     data-testid="ai-composer-rcdo-picker"
-                    className="mt-1 rounded-default border border-border p-3 max-h-[220px] overflow-y-auto"
+                    className="mt-1 rounded-default border border-border p-3 max-h-[260px] overflow-y-auto flex flex-col gap-2"
                   >
+                    <input
+                      type="search"
+                      value={rcdoSearchQuery}
+                      onChange={(e) => setRcdoSearchQuery(e.target.value)}
+                      placeholder="Search nodes…"
+                      data-testid="ai-composer-rcdo-search"
+                      className="h-7 w-full rounded-default border border-border bg-surface px-2.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    />
                     <RcdoTreeView
                       nodes={nodes}
                       selectedId={draft.rcdoNodeId || null}
                       onSelect={handleSelectRcdo}
                       statusFilter="active-only"
-                      searchQuery=""
+                      searchQuery={rcdoSearchQuery}
                     />
                   </div>
                 )}

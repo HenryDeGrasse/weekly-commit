@@ -239,8 +239,14 @@ function PersonalInsightPanel({ planId }: { planId?: string }) {
   }
 
   if (data.insights.length === 0) {
-    // Return null when empty — parent section handles the "nothing here" state
-    return null;
+    return (
+      <p
+        className="text-sm text-muted"
+        data-testid="insight-panel-empty"
+      >
+        No insights available for this period.
+      </p>
+    );
   }
 
   return <BalancedInsightCardList insights={data.insights} />;

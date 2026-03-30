@@ -11,12 +11,20 @@ import { cn } from "../../lib/utils.js";
 import { useStreamingRagQuery } from "../../api/ragStreamHooks.js";
 import { QueryAnswerCard } from "./QueryAnswerCard.js";
 
-const SUGGESTED_QUESTIONS = [
+const TEAM_SUGGESTED_QUESTIONS = [
   "What did the team commit to last week?",
   "Which RCDOs received the most effort this month?",
   "What are the recurring carry-forward patterns?",
   "Which team members are overcommitting?",
   "What KING/QUEEN work was achieved last week?",
+] as const;
+
+const PERSONAL_SUGGESTED_QUESTIONS = [
+  "What did I commit to last week?",
+  "What carry-forward patterns do I have?",
+  "Which of my RCDOs had the most effort?",
+  "What KING/QUEEN work did I achieve?",
+  "How has my capacity trended recently?",
 ] as const;
 
 interface SemanticSearchInputProps {
@@ -30,6 +38,7 @@ export function SemanticSearchInput({
   userId,
   className,
 }: SemanticSearchInputProps) {
+  const SUGGESTED_QUESTIONS = teamId ? TEAM_SUGGESTED_QUESTIONS : PERSONAL_SUGGESTED_QUESTIONS;
   const [question, setQuestion] = useState("");
   const {
     answer,
@@ -69,7 +78,7 @@ export function SemanticSearchInput({
       <div className="flex items-center gap-2">
         <Bot className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
         <span className="text-sm font-semibold text-foreground whitespace-nowrap">
-          Ask AI about your team&apos;s work
+          {teamId ? "Ask AI about your team\u2019s work" : "Ask AI about your work"}
         </span>
       </div>
 
