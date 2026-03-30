@@ -38,16 +38,21 @@ public class PineconeClient {
 
 	private static final Logger log = LoggerFactory.getLogger(PineconeClient.class);
 	private static final String CONTROL_PLANE_URL = "https://api.pinecone.io";
-	private static final int EMBEDDING_DIMENSION = 1536;
 
 	private final String apiKey;
 	private final String indexName;
 	private final String environment;
+	private final int dimension;
+	private final String voyageIndexName;
+	private final int voyageDimension;
 	private final ObjectMapper objectMapper;
 	private final HttpClient httpClient;
 
 	/** Resolved at runtime by {@link #ensureIndexExists()}. */
 	private volatile String indexHost;
+
+	/** Resolved at runtime by {@link #ensureVoyageIndexExists()}. */
+	private volatile String voyageIndexHost;
 
 	// ── Inner records ────────────────────────────────────────────────────
 
@@ -83,27 +88,44 @@ public class PineconeClient {
 	@Autowired
 	public PineconeClient(@Value("${ai.pinecone.api-key:}") String apiKey,
 			@Value("${ai.pinecone.index-name:weekly-commit}") String indexName,
-			@Value("${ai.pinecone.environment:us-east-1}") String environment, ObjectMapper objectMapper) {
-		this(apiKey, indexName, environment, objectMapper,
+			@Value("${ai.pinecone.environment:us-east-1}") String environment,
+			@Value("${ai.embedding.dimensions:1536}") int dimension,
+			@Value("${ai.pinecone.voyage-index-name:weekly-commit-voyage}") String voyageIndexName,
+			@Value("${ai.pinecone.voyage-dimensions:1024}") int voyageDimension,
+			ObjectMapper objectMapper) {
+		this(apiKey, indexName, environment, dimension, voyageIndexName, voyageDimension, objectMapper,
 				HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
 	}
 
 	/**
 	 * Package-private constructor for unit tests — allows injecting a mock
-	 * {@link HttpClient}.
+	 * {@link HttpClient}. Uses default dimensions (1536 primary, 1024 voyage).
 	 */
 	PineconeClient(String apiKey, String indexName, String environment, ObjectMapper objectMapper,
 			HttpClient httpClient) {
+		this(apiKey, indexName, environment, 1536, "weekly-commit-voyage", 1024, objectMapper, httpClient);
+	}
+
+	/**
+	 * Full constructor used by the Spring-managed constructor and tests that need
+	 * custom dimensions.
+	 */
+	PineconeClient(String apiKey, String indexName, String environment, int dimension, String voyageIndexName,
+			int voyageDimension, ObjectMapper objectMapper, HttpClient httpClient) {
 		this.apiKey = apiKey;
 		this.indexName = indexName;
 		this.environment = environment;
+		this.dimension = dimension;
+		this.voyageIndexName = voyageIndexName;
+		this.voyageDimension = voyageDimension;
 		this.objectMapper = objectMapper;
 		this.httpClient = httpClient;
 
 		if (apiKey == null || apiKey.isBlank()) {
 			log.warn("PineconeClient: API key is blank — vector operations will be no-ops");
 		} else {
-			log.info("PineconeClient initialized: indexName={}, environment={}", indexName, environment);
+			log.info("PineconeClient initialized: indexName={} ({}d), voyageIndex={} ({}d), environment={}",
+					indexName, dimension, voyageIndexName, voyageDimension, environment);
 		}
 	}
 
@@ -117,13 +139,13 @@ public class PineconeClient {
 	}
 
 	/**
-	 * Lazily ensures the Pinecone index exists and populates {@link #indexHost}.
+	 * Lazily ensures the primary Pinecone index exists and populates
+	 * {@link #indexHost}.
 	 *
 	 * <p>
 	 * On first call: issues GET {@code /indexes/{indexName}} to the Pinecone
-	 * control plane. If the index does not exist (HTTP 404), issues POST
-	 * {@code /indexes} to create a serverless index (dimension: 1536, metric:
-	 * dotproduct, region: environment). Subsequent calls are no-ops once
+	 * control plane. If the index does not exist (HTTP 404), creates a serverless
+	 * index at the configured {@link #dimension}. Subsequent calls are no-ops once
 	 * {@code indexHost} has been resolved.
 	 */
 	public void ensureIndexExists() {
@@ -131,33 +153,28 @@ public class PineconeClient {
 			return;
 		}
 		try {
-			HttpRequest getReq = controlRequest("GET", "/indexes/" + indexName, null);
-			HttpResponse<String> getResp = httpClient.send(getReq, HttpResponse.BodyHandlers.ofString());
-
-			if (getResp.statusCode() == 200) {
-				indexHost = parseIndexHost(getResp.body());
-				log.info("PineconeClient: resolved index host={}", indexHost);
-				return;
-			}
-
-			if (getResp.statusCode() == 404) {
-				log.info("PineconeClient: index '{}' not found — creating serverless index", indexName);
-				createIndex();
-				// Fetch again to get the host after creation
-				HttpResponse<String> refetchResp = httpClient.send(getReq, HttpResponse.BodyHandlers.ofString());
-				if (refetchResp.statusCode() == 200) {
-					indexHost = parseIndexHost(refetchResp.body());
-					log.info("PineconeClient: index created, host={}", indexHost);
-				} else {
-					log.warn("PineconeClient: index creation may still be pending (status={})",
-							refetchResp.statusCode());
-				}
-				return;
-			}
-
-			log.warn("PineconeClient: unexpected status {} when checking index", getResp.statusCode());
+			indexHost = resolveOrCreateIndex(indexName, dimension);
 		} catch (Exception e) {
 			log.warn("PineconeClient: ensureIndexExists failed: {}", e.getMessage());
+		}
+	}
+
+	/**
+	 * Lazily ensures the Voyage AI secondary index exists and populates
+	 * {@link #voyageIndexHost}.
+	 *
+	 * <p>
+	 * Creates a serverless index at {@link #voyageDimension} (default 1024) if it
+	 * does not already exist.
+	 */
+	public void ensureVoyageIndexExists() {
+		if (!isAvailable() || voyageIndexHost != null) {
+			return;
+		}
+		try {
+			voyageIndexHost = resolveOrCreateIndex(voyageIndexName, voyageDimension);
+		} catch (Exception e) {
+			log.warn("PineconeClient: ensureVoyageIndexExists failed: {}", e.getMessage());
 		}
 	}
 
@@ -178,35 +195,7 @@ public class PineconeClient {
 			log.warn("PineconeClient: upsert skipped — index host not resolved");
 			return;
 		}
-		try {
-			ObjectNode body = objectMapper.createObjectNode();
-			body.put("namespace", namespace != null ? namespace : "");
-			ArrayNode vectorsNode = body.putArray("vectors");
-			for (PineconeVector v : vectors) {
-				ObjectNode vNode = vectorsNode.addObject();
-				vNode.put("id", v.id());
-				ArrayNode valuesNode = vNode.putArray("values");
-				for (float f : v.values()) {
-					valuesNode.add(f);
-				}
-				if (v.metadata() != null && !v.metadata().isEmpty()) {
-					vNode.set("metadata", objectMapper.valueToTree(v.metadata()));
-				}
-				if (v.sparseValues() != null && !v.sparseValues().isEmpty()) {
-					vNode.set("sparse_values", buildSparseValuesNode(v.sparseValues()));
-				}
-			}
-			String json = objectMapper.writeValueAsString(body);
-			HttpRequest req = dataRequest("POST", "/vectors/upsert", json);
-			HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-			if (resp.statusCode() != 200) {
-				log.warn("PineconeClient: upsert returned {}: {}", resp.statusCode(), resp.body());
-			} else {
-				log.debug("PineconeClient: upserted {} vectors to namespace='{}'", vectors.size(), namespace);
-			}
-		} catch (Exception e) {
-			log.warn("PineconeClient: upsert failed: {}", e.getMessage());
-		}
+		upsertToHost(indexHost, namespace, vectors);
 	}
 
 	/**
@@ -263,6 +252,93 @@ public class PineconeClient {
 			log.warn("PineconeClient: query skipped — index host not resolved");
 			return Collections.emptyList();
 		}
+		return executeQueryOnHost(indexHost, namespace, vector, topK, filter, sparseVector);
+	}
+
+	/**
+	 * Upserts vectors into the Voyage AI secondary index (1024-d).
+	 *
+	 * @param namespace
+	 *            Pinecone namespace (same org-based namespace as primary)
+	 * @param vectors
+	 *            dense vectors — must be 1024-d voyage-4 embeddings
+	 */
+	public void upsertVoyage(String namespace, List<PineconeVector> vectors) {
+		if (!isAvailable() || vectors == null || vectors.isEmpty()) {
+			return;
+		}
+		ensureVoyageIndexExists();
+		if (voyageIndexHost == null) {
+			log.warn("PineconeClient: voyage upsert skipped — index host not resolved");
+			return;
+		}
+		upsertToHost(voyageIndexHost, namespace, vectors);
+	}
+
+	/**
+	 * Queries the Voyage AI secondary index (1024-d) for the nearest neighbours of
+	 * {@code vector}.
+	 *
+	 * @param namespace
+	 *            Pinecone namespace
+	 * @param vector
+	 *            1024-d voyage-4 query vector
+	 * @param topK
+	 *            maximum number of results
+	 * @param filter
+	 *            optional metadata filter (may be null or empty)
+	 * @return list of matches, empty on error
+	 */
+	public List<PineconeMatch> queryVoyage(String namespace, float[] vector, int topK,
+			Map<String, Object> filter) {
+		if (!isAvailable() || vector == null || vector.length == 0) {
+			return Collections.emptyList();
+		}
+		ensureVoyageIndexExists();
+		if (voyageIndexHost == null) {
+			log.warn("PineconeClient: voyage query skipped — index host not resolved");
+			return Collections.emptyList();
+		}
+		return executeQueryOnHost(voyageIndexHost, namespace, vector, topK, filter, null);
+	}
+
+	/** Shared upsert logic for any resolved index host. */
+	private void upsertToHost(String host, String namespace, List<PineconeVector> vectors) {
+		try {
+			ObjectNode body = objectMapper.createObjectNode();
+			body.put("namespace", namespace != null ? namespace : "");
+			ArrayNode vectorsNode = body.putArray("vectors");
+			for (PineconeVector v : vectors) {
+				ObjectNode vNode = vectorsNode.addObject();
+				vNode.put("id", v.id());
+				ArrayNode valuesNode = vNode.putArray("values");
+				for (float f : v.values()) {
+					valuesNode.add(f);
+				}
+				if (v.metadata() != null && !v.metadata().isEmpty()) {
+					vNode.set("metadata", objectMapper.valueToTree(v.metadata()));
+				}
+				if (v.sparseValues() != null && !v.sparseValues().isEmpty()) {
+					vNode.set("sparse_values", buildSparseValuesNode(v.sparseValues()));
+				}
+			}
+			String json = objectMapper.writeValueAsString(body);
+			HttpRequest req = hostRequest(host, "POST", "/vectors/upsert", json);
+			HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+			if (resp.statusCode() != 200) {
+				log.warn("PineconeClient: upsert to {} returned {}: {}", host, resp.statusCode(), resp.body());
+			} else {
+				log.debug("PineconeClient: upserted {} vectors to namespace='{}' on {}", vectors.size(), namespace,
+						host);
+			}
+		} catch (Exception e) {
+			log.warn("PineconeClient: upsert to {} failed: {}", host, e.getMessage());
+		}
+	}
+
+	/** Shared query logic for any resolved index host. */
+	private List<PineconeMatch> executeQueryOnHost(String host, String namespace, float[] vector, int topK,
+			Map<String, Object> filter, Map<Integer, Float> sparseVector) {
 		try {
 			ObjectNode body = objectMapper.createObjectNode();
 			body.put("namespace", namespace != null ? namespace : "");
@@ -279,15 +355,15 @@ public class PineconeClient {
 				body.set("sparse_vector", buildSparseValuesNode(sparseVector));
 			}
 			String json = objectMapper.writeValueAsString(body);
-			HttpRequest req = dataRequest("POST", "/query", json);
+			HttpRequest req = hostRequest(host, "POST", "/query", json);
 			HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 			if (resp.statusCode() != 200) {
-				log.warn("PineconeClient: query returned {}: {}", resp.statusCode(), resp.body());
+				log.warn("PineconeClient: query on {} returned {}: {}", host, resp.statusCode(), resp.body());
 				return Collections.emptyList();
 			}
 			return parseMatches(resp.body());
 		} catch (Exception e) {
-			log.warn("PineconeClient: query failed: {}", e.getMessage());
+			log.warn("PineconeClient: query on {} failed: {}", host, e.getMessage());
 			return Collections.emptyList();
 		}
 	}
@@ -315,7 +391,7 @@ public class PineconeClient {
 			ArrayNode idsNode = body.putArray("ids");
 			ids.forEach(idsNode::add);
 			String json = objectMapper.writeValueAsString(body);
-			HttpRequest req = dataRequest("POST", "/vectors/delete", json);
+			HttpRequest req = hostRequest(indexHost, "POST", "/vectors/delete", json);
 			HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 			if (resp.statusCode() != 200) {
 				log.warn("PineconeClient: deleteByIds returned {}: {}", resp.statusCode(), resp.body());
@@ -329,10 +405,43 @@ public class PineconeClient {
 
 	// ── Private helpers ──────────────────────────────────────────────────
 
-	private void createIndex() throws Exception {
+	/**
+	 * Resolves the host for {@code name}, creating the index if it does not exist.
+	 * Returns the resolved host URL, or throws on unrecoverable failure.
+	 */
+	private String resolveOrCreateIndex(String name, int dims) throws Exception {
+		HttpRequest getReq = controlRequest("GET", "/indexes/" + name, null);
+		HttpResponse<String> getResp = httpClient.send(getReq, HttpResponse.BodyHandlers.ofString());
+
+		if (getResp.statusCode() == 200) {
+			String host = parseIndexHost(getResp.body());
+			log.info("PineconeClient: resolved index '{}' host={}", name, host);
+			return host;
+		}
+
+		if (getResp.statusCode() == 404) {
+			log.info("PineconeClient: index '{}' not found — creating serverless index ({}d)", name, dims);
+			createIndex(name, dims);
+			HttpResponse<String> refetchResp = httpClient.send(getReq, HttpResponse.BodyHandlers.ofString());
+			if (refetchResp.statusCode() == 200) {
+				String host = parseIndexHost(refetchResp.body());
+				log.info("PineconeClient: index '{}' created, host={}", name, host);
+				return host;
+			} else {
+				log.warn("PineconeClient: index '{}' creation may still be pending (status={})", name,
+						refetchResp.statusCode());
+				return null;
+			}
+		}
+
+		log.warn("PineconeClient: unexpected status {} when checking index '{}'", getResp.statusCode(), name);
+		return null;
+	}
+
+	private void createIndex(String name, int dims) throws Exception {
 		ObjectNode body = objectMapper.createObjectNode();
-		body.put("name", indexName);
-		body.put("dimension", EMBEDDING_DIMENSION);
+		body.put("name", name);
+		body.put("dimension", dims);
 		body.put("metric", "dotproduct");
 		ObjectNode spec = body.putObject("spec");
 		ObjectNode serverless = spec.putObject("serverless");
@@ -342,7 +451,7 @@ public class PineconeClient {
 		HttpRequest req = controlRequest("POST", "/indexes", json);
 		HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 		if (resp.statusCode() != 201 && resp.statusCode() != 200) {
-			log.warn("PineconeClient: createIndex returned {}: {}", resp.statusCode(), resp.body());
+			log.warn("PineconeClient: createIndex '{}' returned {}: {}", name, resp.statusCode(), resp.body());
 		}
 	}
 
@@ -388,8 +497,8 @@ public class PineconeClient {
 		return builder.build();
 	}
 
-	private HttpRequest dataRequest(String method, String path, String jsonBody) throws Exception {
-		String hostUrl = indexHost.startsWith("http") ? indexHost : "https://" + indexHost;
+	private HttpRequest hostRequest(String host, String method, String path, String jsonBody) throws Exception {
+		String hostUrl = host.startsWith("http") ? host : "https://" + host;
 		HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(hostUrl + path)).header("Api-Key", apiKey)
 				.header("Content-Type", "application/json").timeout(Duration.ofSeconds(30));
 		if ("POST".equals(method) && jsonBody != null) {

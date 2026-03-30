@@ -54,20 +54,25 @@ ai:
     model: ${OPENROUTER_MODEL:anthropic/claude-sonnet-4}
     max-tokens: ${OPENROUTER_MAX_TOKENS:1024}
     base-url: https://openrouter.ai/api/v1
+  voyage:
+    api-key: ${VOYAGE_API_KEY:}
+    base-url: https://api.voyageai.com/v1
   pinecone:
     api-key: ${PINECONE_API_KEY:}
     index-name: ${PINECONE_INDEX_NAME:weekly-commit}
     environment: ${PINECONE_ENVIRONMENT:us-east-1}
+    voyage-index-name: ${PINECONE_VOYAGE_INDEX_NAME:weekly-commit-voyage}
+    voyage-dimensions: ${PINECONE_VOYAGE_DIMENSIONS:1024}
   embedding:
     model: openai/text-embedding-3-small
     dimensions: 1536
   experiments:
     experiments:
       embedding-model:
-        enabled: false
-        control-weight: 1.0
+        enabled: true          # A/B test: OpenAI text-embedding-3-small vs Voyage voyage-4
+        control-weight: 0.5    # 50/50 split
         control-value: openai/text-embedding-3-small
-        treatment-value: openai/text-embedding-3-large
+        treatment-value: voyage-4
       llm-model:
         enabled: false
         control-weight: 1.0

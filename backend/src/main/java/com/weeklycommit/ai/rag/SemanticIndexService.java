@@ -1,5 +1,6 @@
 package com.weeklycommit.ai.rag;
 
+import com.weeklycommit.ai.experiment.ExperimentService;
 import com.weeklycommit.domain.entity.CarryForwardLink;
 import com.weeklycommit.domain.entity.ScopeChangeEvent;
 import com.weeklycommit.domain.entity.UserAccount;
@@ -63,6 +64,7 @@ public class SemanticIndexService {
 
 	private final PineconeClient pineconeClient;
 	private final EmbeddingService embeddingService;
+	private final ExperimentService experimentService;
 	private final ChunkBuilder chunkBuilder;
 	private final SparseEncoder sparseEncoder;
 	private final ChunkSizeAnalyzer chunkSizeAnalyzer;
@@ -78,13 +80,15 @@ public class SemanticIndexService {
 	private final Executor taskExecutor;
 
 	public SemanticIndexService(PineconeClient pineconeClient, EmbeddingService embeddingService,
-			ChunkBuilder chunkBuilder, WeeklyPlanRepository planRepo, WeeklyCommitRepository commitRepo,
-			ScopeChangeEventRepository scopeChangeRepo, CarryForwardLinkRepository carryForwardLinkRepo,
-			ManagerCommentRepository commentRepo, WorkItemRepository workItemRepo, TeamRepository teamRepo,
-			RcdoNodeRepository rcdoNodeRepo, UserAccountRepository userRepo, SparseEncoder sparseEncoder,
+			ExperimentService experimentService, ChunkBuilder chunkBuilder, WeeklyPlanRepository planRepo,
+			WeeklyCommitRepository commitRepo, ScopeChangeEventRepository scopeChangeRepo,
+			CarryForwardLinkRepository carryForwardLinkRepo, ManagerCommentRepository commentRepo,
+			WorkItemRepository workItemRepo, TeamRepository teamRepo, RcdoNodeRepository rcdoNodeRepo,
+			UserAccountRepository userRepo, SparseEncoder sparseEncoder,
 			@Qualifier("taskExecutor") Executor taskExecutor, ChunkSizeAnalyzer chunkSizeAnalyzer) {
 		this.pineconeClient = pineconeClient;
 		this.embeddingService = embeddingService;
+		this.experimentService = experimentService;
 		this.chunkBuilder = chunkBuilder;
 		this.sparseEncoder = sparseEncoder;
 		this.chunkSizeAnalyzer = chunkSizeAnalyzer;
@@ -617,5 +621,20 @@ public class SemanticIndexService {
 
 		pineconeClient.upsert(namespace,
 				List.of(new PineconeClient.PineconeVector(chunk.id(), embedding, meta, sparseVector)));
+
+		// Voyage dual-write: keep the voyage index in sync when the embedding-model
+		// experiment is enabled. Both indexes must be populated for a valid A/B test.
+		if (experimentService.isEnabled("embedding-model") && embeddingService.isVoyageAvailable()) {
+			try {
+				float[] voyageEmbedding = embeddingService.embed(chunk.text(), "voyage-4");
+				if (voyageEmbedding.length > 0) {
+					pineconeClient.upsertVoyage(namespace,
+							List.of(new PineconeClient.PineconeVector(chunk.id(), voyageEmbedding, meta)));
+				}
+			} catch (Exception e) {
+				log.debug("SemanticIndexService: voyage dual-write failed for chunk '{}' — {}", chunk.id(),
+						e.getMessage());
+			}
+		}
 	}
 }

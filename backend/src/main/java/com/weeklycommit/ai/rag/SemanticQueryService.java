@@ -197,29 +197,52 @@ public class SemanticQueryService {
 				}
 			}
 
+			// Step 4.6: embedding-model A/B — determine whether to route to the Voyage
+			// index for this request. Treatment group gets voyage-4 embeddings queried
+			// against the secondary 1024-d index; control gets the existing path.
+			boolean useVoyageIndex = false;
+			if (experimentService.isEnabled("embedding-model") && embeddingService.isVoyageAvailable()) {
+				String embeddingValue = experimentService.resolveValue("embedding-model",
+						userId != null ? userId.toString() : "anon");
+				useVoyageIndex = "voyage-4".equals(embeddingValue);
+				if (useVoyageIndex) {
+					log.debug("SemanticQueryService: embedding-model experiment treatment — voyage-4 + voyage index");
+				}
+			}
+
 			// Step 5: embed and query Pinecone — single query or multi-hop
 			List<PineconeClient.PineconeMatch> matches;
 			if (subQueries.size() <= 1) {
-				// Single query path
-				float[] vector = embeddingService.embed(textToEmbed);
-				if (vector.length == 0) {
-					log.debug("SemanticQueryService: embedding returned empty vector — unavailable");
-					return RagQueryResult.unavailable();
-				}
-				java.util.Map<Integer, Float> sparseVector = null;
-				try {
-					java.util.Map<Integer, Float> sv = sparseEncoder.encode(textToEmbed);
-					if (!sv.isEmpty()) {
-						sparseVector = sv;
+				if (useVoyageIndex) {
+					// Voyage path: dense-only (no sparse vectors in the voyage index)
+					float[] vector = embeddingService.embed(textToEmbed, "voyage-4");
+					if (vector.length == 0) {
+						log.debug("SemanticQueryService: voyage embedding returned empty vector — unavailable");
+						return RagQueryResult.unavailable();
 					}
-				} catch (Exception ex) {
-					log.debug("SemanticQueryService: sparse encoding failed — falling back to dense-only: {}",
-							ex.getMessage());
+					matches = pineconeClient.queryVoyage(namespace, vector, TOP_K, filter);
+				} else {
+					// Primary path: hybrid dense+sparse
+					float[] vector = embeddingService.embed(textToEmbed);
+					if (vector.length == 0) {
+						log.debug("SemanticQueryService: embedding returned empty vector — unavailable");
+						return RagQueryResult.unavailable();
+					}
+					java.util.Map<Integer, Float> sparseVector = null;
+					try {
+						java.util.Map<Integer, Float> sv = sparseEncoder.encode(textToEmbed);
+						if (!sv.isEmpty()) {
+							sparseVector = sv;
+						}
+					} catch (Exception ex) {
+						log.debug("SemanticQueryService: sparse encoding failed — falling back to dense-only: {}",
+								ex.getMessage());
+					}
+					matches = pineconeClient.query(namespace, vector, TOP_K, filter, sparseVector);
 				}
-				matches = pineconeClient.query(namespace, vector, TOP_K, filter, sparseVector);
 			} else {
 				// Multi-hop path: embed each sub-query, merge results
-				matches = queryMultiHop(subQueries, namespace, filter);
+				matches = queryMultiHop(subQueries, namespace, filter, useVoyageIndex);
 				if (matches == null) {
 					return RagQueryResult.unavailable();
 				}
@@ -485,31 +508,39 @@ public class SemanticQueryService {
 	 *         {@code null} if all sub-queries failed
 	 */
 	private List<PineconeClient.PineconeMatch> queryMultiHop(List<String> subQueries, String namespace,
-			Map<String, Object> filter) {
+			Map<String, Object> filter, boolean useVoyageIndex) {
 		// Map from chunk ID → best-scoring match seen so far
 		Map<String, PineconeClient.PineconeMatch> best = new LinkedHashMap<>();
 		boolean anySuccess = false;
 
 		for (String subQuery : subQueries) {
 			try {
-				float[] vector = embeddingService.embed(subQuery);
-				if (vector.length == 0) {
-					log.debug("SemanticQueryService: sub-query embedding returned empty — skipping sub-query");
-					continue;
-				}
-
-				java.util.Map<Integer, Float> sparseVector = null;
-				try {
-					java.util.Map<Integer, Float> sv = sparseEncoder.encode(subQuery);
-					if (!sv.isEmpty()) {
-						sparseVector = sv;
+				List<PineconeClient.PineconeMatch> subMatches;
+				if (useVoyageIndex) {
+					float[] vector = embeddingService.embed(subQuery, "voyage-4");
+					if (vector.length == 0) {
+						log.debug("SemanticQueryService: voyage sub-query embedding returned empty — skipping");
+						continue;
 					}
-				} catch (Exception ex) {
-					log.debug("SemanticQueryService: sparse encoding failed for sub-query — {}", ex.getMessage());
-				}
+					subMatches = pineconeClient.queryVoyage(namespace, vector, TOP_K, filter);
+				} else {
+					float[] vector = embeddingService.embed(subQuery);
+					if (vector.length == 0) {
+						log.debug("SemanticQueryService: sub-query embedding returned empty — skipping sub-query");
+						continue;
+					}
 
-				List<PineconeClient.PineconeMatch> subMatches = pineconeClient.query(namespace, vector, TOP_K, filter,
-						sparseVector);
+					java.util.Map<Integer, Float> sparseVector = null;
+					try {
+						java.util.Map<Integer, Float> sv = sparseEncoder.encode(subQuery);
+						if (!sv.isEmpty()) {
+							sparseVector = sv;
+						}
+					} catch (Exception ex) {
+						log.debug("SemanticQueryService: sparse encoding failed for sub-query — {}", ex.getMessage());
+					}
+					subMatches = pineconeClient.query(namespace, vector, TOP_K, filter, sparseVector);
+				}
 				anySuccess = true;
 
 				// Merge: keep the highest score per chunk ID

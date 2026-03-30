@@ -18,11 +18,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Generates vector embeddings via the OpenRouter embeddings endpoint.
+ * Generates vector embeddings via OpenRouter (OpenAI models) or directly via
+ * the Voyage AI API (voyage-* models).
  *
  * <p>
- * Used by the RAG pipeline to convert text chunks and query strings into dense
- * vectors for Pinecone storage and retrieval.
+ * Model routing: any model whose name starts with {@code "voyage"} is sent to
+ * {@code https://api.voyageai.com/v1} with the Voyage API key. All other
+ * models are sent to the configured OpenRouter base URL. The Voyage AI
+ * embeddings endpoint uses the same OpenAI-compatible request/response format,
+ * so no separate parsing logic is required.
  *
  * <p>
  * Gracefully degrades: returns an empty {@code float[0]} on any error so
@@ -38,6 +42,8 @@ public class EmbeddingService {
 	private final String apiKey;
 	private final String baseUrl;
 	private final String model;
+	private final String voyageApiKey;
+	private final String voyageBaseUrl;
 	private final ObjectMapper objectMapper;
 	private final HttpClient httpClient;
 
@@ -51,8 +57,11 @@ public class EmbeddingService {
 	@Autowired
 	public EmbeddingService(@Value("${ai.openrouter.api-key:}") String apiKey,
 			@Value("${ai.openrouter.base-url:https://openrouter.ai/api/v1}") String baseUrl,
-			@Value("${ai.embedding.model:openai/text-embedding-3-small}") String model, ObjectMapper objectMapper) {
-		this(apiKey, baseUrl, model, objectMapper,
+			@Value("${ai.embedding.model:openai/text-embedding-3-small}") String model,
+			@Value("${ai.voyage.api-key:}") String voyageApiKey,
+			@Value("${ai.voyage.base-url:https://api.voyageai.com/v1}") String voyageBaseUrl,
+			ObjectMapper objectMapper) {
+		this(apiKey, baseUrl, model, voyageApiKey, voyageBaseUrl, objectMapper,
 				HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
 	}
 
@@ -60,29 +69,43 @@ public class EmbeddingService {
 	 * Package-private constructor for unit tests — allows injecting a mock
 	 * {@link HttpClient}.
 	 */
-	EmbeddingService(String apiKey, String baseUrl, String model, ObjectMapper objectMapper, HttpClient httpClient) {
+	EmbeddingService(String apiKey, String baseUrl, String model, String voyageApiKey, String voyageBaseUrl,
+			ObjectMapper objectMapper, HttpClient httpClient) {
 		this.apiKey = apiKey;
 		this.baseUrl = baseUrl;
 		this.model = model;
+		this.voyageApiKey = voyageApiKey;
+		this.voyageBaseUrl = voyageBaseUrl;
 		this.objectMapper = objectMapper;
 		this.httpClient = httpClient;
 
 		if (apiKey == null || apiKey.isBlank()) {
-			log.warn("EmbeddingService: API key is blank — embeddings will be unavailable");
+			log.warn("EmbeddingService: OpenRouter API key is blank — OpenAI embeddings will be unavailable");
+		}
+		if (voyageApiKey == null || voyageApiKey.isBlank()) {
+			log.info("EmbeddingService: Voyage API key not configured — voyage-* models will be unavailable");
 		} else {
-			log.info("EmbeddingService initialized: model={}", model);
+			log.info("EmbeddingService initialized: defaultModel={}, voyageAvailable=true", model);
 		}
 	}
 
 	// ── Public API ───────────────────────────────────────────────────────
 
 	/**
-	 * Returns {@code true} when the API key is configured and non-blank. Callers
-	 * should check this before invoking {@link #embed(String)} to avoid unnecessary
-	 * processing.
+	 * Returns {@code true} when the OpenRouter API key is configured and non-blank.
+	 * Callers should check this before invoking {@link #embed(String)} to avoid
+	 * unnecessary processing. Voyage-model availability is checked separately in
+	 * {@link #isVoyageAvailable()}.
 	 */
 	public boolean isAvailable() {
 		return apiKey != null && !apiKey.isBlank();
+	}
+
+	/**
+	 * Returns {@code true} when the Voyage AI API key is configured and non-blank.
+	 */
+	public boolean isVoyageAvailable() {
+		return voyageApiKey != null && !voyageApiKey.isBlank();
 	}
 
 	/**
@@ -115,14 +138,28 @@ public class EmbeddingService {
 	 * @return the embedding vector, or {@code float[0]} on any error
 	 */
 	public float[] embed(String text, String modelOverride) {
-		if (!isAvailable()) {
-			log.debug("EmbeddingService unavailable — API key is blank");
-			return EMPTY;
+		String effectiveModel = (modelOverride != null && !modelOverride.isBlank()) ? modelOverride : this.model;
+		boolean isVoyageModel = effectiveModel.startsWith("voyage");
+
+		if (isVoyageModel) {
+			if (!isVoyageAvailable()) {
+				log.debug("EmbeddingService: voyage model requested but Voyage API key is blank");
+				return EMPTY;
+			}
+		} else {
+			if (!isAvailable()) {
+				log.debug("EmbeddingService unavailable — OpenRouter API key is blank");
+				return EMPTY;
+			}
 		}
 		if (text == null || text.isBlank()) {
 			return EMPTY;
 		}
-		String effectiveModel = (modelOverride != null && !modelOverride.isBlank()) ? modelOverride : this.model;
+
+		// Route voyage-* models to api.voyageai.com; all others go through OpenRouter
+		String effectiveApiKey = isVoyageModel ? voyageApiKey : apiKey;
+		String effectiveBaseUrl = isVoyageModel ? voyageBaseUrl : baseUrl;
+
 		try {
 			ObjectNode body = objectMapper.createObjectNode();
 			body.put("model", effectiveModel);
@@ -130,10 +167,17 @@ public class EmbeddingService {
 			inputArray.add(text);
 			String json = objectMapper.writeValueAsString(body);
 
-			HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseUrl + "/embeddings"))
-					.header("Authorization", "Bearer " + apiKey).header("Content-Type", "application/json")
-					.header("HTTP-Referer", "https://weeklycommit.dev").header("X-Title", "Weekly Commit")
-					.timeout(Duration.ofSeconds(30)).POST(HttpRequest.BodyPublishers.ofString(json)).build();
+			HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
+					.uri(URI.create(effectiveBaseUrl + "/embeddings"))
+					.header("Authorization", "Bearer " + effectiveApiKey)
+					.header("Content-Type", "application/json")
+					.timeout(Duration.ofSeconds(30));
+			// OpenRouter wants attribution headers; Voyage AI ignores them (harmless to omit)
+			if (!isVoyageModel) {
+				reqBuilder.header("HTTP-Referer", "https://weeklycommit.dev")
+						.header("X-Title", "Weekly Commit");
+			}
+			HttpRequest request = reqBuilder.POST(HttpRequest.BodyPublishers.ofString(json)).build();
 
 			HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -161,7 +205,7 @@ public class EmbeddingService {
 	 * <li>{@code openai/text-embedding-3-large} → 3072</li>
 	 * </ul>
 	 *
-	 * Returns 1536 for any unrecognised model (safe default matching the live
+	 * Returns 1536 for any unrecognised model (safe default matching the primary
 	 * Pinecone index dimension).
 	 *
 	 * @param model
@@ -169,10 +213,15 @@ public class EmbeddingService {
 	 * @return expected output dimension
 	 */
 	public int getDimensions(String model) {
-		if ("openai/text-embedding-3-large".equals(model)) {
-			return 3072;
+		if (model == null) {
+			return 1536;
 		}
-		return 1536;
+		return switch (model) {
+			case "openai/text-embedding-3-large" -> 3072;
+			case "voyage-4-large" -> 2048;
+			case "voyage-4", "voyage-4-lite" -> 1024;
+			default -> 1536;
+		};
 	}
 
 	/**

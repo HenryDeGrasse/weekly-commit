@@ -40,6 +40,8 @@ class EmbeddingServiceTest {
 	private static final String BASE_URL = "https://openrouter.ai/api/v1";
 	private static final String MODEL = "openai/text-embedding-3-small";
 	private static final String API_KEY = "sk-test-key";
+	private static final String VOYAGE_API_KEY = "pa-test-voyage-key";
+	private static final String VOYAGE_BASE_URL = "https://api.voyageai.com/v1";
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -54,7 +56,8 @@ class EmbeddingServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new EmbeddingService(API_KEY, BASE_URL, MODEL, objectMapper, httpClient);
+		service = new EmbeddingService(API_KEY, BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL, objectMapper,
+				httpClient);
 	}
 
 	// ── isAvailable ──────────────────────────────────────────────────────
@@ -66,13 +69,13 @@ class EmbeddingServiceTest {
 
 	@Test
 	void isAvailable_blankKey_returnsFalse() {
-		EmbeddingService noKey = new EmbeddingService("", BASE_URL, MODEL, objectMapper, httpClient);
+		EmbeddingService noKey = new EmbeddingService("", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL, objectMapper, httpClient);
 		assertThat(noKey.isAvailable()).isFalse();
 	}
 
 	@Test
 	void isAvailable_whitespaceKey_returnsFalse() {
-		EmbeddingService wsKey = new EmbeddingService("   ", BASE_URL, MODEL, objectMapper, httpClient);
+		EmbeddingService wsKey = new EmbeddingService("   ", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL, objectMapper, httpClient);
 		assertThat(wsKey.isAvailable()).isFalse();
 	}
 
@@ -80,7 +83,7 @@ class EmbeddingServiceTest {
 
 	@Test
 	void embed_blankApiKey_returnsEmptyArrayWithoutHttpCall() {
-		EmbeddingService noKey = new EmbeddingService("", BASE_URL, MODEL, objectMapper, httpClient);
+		EmbeddingService noKey = new EmbeddingService("", BASE_URL, MODEL, VOYAGE_API_KEY, VOYAGE_BASE_URL, objectMapper, httpClient);
 
 		float[] result = noKey.embed("some text");
 
@@ -364,6 +367,21 @@ class EmbeddingServiceTest {
 	}
 
 	@Test
+	void getDimensions_voyage4_returns1024() {
+		assertThat(service.getDimensions("voyage-4")).isEqualTo(1024);
+	}
+
+	@Test
+	void getDimensions_voyage4Large_returns2048() {
+		assertThat(service.getDimensions("voyage-4-large")).isEqualTo(2048);
+	}
+
+	@Test
+	void getDimensions_voyage4Lite_returns1024() {
+		assertThat(service.getDimensions("voyage-4-lite")).isEqualTo(1024);
+	}
+
+	@Test
 	void getDimensions_unknownModel_returnsDefault1536() {
 		assertThat(service.getDimensions("some/unknown-model")).isEqualTo(1536);
 	}
@@ -371,6 +389,70 @@ class EmbeddingServiceTest {
 	@Test
 	void getDimensions_nullModel_returnsDefault1536() {
 		assertThat(service.getDimensions(null)).isEqualTo(1536);
+	}
+
+	// ── Voyage routing ───────────────────────────────────────────────────
+
+	@Test
+	void embed_voyageModel_routesToVoyageApiUrl() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(buildEmbeddingResponse(1024));
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		float[] result = service.embed("test input", "voyage-4");
+
+		assertThat(result).hasSize(1024);
+		assertThat(captor.getValue().uri().toString()).isEqualTo(VOYAGE_BASE_URL + "/embeddings");
+	}
+
+	@Test
+	void embed_voyageModel_usesVoyageApiKey() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(buildEmbeddingResponse(1024));
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		service.embed("test input", "voyage-4");
+
+		assertThat(captor.getValue().headers().firstValue("Authorization"))
+				.hasValue("Bearer " + VOYAGE_API_KEY);
+	}
+
+	@Test
+	void embed_voyageModel_doesNotSendOpenRouterHeaders() throws Exception {
+		when(httpResponse.statusCode()).thenReturn(200);
+		when(httpResponse.body()).thenReturn(buildEmbeddingResponse(1024));
+		ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+		when(httpClient.send(captor.capture(), any())).thenAnswer(inv -> httpResponse);
+
+		service.embed("test input", "voyage-4");
+
+		assertThat(captor.getValue().headers().firstValue("HTTP-Referer")).isEmpty();
+		assertThat(captor.getValue().headers().firstValue("X-Title")).isEmpty();
+	}
+
+	@Test
+	void embed_voyageModel_withBlankVoyageKey_returnsEmptyWithoutHttpCall() {
+		EmbeddingService noVoyage = new EmbeddingService(API_KEY, BASE_URL, MODEL, "", VOYAGE_BASE_URL,
+				objectMapper, httpClient);
+
+		float[] result = noVoyage.embed("test", "voyage-4");
+
+		assertThat(result).isEmpty();
+		verifyNoInteractions(httpClient);
+	}
+
+	@Test
+	void isVoyageAvailable_withVoyageKey_returnsTrue() {
+		assertThat(service.isVoyageAvailable()).isTrue();
+	}
+
+	@Test
+	void isVoyageAvailable_withBlankVoyageKey_returnsFalse() {
+		EmbeddingService noVoyage = new EmbeddingService(API_KEY, BASE_URL, MODEL, "", VOYAGE_BASE_URL,
+				objectMapper, httpClient);
+		assertThat(noVoyage.isVoyageAvailable()).isFalse();
 	}
 
 	// ── helpers ──────────────────────────────────────────────────────────
