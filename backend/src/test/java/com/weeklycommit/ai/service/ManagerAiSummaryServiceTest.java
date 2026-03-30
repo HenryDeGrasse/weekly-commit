@@ -67,6 +67,9 @@ class ManagerAiSummaryServiceTest {
 	private ManagerReviewExceptionRepository exceptionRepo;
 
 	@Mock
+	private com.weeklycommit.domain.repository.UserAccountRepository userRepo;
+
+	@Mock
 	private AuthorizationService authService;
 
 	private ManagerAiSummaryService service;
@@ -78,7 +81,7 @@ class ManagerAiSummaryServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new ManagerAiSummaryService(registry, suggestionService, teamRepo, membershipRepo, planRepo,
-				commitRepo, workItemRepo, rcdoNodeRepo, exceptionRepo, authService, new ObjectMapper());
+				commitRepo, workItemRepo, rcdoNodeRepo, exceptionRepo, userRepo, authService, new ObjectMapper());
 		teamId = UUID.randomUUID();
 		managerId = UUID.randomUUID();
 		weekStart = LocalDate.of(2026, 3, 23);

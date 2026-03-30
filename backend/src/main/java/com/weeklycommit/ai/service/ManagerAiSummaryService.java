@@ -16,10 +16,12 @@ import com.weeklycommit.domain.entity.WeeklyPlan;
 import com.weeklycommit.domain.enums.ChessPiece;
 import com.weeklycommit.domain.enums.TicketStatus;
 import com.weeklycommit.domain.enums.UserRole;
+import com.weeklycommit.domain.entity.UserAccount;
 import com.weeklycommit.domain.repository.ManagerReviewExceptionRepository;
 import com.weeklycommit.domain.repository.RcdoNodeRepository;
 import com.weeklycommit.domain.repository.TeamMembershipRepository;
 import com.weeklycommit.domain.repository.TeamRepository;
+import com.weeklycommit.domain.repository.UserAccountRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.domain.repository.WorkItemRepository;
@@ -68,14 +70,15 @@ public class ManagerAiSummaryService {
 	private final WorkItemRepository workItemRepo;
 	private final RcdoNodeRepository rcdoNodeRepo;
 	private final ManagerReviewExceptionRepository exceptionRepo;
+	private final UserAccountRepository userRepo;
 	private final AuthorizationService authService;
 	private final ObjectMapper objectMapper;
 
 	public ManagerAiSummaryService(AiProviderRegistry registry, AiSuggestionService suggestionService,
 			TeamRepository teamRepo, TeamMembershipRepository membershipRepo, WeeklyPlanRepository planRepo,
 			WeeklyCommitRepository commitRepo, WorkItemRepository workItemRepo, RcdoNodeRepository rcdoNodeRepo,
-			ManagerReviewExceptionRepository exceptionRepo, AuthorizationService authService,
-			ObjectMapper objectMapper) {
+			ManagerReviewExceptionRepository exceptionRepo, UserAccountRepository userRepo,
+			AuthorizationService authService, ObjectMapper objectMapper) {
 		this.registry = registry;
 		this.suggestionService = suggestionService;
 		this.teamRepo = teamRepo;
@@ -85,6 +88,7 @@ public class ManagerAiSummaryService {
 		this.workItemRepo = workItemRepo;
 		this.rcdoNodeRepo = rcdoNodeRepo;
 		this.exceptionRepo = exceptionRepo;
+		this.userRepo = userRepo;
 		this.authService = authService;
 		this.objectMapper = objectMapper;
 	}
@@ -165,9 +169,17 @@ public class ManagerAiSummaryService {
 		for (WeeklyPlan plan : plans) {
 			ownerByPlanId.put(plan.getId(), plan.getOwnerUserId());
 		}
+		// 7a: batch-load display names so the AI prompt refers to people by name
+		List<UUID> ownerIds = ownerByPlanId.values().stream().distinct().toList();
+		Map<UUID, String> displayNameByUserId = new HashMap<>();
+		for (UserAccount user : userRepo.findAllById(ownerIds)) {
+			displayNameByUserId.put(user.getId(), user.getDisplayName());
+		}
 		List<Map<String, Object>> historicalCommits = allCommits.stream().map(c -> {
+			UUID ownerId = ownerByPlanId.getOrDefault(c.getPlanId(), c.getPlanId());
+			String ownerLabel = displayNameByUserId.getOrDefault(ownerId, ownerId.toString());
 			Map<String, Object> m = new HashMap<>();
-			m.put("ownerUserId", ownerByPlanId.getOrDefault(c.getPlanId(), c.getPlanId()).toString());
+			m.put("ownerDisplayName", ownerLabel);
 			m.put("title", c.getTitle());
 			m.put("chessPiece", c.getChessPiece() != null ? c.getChessPiece().name() : null);
 			m.put("estimatePoints", c.getEstimatePoints());
@@ -177,8 +189,9 @@ public class ManagerAiSummaryService {
 		}).toList();
 
 		// ── Additional context — manager dashboard aggregates ──────────────────────
-		long missedLocks = (memberships.size() - plans.size())
-				+ plans.stream().filter(p -> p.getState() != null && p.getState().name().equals("DRAFT")).count();
+		// 7c: clamp to zero — plans.size() can exceed memberships.size() in edge cases
+		long missedLocks = Math.max(0L, (memberships.size() - plans.size())
+				+ plans.stream().filter(p -> p.getState() != null && p.getState().name().equals("DRAFT")).count());
 		long missedReconciles = plans.stream().filter(p -> p.getState() != null
 				&& (p.getState().name().equals("LOCKED") || p.getState().name().equals("RECONCILING"))).count();
 
@@ -188,7 +201,16 @@ public class ManagerAiSummaryService {
 		additionalCtx.put("missedReconciles", missedReconciles);
 		additionalCtx.put("topRcdoBranches", topRcdoBranches);
 		additionalCtx.put("carryForwardPatterns", carryForwardPatterns);
+		// 7b: chess distribution for the prompt template
+		Map<String, Long> chessDistribution = new LinkedHashMap<>();
+		for (ChessPiece piece : ChessPiece.values()) {
+			long count = allCommits.stream().filter(c -> c.getChessPiece() == piece).count();
+			if (count > 0) {
+				chessDistribution.put(piece.name(), count);
+			}
+		}
 		additionalCtx.put("criticalBlockedItems", criticalBlockedItemIds.size());
+		additionalCtx.put("chessDistribution", chessDistribution);
 
 		AiContext context = new AiContext(AiContext.TYPE_TEAM_SUMMARY, callerId, null, null, Map.of(), planData,
 				historicalCommits, List.of(), additionalCtx);
