@@ -38,7 +38,8 @@ export function SemanticSearchInput({
   userId,
   className,
 }: SemanticSearchInputProps) {
-  const SUGGESTED_QUESTIONS = teamId ? TEAM_SUGGESTED_QUESTIONS : PERSONAL_SUGGESTED_QUESTIONS;
+  const isTeamContext = Boolean(teamId);
+  const SUGGESTED_QUESTIONS = isTeamContext ? TEAM_SUGGESTED_QUESTIONS : PERSONAL_SUGGESTED_QUESTIONS;
   const [question, setQuestion] = useState("");
   const {
     answer,
@@ -78,7 +79,7 @@ export function SemanticSearchInput({
       <div className="flex items-center gap-2">
         <Bot className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
         <span className="text-sm font-semibold text-foreground whitespace-nowrap">
-          {teamId ? "Ask AI about your team\u2019s work" : "Ask AI about your work"}
+          {isTeamContext ? "Ask AI about your team\u2019s work" : "Ask AI about your work"}
         </span>
       </div>
 
@@ -88,11 +89,11 @@ export function SemanticSearchInput({
           data-testid="semantic-search-input"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="e.g. What did the team commit to last week?"
+          placeholder={isTeamContext ? "e.g. What did the team commit to last week?" : "e.g. What did I commit to last week?"}
           icon={<Search className="h-3.5 w-3.5" />}
           disabled={loading}
           className="flex-1"
-          aria-label="Ask a question about your team's work history"
+          aria-label={isTeamContext ? "Ask a question about your team's work history" : "Ask a question about your work history"}
         />
         <Button
           type="submit"
@@ -151,7 +152,7 @@ export function SemanticSearchInput({
           aria-live="polite"
         >
           <Bot className="h-4 w-4 shrink-0" aria-hidden="true" />
-          Searching your team&apos;s planning history…
+          {isTeamContext ? "Searching your team's planning history…" : "Searching your planning history…"}
         </div>
       )}
 

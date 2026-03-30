@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-30T07:56:07.118Z",
+  "updatedAt": "2026-03-30T08:01:58.844Z",
   "runId": "2026-03-30T06-54-26-188Z-c2f54cb5",
   "handoffMode": "summary",
   "postPlanMode": "autorun",
@@ -139,12 +139,12 @@
     ]
   },
   "planSourcePath": "duet-bug-sweep.md",
-  "stepIndex": 6,
+  "stepIndex": 7,
   "round": 3,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-6",
-    "stepTitle": "Backend: fix ManagerAiSummaryService context completeness",
+    "stepId": "step-7",
+    "stepTitle": "Frontend: NotificationPanel dark-mode fix and AI component polish",
     "gateResults": [
       {
         "id": "static",

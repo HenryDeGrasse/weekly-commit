@@ -1,0 +1,22 @@
+## Summary
+
+**8a — NotificationPanel MEDIUM bg:** Already fixed in Step 1 (`bg-foreground/5`). Verified ✓. No change needed.
+
+**8b — InsightPanel PersonalInsightPanel empty state** (`InsightPanel.tsx`):
+- Changed the `data.insights.length === 0` branch in `PersonalInsightPanel` from `return null` to render a `<p data-testid="insight-panel-empty">No insights available for this period.</p>` — prevents the parent `CollapsibleSection` from displaying an empty body
+- Updated `InsightPanel.test.tsx` test "renders nothing when no insights returned (personal)" → renamed and updated to assert the empty message is present
+
+**8c — SemanticSearchInput context-aware suggested questions** (`SemanticSearchInput.tsx`):
+- Renamed `SUGGESTED_QUESTIONS` to `TEAM_SUGGESTED_QUESTIONS` and added `PERSONAL_SUGGESTED_QUESTIONS` (personal-perspective wording)
+- Added local variable `SUGGESTED_QUESTIONS = teamId ? TEAM_SUGGESTED_QUESTIONS : PERSONAL_SUGGESTED_QUESTIONS` computed from the existing `teamId` prop — no new prop added
+- Updated header label to also switch between "your team's work" / "your work"
+- Updated `SemanticSearchInput.test.tsx` "clicking a suggested question" test to pass `teamId: "team-1"` so it still finds the team-question test ID
+
+**8d — AiCommitComposer RCDO picker search** (`AiCommitComposer.tsx`):
+- Added `rcdoSearchQuery` state with `useState("")`
+- Added a small `<input type="search">` with `data-testid="ai-composer-rcdo-search"` above the `RcdoTreeView` in the RCDO picker panel
+- Changed `searchQuery=""` to `searchQuery={rcdoSearchQuery}` to wire it to the existing filter logic in `RcdoTreeView`
+
+**Checks:** `npm run check:static` ✅ · `npm test` ✅
+
+Verdict: changes_made
