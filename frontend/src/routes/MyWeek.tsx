@@ -579,25 +579,32 @@ export default function MyWeek() {
         </Card>
       )}
 
-      {/* Proactive risk banners — collapsible (default open) so users can minimize after reviewing */}
-      {aiAssistanceEnabled && isLocked && plan && riskSignalCount !== 0 && (
-        <CollapsibleSection
-          id="risk-banners"
-          title="Risk Signals"
-          defaultExpanded={aiMode !== "on-demand"}
-          overrideExpanded={sectionsOverride}
-          badge={
-            riskSignalCount != null ? (
+      {/* Proactive risk banners — always mount ProactiveRiskBanner so it can report its count.
+          Only wrap in CollapsibleSection once the count is known to be > 0 (prevents a flash
+          of an empty section header before signals load). */}
+      {aiAssistanceEnabled && isLocked && plan && (
+        riskSignalCount != null && riskSignalCount !== 0 ? (
+          <CollapsibleSection
+            id="risk-banners"
+            title="Risk Signals"
+            defaultExpanded={aiMode !== "on-demand"}
+            overrideExpanded={sectionsOverride}
+            badge={
               <span className="text-[0.65rem] font-bold px-1.5 py-0.5 rounded-sm bg-warning-bg text-warning border border-warning-border">
                 ⚠ {riskSignalCount}
               </span>
-            ) : undefined
-          }
-        >
+            }
+          >
+            <AiErrorBoundary>
+              <ProactiveRiskBanner planId={plan.id} onSignalCount={setRiskSignalCount} />
+            </AiErrorBoundary>
+          </CollapsibleSection>
+        ) : (
+          // Mount without visible wrapper to allow onSignalCount callback to fire
           <AiErrorBoundary>
             <ProactiveRiskBanner planId={plan.id} onSignalCount={setRiskSignalCount} />
           </AiErrorBoundary>
-        </CollapsibleSection>
+        )
       )}
 
       {/* Plan recommendations — shown for DRAFT and LOCKED plans when AI is on */}
@@ -724,7 +731,7 @@ export default function MyWeek() {
       )}
 
       {/* ── Plan Intelligence: consolidated AI section ─────────────── */}
-      {aiAssistanceEnabled && plan && (
+      {aiAssistanceEnabled && plan && (isDraft || isLocked) && (
         <CollapsibleSection
           id="plan-intelligence"
           title="Plan Intelligence"
