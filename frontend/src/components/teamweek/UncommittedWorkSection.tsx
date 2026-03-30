@@ -43,7 +43,8 @@ function TicketRow({ ticket, testIdPrefix, memberNames }: { ticket: UncommittedT
   );
 }
 
-function QuickAssignRow({ ticket, onAssign }: { ticket: UncommittedTicketSummary; onAssign?: (ticketId: string, assigneeUserId: string) => Promise<void> }) {
+function QuickAssignRow({ ticket, onAssign, memberNames }: { ticket: UncommittedTicketSummary; onAssign?: (ticketId: string, assigneeUserId: string) => Promise<void>; memberNames?: Readonly<Record<string, string>> }) {
+  const hasMemberNames = memberNames && Object.keys(memberNames).length > 0;
   const [userId, setUserId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,8 +69,22 @@ function QuickAssignRow({ ticket, onAssign }: { ticket: UncommittedTicketSummary
       {onAssign && (
         <td className={tdCls}>
           <div className="flex gap-1.5 items-center">
-            <input type="text" value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="User ID" data-testid={`quick-assign-input-${ticket.id}`}
-              className="h-7 w-[100px] rounded-default border border-border bg-surface px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+            {hasMemberNames ? (
+              <select
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                data-testid={`quick-assign-input-${ticket.id}`}
+                className="h-7 rounded-default border border-border bg-surface px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 min-w-[120px]"
+              >
+                <option value="">— Assign to… —</option>
+                {Object.entries(memberNames!).map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+              </select>
+            ) : (
+              <input type="text" value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="User ID" data-testid={`quick-assign-input-${ticket.id}`}
+                className="h-7 w-[100px] rounded-default border border-border bg-surface px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+            )}
             <Button variant="primary" size="sm" onClick={() => void handleAssign()} disabled={!userId.trim() || saving} data-testid={`quick-assign-btn-${ticket.id}`} className="h-7 px-2 text-xs">
               {saving ? "…" : "Assign"}
             </Button>
@@ -143,7 +158,7 @@ export function UncommittedWorkSection({ assignedTickets, unassignedTickets, onQ
           ) : (
             <table data-testid="unassigned-tickets-table" className="w-full border-collapse" aria-label="Unassigned tickets">
               <thead><TableHeader showAssignCol={onQuickAssign !== undefined} /></thead>
-              <tbody>{unassignedTickets.map((t) => <QuickAssignRow key={t.id} ticket={t} {...(onQuickAssign ? { onAssign: onQuickAssign } : {})} />)}</tbody>
+              <tbody>{unassignedTickets.map((t) => <QuickAssignRow key={t.id} ticket={t} {...(onQuickAssign ? { onAssign: onQuickAssign } : {})} {...(memberNames ? { memberNames } : {})} />)}</tbody>
             </table>
           )}
         </div>

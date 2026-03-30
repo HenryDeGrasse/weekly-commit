@@ -839,12 +839,14 @@ describe("UncommittedWorkSection — uncommitted work", () => {
   it("calls quickAssignTicket API when assign button is clicked with a userId", async () => {
     mockTeamApi.quickAssignTicket.mockResolvedValue({});
     const input = screen.getByTestId("quick-assign-input-ticket-2");
-    fireEvent.change(input, { target: { value: "user-5" } });
+    // memberNames has entries (user-1/Alice, user-2/Bob from teamWeekData.memberViews),
+    // so a <select> is rendered. Use a valid member ID from the options.
+    fireEvent.change(input, { target: { value: "user-1" } });
     fireEvent.click(screen.getByTestId("quick-assign-btn-ticket-2"));
     await waitFor(() =>
       expect(mockTeamApi.quickAssignTicket).toHaveBeenCalledWith(
         "ticket-2",
-        { assigneeUserId: "user-5" },
+        { assigneeUserId: "user-1" },
       ),
     );
   });

@@ -51,12 +51,14 @@ function buildRcdoLabels(nodes: ReturnType<typeof useRcdoTree>["data"]): Record<
 const inputCls = "h-8 rounded-default border border-border bg-surface px-2.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50";
 const labelCls = "text-[0.65rem] font-bold uppercase tracking-wider text-muted mb-0.5 block";
 
-function TicketFilters({ params, onParamsChange, onClearFilters }: {
+function TicketFilters({ params, onParamsChange, onClearFilters, teamMembers }: {
   params: ReturnType<typeof paramsToListParams>;
   onParamsChange: (patch: Partial<ReturnType<typeof paramsToListParams>>) => void;
   onClearFilters: () => void;
+  teamMembers?: readonly import("../api/teamTypes.js").TeamMember[];
 }) {
   const hasFilter = params.status ?? params.assigneeUserId ?? params.teamId ?? params.rcdoNodeId ?? params.targetWeek ?? params.priority;
+  const hasTeamMembers = teamMembers && teamMembers.length > 0;
   return (
     <div data-testid="ticket-filters" className="rounded-default border border-border bg-surface px-4 py-3 flex gap-3 flex-wrap items-end">
       <div className="flex flex-col">
@@ -75,7 +77,14 @@ function TicketFilters({ params, onParamsChange, onClearFilters }: {
       </div>
       <div className="flex flex-col">
         <label htmlFor="tf-assignee-filter" className={labelCls}>Assignee</label>
-        <input id="tf-assignee-filter" type="text" placeholder="User ID…" value={params.assigneeUserId ?? ""} onChange={(e) => { const v = e.target.value; onParamsChange({ ...(v ? { assigneeUserId: v } : {}), page: 1 }); }} data-testid="filter-assignee" className={`${inputCls} min-w-[110px]`} />
+        {hasTeamMembers ? (
+          <select id="tf-assignee-filter" value={params.assigneeUserId ?? ""} onChange={(e) => { const v = e.target.value; onParamsChange({ ...(v ? { assigneeUserId: v } : {}), page: 1 }); }} data-testid="filter-assignee" className={`${inputCls} min-w-[130px]`}>
+            <option value="">All assignees</option>
+            {teamMembers!.map((m) => <option key={m.id} value={m.id}>{m.displayName}</option>)}
+          </select>
+        ) : (
+          <input id="tf-assignee-filter" type="text" placeholder="User ID…" value={params.assigneeUserId ?? ""} onChange={(e) => { const v = e.target.value; onParamsChange({ ...(v ? { assigneeUserId: v } : {}), page: 1 }); }} data-testid="filter-assignee" className={`${inputCls} min-w-[110px]`} />
+        )}
       </div>
       <div className="flex flex-col">
         <label htmlFor="tf-team-filter" className={labelCls}>Team</label>
@@ -163,7 +172,7 @@ export default function Tickets() {
         </Button>
       </div>
 
-      <TicketFilters params={listParams} onParamsChange={updateParams} onClearFilters={() => setSearchParams(new URLSearchParams())} />
+      <TicketFilters params={listParams} onParamsChange={updateParams} onClearFilters={() => setSearchParams(new URLSearchParams())} {...(teamMembers && teamMembers.length > 0 ? { teamMembers } : {})} />
 
       {ticketPage && (
         <div data-testid="ticket-count" className="text-sm text-muted">
