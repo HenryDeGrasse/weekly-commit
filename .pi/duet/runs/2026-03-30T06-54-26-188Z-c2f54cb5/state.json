@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-30T07:45:07.521Z",
+  "updatedAt": "2026-03-30T07:50:47.703Z",
   "runId": "2026-03-30T06-54-26-188Z-c2f54cb5",
   "handoffMode": "summary",
   "postPlanMode": "autorun",
@@ -139,12 +139,12 @@
     ]
   },
   "planSourcePath": "duet-bug-sweep.md",
-  "stepIndex": 4,
-  "round": 3,
+  "stepIndex": 5,
+  "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-4",
-    "stepTitle": "RCDO node status UX improvements (frontend)",
+    "stepId": "step-5",
+    "stepTitle": "Fix Plan Intelligence section visibility edge cases in MyWeek (frontend)",
     "gateResults": [
       {
         "id": "static",
