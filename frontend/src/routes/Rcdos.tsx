@@ -171,7 +171,7 @@ export default function Rcdos() {
               {(["all", "active-only", "archived-only"] as StatusFilter[]).map((value, i) => (
                 <label key={value} className="flex items-center gap-1 text-sm cursor-pointer">
                   <input type="radio" name="rcdo-status-filter" value={value} checked={statusFilter === value} onChange={() => setStatusFilter(value)} />
-                  {["All", "Active", "Archived"][i]}
+                  {["All (incl. archived)", "Active", "Archived"][i]}
                 </label>
               ))}
             </div>
