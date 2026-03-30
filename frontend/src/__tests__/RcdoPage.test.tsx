@@ -189,10 +189,10 @@ describe("Rcdos page — rendering", () => {
     expect(screen.getByTestId("rcdo-tree-view")).toBeInTheDocument();
   });
 
-  it("renders Rally Cry nodes from the tree", () => {
+  it("defaults to showing only active nodes in the tree", () => {
     renderPage();
     expect(screen.getByText("Grow Revenue")).toBeInTheDocument();
-    expect(screen.getByText("Improve Product Quality")).toBeInTheDocument();
+    expect(screen.queryByText("Improve Product Quality")).not.toBeInTheDocument();
   });
 
   it("shows loading state while tree data is loading", () => {
@@ -266,7 +266,8 @@ describe("Rcdos page — selection and breadcrumb", () => {
       screen.getByRole("navigation", { name: "RCDO path" }),
     ).toHaveTextContent("Grow Revenue");
 
-    // Select second node
+    // Switch to all nodes so DRAFT nodes become visible, then select second node
+    fireEvent.click(screen.getByDisplayValue("all"));
     fireEvent.click(screen.getByTestId("tree-node-rc-2"));
     expect(
       screen.getByRole("navigation", { name: "RCDO path" }),

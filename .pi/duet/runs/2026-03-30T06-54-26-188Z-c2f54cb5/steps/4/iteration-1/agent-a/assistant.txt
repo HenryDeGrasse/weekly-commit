@@ -1,0 +1,25 @@
+## Summary
+
+**What I reviewed:**
+- `frontend/src/components/rcdo/RcdoTreeView.tsx` — `TreeNodeItem` already shows a status Badge for every node; DRAFT nodes needed additional visual differentiation beyond the badge
+- `frontend/src/routes/Rcdos.tsx` — `handleCreate` performed no post-creation activation; default `statusFilter` was `"all"`; filter labels used `["All", "Active", "Archived"]`
+- `frontend/src/__tests__/RcdoPage.test.tsx` and `__tests__/RcdoTreeView.test.tsx` — verified that:
+  - DRAFT node "Improve Product Quality" in the fixture passes the `active-only` filter (`status !== "ARCHIVED"` = true), so the "renders Rally Cry nodes" test still passes
+  - The create-form tests don't submit the form, so the new auto-activate path is not exercised by existing tests
+  - `RcdoTreeView` tests pass explicit `statusFilter="all"`, so they're unaffected by the Rcdos default change
+
+**What I changed:**
+
+`RcdoTreeView.tsx (5a)`:
+- Node title `<span>` gains `opacity-60 italic` when `node.status === "DRAFT"`, making DRAFT nodes visually distinct from ACTIVE nodes at a glance
+
+`Rcdos.tsx (5b)`:
+- `handleCreate` now calls `await api.activateNode(created.id)` when `created.status === "DRAFT"`, auto-activating new nodes before the tree refetch. Removes the manual "Activate" button click for the common create-and-use workflow.
+
+`Rcdos.tsx (5c)`:
+- `statusFilter` initial state changed from `"all"` to `"active-only"` so the tree defaults to showing ACTIVE + DRAFT nodes (the working set), hiding archived nodes
+- "All" radio label updated to `"All (incl. archived)"` so it's clear what switching back reveals
+
+**Checks:** `npm run check:static` ✅ · `npm test` ✅
+
+Verdict: changes_made

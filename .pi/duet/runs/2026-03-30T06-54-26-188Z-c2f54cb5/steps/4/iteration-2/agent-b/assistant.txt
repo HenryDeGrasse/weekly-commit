@@ -1,0 +1,24 @@
+Reviewed the step-4 changes and found the previous round had not actually applied the material route/component updates.
+
+What I changed:
+- `frontend/src/routes/Rcdos.tsx`
+  - Changed default `statusFilter` from `"all"` to `"active-only"`
+  - Updated `handleCreate` to auto-activate newly created DRAFT nodes via `api.activateNode(created.id)` before `refetch()`
+  - Clarified the filter label to `"All (incl. archived)"` / `"Active only"` / `"Archived"`
+
+- `frontend/src/components/rcdo/RcdoTreeView.tsx`
+  - Made DRAFT nodes visually distinct by adding a muted italic `DRAFT` label next to the title
+  - Tightened `"active-only"` filtering to show only `ACTIVE` nodes
+
+- `frontend/src/__tests__/RcdoPage.test.tsx`
+  - Updated route tests to reflect the new default active-only filter behavior
+  - Switched to `"all"` in the breadcrumb test before selecting the DRAFT node
+
+Checks:
+- `npm run check:static` ✅
+- `npm test` ✅
+
+Assessment:
+- Step 4 is now implemented correctly and verified.
+
+Verdict: changes_made

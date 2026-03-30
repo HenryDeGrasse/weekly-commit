@@ -81,7 +81,7 @@ export default function Rcdos() {
   const [dialogSubmitting, setDialogSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active-only");
 
   const nodes = tree ?? [];
   const selectedNode = selectedId ? findNode(nodes, selectedId) : null;
@@ -97,6 +97,9 @@ export default function Rcdos() {
 
   async function handleCreate(payload: Parameters<ReturnType<typeof useRcdoApi>["createNode"]>[0]) {
     const created = await api.createNode(payload);
+    if (created.status === "DRAFT") {
+      await api.activateNode(created.id);
+    }
     refetch(); setSelectedId(created.id); setPanelMode("detail");
   }
 
@@ -171,7 +174,7 @@ export default function Rcdos() {
               {(["all", "active-only", "archived-only"] as StatusFilter[]).map((value, i) => (
                 <label key={value} className="flex items-center gap-1 text-sm cursor-pointer">
                   <input type="radio" name="rcdo-status-filter" value={value} checked={statusFilter === value} onChange={() => setStatusFilter(value)} />
-                  {["All (incl. archived)", "Active", "Archived"][i]}
+                  {["All (incl. archived)", "Active only", "Archived"][i]}
                 </label>
               ))}
             </div>

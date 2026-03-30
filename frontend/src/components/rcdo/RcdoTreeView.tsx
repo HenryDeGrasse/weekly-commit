@@ -66,7 +66,7 @@ function getAllIds(nodes: RcdoTreeNode[]): Set<string> {
 function filterTree(nodes: RcdoTreeNode[], filter: StatusFilter, searchLower: string): RcdoTreeNode[] {
   function filterNode(node: RcdoTreeNode): RcdoTreeNode | null {
     const filteredChildren = node.children.map(filterNode).filter((n): n is RcdoTreeNode => n !== null);
-    const passesStatus = filter === "all" || (filter === "active-only" && node.status !== "ARCHIVED") || (filter === "archived-only" && node.status === "ARCHIVED");
+    const passesStatus = filter === "all" || (filter === "active-only" && node.status === "ACTIVE") || (filter === "archived-only" && node.status === "ARCHIVED");
     const passesSearch = !searchLower || node.title.toLowerCase().includes(searchLower);
     if ((passesStatus && passesSearch) || filteredChildren.length > 0) return { ...node, children: filteredChildren };
     return null;
@@ -112,7 +112,10 @@ function TreeNodeItem({ node, depth, selectedId, expandedIds, onSelect, onToggle
         <span aria-label={NODE_TYPE_LABELS[node.nodeType]} title={NODE_TYPE_LABELS[node.nodeType]} className="shrink-0">
           {NODE_TYPE_ICON_ELEMENTS[node.nodeType]}
         </span>
-        <span className={cn("flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-mono", node.status === "DRAFT" && "opacity-60 italic")}>{node.title}</span>
+        <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-mono">
+          <span className={cn(node.status === "DRAFT" && "opacity-60 italic")}>{node.title}</span>
+          {node.status === "DRAFT" && <span className="ml-1 text-xs italic text-muted">DRAFT</span>}
+        </span>
         <Badge
           variant={STATUS_VARIANT[node.status]}
           data-testid={`status-badge-${node.status.toLowerCase()}`}
