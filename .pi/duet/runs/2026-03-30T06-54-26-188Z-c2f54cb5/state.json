@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-30T07:50:47.703Z",
+  "updatedAt": "2026-03-30T07:56:07.118Z",
   "runId": "2026-03-30T06-54-26-188Z-c2f54cb5",
   "handoffMode": "summary",
   "postPlanMode": "autorun",
@@ -139,12 +139,12 @@
     ]
   },
   "planSourcePath": "duet-bug-sweep.md",
-  "stepIndex": 5,
-  "round": 2,
+  "stepIndex": 6,
+  "round": 3,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-5",
-    "stepTitle": "Fix Plan Intelligence section visibility edge cases in MyWeek (frontend)",
+    "stepId": "step-6",
+    "stepTitle": "Backend: fix ManagerAiSummaryService context completeness",
     "gateResults": [
       {
         "id": "static",

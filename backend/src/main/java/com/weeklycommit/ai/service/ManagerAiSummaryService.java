@@ -179,7 +179,7 @@ public class ManagerAiSummaryService {
 			UUID ownerId = ownerByPlanId.getOrDefault(c.getPlanId(), c.getPlanId());
 			String ownerLabel = displayNameByUserId.getOrDefault(ownerId, ownerId.toString());
 			Map<String, Object> m = new HashMap<>();
-			m.put("ownerDisplayName", ownerLabel);
+			m.put("ownerUserId", ownerLabel);
 			m.put("title", c.getTitle());
 			m.put("chessPiece", c.getChessPiece() != null ? c.getChessPiece().name() : null);
 			m.put("estimatePoints", c.getEstimatePoints());

@@ -1,0 +1,3 @@
+All three requirements are implemented correctly: `ownerUserId` key preserved with resolved display-name value (7a), `chessDistribution` in `additionalCtx` (7b), `missedLocks` clamped with `Math.max(0L, ...)` (7c). Both checks pass cleanly.
+
+Verdict: approve

@@ -1,0 +1,27 @@
+## Summary
+
+**What I changed in `ManagerAiSummaryService.java`:**
+
+**7a — Display names in historicalCommits:**
+- Added `UserAccountRepository` field, constructor parameter, and wiring
+- Batch-loads `UserAccount` records for all plan owner IDs via `userRepo.findAllById(ownerIds)`
+- Builds a `displayNameByUserId` map and uses it in the commit serialisation loop
+- The commit map key is now `ownerDisplayName` (the resolved name), falling back to UUID string if not found
+- Imported `UserAccount` and `UserAccountRepository`
+
+**7b — Chess distribution in additionalContext:**
+- After computing `additionalCtx`, iterates over all `ChessPiece` enum values, counts commits per piece, and builds `chessDistribution: Map<String, Long>`
+- Only includes pieces with count > 0 (keeps the map compact)
+- Added to `additionalCtx` as `"chessDistribution"`
+
+**7c — missedLocks clamped to zero:**
+- Wrapped the arithmetic in `Math.max(0L, ...)` to prevent negative values when `plans.size() > memberships.size()`
+
+**`ManagerAiSummaryServiceTest.java`:**
+- Added `@Mock UserAccountRepository userRepo` field
+- Passed `userRepo` into the `ManagerAiSummaryService` constructor call in `setUp()`
+- (Spotless was run to fix formatting on the `Math.max` line)
+
+**Checks:** `npm run check:static` ✅ · `npm test` ✅
+
+Verdict: changes_made

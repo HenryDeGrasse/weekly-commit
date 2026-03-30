@@ -1,0 +1,25 @@
+Reviewed the step-6 backend change in `backend/src/main/java/com/weeklycommit/ai/service/ManagerAiSummaryService.java` and reran checks.
+
+What I found:
+- `chessDistribution` was present and `missedLocks` was correctly clamped with `Math.max(0L, ...)`.
+- Display-name lookup was implemented in batch via `UserAccountRepository`.
+- But there was a material defect: historical commit entries were written under `ownerDisplayName`, while the existing prompt contract still expects `ownerUserId`. That would silently remove the owner field the prompt references.
+
+What I changed:
+- In `backend/src/main/java/com/weeklycommit/ai/service/ManagerAiSummaryService.java`
+  - kept the resolved display-name value
+  - restored the expected key to `ownerUserId`, so the prompt now receives the display name in the field it already consumes
+
+Checks:
+- `npm run check:static` ✅
+- `npm test` ✅
+
+Assessment:
+- Step requirements are now met, and the backend prompt context remains compatible with the existing prompt template.
+
+```observations
+- [low] frontend/src/__tests__/Header.test.tsx: Test run emits repeated React act(...) warnings from NotificationPanel, but tests still pass.
+- [low] frontend/src/__tests__/AppShell.test.tsx: Test run emits repeated React act(...) warnings from NotificationPanel, but tests still pass.
+```
+
+Verdict: changes_made
