@@ -500,7 +500,7 @@ export default function MyWeek() {
 
       {/* Error */}
       {planError && (
-        <div role="alert" data-testid="plan-error" className="rounded-default border border-neutral-300 bg-neutral-100 px-3 py-2.5 text-sm text-foreground font-semibold">
+        <div role="alert" data-testid="plan-error" className="rounded-default border border-danger/30 bg-danger/5 px-3 py-2.5 text-sm text-danger font-semibold">
           Failed to load plan: {planError.message}
         </div>
       )}
@@ -532,7 +532,7 @@ export default function MyWeek() {
             </div>
             <div className="flex items-center gap-2">
               {actionError && (
-                <span role="alert" data-testid="plan-action-error" className="text-xs text-foreground font-semibold">{actionError}</span>
+                <span role="alert" data-testid="plan-action-error" className="text-xs text-danger font-semibold">{actionError}</span>
               )}
               {isDraft && (
                 <Button variant="primary" size="sm" onClick={handleLockButtonClick} disabled={lockLoading} data-testid="lock-plan-btn">

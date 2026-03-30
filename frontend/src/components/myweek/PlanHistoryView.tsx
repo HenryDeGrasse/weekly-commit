@@ -1,7 +1,7 @@
 /**
  * PlanHistoryView — week-by-week plan history for the current user.
  */
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "../ui/Badge.js";
 import { Button } from "../ui/Button.js";
@@ -70,9 +70,8 @@ export function PlanHistoryView({ entries, loading, onViewPlan }: PlanHistoryVie
           </thead>
           <tbody>
             {sorted.map((entry) => (
-              <>
+              <Fragment key={entry.planId}>
                 <tr
-                  key={entry.planId}
                   data-testid={`plan-history-row-${entry.planId}`}
                   className={cn("cursor-pointer hover:bg-background/60 transition-colors", expandedPlanId === entry.planId && "bg-background")}
                   onClick={() => setExpandedPlanId(expandedPlanId === entry.planId ? null : entry.planId)}
@@ -111,7 +110,7 @@ export function PlanHistoryView({ entries, loading, onViewPlan }: PlanHistoryVie
                   </td>
                 </tr>
                 {expandedPlanId === entry.planId && (
-                  <tr key={`${entry.planId}-expanded`} data-testid={`plan-history-expanded-${entry.planId}`}>
+                  <tr data-testid={`plan-history-expanded-${entry.planId}`}>
                     <td colSpan={8} className="px-5 py-3 bg-background border-b border-border">
                       <div className="flex gap-4 items-center flex-wrap">
                         <span className="text-sm">
@@ -131,7 +130,7 @@ export function PlanHistoryView({ entries, loading, onViewPlan }: PlanHistoryVie
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

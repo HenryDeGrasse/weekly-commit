@@ -1,5 +1,5 @@
 /**
- * CollapsibleSection — a bordered section with a toggle header that persists
+ * CollapsibleSection - a bordered section with a toggle header that persists
  * its open/close state to localStorage.
  *
  * Designed to wrap My Week sections (AI Lint Panel, AI Insights, etc.) so that
@@ -12,13 +12,13 @@
  * Height transition uses the CSS grid-template-rows trick (0fr ↔ 1fr) which
  * avoids the "height: auto" animation problem without JavaScript measurement.
  */
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils.js";
 import { usePersistedState } from "./usePersistedState.js";
 
 export interface CollapsibleSectionProps {
-  /** Unique identifier — stored under `wc-section-{id}` in localStorage. */
+  /** Unique identifier - stored under `wc-section-{id}` in localStorage. */
   readonly id: string;
   /** Section heading text. */
   readonly title: string;
@@ -32,19 +32,19 @@ export interface CollapsibleSectionProps {
   readonly children: ReactNode;
   readonly className?: string;
   /**
-   * Overrides the outer wrapper’s data-testid attribute.
+   * Overrides the outer wrapper's data-testid attribute.
    * Defaults to `collapsible-section-{id}`. Useful for preserving legacy
    * testids when wrapping existing sections.
    */
   readonly testId?: string;
   /**
-   * Overrides the header button’s data-testid attribute.
+   * Overrides the header button's data-testid attribute.
    * Defaults to `collapsible-header-{id}`.
    */
   readonly buttonTestId?: string;
   /**
    * When defined, programmatically overrides the expanded state.
-   * Used by “Expand all / Collapse all” controls. The section still persists
+   * Used by "Expand all / Collapse all" controls. The section still persists
    * state to localStorage after the override is applied.
    */
   readonly overrideExpanded?: boolean | undefined;
@@ -73,14 +73,15 @@ export function CollapsibleSection({
     defaultExpanded,
   );
 
-  // Sync from parent override (e.g. “Expand all / Collapse all” button).
-  // This runs whenever overrideExpanded changes to a defined value.
-  // Individual toggle clicks work independently since they update the
-  // same state; the effect only fires when the override prop itself changes.
+  // Sync from parent override (e.g. "Expand all / Collapse all" button).
+  // Track the previous value to avoid setting state on initial render
+  // (which triggers the "Cannot update a component while rendering" warning).
+  const prevOverride = useRef(overrideExpanded);
   useEffect(() => {
-    if (overrideExpanded !== undefined) {
+    if (overrideExpanded !== undefined && overrideExpanded !== prevOverride.current) {
       setExpanded(overrideExpanded);
     }
+    prevOverride.current = overrideExpanded;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrideExpanded]);
 
@@ -116,7 +117,7 @@ export function CollapsibleSection({
         />
       </button>
 
-      {/* ── Collapsible content — grid 0fr/1fr height transition ─────── */}
+      {/* ── Collapsible content - grid 0fr/1fr height transition ─────── */}
       <div
         id={contentId}
         role="region"
