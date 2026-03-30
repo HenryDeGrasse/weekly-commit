@@ -1,0 +1,25 @@
+## Summary
+
+**What I reviewed:**
+- `routes/Reconcile.tsx` — confirmed `useCurrentPlan()` was called with no argument, meaning it always auto-discovered the current week regardless of the header week selector
+- `routes/Tickets.tsx` — confirmed the Target Week filter had no default and used a plain text input with no connection to the week context
+- `routes/Reports.tsx` — confirmed it already has clear "N weeks" range labeling with +/− buttons; no change needed
+- `lib/WeekContext.tsx` — confirmed `useSelectedWeek()` has a safe fallback to current Monday when used outside a WeekContext provider (tests work without wrapping in a provider)
+- `__tests__/ReconcilePage.test.tsx` — confirmed `useCurrentPlan` is fully mocked and the new `selectedWeek` argument won't affect test results
+
+**What I changed:**
+
+`routes/Reconcile.tsx`:
+- Imported `useSelectedWeek` from `../lib/WeekContext.js`
+- Added `const { selectedWeek } = useSelectedWeek()` in `ReconcilePage`
+- Changed `useCurrentPlan()` → `useCurrentPlan(planIdParam ? undefined : selectedWeek)` — only passes the selected week for auto-discovery (when no explicit `planId` URL param is present), preserving the explicit-planId path unchanged
+
+`routes/Tickets.tsx`:
+- Imported `useSelectedWeek`
+- Added `defaultWeek` prop to `TicketFilters` with JSDoc noting its purpose
+- Target Week input now uses `params.targetWeek ?? defaultWeek ?? ""` so the header-selected week is pre-filled when no URL filter is set
+- Wired `selectedWeek` from `useSelectedWeek()` as `defaultWeek` in the `TicketFilters` call site
+
+**Checks:** `npm run check:static` ✅ · `npm test` ✅
+
+Verdict: changes_made

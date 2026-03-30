@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-30T07:33:49.122Z",
+  "updatedAt": "2026-03-30T07:38:05.856Z",
   "runId": "2026-03-30T06-54-26-188Z-c2f54cb5",
   "handoffMode": "summary",
   "postPlanMode": "autorun",
@@ -139,12 +139,12 @@
     ]
   },
   "planSourcePath": "duet-bug-sweep.md",
-  "stepIndex": 2,
+  "stepIndex": 3,
   "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-2",
-    "stepTitle": "Fix QuickAssign raw UUID input in UncommittedWorkSection (frontend)",
+    "stepId": "step-3",
+    "stepTitle": "Fix Reconcile route week sync via useSelectedWeek (frontend)",
     "gateResults": [
       {
         "id": "static",

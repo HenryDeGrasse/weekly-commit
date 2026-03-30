@@ -1,0 +1,24 @@
+Reviewed the route-level changes for step 3:
+
+- `frontend/src/routes/Reconcile.tsx`
+- `frontend/src/routes/Tickets.tsx`
+- `frontend/src/routes/Reports.tsx`
+
+What I verified:
+- `Reconcile.tsx` now imports `useSelectedWeek`, reads `selectedWeek`, and passes it into `useCurrentPlan(...)` only when there is no explicit `planId` URL param.
+- `Tickets.tsx` now imports `useSelectedWeek` and threads `selectedWeek` into `TicketFilters` as `defaultWeek`, which pre-fills the Target Week input when no explicit filter is set.
+- `Reports.tsx` already has clear range controls/labels (`More weeks`, `Fewer weeks`, `N weeks`), so no additional change was needed.
+
+Checks:
+- `npm run check:static` ✅
+- `npm test` ✅
+
+Assessment:
+- The step requirements are met.
+- I did not find any material defect in the previous round’s changes.
+
+```observations
+- [medium] frontend/src/routes/Tickets.tsx: `updateParams` still appears to preserve prior values when a filter field is omitted from a patch, so clearing an already-set individual filter may be unreliable; this looks pre-existing and broader than step 3.
+```
+
+Verdict: approve
