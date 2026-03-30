@@ -1,0 +1,22 @@
+Reviewed:
+- `frontend/src/components/teamweek/UncommittedWorkSection.tsx`
+- `frontend/src/routes/Tickets.tsx`
+- `frontend/src/__tests__/TeamWeekPage.test.tsx`
+
+Assessment:
+- `QuickAssignRow` now accepts and uses `memberNames`
+- It renders a member-name `<select>` when names are available and correctly falls back to the raw text input otherwise
+- `UncommittedWorkSection` passes `memberNames` through to `QuickAssignRow`
+- `Tickets.tsx` now uses a member-name `<select>` for the assignee filter when `teamMembers` are available, with fallback to the text input
+- The related Team Week test was updated to use a valid selectable member ID
+- Checks pass:
+  - `npm run check:static` ✅
+  - `npm test` ✅
+
+No material defects found in the step-2 changes.
+
+```observations
+- [medium] frontend/src/routes/Tickets.tsx: `updateParams` merges patches, so clearing filters by passing an omitted field appears to preserve the old value; this looks pre-existing and affects more than this step’s assignee-filter change.
+```
+
+Verdict: approve

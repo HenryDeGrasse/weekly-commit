@@ -1,0 +1,21 @@
+## Summary
+
+**What I reviewed and changed:**
+
+**`frontend/src/components/teamweek/UncommittedWorkSection.tsx`**
+- Added `memberNames?: Readonly<Record<string, string>>` prop to `QuickAssignRow`
+- When `memberNames` has entries, renders a `<select>` dropdown with member display names instead of the raw `"User ID"` text input
+- Falls back to the original text input when `memberNames` is empty/absent
+- Updated the `QuickAssignRow` call site in `UncommittedWorkSection` to pass `memberNames` through
+
+**`frontend/src/routes/Tickets.tsx`**
+- Added `teamMembers?: readonly TeamMember[]` prop to `TicketFilters`
+- When `teamMembers` has entries, the Assignee filter renders a `<select>` dropdown with display names (value = userId for URL param compatibility); falls back to the text input when none available
+- Passes `teamMembers` from the existing `useTeamMembers` hook to `TicketFilters`
+
+**`frontend/src/__tests__/TeamWeekPage.test.tsx`**
+- Updated the QuickAssign test to use `"user-1"` (Alice — a valid member ID from the test fixture) instead of `"user-5"` (invalid/not in options). The old value only worked with a text input; with a dropdown, only valid option values work. The test intent (verify API call with correct userId) is preserved.
+
+**Checks:** `npm run check:static` ✅ · `npm test` ✅ (all tests pass)
+
+Verdict: changes_made

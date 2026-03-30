@@ -1,7 +1,7 @@
 {
   "version": 1,
   "phase": "plan_approved",
-  "updatedAt": "2026-03-30T07:28:25.433Z",
+  "updatedAt": "2026-03-30T07:33:49.122Z",
   "runId": "2026-03-30T06-54-26-188Z-c2f54cb5",
   "handoffMode": "summary",
   "postPlanMode": "autorun",
@@ -139,12 +139,12 @@
     ]
   },
   "planSourcePath": "duet-bug-sweep.md",
-  "stepIndex": 1,
-  "round": 5,
+  "stepIndex": 2,
+  "round": 2,
   "resumeAction": "run",
   "activeSummary": {
-    "stepId": "step-1",
-    "stepTitle": "Sweep all remaining bg-neutral-* / text-neutral-* / bg-white dark-mode violations (frontend)",
+    "stepId": "step-2",
+    "stepTitle": "Fix QuickAssign raw UUID input in UncommittedWorkSection (frontend)",
     "gateResults": [
       {
         "id": "static",
