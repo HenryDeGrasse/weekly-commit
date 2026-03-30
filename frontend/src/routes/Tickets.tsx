@@ -4,6 +4,7 @@
  */
 import { useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useSelectedWeek } from "../lib/WeekContext.js";
 import { X } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
@@ -51,11 +52,13 @@ function buildRcdoLabels(nodes: ReturnType<typeof useRcdoTree>["data"]): Record<
 const inputCls = "h-8 rounded-default border border-border bg-surface px-2.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50";
 const labelCls = "text-[0.65rem] font-bold uppercase tracking-wider text-muted mb-0.5 block";
 
-function TicketFilters({ params, onParamsChange, onClearFilters, teamMembers }: {
+function TicketFilters({ params, onParamsChange, onClearFilters, teamMembers, defaultWeek }: {
   params: ReturnType<typeof paramsToListParams>;
   onParamsChange: (patch: Partial<ReturnType<typeof paramsToListParams>>) => void;
   onClearFilters: () => void;
   teamMembers?: readonly import("../api/teamTypes.js").TeamMember[];
+  /** When no explicit week filter is set, show this as the default date value. */
+  defaultWeek?: string;
 }) {
   const hasFilter = params.status ?? params.assigneeUserId ?? params.teamId ?? params.rcdoNodeId ?? params.targetWeek ?? params.priority;
   const hasTeamMembers = teamMembers && teamMembers.length > 0;
@@ -96,7 +99,7 @@ function TicketFilters({ params, onParamsChange, onClearFilters, teamMembers }: 
       </div>
       <div className="flex flex-col">
         <label htmlFor="tf-week-filter" className={labelCls}>Target Week</label>
-        <input id="tf-week-filter" type="date" value={params.targetWeek ?? ""} onChange={(e) => { const v = e.target.value; onParamsChange({ ...(v ? { targetWeek: v } : {}), page: 1 }); }} data-testid="filter-week" className={inputCls} />
+        <input id="tf-week-filter" type="date" value={params.targetWeek ?? defaultWeek ?? ""} onChange={(e) => { const v = e.target.value; onParamsChange({ ...(v ? { targetWeek: v } : {}), page: 1 }); }} data-testid="filter-week" className={inputCls} />
       </div>
       {hasFilter && (
         <Button variant="secondary" size="sm" onClick={onClearFilters} data-testid="filter-clear-all" className="self-end">
@@ -119,6 +122,7 @@ export default function Tickets() {
   const { data: ticketPage, loading: ticketsLoading, refetch: refetchTickets } = useTicketList(listParams);
   const ticketApi = useTicketApi();
 
+  const { selectedWeek } = useSelectedWeek();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const { data: ticketDetail, loading: detailLoading, refetch: refetchDetail } = useTicket(selectedTicketId);
   const { data: teamMembers } = useTeamMembers(currentTeamId ?? null);
@@ -172,7 +176,7 @@ export default function Tickets() {
         </Button>
       </div>
 
-      <TicketFilters params={listParams} onParamsChange={updateParams} onClearFilters={() => setSearchParams(new URLSearchParams())} {...(teamMembers && teamMembers.length > 0 ? { teamMembers } : {})} />
+      <TicketFilters params={listParams} onParamsChange={updateParams} onClearFilters={() => setSearchParams(new URLSearchParams())} defaultWeek={selectedWeek} {...(teamMembers && teamMembers.length > 0 ? { teamMembers } : {})} />
 
       {ticketPage && (
         <div data-testid="ticket-count" className="text-sm text-muted">

@@ -11,6 +11,7 @@ import { Card, CardHeader, CardContent } from "../components/ui/Card.js";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/Dialog.js";
 import { cn } from "../lib/utils.js";
 import { usePlanApi, useCurrentPlan } from "../api/planHooks.js";
+import { useSelectedWeek } from "../lib/WeekContext.js";
 import { useRcdoTree } from "../api/rcdoHooks.js";
 import { useQuery } from "../api/hooks.js";
 import { useAutoReconcileAssist } from "../api/aiHooks.js";
@@ -286,8 +287,10 @@ function SubmitConfirmDialog({ achievedCount, partialCount, notAchievedCount, ca
 
 export default function ReconcilePage() {
   const { planId: planIdParam } = useParams<{ planId?: string }>();
-  // If no planId in URL, auto-discover the current week's plan (only if reconcilable)
-  const { data: currentPlanData, loading: currentPlanLoading } = useCurrentPlan();
+  // If no planId in URL, auto-discover the selected week's plan (only if reconcilable).
+  // useSelectedWeek() reads the shared header week-selector so navigating weeks works.
+  const { selectedWeek } = useSelectedWeek();
+  const { data: currentPlanData, loading: currentPlanLoading } = useCurrentPlan(planIdParam ? undefined : selectedWeek);
   const currentPlan = currentPlanData?.plan;
   const isReconcilable = currentPlan?.state === "LOCKED" || currentPlan?.state === "RECONCILING";
   const discoveredPlanId = isReconcilable ? currentPlan?.id : undefined;
