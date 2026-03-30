@@ -1,0 +1,12 @@
+{
+  "verdict": "changes_requested",
+  "blockingIssues": [
+    "Step 1 file list is incomplete — misses 7+ files with bg-neutral-* violations including Reconcile.tsx (11 occurrences), TeamWeek.tsx, PlanHeaderBar.tsx, SoftWarningsPanel.tsx, CommitForm.tsx, CapacityMeter.tsx, and ArchiveConfirmDialog.tsx. Also misses a `bg-white` in CommitDraftAssistButton.tsx. A sweep that omits these is not a sweep.",
+    "Step 2a and 2b describe already-done work — TicketSummaryResponse already has assigneeDisplayName/teamName, TicketListView already resolves names, TicketDetailView already accepts teamMembers prop with a select dropdown, and Tickets.tsx already calls useTeamMembers(). Implementing these as described would be a no-op or introduce regressions. Only Step 2c (QuickAssignRow dropdown) has real work.",
+    "Step 3 violates the stated \"no API contract changes\" constraint by adding resolvedByName to ExceptionResponse DTO. Additionally, the resolvedById UUID is not actually rendered anywhere in the UI — the resolution block only shows exception.resolution text — so the claimed bug does not exist.",
+    "Step 4a is a no-op — Reconcile route uses useParams for planId, not a local week offset state. There is nothing to replace with useSelectedWeek().",
+    "Step 5a is redundant — RcdoTreeView already renders status badges (Draft/Active/Archived) with distinct badge variants on every node in the tree.",
+    "Step 8c references a non-existent `mode` prop on SemanticSearchInput — the component accepts `teamId`/`userId`, not `mode`. The described change cannot be implemented as specified.",
+    "Step 8b describes work already implemented — TeamInsightPanel already shows \"No AI insights available for this period\" when empty, and PersonalInsightPanel already returns null with a comment that the parent handles the empty state."
+  ]
+}

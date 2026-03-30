@@ -1,0 +1,9 @@
+backend/src/test/resources/application.yml
+frontend/src/components/reconcile/CarryForwardDialog.tsx
+.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/closeout.json
+.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/run-report.md
+.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/run-summary.md
+.pi/duet/runs/2026-03-30T06-54-26-188Z-c2f54cb5
+.pi/plans/duet-bug-sweep.md.json
+.pi/todos/4a41e964.md
+duet-bug-sweep.md

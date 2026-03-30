@@ -1,0 +1,10 @@
+{
+  "verdict": "changes_requested",
+  "blockingIssues": [
+    "Step 1 is not actually a sweep. The listed files miss multiple remaining frontend contrast violations, including `frontend/src/routes/Reconcile.tsx`, `frontend/src/routes/TeamWeek.tsx`, `frontend/src/routes/myweek/PlanHeaderBar.tsx`, `frontend/src/components/myweek/SoftWarningsPanel.tsx`, `frontend/src/components/myweek/CommitForm.tsx`, `frontend/src/components/myweek/CapacityMeter.tsx`, and `frontend/src/components/rcdo/ArchiveConfirmDialog.tsx`, plus a `bg-white` in `frontend/src/components/ai/CommitDraftAssistButton.tsx`.",
+    "Step 2a/2b contradict the current code. `TicketSummaryResponse` already includes `assigneeDisplayName`/`teamName`, `TicketListView` already renders those names, `Tickets.tsx` already calls `useTeamMembers(...)`, and `TicketDetailView` already takes `teamMembers` and renders a dropdown. Only Step 2c has real work.",
+    "Step 3 violates the plan’s own “no public API contract changes” constraint by adding `resolvedByName` to `ExceptionResponse`, and the underlying bug is not present: `resolvedById` is not rendered in `ExceptionQueueSection` at all. I also could not find any frontend rendering of `CommentResponse.authorUserId`, so Step 3b is not grounded in the current UI.",
+    "Step 4a diagnoses the wrong problem and would miss the real fix. `frontend/src/routes/Reconcile.tsx` does not have local week-offset state to replace, but when no `planId` param is present it calls `useCurrentPlan()` with no week argument, so it always auto-discovers the current week instead of the selected header week. The plan needs to explicitly use `useSelectedWeek()` and feed that selected week into the auto-discovery path.",
+    "Step 8c references a non-existent API: `frontend/src/components/ai/SemanticSearchInput.tsx` has `teamId`/`userId` props only, not a `mode` prop. As written, that change cannot be implemented without first changing the component contract and its callers, or reframing the work around the existing props."
+  ]
+}

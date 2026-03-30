@@ -1,0 +1,25 @@
+Reviewed the step-1 frontend dark-mode sweep and re-ran the search/checks.
+
+What I found:
+- There was still one missed hard-coded neutral surface in `frontend/src/components/reconcile/CarryForwardDialog.tsx`.
+- A full grep after fixing it shows only the intentionally allowed neutral classes remain:
+  - `frontend/src/components/lock/ScopeChangeTimeline.tsx` dark timeline dots
+  - `frontend/src/components/myweek/CapacityMeter.tsx` dark fill colors
+
+What I changed:
+- `frontend/src/components/reconcile/CarryForwardDialog.tsx`
+  - `border-neutral-200 bg-neutral-50` → `border-border bg-foreground/5` on the commit preview card
+
+Checks:
+- `npm run check:static` ✅ passes
+- `npm test` ❌ still fails in backend with the same 30 pre-existing H2/SQLGrammar integration test failures; frontend/shared tests pass
+
+Assessment:
+- Step 1 was not fully complete before this round because one material dark-mode violation remained.
+- After this fix, the frontend sweep is complete for the targeted class patterns.
+
+```observations
+- [high] backend/src/test/java/com/weeklycommit/**: `npm test` is still blocked by 30 pre-existing integration test failures (`SQLGrammarException` / `JdbcSQLSyntaxErrorException` in H2-backed backend tests).
+```
+
+Verdict: changes_made

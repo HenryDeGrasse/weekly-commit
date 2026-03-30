@@ -1,0 +1,15 @@
+Plan looks workable overall. The targeted files and APIs exist, and the major fixes line up with the current codebase:
+
+- `Reconcile.tsx` really is calling `useCurrentPlan()` without a selected week.
+- `UncommittedWorkSection.tsx` still has the raw quick-assign `"User ID"` input and already receives `memberNames`.
+- `Tickets.tsx` still has the raw assignee filter input.
+- `Rcdos.tsx` / `RcdoTreeView.tsx` are the right places for the RCDO UX changes.
+- `MyWeek.tsx` has the `riskSignalCount !== 0` null edge case and the broad Plan Intelligence guard.
+- `ManagerAiSummaryService.java` has the exact gaps described for display names, `chessDistribution`, and unclamped missed-lock math.
+
+Non-blocking suggestions:
+- In the Step 1 sweep, also catch `frontend/src/components/reconcile/CarryForwardDialog.tsx`; it still has `border-neutral-200 bg-neutral-50`.
+- For Step 4c, note that `RcdoTreeView`’s current `"active-only"` behavior means “not archived,” so if the desired default is truly ACTIVE-only, the filter logic should be tightened there too.
+- In Step 6, while touching the prompt context, it may be worth double-checking the `team-summary.txt` field naming/shape (`rcdoBranches` vs current `topRcdoBranches`) even if that stays out of scope for this pass.
+
+Verdict: approve

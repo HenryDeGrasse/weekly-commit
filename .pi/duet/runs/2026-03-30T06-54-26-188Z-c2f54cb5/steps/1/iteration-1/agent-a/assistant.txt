@@ -1,0 +1,39 @@
+## Summary
+
+**What I reviewed:**
+All 20 frontend files listed in the step description that had hard-coded `bg-neutral-*`, `text-neutral-*`, `border-neutral-*`, `bg-white`, and `hover:bg-neutral-*` dark-mode contrast violations.
+
+**What I changed (54 replacements across 20 frontend files + 4 backend Spotless fixes):**
+
+| File | Change |
+|---|---|
+| `routes/Reconcile.tsx` | 8 fixes: baseline column bg, diff highlight classes, ticket status badge, summary item classes, error alert divs |
+| `routes/TeamWeek.tsx` | 2 fixes: error alert divs |
+| `routes/myweek/PlanHeaderBar.tsx` | 1 fix: auto-lock banner bg/text/icon |
+| `components/myweek/SoftWarningsPanel.tsx` | 3 fixes: pawn-heavy warning bg+border, both AlertTriangle text-neutral-500 → text-muted |
+| `components/myweek/CommitForm.tsx` | 1 fix: carry-forward banner |
+| `components/myweek/CapacityMeter.tsx` | 1 fix: override badge (bg-neutral-400/600 bar fills left untouched) |
+| `components/myweek/CommitList.tsx` | 2 fixes: streak row bg, lineage button hover/border |
+| `components/myweek/CarryForwardLineageView.tsx` | 3 fixes: PARTIALLY_ACHIEVED/NOT_ACHIEVED/CANCELED outcome badge styles |
+| `components/lock/ScopeChangeDialog.tsx` | 3 fixes: locked notice, remove preview, "before" cell in edit table |
+| `components/lock/ScopeChangeTimeline.tsx` | 1 fix: previousValue span (bg-neutral-500+ dot colors left untouched) |
+| `components/lock/LockConfirmDialog.tsx` | 1 fix: chess piece count badge |
+| `components/rcdo/ArchiveConfirmDialog.tsx` | 1 fix: blocked message |
+| `components/tickets/TicketForm.tsx` | 1 fix: submit error alert |
+| `components/tickets/TicketDetailView.tsx` | 2 fixes: BLOCKED/CANCELED transition buttons |
+| `components/ai/CommitDraftAssistButton.tsx` | 2 fixes: suggestion card bg/border, accept button hover |
+| `components/ai/RcdoSuggestionInline.tsx` | 1 fix: dismiss button hover |
+| `components/ai/WhatIfPanel.tsx` | 1 fix: unavailable message |
+| `components/ai/EvidenceDrawer.tsx` | 1 fix: NOT_ACHIEVED outcome badge |
+| `components/ai/ReconcileAssistPanel.tsx` | 1 fix: carry-forward button hover |
+| `components/notifications/NotificationPanel.tsx` | 1 fix: MEDIUM priority bgClassName |
+| **Backend (4 files)** | Applied `spotlessApply` to fix pre-existing Java formatting violations that were blocking static check |
+
+**Checks:** Static (TypeScript + Spotless) ✅ pass. Unit tests: 862 tests, 30 pre-existing backend integration test failures (verified identical before/after my changes — SQLGrammarException in H2 tests, unrelated to frontend).
+
+```observations
+- [high] backend/src/test/java/com/weeklycommit/: 30 integration tests fail with SQLGrammarException/JdbcSQLSyntaxErrorException — these are pre-existing and not caused by step-1 changes, but they will block future step verification unless fixed.
+- [medium] components/myweek/SoftWarningsPanel.tsx line 32: the "too-many-commits" warning still uses `border-warning/30 bg-warning/5` while the pawn-heavy warning now uses `border-border bg-foreground/5` — inconsistent styling between the two warnings, but intentional per original code; not a dark-mode bug.
+```
+
+Verdict: changes_made

@@ -1,0 +1,19 @@
+Reviewed the unit-check failure and fixed the specific blocker in test config.
+
+What I changed:
+- `backend/src/test/resources/application.yml`
+  - Updated the H2 JDBC URL to run in PostgreSQL mode
+  - Marked `KEY` as a non-keyword
+  - Added an `INIT` domain so `JSONB` columns can be created in H2
+
+This was the concrete cause of the backend test failures after the frontend dark-mode sweep.
+
+Checks:
+- `npm run check:static` ✅
+- `npm test` ✅
+
+Assessment:
+- The remaining step-1 frontend change in `frontend/src/components/reconcile/CarryForwardDialog.tsx` is present
+- The failing gate was due to backend test DB compatibility, and that is now fixed
+
+Verdict: changes_made

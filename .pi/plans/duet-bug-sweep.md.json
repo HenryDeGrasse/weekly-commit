@@ -1,0 +1,119 @@
+{
+  "plan": "duet-bug-sweep",
+  "sourceDocument": "duet-bug-sweep.md",
+  "reviewStatus": "changes_requested",
+  "reviewDate": "2026-03-30",
+  "blockingIssues": [
+    {
+      "id": "B1",
+      "severity": "blocking",
+      "step": "Step 1",
+      "title": "Step 1 file list is incomplete — misses 7+ files with bg-neutral violations",
+      "description": "Full grep reveals `bg-neutral-*` / `text-neutral-*` / `border-neutral-*` violations in files NOT listed in Step 1:\n- `routes/Reconcile.tsx` — 11 occurrences (bg-neutral-50, bg-neutral-100, bg-neutral-200, text-neutral-700, text-neutral-500, border-neutral-300)\n- `routes/TeamWeek.tsx` — 2 occurrences (bg-neutral-100, border-neutral-300)\n- `routes/myweek/PlanHeaderBar.tsx` — bg-neutral-100, text-neutral-900, text-neutral-500, border-neutral-300\n- `components/myweek/SoftWarningsPanel.tsx` — bg-neutral-100, text-neutral-500, border-neutral-300\n- `components/myweek/CommitForm.tsx` — bg-neutral-50, border-neutral-200\n- `components/myweek/CapacityMeter.tsx` — bg-neutral-200, text-neutral-700, bg-neutral-400, bg-neutral-600 (the bg-neutral-400/600 in the progress bar may need special treatment)\n- `components/rcdo/ArchiveConfirmDialog.tsx` — bg-neutral-100, border-neutral-300\n- `components/ai/CommitDraftAssistButton.tsx` — also has `border-neutral-200 bg-white` (line 215) which is a dark-mode violation not mentioned\n- `components/myweek/CommitList.tsx` — also has border-neutral-300 and hover:bg-neutral-200 (line 177) not mentioned\n\nThese must all be included in Step 1 or it's not a 'sweep'. Reconcile.tsx alone has the most violations in the codebase.",
+      "suggestedFix": "Expand Step 1's file list to include ALL files from the grep. Consider splitting Step 1 into two sub-steps (components + routes) if the scope becomes too large for a single step."
+    },
+    {
+      "id": "B2",
+      "severity": "blocking",
+      "step": "Step 2",
+      "title": "Step 2a and 2b describe work that is ALREADY DONE",
+      "description": "The codebase already has:\n- `TicketSummaryResponse.assigneeDisplayName` and `TicketSummaryResponse.teamName` fields in the TypeScript type\n- `TicketListView` already renders `ticket.assigneeDisplayName ?? (ticket.assigneeUserId ? ticket.assigneeUserId.slice(0, 8) + '…' : <span className='text-muted'>—</span>)` — it already resolves names\n- `TicketDetailView` already accepts `teamMembers?: readonly TeamMember[]` prop and renders a <select> dropdown when members are available\n- `TicketDetailView` already uses `ticket.reporterDisplayName ?? ticket.reporterUserId` and `ticket.teamName ?? ticket.teamId`\n- `Tickets.tsx` already calls `useTeamMembers(currentTeamId ?? null)` and passes `teamMembers={teamMembers ?? []}` to TicketDetailView\n\nImplementing Step 2a/2b as described would be a no-op or could introduce regressions by re-implementing already-working logic.",
+      "suggestedFix": "Remove Step 2a and 2b entirely. Keep Step 2c (QuickAssign dropdown) as the sole remaining item — the QuickAssignRow in UncommittedWorkSection still uses a raw text input. Step 2c should also accept `memberNames` in the QuickAssignRow (it's already passed via props to the parent component but not to QuickAssignRow for the select dropdown)."
+    },
+    {
+      "id": "B3",
+      "severity": "blocking",
+      "step": "Step 3",
+      "title": "Step 3 violates the 'no API contract changes' constraint",
+      "description": "The plan's constraints state: 'Do NOT change any public API contracts (REST endpoints, DTO field names/types)'. Step 3c proposes adding `resolvedByName` to `ExceptionResponse.java` — this IS a public API contract change (adds a new field to a REST response DTO). While adding a new nullable field is backwards-compatible in practice, it technically violates the stated constraint.\n\nAdditionally, the ExceptionQueueSection currently does NOT display `resolvedById` anywhere in the UI — the resolution block only shows `exception.resolution` text (line: '✓ {exception.resolution}'). So the 'raw UUID display' bug that Step 3a claims to fix doesn't actually exist in the current code.",
+      "suggestedFix": "Either (a) remove Step 3a/3c entirely since the UUID isn't displayed, or (b) reframe it as a UX enhancement to show WHO resolved the exception and explicitly note the constraint exception. Step 3b (CommentResponse authorUserId) should be verified — check if `authorUserId` is actually rendered anywhere. If not, remove Step 3b too."
+    },
+    {
+      "id": "B4",
+      "severity": "blocking",
+      "step": "Step 4",
+      "title": "Step 4a is a no-op — Reconcile route doesn't have week offset state",
+      "description": "The Reconcile route (`routes/Reconcile.tsx`) uses `useParams<{ planId?: string }>()` to get the plan ID from the URL. It does NOT have any local week offset state — it operates on a specific plan, not a week. The plan says 'if it has its own local week offset state... replace it with useSelectedWeek()' but there is nothing to replace. The entire premise is wrong.",
+      "suggestedFix": "Remove Step 4a. For 4b, the Reports route uses its own range logic intentionally — only add the clarifying label if actually needed. For 4c, the Tickets route uses URL search params for week filtering, not a local state — verify there's actually a bug before describing a fix. Consider whether Step 4 has enough remaining work to justify being its own step, or merge remaining items into another step."
+    },
+    {
+      "id": "B5",
+      "severity": "major",
+      "step": "Step 5",
+      "title": "Step 5a is redundant — RcdoTreeView already shows status badges",
+      "description": "RcdoTreeView already renders a Badge with the status text (Draft/Active/Archived) next to every node title in the tree. The code at line ~115 shows: `<Badge variant={STATUS_VARIANT[node.status]}>{node.status.charAt(0) + node.status.slice(1).toLowerCase()}</Badge>`. DRAFT nodes already have a distinct badge variant ('draft'). The plan says 'DRAFT nodes are hard to identify at a glance' but the existing badges already solve this.",
+      "suggestedFix": "Remove or rephrase Step 5a. If additional visual distinction is desired (e.g., opacity change, icon), specify exactly what to add beyond the existing badge."
+    },
+    {
+      "id": "B6",
+      "severity": "major",
+      "step": "Step 5b",
+      "title": "Auto-activate on create could be a breaking UX change",
+      "description": "Auto-activating a DRAFT node on creation removes the deliberate two-step create→activate workflow. The DRAFT state may exist for a reason (e.g., the node content needs review/approval before being available for commit linking). Auto-activation would skip this review gate. This is a product decision, not a bug fix.",
+      "suggestedFix": "Either remove this item from the bug sweep (it's a feature change, not a bug) or explicitly note it as an intentional behavior change with justification."
+    },
+    {
+      "id": "B7",
+      "severity": "major",
+      "step": "Step 8c",
+      "title": "Step 8c references non-existent 'mode' prop on SemanticSearchInput",
+      "description": "The plan says 'The component already accepts `mode` prop — ensure example queries differ between modes.' However, SemanticSearchInput accepts `teamId?: string` and `userId?: string`, NOT a `mode` prop. The suggested questions are a static const array, not mode-dependent. The implementor would have to add the mode prop, change the interface, and modify callers — this is larger scope than described.",
+      "suggestedFix": "Either correctly describe the current props (`teamId`/`userId`) and specify concrete changes, or remove this item if it's not worth the effort for a bug sweep."
+    },
+    {
+      "id": "B8",
+      "severity": "major",
+      "step": "Step 8b",
+      "title": "InsightPanel empty state already handled",
+      "description": "The PersonalInsightPanel already returns `null` when empty (with comment: 'parent section handles the nothing here state'). The TeamInsightPanel already renders 'No AI insights available for this period.' when `data.insights.length === 0`. The unavailable state shows 'AI insights are currently unavailable.' These are all already implemented. Step 8b describes work that's already done.",
+      "suggestedFix": "Remove Step 8b or reframe to address the specific case where PersonalInsightPanel returns null and the parent section appears empty (which is a different UX question about whether the parent CollapsibleSection should be hidden entirely)."
+    }
+  ],
+  "nonBlockingNotes": [
+    {
+      "id": "N1",
+      "step": "Step 1",
+      "note": "The CapacityMeter.tsx progress bar uses `bg-neutral-400` and `bg-neutral-600` for 'near capacity' and 'under capacity' states. These are darker shades used for a colored bar — they may work fine in dark mode unlike the lighter shades. The plan should explicitly classify these as 'leave as-is' like the ScopeChangeTimeline dots, or specify replacements."
+    },
+    {
+      "id": "N2",
+      "step": "Step 1",
+      "note": "CommitDraftAssistButton.tsx line 215 has `bg-white` (a hard-coded white background) which is also broken in dark mode but is not `bg-neutral-*` so might be missed. Should be included in the sweep."
+    },
+    {
+      "id": "N3",
+      "step": "Step 3",
+      "note": "The ManagerReviewServiceTest.java also creates ExceptionResponse objects inline in tests. If `resolvedByName` is added, those tests need updating too (not just TeamControllerTest.java)."
+    },
+    {
+      "id": "N4",
+      "step": "Step 5c",
+      "note": "Changing the default statusFilter from 'all' to 'active-only' could break the RcdoPage.test.tsx if it assumes the default filter state shows all nodes. The test file should be checked before making this change."
+    },
+    {
+      "id": "N5",
+      "step": "Step 6",
+      "note": "Step 6 items (6b, 6c, 6d) are verification tasks, not code changes. They should produce a specific outcome: either 'verified, no change needed' or 'found issue, fix X'. As written, the step is vague about what the implementor should actually do if verification passes."
+    },
+    {
+      "id": "N6",
+      "step": "Step 7",
+      "note": "Step 7a calls `userRepo.findAllById(ownerByPlanId.values())` but `ownerByPlanId.values()` is a Collection<UUID>, not a Set — there could be duplicate UUIDs. It works since findAllById handles duplicates, but the plan should note this returns a Map keyed by UUID which deduplicates naturally."
+    },
+    {
+      "id": "N7",
+      "step": "Step 8a",
+      "note": "NotificationResponse does not contain any raw user UUID fields (only referenceId which is not displayed). Step 8a will be a no-op verification. Consider removing or marking as 'verify only'."
+    },
+    {
+      "id": "N8",
+      "step": "Step 8d",
+      "note": "Adding a search input to the AiCommitComposer RCDO picker requires managing additional state (searchQuery). The RcdoTreeView already accepts searchQuery as a prop, but the AiCommitComposer would need a new useState and an Input element. This is straightforward but is a feature addition, not a bug fix."
+    },
+    {
+      "id": "N9",
+      "step": "General",
+      "note": "The `check:static` script includes linting (spotlessCheck for Java, lint for frontend) in addition to typecheck. Edits to Java files must also pass Spotless formatting, which the plan doesn't mention. Backend changes should run `./gradlew spotlessApply` before committing."
+    }
+  ]
+}

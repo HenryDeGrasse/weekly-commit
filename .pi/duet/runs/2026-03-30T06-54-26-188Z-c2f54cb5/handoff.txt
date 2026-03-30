@@ -1,0 +1,28 @@
+Parent conversation handoff summary
+Summary model: openai-codex/gpt-5.4-mini
+Source items: 431
+
+Overview:
+The session identified a broad set of UI/backend bugs in the Weekly Commit app, then pivoted to preparing a Duet-style multi-step sweep to systematically search and fix them across the codebase. The core themes were: dark-mode contrast regressions from hard-coded neutral Tailwind classes, raw UUIDs leaking into user-facing views, week-selection state drifting between routes, and a few backend prompt/DTO completeness issues. A concrete Duet plan file was written to the repo root for an autonomous multi-step implementation run.
+
+Settled decisions:
+- Use Duet for the large bug sweep because it spans many files and layers (frontend + backend) and benefits from plan→implement→review cycles.
+- Keep the sweep focused on durable bug classes rather than one-off fixes: dark-mode neutral tokens, UUID display resolution, week-context synchronization, RCDO UX, and AI summary completeness.
+- Use the existing repo remote `https://labs.gauntletai.com/henrydegrasse/weekly-commit-module.git` for git operations; the previous changes were already committed and pushed as `fix(ui): role-based nav, week sync, dark-mode colors, UX polish` on `main`.
+- A Duet plan file was created at `duet-bug-sweep.md` in the repo root, intended for `/duet` → 'Implement from existing plan file'.
+- For Duet handoff, the recommended option is 'Include summary of current conversation' so agents get the design-system and UUID-display context.
+
+Constraints / must-remember items:
+- Do not modify `.pi/` contents or unrelated repo metadata during the sweep.
+- The project uses semantic color tokens for accessible dark mode; hard-coded `bg-neutral-*`/`text-neutral-*` surfaces should generally be replaced, except intentionally dark timeline marker colors (`bg-neutral-500+`) that already work in both modes.
+- Do not change public API contracts unless the plan explicitly includes the backend DTO change needed to support resolved-by display names.
+- The repository’s Duet config is fixed: static checks are `npm run check:static`, unit checks are `npm test`, with commit-per-step enabled.
+- The plan file deliberately scopes each step to a narrow set of files to avoid cross-layer drift and keep steps independently verifiable.
+- The current commit history and working tree contain many changes; the plan assumes follow-on autonomous work will search the whole codebase, but each step should only touch the files it owns.
+
+Open questions:
+- Whether the Duet plan should be simplified before execution, since some steps are intentionally broad (e.g. sweeping remaining neutral classes across many components).
+- Whether additional UUID-display leaks exist outside the explicitly named Tickets, ExceptionQueue, and Notification surfaces.
+- Whether the Reconcile/Tickets route week-selection behavior actually needs changes or only a labeling/UX clarification after inspection.
+- Whether auto-activating newly created RCDO nodes is the right product behavior, or if an explicit user prompt/toast is preferable.
+- Whether any backend prompt/context fixes in ManagerAiSummaryService require additional test fixture updates beyond the plan’s scope.

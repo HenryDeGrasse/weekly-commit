@@ -1,0 +1,25 @@
+diff --git a/backend/src/test/resources/application.yml b/backend/src/test/resources/application.yml
+index 333beb6..97eecb2 100644
+--- a/backend/src/test/resources/application.yml
++++ b/backend/src/test/resources/application.yml
+@@ -1,6 +1,6 @@
+ spring:
+   datasource:
+-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
++    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=KEY;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS JSON
+     driver-class-name: org.h2.Driver
+     username: sa
+     password:
+diff --git a/frontend/src/components/reconcile/CarryForwardDialog.tsx b/frontend/src/components/reconcile/CarryForwardDialog.tsx
+index 257610b..92e3a7e 100644
+--- a/frontend/src/components/reconcile/CarryForwardDialog.tsx
++++ b/frontend/src/components/reconcile/CarryForwardDialog.tsx
+@@ -84,7 +84,7 @@ export function CarryForwardDialog({ commit, onConfirm, onCancel, isSubmitting =
+         </div>
+ 
+         {/* Commit preview */}
+-        <div data-testid="carry-forward-commit-preview" className="mb-4 rounded-default border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-foreground">
++        <div data-testid="carry-forward-commit-preview" className="mb-4 rounded-default border border-border bg-foreground/5 px-3 py-2.5 text-sm text-foreground">
+           <strong>"{commit.title}"</strong> will be copied into the target week as a new commit with carry-forward provenance.
+           {commit.carryForwardStreak > 0 && (
+             <span className="block mt-1 text-xs text-muted">

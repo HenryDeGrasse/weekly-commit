@@ -1,0 +1,22 @@
+## Summary of Review
+
+**Verdict: changes_requested**
+
+### Blocking Issues:
+
+1. **Step 1 file list is incomplete** — The grep reveals `bg-neutral-*` violations in **7+ files not listed**: `Reconcile.tsx` (11 occurrences!), `TeamWeek.tsx`, `PlanHeaderBar.tsx`, `SoftWarningsPanel.tsx`, `CommitForm.tsx`, `CapacityMeter.tsx`, `ArchiveConfirmDialog.tsx`. There's also a `bg-white` in `CommitDraftAssistButton.tsx`. A "sweep" that misses these isn't a sweep.
+
+2. **Step 2a/2b describe already-done work** — `TicketSummaryResponse` already has `assigneeDisplayName`/`teamName`, `TicketListView` already resolves names, `TicketDetailView` already has a `teamMembers` select dropdown, and `Tickets.tsx` already calls `useTeamMembers()`. Only Step 2c (QuickAssignRow dropdown) is actually needed.
+
+3. **Step 3 violates the "no API contract changes" constraint** — Adding `resolvedByName` to `ExceptionResponse` is a DTO change. Also, the `resolvedById` UUID isn't actually rendered anywhere in the UI — the resolution block only shows `exception.resolution` text. The "bug" doesn't exist.
+
+4. **Step 4a is a no-op** — Reconcile route uses `useParams` for planId, not a week offset. There's no week state to sync.
+
+5. **Step 5a is redundant** — `RcdoTreeView` already renders status badges (Draft/Active/Archived) with distinct variants on every node.
+
+6. **Step 8c references non-existent `mode` prop** — `SemanticSearchInput` accepts `teamId`/`userId`, not `mode`.
+
+7. **Step 8b already implemented** — Both `TeamInsightPanel` and `PersonalInsightPanel` already handle empty/unavailable states.
+
+### Key Recommendation:
+Several steps describe fixing bugs that don't exist or implementing features that are already in place. The plan should be revised to focus on the **real remaining issues**: the incomplete CSS sweep (Step 1 expanded), the QuickAssignRow dropdown (from Step 2c), the backend AI summary fixes (Step 7), and the AiCommitComposer RCDO search (Step 8d).

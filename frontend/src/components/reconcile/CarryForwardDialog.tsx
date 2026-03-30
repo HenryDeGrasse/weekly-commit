@@ -84,7 +84,7 @@ export function CarryForwardDialog({ commit, onConfirm, onCancel, isSubmitting =
         </div>
 
         {/* Commit preview */}
-        <div data-testid="carry-forward-commit-preview" className="mb-4 rounded-default border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-foreground">
+        <div data-testid="carry-forward-commit-preview" className="mb-4 rounded-default border border-border bg-foreground/5 px-3 py-2.5 text-sm text-foreground">
           <strong>"{commit.title}"</strong> will be copied into the target week as a new commit with carry-forward provenance.
           {commit.carryForwardStreak > 0 && (
             <span className="block mt-1 text-xs text-muted">

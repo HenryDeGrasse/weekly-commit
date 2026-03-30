@@ -1,0 +1,15 @@
+Here's a summary of my reasoning and changes from the original plan:
+
+### Key adjustments based on gap analysis:
+
+1. **Step 1 expanded** — Added all 7 missing files from the gap analysis (`Reconcile.tsx`, `TeamWeek.tsx`, `PlanHeaderBar.tsx`, `SoftWarningsPanel.tsx`, `CommitForm.tsx`, `CapacityMeter.tsx`, `ArchiveConfirmDialog.tsx`) plus the `bg-white` in `CommitDraftAssistButton.tsx`. The step now covers every `bg-neutral-*` violation found in the codebase.
+
+2. **Step 2 collapsed** — Dropped Steps 2a/2b entirely since `TicketListView` already renders `assigneeDisplayName`, `TicketDetailView` already has a `teamMembers` dropdown, and `Tickets.tsx` already calls `useTeamMembers`. Only the `QuickAssignRow` raw "User ID" input in `UncommittedWorkSection` remains as real work.
+
+3. **Step 3 (UUID displays in exceptions/comments) dropped** — The gap analysis confirmed that `resolvedById` is not rendered in the UI, `authorUserId` from `CommentResponse` is never displayed in any `.tsx` file, and adding `resolvedByName` to `ExceptionResponse` would violate the no-API-changes constraint. This step had no grounded bugs.
+
+4. **Step 4a (Reconcile week sync) correctly diagnosed** — The actual bug is that `useCurrentPlan()` is called with no argument (line 290), so it always auto-discovers the current week. The fix is to import `useSelectedWeek()` and pass the selected week to `useCurrentPlan(selectedWeek)`.
+
+5. **Step 8c (SemanticSearchInput) reframed** — The component has no `mode` prop; it has `teamId`/`userId`. Reframed to use those existing props to determine context for suggested questions, avoiding any API contract change.
+
+6. **Steps renumbered** from 9 original steps to 8 consolidated steps, removing the empty/invalid work while preserving all valid tasks.
