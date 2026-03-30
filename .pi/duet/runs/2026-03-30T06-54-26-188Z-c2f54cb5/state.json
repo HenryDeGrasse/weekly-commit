@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "phase": "plan_approved",
-  "updatedAt": "2026-03-30T08:01:58.844Z",
+  "phase": "completed",
+  "updatedAt": "2026-03-30T08:02:30.628Z",
   "runId": "2026-03-30T06-54-26-188Z-c2f54cb5",
   "handoffMode": "summary",
   "postPlanMode": "autorun",
@@ -139,12 +139,11 @@
     ]
   },
   "planSourcePath": "duet-bug-sweep.md",
-  "stepIndex": 7,
-  "round": 3,
-  "resumeAction": "run",
+  "stepIndex": 8,
+  "round": 1,
   "activeSummary": {
-    "stepId": "step-7",
-    "stepTitle": "Frontend: NotificationPanel dark-mode fix and AI component polish",
+    "stepId": "step-8",
+    "stepTitle": "Final sweep: verify all checks pass and fix any regressions",
     "gateResults": [
       {
         "id": "static",
