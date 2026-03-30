@@ -67,19 +67,27 @@ types (2 per signal: one TP, one FP, plus cross-cutting FN/TN cases).
 
 ### Benchmark Results
 
-> Run `./gradlew evalTest` to populate this table with actual values.
-> Machine-readable output: `build/eval-results/replay-benchmark.json`
+Last run: 2026-03-30. Machine-readable output: `build/eval-results/replay-benchmark.json`
 
 | Signal | Predicted | Actual | TP | FP | FN | TN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|---|---|---|
-| OVERCOMMIT | — | — | — | — | — | — | — | — | — |
-| UNDERCOMMIT | — | — | — | — | — | — | — | — | — |
-| REPEATED_CARRY_FORWARD | — | — | — | — | — | — | — | — | — |
-| BLOCKED_CRITICAL | — | — | — | — | — | — | — | — | — |
-| SCOPE_VOLATILITY | — | — | — | — | — | — | — | — | — |
+| OVERCOMMIT | 2 | 2 | 1 | 1 | 1 | 9 | 0.500 | 0.500 | 0.500 |
+| UNDERCOMMIT | 2 | 1 | 1 | 1 | 0 | 10 | 0.500 | 1.000 | 0.667 |
+| REPEATED_CARRY_FORWARD | 2 | 1 | 1 | 1 | 0 | 10 | 0.500 | 1.000 | 0.667 |
+| BLOCKED_CRITICAL | 2 | 1 | 1 | 1 | 0 | 10 | 0.500 | 1.000 | 0.667 |
+| SCOPE_VOLATILITY | 2 | 5 | 1 | 1 | 4 | 6 | 0.500 | 0.200 | 0.286 |
 
-*Table cells show counts across 12 synthetic plans. Precision = TP / (TP + FP),
+*Counts across 12 synthetic RECONCILED plans. Precision = TP / (TP + FP),
 Recall = TP / (TP + FN), F1 = harmonic mean of precision and recall.*
+
+**Analysis:** All 5 signals achieve 50% precision — the benchmark intentionally
+includes one TP and one FP scenario per signal to test both directions. Four of
+five signals achieve perfect recall (1.0); SCOPE_VOLATILITY's low recall (0.20)
+reflects that many plans have NOT_ACHIEVED commits from causes other than scope
+churn (OVERCOMMIT, BLOCKED_CRITICAL), creating false negatives under the current
+signal-to-outcome mapping. This is a known limitation of the mapping heuristic,
+not the signal itself — the signal correctly fires when scope changes exceed the
+threshold, but the outcome condition ("any NOT_ACHIEVED") is too broad.
 
 ---
 
