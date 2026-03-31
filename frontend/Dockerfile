@@ -23,7 +23,15 @@ RUN npm run build -w frontend
 
 # ── Stage 3: nginx serving static bundle ─────────────────────
 FROM nginx:1.27-alpine
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Use nginx's built-in envsubst template support
+# Place config as a template — nginx will substitute env vars on startup
+COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
+
+# Default backend origin for docker-compose; override on Railway
+ENV BACKEND_ORIGIN=http://backend:8080
+# Only substitute BACKEND_ORIGIN — leave nginx variables ($host, $remote_addr, etc.) alone
+ENV NGINX_ENVSUBST_FILTER=BACKEND_ORIGIN
 
 EXPOSE 80
