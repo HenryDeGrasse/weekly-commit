@@ -31,7 +31,8 @@ COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Default backend origin for docker-compose; override on Railway
 ENV BACKEND_ORIGIN=http://backend:8080
-# Only substitute BACKEND_ORIGIN — leave nginx variables ($host, $remote_addr, etc.) alone
-ENV NGINX_ENVSUBST_FILTER=BACKEND_ORIGIN
+ENV PORT=80
+# Only substitute BACKEND_ORIGIN and PORT — leave nginx variables ($host, etc.) alone
+ENV NGINX_ENVSUBST_FILTER="BACKEND_ORIGIN|PORT"
 
 EXPOSE 80

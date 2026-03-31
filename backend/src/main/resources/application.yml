@@ -13,7 +13,7 @@ spring:
     enabled: true
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 # ── OpenAPI / Swagger UI ───────────────────────────────────────
 springdoc:
@@ -51,12 +51,16 @@ ai:
   provider: ${AI_PROVIDER:openrouter}   # "openrouter" or "stub"
   openrouter:
     api-key: ${OPENROUTER_API_KEY:}
-    model: ${OPENROUTER_MODEL:anthropic/claude-sonnet-4}
+    model: ${OPENROUTER_MODEL:openai/gpt-4.1-nano}
     max-tokens: ${OPENROUTER_MAX_TOKENS:1024}
     base-url: https://openrouter.ai/api/v1
   voyage:
     api-key: ${VOYAGE_API_KEY:}
     base-url: https://api.voyageai.com/v1
+  rerank:
+    enabled: true
+    api-key: ${COHERE_API_KEY:}
+    top-n: 20
   pinecone:
     api-key: ${PINECONE_API_KEY:}
     index-name: ${PINECONE_INDEX_NAME:weekly-commit}
@@ -76,14 +80,14 @@ ai:
       llm-model:
         enabled: false
         control-weight: 1.0
-        control-value: anthropic/claude-sonnet-4
+        control-value: openai/gpt-4.1-nano
         treatment-value: google/gemini-2.5-flash-preview
         applies-to:
           - COMMIT_LINT
           - RAG_INTENT
           - RAG_QUERY
       hyde:
-        enabled: false
+        enabled: false         # HyDE is now conditional — auto-triggers on LOW/INSUFFICIENT retrieval
         control-weight: 1.0
         control-value: disabled
         treatment-value: enabled
