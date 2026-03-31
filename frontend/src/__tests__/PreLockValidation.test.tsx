@@ -20,6 +20,7 @@ import { useAiStatus } from "../api/aiHooks.js";
 vi.mock("../api/aiHooks.js", () => ({
   useAiApi: vi.fn(() => ({ commitLint: vi.fn(), getStatus: vi.fn() })),
   useAiStatus: vi.fn(() => ({ data: { available: false, providerName: "stub" }, loading: false, error: null })),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 function makeCommit(
@@ -212,7 +213,7 @@ describe("AiLintPanel — autoRun=true (automatic mode)", () => {
     });
 
     const { useAiApi } = await import("../api/aiHooks.js");
-    vi.mocked(useAiApi).mockReturnValue({ commitLint: mockCommitLint, getRiskSignals: vi.fn(), getStatus: vi.fn(), commitDraftAssist: vi.fn(), commitFromFreeform: vi.fn(), reconcileAssist: vi.fn(), recordFeedback: vi.fn(), getTeamAiSummary: vi.fn(), rcdoSuggest: vi.fn() });
+    vi.mocked(useAiApi).mockReturnValue({ commitLint: mockCommitLint, getRiskSignals: vi.fn(), getStatus: vi.fn(), commitDraftAssist: vi.fn(), commitFromFreeform: vi.fn(), reconcileAssist: vi.fn(), recordFeedback: vi.fn(), getTeamAiSummary: vi.fn(), rcdoSuggest: vi.fn(), getPlanEvidence: vi.fn(), getCommitEvidence: vi.fn() });
 
     render(
       <MockHostProvider>

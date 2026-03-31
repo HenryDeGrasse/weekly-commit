@@ -117,7 +117,7 @@ export default function Reports() {
 
   const api = useMemo(() => {
     const client = createApiClient({
-      baseUrl: "/api",
+      baseUrl: API_BASE_URL,
       getAuthToken: () => bridge.context.authToken,
     });
     return createReportApi(client);
@@ -126,7 +126,7 @@ export default function Reports() {
 
   const [rangeWeeks, setRangeWeeks] = useState(8);
   const weekStart = useMemo(() => weeksAgo(rangeWeeks - 1), [rangeWeeks]);
-  const weekEnd = useMemo(() => weeksAgo(0), [rangeWeeks]);
+  const weekEnd = useMemo(() => weeksAgo(0), []);
   const weeks = useMemo(() => weeksList(rangeWeeks), [rangeWeeks]);
 
   // ── Data state ──────────────────────────────────────────────────────────

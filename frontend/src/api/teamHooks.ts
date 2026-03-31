@@ -20,7 +20,7 @@ export function useTeamApi(): TeamApi {
   return useMemo(
     () => {
       const client = createApiClient({
-        baseUrl: "/api",
+        baseUrl: API_BASE_URL,
         getAuthToken: () => bridge.context.authToken,
       });
       return createTeamApi(client, authenticatedUser.id);

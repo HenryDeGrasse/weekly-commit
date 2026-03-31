@@ -49,8 +49,8 @@ test.describe("Tickets Page", () => {
       timeout: 5000,
     });
 
-    // Wait for any loading to complete
-    await page.waitForTimeout(1000);
+    // Wait for ticket data to load
+    await page.getByTestId("ticket-list-table").or(page.getByTestId("ticket-list-empty")).waitFor({ timeout: 5000 });
 
     // The seed data should include some tickets
     const pageContent = await page.getByTestId("page-tickets").textContent();

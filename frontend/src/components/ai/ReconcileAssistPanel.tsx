@@ -290,7 +290,7 @@ export function ReconcileAssistPanel({
                         aria-label={`Carry forward ${rec.commitTitle}`}
                         data-testid={`apply-carry-forward-${rec.commitId}`}
                       >
-                        🔁 Carry Forward
+                        <RotateCcw className="h-3 w-3 inline-block" aria-hidden="true" /> Carry Forward
                       </Button>
                     )}
                     {isApplied && (

@@ -93,7 +93,7 @@ export default function Admin() {
   const teamId = bridge.context.currentTeam?.id ?? "";
   const api = useMemo(() => {
     const client = createApiClient({
-      baseUrl: "/api",
+      baseUrl: API_BASE_URL,
       getAuthToken: () => bridge.context.authToken,
     });
     return createConfigApi(client, authenticatedUser.id);

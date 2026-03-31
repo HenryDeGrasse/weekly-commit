@@ -316,13 +316,14 @@ test.describe("Reconcile — AI Pre-fill", () => {
     const commitList = page.getByTestId("reconcile-commit-list");
 
     if (await commitList.isVisible().catch(() => false)) {
-      // The banner may or may not appear depending on whether AI returned outcomes
+      // If commit list is visible, the page loaded without errors — that's the assertion.
+      // Banner may or may not appear depending on whether AI returned outcomes.
       const bannerVisible = await banner.isVisible().catch(() => false);
-      // Just verify no errors
-      expect(true).toBe(true);
       if (bannerVisible) {
         await expect(banner).toContainText("AI has pre-filled");
       }
+      // Page rendered the commit list without crashing
+      await expect(commitList).toBeVisible();
     }
   });
 });

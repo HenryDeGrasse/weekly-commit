@@ -220,7 +220,7 @@ Use the dev user switcher (top banner) to experience different roles:
 │       ├── routes/             7 page-level routes
 │       └── api/                API clients + React hooks
 ├── packages/shared/            Shared TypeScript types
-├── e2e/                        4 Playwright E2E test specs
+├── e2e/                        24 Playwright E2E specs, 7 page objects, shared helpers
 ├── infra/                      Prometheus alerts, Grafana provisioning, Terraform
 ├── docs/                       PRD, architecture, AI eval roadmap
 └── docker-compose.yml          Full stack: Postgres, Redis, Backend, Frontend, Prometheus, Grafana
@@ -232,7 +232,11 @@ Use the dev user switcher (top banner) to experience different roles:
 
 - [Product Requirements (PRD)](docs/prd.md) — full domain spec, 30 sections
 - [Architecture](docs/architecture.md) — system design, AI pipeline, data model
+- [AI Sample Outputs](docs/ai-sample-outputs.md) — real LLM input→output examples from the eval harness
 - [AI Eval Roadmap](docs/ai-eval-roadmap.md) — evaluation infrastructure plan and status
+- [UI/UX Decision Guide](docs/ui-ux-decisions.md) — research-backed frontend decisions and implementation status
+- [Performance Benchmarks](docs/performance-benchmarks.md) — measured P95 latencies vs PRD targets
+- [AI Eval Results](docs/eval-results.md) — benchmark metrics and per-capability coverage
 - [Assignment](docs/assignment.md) — original project brief
 
 ---

@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useHostBridge } from "../host/HostProvider.js";
 import { createApiClient } from "./client.js";
 import { useQuery, type QueryState } from "./hooks.js";
-import { createAiApi, type AiApi, type AiStatusResponse, type PlanRiskSignalsResponse, type ReconcileAssistResponse, type ManagerAiSummaryResponse } from "./aiApi.js";
+import { createAiApi, type AiApi, type AiStatusResponse, type PlanRiskSignalsResponse, type ReconcileAssistResponse, type ManagerAiSummaryResponse, type StructuredEvidenceResponse } from "./aiApi.js";
 import { createWhatIfApi, type WhatIfApi } from "./whatIfApi.js";
 
 /** Returns a stable WhatIfApi instance bound to the current user's auth token. */
@@ -14,7 +14,7 @@ export function useWhatIfApi(): WhatIfApi {
   const { authToken, authenticatedUser } = bridge.context;
   return useMemo(() => {
     const client = createApiClient({
-      baseUrl: "/api",
+      baseUrl: API_BASE_URL,
       getAuthToken: () => bridge.context.authToken,
     });
     return createWhatIfApi(client, authenticatedUser.id);
@@ -28,7 +28,7 @@ export function useAiApi(): AiApi {
   const { authToken, authenticatedUser } = bridge.context;
   return useMemo(() => {
     const client = createApiClient({
-      baseUrl: "/api",
+      baseUrl: API_BASE_URL,
       getAuthToken: () => bridge.context.authToken,
     });
     return createAiApi(client, authenticatedUser.id);
@@ -133,4 +133,27 @@ export function useAutoReconcileAssist(
   }, [planId, userId, enabled]);
 
   return { data, loading, error };
+}
+
+/**
+ * Lazily fetches the structured evidence bundle for a plan on demand.
+ * The fetch only fires when `enabled` is true — pass `open` state from a
+ * toggle button so the drawer loads on first open, then caches.
+ *
+ * @param planId  Plan UUID string, or null to skip
+ * @param enabled Set to true when the evidence drawer is opened
+ */
+export function usePlanEvidence(
+  planId: string | null,
+  enabled: boolean,
+): QueryState<StructuredEvidenceResponse> {
+  const api = useAiApi();
+  return useQuery<StructuredEvidenceResponse>(
+    `plan-evidence-${planId ?? "none"}`,
+    () => {
+      if (!planId) return Promise.reject(new Error("No plan ID"));
+      return api.getPlanEvidence(planId);
+    },
+    { enabled: enabled && planId != null },
+  );
 }

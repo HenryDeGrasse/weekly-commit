@@ -60,9 +60,10 @@ public class OpenRouterAiProvider implements AiProvider {
 	private static final Duration HEALTH_CACHE_TTL = Duration.ofSeconds(60);
 
 	/** Simple rate limiter: track request count per minute window. */
-	private final AtomicLong windowStart = new AtomicLong(System.currentTimeMillis());
-	private final AtomicLong windowCount = new AtomicLong(0);
-	private static final int MAX_REQUESTS_PER_MINUTE = 30;
+	private final Object rateLock = new Object();
+	private long windowStart = System.currentTimeMillis();
+	private int windowCount = 0;
+	private static final int MAX_REQUESTS_PER_MINUTE = 200; // OpenRouter handles its own rate limiting; this is just a local safety ceiling
 
 	/** Running totals for observability. */
 	private final AtomicLong totalTokensUsed = new AtomicLong(0);
@@ -318,6 +319,12 @@ public class OpenRouterAiProvider implements AiProvider {
 			return AiSuggestionResult.unavailable();
 		}
 
+		// Strip markdown fences if present.
+		// Anthropic Claude via OpenRouter wraps JSON in ```json ... ``` blocks even
+		// when response_format=json_object is set. Stripping here makes all models
+		// behave identically downstream.
+		content = stripMarkdownFences(content);
+
 		// With response_format=json_object the content should be valid JSON directly.
 		// If it isn't, signal a retry-worthy failure via ParseException.
 		JsonNode contentNode;
@@ -425,13 +432,15 @@ public class OpenRouterAiProvider implements AiProvider {
 	}
 
 	private boolean tryAcquireRate() {
-		long now = System.currentTimeMillis();
-		long windowMs = 60_000;
-		if (now - windowStart.get() > windowMs) {
-			windowStart.set(now);
-			windowCount.set(0);
+		synchronized (rateLock) {
+			long now = System.currentTimeMillis();
+			long windowMs = 60_000;
+			if (now - windowStart > windowMs) {
+				windowStart = now;
+				windowCount = 0;
+			}
+			return ++windowCount <= MAX_REQUESTS_PER_MINUTE;
 		}
-		return windowCount.incrementAndGet() <= MAX_REQUESTS_PER_MINUTE;
 	}
 
 	// ── Observability ────────────────────────────────────────────────────
@@ -457,6 +466,27 @@ public class OpenRouterAiProvider implements AiProvider {
 	}
 
 	// ── Inner types ──────────────────────────────────────────────────────
+
+	/**
+	 * Strips leading/trailing markdown code fences from model output.
+	 *
+	 * <p>Handles variants: {@code ```json ... ```}, {@code ``` ... ```}, and
+	 * plain leading/trailing backtick runs. Returns the trimmed content unchanged
+	 * if no fence is detected.
+	 */
+	static String stripMarkdownFences(String raw) {
+		if (raw == null) return raw;
+		String s = raw.strip();
+		// Match ```json or ``` at start
+		if (s.startsWith("```")) {
+			int firstNewline = s.indexOf('\n');
+			int lastFence    = s.lastIndexOf("```");
+			if (firstNewline != -1 && lastFence > firstNewline) {
+				return s.substring(firstNewline + 1, lastFence).strip();
+			}
+		}
+		return s;
+	}
 
 	/**
 	 * Thrown by {@link #parseResponse} when the model response content is not valid

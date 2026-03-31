@@ -21,7 +21,7 @@ test.describe("RCDOs Page", () => {
     });
 
     // Wait for tree to load
-    await page.waitForTimeout(1000);
+    await page.getByTestId("rcdo-tree-view").or(page.getByTestId("rcdo-tree-empty")).waitFor({ timeout: 5000 });
 
     const content = await page.getByTestId("page-rcdos").textContent();
     expect(content).toBeTruthy();
@@ -35,7 +35,7 @@ test.describe("RCDOs Page", () => {
     });
 
     // Wait for data to load
-    await page.waitForTimeout(1000);
+    await page.getByTestId("rcdo-tree-view").or(page.getByTestId("rcdo-tree-empty")).waitFor({ timeout: 5000 });
 
     // The seed data includes RCDO nodes — page should have substantial content
     const pageContent = await page.getByTestId("page-rcdos").textContent();

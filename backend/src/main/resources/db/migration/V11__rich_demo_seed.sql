@@ -259,22 +259,22 @@ INSERT INTO weekly_plan (id, owner_user_id, team_id, week_start_date, state, loc
   ('10000000-0010-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000010', '2026-03-09', 'RECONCILED', '2026-03-14 12:00:00+00', '2026-03-21 10:00:00+00', 10, true)
 ON CONFLICT DO NOTHING;
 
--- Week 11: 2026-03-16 (RECONCILING — deadline passed, outcomes being filled in)
+-- Week 11: 2026-03-16 (RECONCILED — reconcile deadline was Mar 28, now past)
 INSERT INTO weekly_plan (id, owner_user_id, team_id, week_start_date, state, lock_deadline, reconcile_deadline, capacity_budget_points, is_compliant) VALUES
-  ('10000000-0011-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILING', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 10, true),
-  ('10000000-0011-0000-0003-000000000000', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILING', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 10, true),
-  ('10000000-0011-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILING', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 10, true),
-  ('10000000-0011-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILING', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 8, true),
-  ('10000000-0011-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILING', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 10, true)
+  ('10000000-0011-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILED', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 10, true),
+  ('10000000-0011-0000-0003-000000000000', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILED', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 10, true),
+  ('10000000-0011-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILED', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 10, true),
+  ('10000000-0011-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILED', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 8, true),
+  ('10000000-0011-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000010', '2026-03-16', 'RECONCILED', '2026-03-21 12:00:00+00', '2026-03-28 10:00:00+00', 10, true)
 ON CONFLICT DO NOTHING;
 
--- Week 12: 2026-03-23 (DRAFT — current week)
+-- Week 12: 2026-03-23 (RECONCILING — lock passed Mar 28, reconcile due Apr 4)
 INSERT INTO weekly_plan (id, owner_user_id, team_id, week_start_date, state, lock_deadline, reconcile_deadline, capacity_budget_points, is_compliant) VALUES
-  ('10000000-0012-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'DRAFT', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 10, true),
-  ('10000000-0012-0000-0003-000000000000', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'DRAFT', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 10, true),
-  ('10000000-0012-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'DRAFT', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 10, true),
-  ('10000000-0012-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'DRAFT', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 8, true),
-  ('10000000-0012-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'DRAFT', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 10, true)
+  ('10000000-0012-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'RECONCILING', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 10, true),
+  ('10000000-0012-0000-0003-000000000000', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'RECONCILING', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 10, true),
+  ('10000000-0012-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'RECONCILING', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 10, true),
+  ('10000000-0012-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'RECONCILING', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 8, true),
+  ('10000000-0012-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000010', '2026-03-23', 'RECONCILING', '2026-03-28 12:00:00+00', '2026-04-04 10:00:00+00', 10, true)
 ON CONFLICT DO NOTHING;
 
 
@@ -597,6 +597,15 @@ UPDATE weekly_plan SET lock_snapshot_id = '30000000-0002-0000-0003-000000000000'
 UPDATE weekly_plan SET lock_snapshot_id = '30000000-0002-0000-0004-000000000000' WHERE id = '10000000-0002-0000-0004-000000000000';
 UPDATE weekly_plan SET lock_snapshot_id = '30000000-0002-0000-0005-000000000000' WHERE id = '10000000-0002-0000-0005-000000000000';
 UPDATE weekly_plan SET lock_snapshot_id = '30000000-0002-0000-0006-000000000000' WHERE id = '10000000-0002-0000-0006-000000000000';
+-- Week 12 lock snapshots (inserted here so FK is satisfied before bulk UPDATE below)
+INSERT INTO lock_snapshot_header (id, plan_id, locked_at, locked_by_system, snapshot_payload) VALUES
+  ('30000000-0012-0000-0001-000000000000', '10000000-0012-0000-0001-000000000000', '2026-03-28 11:22:00+00', false, '{"planState":"LOCKED"}'),
+  ('30000000-0012-0000-0003-000000000000', '10000000-0012-0000-0003-000000000000', '2026-03-28 11:35:00+00', false, '{"planState":"LOCKED"}'),
+  ('30000000-0012-0000-0004-000000000000', '10000000-0012-0000-0004-000000000000', '2026-03-28 11:40:00+00', false, '{"planState":"LOCKED"}'),
+  ('30000000-0012-0000-0005-000000000000', '10000000-0012-0000-0005-000000000000', '2026-03-28 11:15:00+00', false, '{"planState":"LOCKED"}'),
+  ('30000000-0012-0000-0006-000000000000', '10000000-0012-0000-0006-000000000000', '2026-03-28 11:50:00+00', false, '{"planState":"LOCKED"}')
+ON CONFLICT DO NOTHING;
+
 -- (weeks 3-11 similarly)
 UPDATE weekly_plan SET lock_snapshot_id = concat('30000000-', lpad(split_part(id::text, '-', 2), 4, '0'), '-0000-', split_part(id::text, '-', 4), '-000000000000')::uuid
 WHERE state IN ('LOCKED', 'RECONCILED', 'RECONCILING') AND lock_snapshot_id IS NULL;
@@ -620,14 +629,25 @@ ON CONFLICT DO NOTHING;
 UPDATE weekly_plan SET reconcile_snapshot_id = concat('31000000-', lpad(split_part(id::text, '-', 2), 4, '0'), '-0000-', split_part(id::text, '-', 4), '-000000000000')::uuid
 WHERE state = 'RECONCILED' AND reconcile_snapshot_id IS NULL;
 
--- Week 11 reconcile snapshots (RECONCILING state — in progress)
+-- Week 11 reconcile snapshots (RECONCILED — submitted before deadline Mar 28)
+-- Note: bulk SELECT above covers week 11 since its state is now RECONCILED;
+-- these explicit inserts provide accurate timestamps as ON CONFLICT safety.
 INSERT INTO reconcile_snapshot_header (id, plan_id, reconciled_at, snapshot_payload)
 VALUES
-  ('31000000-0011-0000-0001-000000000000', '10000000-0011-0000-0001-000000000000', '2026-03-29 09:00:00+00', '{"planState":"RECONCILING"}'),
-  ('31000000-0011-0000-0003-000000000000', '10000000-0011-0000-0003-000000000000', '2026-03-29 09:15:00+00', '{"planState":"RECONCILING"}'),
-  ('31000000-0011-0000-0004-000000000000', '10000000-0011-0000-0004-000000000000', '2026-03-29 09:20:00+00', '{"planState":"RECONCILING"}'),
-  ('31000000-0011-0000-0005-000000000000', '10000000-0011-0000-0005-000000000000', '2026-03-29 09:30:00+00', '{"planState":"RECONCILING"}'),
-  ('31000000-0011-0000-0006-000000000000', '10000000-0011-0000-0006-000000000000', '2026-03-29 09:10:00+00', '{"planState":"RECONCILING"}')
+  ('31000000-0011-0000-0001-000000000000', '10000000-0011-0000-0001-000000000000', '2026-03-27 16:30:00+00', '{"planState":"RECONCILED"}'),
+  ('31000000-0011-0000-0003-000000000000', '10000000-0011-0000-0003-000000000000', '2026-03-27 16:45:00+00', '{"planState":"RECONCILED"}'),
+  ('31000000-0011-0000-0004-000000000000', '10000000-0011-0000-0004-000000000000', '2026-03-27 17:00:00+00', '{"planState":"RECONCILED"}'),
+  ('31000000-0011-0000-0005-000000000000', '10000000-0011-0000-0005-000000000000', '2026-03-27 17:10:00+00', '{"planState":"RECONCILED"}'),
+  ('31000000-0011-0000-0006-000000000000', '10000000-0011-0000-0006-000000000000', '2026-03-27 16:50:00+00', '{"planState":"RECONCILED"}')
+ON CONFLICT DO NOTHING;
+
+-- Week 12 reconcile snapshots (inserted here so FK is satisfied before UPDATE below)
+INSERT INTO reconcile_snapshot_header (id, plan_id, reconciled_at, snapshot_payload) VALUES
+  ('31000000-0012-0000-0001-000000000000', '10000000-0012-0000-0001-000000000000', '2026-03-30 09:00:00+00', '{"planState":"RECONCILING"}'),
+  ('31000000-0012-0000-0003-000000000000', '10000000-0012-0000-0003-000000000000', '2026-03-30 09:10:00+00', '{"planState":"RECONCILING"}'),
+  ('31000000-0012-0000-0004-000000000000', '10000000-0012-0000-0004-000000000000', '2026-03-30 09:15:00+00', '{"planState":"RECONCILING"}'),
+  ('31000000-0012-0000-0005-000000000000', '10000000-0012-0000-0005-000000000000', '2026-03-30 09:05:00+00', '{"planState":"RECONCILING"}'),
+  ('31000000-0012-0000-0006-000000000000', '10000000-0012-0000-0006-000000000000', '2026-03-30 09:20:00+00', '{"planState":"RECONCILING"}')
 ON CONFLICT DO NOTHING;
 
 UPDATE weekly_plan SET reconcile_snapshot_id = concat('31000000-', lpad(split_part(id::text, '-', 2), 4, '0'), '-0000-', split_part(id::text, '-', 4), '-000000000000')::uuid
@@ -786,4 +806,443 @@ INSERT INTO notification (id, recipient_user_id, notification_type, title, body,
   -- Dan notifications
   ('70000000-0012-0001-0006-000000000000', '00000000-0000-0000-0000-000000000006', 'DRAFT_WINDOW_OPENED', 'New week planning open', 'The draft window for week of 2026-03-23 is now open.', '10000000-0012-0000-0006-000000000000', 'WEEKLY_PLAN', false, 'LOW', '2026-03-20 12:00:00+00'),
   ('70000000-0011-0001-0006-000000000000', '00000000-0000-0000-0000-000000000006', 'REPEATED_CARRY_FORWARD_REMINDER', 'Carry-forward alert', 'Your commit "Personalized onboarding" has been carried forward. Consider breaking it down or re-estimating.', '20000000-0011-0001-0006-000000000000', 'WEEKLY_COMMIT', false, 'MEDIUM', '2026-03-16 12:00:00+00')
+ON CONFLICT DO NOTHING;
+
+-- =============================================================================
+-- TIMELINE EXTENSION: 2026-03-30 (today = Monday, current week)
+-- • Week 11 (Mar 16): RECONCILED (already updated above)
+-- • Week 12 (Mar 23): RECONCILING (already updated above)
+--   – lock snapshots, reconcile snapshots, commit outcomes added below
+-- • Week 13 (Mar 30): DRAFT — new current week
+-- • AI Suggestions: RISK_SIGNAL, RECONCILE_ASSIST, TEAM_INSIGHT,
+--                   PERSONAL_INSIGHT, PLAN_RECOMMENDATION
+-- =============================================================================
+
+
+-- =========================================================================
+-- A. Additional work items (tickets) for weeks 12-13
+-- =========================================================================
+
+INSERT INTO work_item (id, team_id, key, title, description, status, assignee_user_id, reporter_user_id, estimate_points, rcdo_node_id, priority)
+VALUES
+  ('00000000-0000-0000-dddd-000000000013', '00000000-0000-0000-0000-000000000010',
+   'ENG-113', 'CDN edge nodes for EU region',
+   'Configure CloudFront edge nodes in EU-WEST-1 and EU-CENTRAL-1 for low-latency EMEA delivery',
+   'TODO', '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002',
+   3, '00000000-0000-0000-cccc-000000000002', 'MEDIUM'),
+
+  ('00000000-0000-0000-dddd-000000000014', '00000000-0000-0000-0000-000000000010',
+   'ENG-114', 'Mobile SSO SDK — React Native',
+   'Build SSO authentication SDK for React Native apps; support iOS and Android token storage',
+   'IN_PROGRESS', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001',
+   5, '00000000-0000-0000-cccc-000000000001', 'HIGH'),
+
+  ('00000000-0000-0000-dddd-000000000015', '00000000-0000-0000-0000-000000000010',
+   'ENG-115', 'Dunning email automation — legal sign-off',
+   'CAN-SPAM and GDPR compliant dunning email copy; blocked pending legal review of payment failure messaging',
+   'BLOCKED', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002',
+   5, '00000000-0000-0000-cccc-000000000001', 'HIGH'),
+
+  ('00000000-0000-0000-dddd-000000000016', '00000000-0000-0000-0000-000000000010',
+   'ENG-116', 'Zero-trust network access policy',
+   'Define and implement zero-trust network policies using BeyondCorp model; segment prod from staging',
+   'TODO', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001',
+   5, '00000000-0000-0000-cccc-000000000004', 'HIGH'),
+
+  ('00000000-0000-0000-dddd-000000000017', '00000000-0000-0000-0000-000000000010',
+   'ENG-117', 'DAST scanner CI integration',
+   'Integrate OWASP ZAP as dynamic application security testing step in deploy pipeline',
+   'TODO', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001',
+   2, '00000000-0000-0000-cccc-000000000004', 'MEDIUM')
+ON CONFLICT DO NOTHING;
+
+
+-- =========================================================================
+-- B. Week 12 commit outcomes (plans are now RECONCILING — filling in actuals)
+-- =========================================================================
+
+-- Dev User week 12
+UPDATE weekly_commit SET
+  success_criteria = 'Confirmed 5+ deploys per day across all production services throughout the week',
+  outcome          = 'ACHIEVED',
+  outcome_notes    = 'Achieved. Deploy dashboard shows 5-8 deploys/day. Zero rollbacks.'
+WHERE id = '20000000-0012-0001-0001-000000000000';
+
+UPDATE weekly_commit SET
+  success_criteria = 'SAST and DAST both running in CI pipeline with no false-positive blockers',
+  outcome          = 'PARTIALLY_ACHIEVED',
+  outcome_notes    = 'SAST (Semgrep) fully integrated and blocking on HIGH findings. DAST configuration incomplete — ZAP proxy setup hit environment isolation issues. Carrying DAST forward.'
+WHERE id = '20000000-0012-0002-0001-000000000000';
+
+UPDATE weekly_commit SET
+  success_criteria = 'Q1 retrospective facilitated with action items documented and assigned',
+  outcome          = 'ACHIEVED',
+  outcome_notes    = 'Done. 12 action items, 8 assigned. Top theme: earlier blocker flagging.'
+WHERE id = '20000000-0012-0003-0001-000000000000';
+
+-- Alice week 12
+UPDATE weekly_commit SET
+  success_criteria = 'Quarterly SSO adoption metrics presented to leadership; report published',
+  outcome          = 'ACHIEVED',
+  outcome_notes    = 'Presented. 78% enterprise adoption (target 70%), NPS delta +12 pts. Well received.'
+WHERE id = '20000000-0012-0001-0003-000000000000';
+
+UPDATE weekly_commit SET
+  success_criteria = 'React Native SDK v1 published to internal npm registry; iOS + Android tested',
+  outcome          = 'PARTIALLY_ACHIEVED',
+  outcome_notes    = 'Core OIDC auth flow and token storage complete on iOS. Android secure storage (Keystore) integration incomplete. Estimating 1 more week for Android + refresh token handling.'
+WHERE id = '20000000-0012-0002-0003-000000000000';
+
+-- Bob week 12
+UPDATE weekly_commit SET
+  success_criteria = 'Q1 billing metrics report distributed to leadership with churn and ARR analysis',
+  outcome          = 'ACHIEVED',
+  outcome_notes    = 'Published. Q1 ARR +31% QoQ, churn rate 2.4% (target <3%). Dunning gap identified as improvement area.'
+WHERE id = '20000000-0012-0001-0004-000000000000';
+
+UPDATE weekly_commit SET
+  success_criteria = 'Automated dunning emails sent on failed payment; retry sequence configured',
+  outcome          = 'NOT_ACHIEVED',
+  outcome_notes    = 'Blocked. Legal flagged CAN-SPAM and GDPR compliance requirements for payment failure messaging. Email copy under review — no implementation started. Will carry forward.'
+WHERE id = '20000000-0012-0002-0004-000000000000';
+
+-- Carol week 12
+UPDATE weekly_commit SET
+  success_criteria = 'EU region monitored for 7 days post-launch; zero data residency violations',
+  outcome          = 'ACHIEVED',
+  outcome_notes    = 'Clean launch week. Zero violations, p99 latency 187ms (target <200ms), zero data escapes to US region.'
+WHERE id = '20000000-0012-0001-0005-000000000000';
+
+UPDATE weekly_commit SET
+  success_criteria = 'SOC2 Type II evidence collection framework established; auditor kick-off scheduled',
+  outcome          = 'ACHIEVED',
+  outcome_notes    = 'Framework in place. Auditor (Vanta) kick-off scheduled for Apr 3. Evidence collection covering 12-month period starting Apr 1.'
+WHERE id = '20000000-0012-0002-0005-000000000000';
+
+-- Dan week 12
+UPDATE weekly_commit SET
+  success_criteria = 'Onboarding v2 released to 100% of new signups with zero P1 bugs in first 48h',
+  outcome          = 'ACHIEVED',
+  outcome_notes    = 'GA launched Friday. 100% traffic. Zero P1 bugs in first 96h. NPS survey showing 62 avg (target 60+). '
+WHERE id = '20000000-0012-0001-0006-000000000000';
+
+UPDATE weekly_commit SET
+  success_criteria = 'Health dashboard v2 kickoff complete: requirements doc, metric definitions, wireframes started',
+  outcome          = 'NOT_ACHIEVED',
+  outcome_notes    = 'Deprioritized mid-week to support EMEA monitoring and onboarding GA launch. Will carry forward as primary Q2 initiative.'
+WHERE id = '20000000-0012-0002-0006-000000000000';
+
+
+-- =========================================================================
+-- C. Week 12 lock snapshots (locked 2026-03-28)
+-- =========================================================================
+
+INSERT INTO lock_snapshot_header (id, plan_id, locked_at, locked_by_system, snapshot_payload) VALUES
+  ('30000000-0012-0000-0001-000000000000', '10000000-0012-0000-0001-000000000000', '2026-03-28 11:22:00+00', false, '{"planState":"LOCKED"}'),
+  ('30000000-0012-0000-0003-000000000000', '10000000-0012-0000-0003-000000000000', '2026-03-28 11:35:00+00', false, '{"planState":"LOCKED"}'),
+  ('30000000-0012-0000-0004-000000000000', '10000000-0012-0000-0004-000000000000', '2026-03-28 11:40:00+00', false, '{"planState":"LOCKED"}'),
+  ('30000000-0012-0000-0005-000000000000', '10000000-0012-0000-0005-000000000000', '2026-03-28 11:15:00+00', false, '{"planState":"LOCKED"}'),
+  ('30000000-0012-0000-0006-000000000000', '10000000-0012-0000-0006-000000000000', '2026-03-28 11:50:00+00', false, '{"planState":"LOCKED"}')
+ON CONFLICT DO NOTHING;
+
+-- Back-fill lock_snapshot_id for week 12 plans
+UPDATE weekly_plan SET lock_snapshot_id = '30000000-0012-0000-0001-000000000000' WHERE id = '10000000-0012-0000-0001-000000000000' AND lock_snapshot_id IS NULL;
+UPDATE weekly_plan SET lock_snapshot_id = '30000000-0012-0000-0003-000000000000' WHERE id = '10000000-0012-0000-0003-000000000000' AND lock_snapshot_id IS NULL;
+UPDATE weekly_plan SET lock_snapshot_id = '30000000-0012-0000-0004-000000000000' WHERE id = '10000000-0012-0000-0004-000000000000' AND lock_snapshot_id IS NULL;
+UPDATE weekly_plan SET lock_snapshot_id = '30000000-0012-0000-0005-000000000000' WHERE id = '10000000-0012-0000-0005-000000000000' AND lock_snapshot_id IS NULL;
+UPDATE weekly_plan SET lock_snapshot_id = '30000000-0012-0000-0006-000000000000' WHERE id = '10000000-0012-0000-0006-000000000000' AND lock_snapshot_id IS NULL;
+
+
+-- =========================================================================
+-- D. Week 12 reconcile snapshots (RECONCILING — window open, not yet closed)
+-- =========================================================================
+
+INSERT INTO reconcile_snapshot_header (id, plan_id, reconciled_at, snapshot_payload) VALUES
+  ('31000000-0012-0000-0001-000000000000', '10000000-0012-0000-0001-000000000000', '2026-03-30 09:00:00+00', '{"planState":"RECONCILING"}'),
+  ('31000000-0012-0000-0003-000000000000', '10000000-0012-0000-0003-000000000000', '2026-03-30 09:10:00+00', '{"planState":"RECONCILING"}'),
+  ('31000000-0012-0000-0004-000000000000', '10000000-0012-0000-0004-000000000000', '2026-03-30 09:15:00+00', '{"planState":"RECONCILING"}'),
+  ('31000000-0012-0000-0005-000000000000', '10000000-0012-0000-0005-000000000000', '2026-03-30 09:05:00+00', '{"planState":"RECONCILING"}'),
+  ('31000000-0012-0000-0006-000000000000', '10000000-0012-0000-0006-000000000000', '2026-03-30 09:20:00+00', '{"planState":"RECONCILING"}')
+ON CONFLICT DO NOTHING;
+
+UPDATE weekly_plan SET reconcile_snapshot_id = '31000000-0012-0000-0001-000000000000' WHERE id = '10000000-0012-0000-0001-000000000000' AND reconcile_snapshot_id IS NULL;
+UPDATE weekly_plan SET reconcile_snapshot_id = '31000000-0012-0000-0003-000000000000' WHERE id = '10000000-0012-0000-0003-000000000000' AND reconcile_snapshot_id IS NULL;
+UPDATE weekly_plan SET reconcile_snapshot_id = '31000000-0012-0000-0004-000000000000' WHERE id = '10000000-0012-0000-0004-000000000000' AND reconcile_snapshot_id IS NULL;
+UPDATE weekly_plan SET reconcile_snapshot_id = '31000000-0012-0000-0005-000000000000' WHERE id = '10000000-0012-0000-0005-000000000000' AND reconcile_snapshot_id IS NULL;
+UPDATE weekly_plan SET reconcile_snapshot_id = '31000000-0012-0000-0006-000000000000' WHERE id = '10000000-0012-0000-0006-000000000000' AND reconcile_snapshot_id IS NULL;
+
+
+-- =========================================================================
+-- E. Week 13: 2026-03-30 (DRAFT — current week)
+--    lock_deadline: 2026-04-04 12:00 UTC (Friday noon)
+--    reconcile_deadline: 2026-04-11 10:00 UTC (Friday of next week)
+-- =========================================================================
+
+INSERT INTO weekly_plan (id, owner_user_id, team_id, week_start_date, state, lock_deadline, reconcile_deadline, capacity_budget_points, is_compliant) VALUES
+  ('10000000-0013-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', '2026-03-30', 'DRAFT', '2026-04-04 12:00:00+00', '2026-04-11 10:00:00+00', 10, true),
+  ('10000000-0013-0000-0003-000000000000', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000010', '2026-03-30', 'DRAFT', '2026-04-04 12:00:00+00', '2026-04-11 10:00:00+00', 10, true),
+  ('10000000-0013-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000010', '2026-03-30', 'DRAFT', '2026-04-04 12:00:00+00', '2026-04-11 10:00:00+00', 10, true),
+  ('10000000-0013-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000010', '2026-03-30', 'DRAFT', '2026-04-04 12:00:00+00', '2026-04-11 10:00:00+00', 8, true),
+  ('10000000-0013-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000010', '2026-03-30', 'DRAFT', '2026-04-04 12:00:00+00', '2026-04-11 10:00:00+00', 10, true)
+ON CONFLICT DO NOTHING;
+
+-- Week 13 commits
+-- Dev User: 5+3+2+1=11 pts vs budget 10 → OVER_BUDGET signal (risk detected)
+INSERT INTO weekly_commit (id, plan_id, owner_user_id, title, description, chess_piece, priority_order, rcdo_node_id, work_item_id, estimate_points, success_criteria, carry_forward_streak) VALUES
+  ('20000000-0013-0001-0001-000000000000', '10000000-0013-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001',
+   'Zero-trust network access policy design',
+   'Define BeyondCorp-model zero-trust policies: device trust, network segmentation, prod/staging isolation',
+   'KING', 1, '00000000-0000-0000-cccc-000000000004', '00000000-0000-0000-dddd-000000000016', 5,
+   'Policy doc approved by security; prod network segments defined and applied in terraform', 0),
+  ('20000000-0013-0002-0001-000000000000', '10000000-0013-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001',
+   'Complete DAST scanner integration in CI (carry-forward)',
+   'Resolve ZAP proxy environment isolation issue and complete DAST CI step',
+   'QUEEN', 2, '00000000-0000-0000-cccc-000000000004', '00000000-0000-0000-dddd-000000000017', 3,
+   'DAST runs on every deploy pipeline with no false-positive rate above 5%', 1),
+  ('20000000-0013-0003-0001-000000000000', '10000000-0013-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001',
+   'DAST tool integration spike',
+   'Evaluate OWASP ZAP vs Burp Suite for production DAST; configure scan profiles',
+   'KNIGHT', 3, '00000000-0000-0000-cccc-000000000004', NULL, 2,
+   'Recommendation doc + working scan config in staging', 0),
+  ('20000000-0013-0004-0001-000000000000', '10000000-0013-0000-0001-000000000000', '00000000-0000-0000-0000-000000000001',
+   'Q2 kick-off meeting prep',
+   'Prepare engineering all-hands Q2 goals deck; circulate for review',
+   'PAWN', 4, NULL, NULL, 1,
+   'Deck ready and shared 24h before all-hands', 0)
+ON CONFLICT DO NOTHING;
+
+-- Alice: 5+3+1=9 pts — clean (one carry-forward, streak 1)
+INSERT INTO weekly_commit (id, plan_id, owner_user_id, title, description, chess_piece, priority_order, rcdo_node_id, work_item_id, estimate_points, success_criteria, carry_forward_streak) VALUES
+  ('20000000-0013-0001-0003-000000000000', '10000000-0013-0000-0003-000000000000', '00000000-0000-0000-0000-000000000003',
+   'Mobile SSO SDK v1 release (carry-forward)',
+   'Complete Android Keystore secure storage and refresh token handling; publish to npm registry',
+   'KING', 1, '00000000-0000-0000-cccc-000000000001', '00000000-0000-0000-dddd-000000000014', 5,
+   'SDK v1.0 published to internal npm; iOS + Android integration guides in docs portal', 1),
+  ('20000000-0013-0002-0003-000000000000', '10000000-0013-0000-0003-000000000000', '00000000-0000-0000-0000-000000000003',
+   'SSO developer portal documentation',
+   'Write integration guides for Okta, Azure AD, Google Workspace; publish to docs.acmecorp.io',
+   'ROOK', 2, '00000000-0000-0000-cccc-000000000001', NULL, 3,
+   'All three IdP guides published; dev team feedback collected', 0),
+  ('20000000-0013-0003-0003-000000000000', '10000000-0013-0000-0003-000000000000', '00000000-0000-0000-0000-000000000003',
+   'Quarterly SSO adoption summary brief',
+   'Compile Q1 SSO metrics: enterprise accounts, auth success rate, time-to-login p95',
+   'PAWN', 3, NULL, NULL, 1,
+   'Brief distributed to leadership team by EOW', 0)
+ON CONFLICT DO NOTHING;
+
+-- Bob: 5+3+2=10 pts — King linked to BLOCKED ticket → BLOCKED_CRITICAL signal
+INSERT INTO weekly_commit (id, plan_id, owner_user_id, title, description, chess_piece, priority_order, rcdo_node_id, work_item_id, estimate_points, success_criteria, carry_forward_streak) VALUES
+  ('20000000-0013-0001-0004-000000000000', '10000000-0013-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004',
+   'Dunning email automation (carry-forward)',
+   'Implement automated payment-failure email sequence after legal clears copy',
+   'KING', 1, '00000000-0000-0000-cccc-000000000001', '00000000-0000-0000-dddd-000000000015', 5,
+   'Automated 3-touch dunning sequence live; failed payments recovery rate measurable by EOW', 1),
+  ('20000000-0013-0002-0004-000000000000', '10000000-0013-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004',
+   'Annual billing contract support',
+   'Implement annual plan selection, prorated upgrades, and contract renewal reminders',
+   'ROOK', 2, '00000000-0000-0000-cccc-000000000001', NULL, 3,
+   'Annual billing option available in product; proration tested for all edge cases', 0),
+  ('20000000-0013-0003-0004-000000000000', '10000000-0013-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004',
+   'Stripe API v3 library upgrade',
+   'Upgrade stripe-java SDK from v22 to v25 with webhook signature v2 support',
+   'BISHOP', 3, '00000000-0000-0000-cccc-000000000001', NULL, 2,
+   'Stripe SDK upgraded; all existing tests passing; no breaking API changes', 0)
+ON CONFLICT DO NOTHING;
+
+-- Carol: 5+2+2=9 pts vs budget 8 → OVER_BUDGET signal (+1 over budget)
+INSERT INTO weekly_commit (id, plan_id, owner_user_id, title, description, chess_piece, priority_order, rcdo_node_id, work_item_id, estimate_points, success_criteria, carry_forward_streak) VALUES
+  ('20000000-0013-0001-0005-000000000000', '10000000-0013-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005',
+   'EU CDN edge node configuration',
+   'Configure CloudFront distributions in eu-west-1 and eu-central-1 with EU-only routing policies',
+   'KING', 1, '00000000-0000-0000-cccc-000000000002', '00000000-0000-0000-dddd-000000000013', 5,
+   'CDN serving EU traffic from EU edge nodes only; p99 latency <100ms for EU users', 0),
+  ('20000000-0013-0002-0005-000000000000', '10000000-0013-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005',
+   'SOC2 Type II evidence collection — week 1',
+   'Configure Vanta for automated evidence collection; scope infrastructure and access reviews',
+   'ROOK', 2, '00000000-0000-0000-cccc-000000000002', NULL, 2,
+   'Vanta connected to AWS, GitHub, and Okta; first evidence batch collected and verified', 0),
+  ('20000000-0013-0003-0005-000000000000', '10000000-0013-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005',
+   'Multi-region latency monitoring',
+   'Add Datadog synthetic checks from EU and US regions; alert on cross-region latency spikes',
+   'BISHOP', 3, '00000000-0000-0000-cccc-000000000002', NULL, 2,
+   'Synthetic checks running from 3 regions; p95 latency alerts configured', 0)
+ON CONFLICT DO NOTHING;
+
+-- Dan: 5+3+1=9 pts — one carry-forward (streak 1), clean on points
+INSERT INTO weekly_commit (id, plan_id, owner_user_id, title, description, chess_piece, priority_order, rcdo_node_id, work_item_id, estimate_points, success_criteria, carry_forward_streak) VALUES
+  ('20000000-0013-0001-0006-000000000000', '10000000-0013-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006',
+   'Customer health dashboard v2 kickoff (carry-forward)',
+   'Define v2 requirements: churn risk ML signals, cohort views, CSM alert thresholds',
+   'KING', 1, '00000000-0000-0000-cccc-000000000003', '00000000-0000-0000-dddd-000000000008', 5,
+   'Requirements doc approved; v2 success metrics defined; Figma wireframes started', 1),
+  ('20000000-0013-0002-0006-000000000000', '10000000-0013-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006',
+   'Onboarding v2 performance optimization',
+   'Profile and optimize onboarding wizard render performance; target LCP <1.2s on 4G',
+   'QUEEN', 2, '00000000-0000-0000-cccc-000000000003', NULL, 3,
+   'Onboarding LCP reduced to <1.2s on throttled 4G; Core Web Vitals all green', 0),
+  ('20000000-0013-0003-0006-000000000000', '10000000-0013-0000-0006-000000000000', '00000000-0000-0000-0000-000000000006',
+   'Q2 onboarding roadmap draft',
+   'Draft Q2 onboarding initiatives: contextual help v2, NPS follow-up flows, enterprise custom branding',
+   'PAWN', 3, NULL, NULL, 1,
+   'Draft roadmap reviewed by PM; top 3 Q2 initiatives prioritized', 0)
+ON CONFLICT DO NOTHING;
+
+
+-- =========================================================================
+-- F. Carry-forward links (week 12 → 13)
+-- =========================================================================
+
+-- Dev User: DAST scanner (wk12 PARTIALLY_ACHIEVED → wk13 QUEEN, streak 1)
+INSERT INTO carry_forward_link (id, source_commit_id, target_commit_id, reason, reason_notes) VALUES
+  ('50000000-0013-0001-0001-000000000000', '20000000-0012-0002-0001-000000000000', '20000000-0013-0002-0001-000000000000',
+   'STILL_IN_PROGRESS', 'ZAP proxy environment isolation issue not resolved in wk12; SAST done but DAST configuration incomplete')
+ON CONFLICT DO NOTHING;
+
+-- Alice: Mobile SSO SDK (wk12 PARTIALLY_ACHIEVED → wk13 KING, streak 1)
+INSERT INTO carry_forward_link (id, source_commit_id, target_commit_id, reason, reason_notes) VALUES
+  ('50000000-0013-0001-0003-000000000000', '20000000-0012-0002-0003-000000000000', '20000000-0013-0001-0003-000000000000',
+   'STILL_IN_PROGRESS', 'Android Keystore integration and refresh token handling require additional week; iOS portion complete')
+ON CONFLICT DO NOTHING;
+
+-- Bob: Dunning email (wk12 NOT_ACHIEVED → wk13 KING, streak 1)
+INSERT INTO carry_forward_link (id, source_commit_id, target_commit_id, reason, reason_notes) VALUES
+  ('50000000-0013-0001-0004-000000000000', '20000000-0012-0002-0004-000000000000', '20000000-0013-0001-0004-000000000000',
+   'BLOCKED_BY_DEPENDENCY', 'Legal review of CAN-SPAM / GDPR compliant dunning copy still in progress — ENG-115 remains BLOCKED')
+ON CONFLICT DO NOTHING;
+
+-- Dan: Customer health v2 (wk12 NOT_ACHIEVED → wk13 KING, streak 1)
+INSERT INTO carry_forward_link (id, source_commit_id, target_commit_id, reason, reason_notes) VALUES
+  ('50000000-0013-0001-0006-000000000000', '20000000-0012-0002-0006-000000000000', '20000000-0013-0001-0006-000000000000',
+   'REPRIORITIZED', 'Deprioritized in wk12 to support EMEA post-launch monitoring and onboarding v2 GA; now resuming as Q2 priority')
+ON CONFLICT DO NOTHING;
+
+
+-- =========================================================================
+-- G. Scope change events (week 12)
+-- =========================================================================
+
+INSERT INTO scope_change_event (id, plan_id, commit_id, category, changed_by_user_id, reason, previous_value, new_value, created_at) VALUES
+  -- Dev User: security scanning downgraded mid-week after DAST blocker hit
+  ('40000000-0012-0001-0001-000000000000', '10000000-0012-0000-0001-000000000000', '20000000-0012-0002-0001-000000000000',
+   'CHESS_PIECE_CHANGED', '00000000-0000-0000-0000-000000000001',
+   'Downgraded from QUEEN to ROOK mid-week when DAST blocker surfaced — protecting King delivery',
+   '"QUEEN"', '"ROOK"', '2026-03-25 14:00:00+00'),
+  -- Bob: dunning email commit had estimate bumped after legal scope discovered
+  ('40000000-0012-0001-0004-000000000000', '10000000-0012-0000-0004-000000000000', '20000000-0012-0002-0004-000000000000',
+   'ESTIMATE_CHANGED', '00000000-0000-0000-0000-000000000004',
+   'Legal review adds compliance scope — CAN-SPAM + GDPR email requirements extend implementation',
+   '"3"', '"5"', '2026-03-24 10:00:00+00'),
+  -- Dan: health dashboard v2 chess piece changed when it was deprioritized
+  ('40000000-0012-0001-0006-000000000000', '10000000-0012-0000-0006-000000000000', '20000000-0012-0002-0006-000000000000',
+   'CHESS_PIECE_CHANGED', '00000000-0000-0000-0000-000000000006',
+   'Deprioritized to BISHOP after EMEA launch support consumed available capacity',
+   '"ROOK"', '"BISHOP"', '2026-03-26 16:00:00+00')
+ON CONFLICT DO NOTHING;
+
+
+-- =========================================================================
+-- H. Manager comments (weeks 12-13)
+-- =========================================================================
+
+INSERT INTO manager_comment (id, plan_id, commit_id, author_user_id, content, created_at) VALUES
+  -- Week 12: celebrate Carol's EMEA launch
+  ('60000000-0012-0000-0005-000000000000', '10000000-0012-0000-0005-000000000000', NULL,
+   '00000000-0000-0000-0000-000000000002',
+   'Exceptional week Carol. EMEA launched with zero incidents and the compliance framework is already paying dividends. This is the kind of methodical, no-drama delivery that makes the whole team better.',
+   '2026-03-30 09:00:00+00'),
+  -- Week 12: flag Bob''s dunning blocker
+  ('60000000-0012-0000-0004-000000000000', '10000000-0012-0000-0004-000000000000', '20000000-0012-0002-0004-000000000000',
+   '00000000-0000-0000-0000-000000000002',
+   'Bob — this is the second week the dunning email has been blocked. I''ve escalated to general counsel directly and asked for a 48-hour turnaround on the email copy review. Please ensure ENG-115 is unblocked by Tuesday so you can start implementation this week.',
+   '2026-03-30 09:15:00+00'),
+  -- Week 12: positive feedback on Dev User Q1 velocity
+  ('60000000-0012-0000-0001-000000000000', '10000000-0012-0000-0001-000000000000', NULL,
+   '00000000-0000-0000-0000-000000000002',
+   'Great Q1 all-around. The daily deploy cadence is now fully validated. DAST carry-forward is understandable given the ZAP environment issues — make sure that is truly the last carry-forward on security scanning though.',
+   '2026-03-30 09:30:00+00'),
+  -- Week 13: manager note on team risk posture
+  ('60000000-0013-0000-0000-000000000000', NULL, NULL,
+   '00000000-0000-0000-0000-000000000002',
+   'Week 13 planning note: I''m seeing OVER_BUDGET signals on Dev User and Carol, plus Bob''s dunning email is still blocked. Let''s resolve those before Friday''s lock. Alice and Dan — your plans look solid. Good start to Q2.',
+   '2026-03-30 10:00:00+00')
+ON CONFLICT DO NOTHING;
+
+
+-- =========================================================================
+-- I. Manager review exceptions (weeks 12-13)
+-- =========================================================================
+
+INSERT INTO manager_review_exception (id, team_id, plan_id, user_id, exception_type, severity, description, week_start_date, resolved, resolution, resolved_at, resolved_by_id, created_at) VALUES
+  -- Week 12: Bob''s NOT_ACHIEVED on dunning email (external block)
+  ('80000000-0012-0001-0004-000000000000', '00000000-0000-0000-0000-000000000010',
+   '10000000-0012-0000-0004-000000000000', '00000000-0000-0000-0000-000000000004',
+   'REPEATED_CARRY_FORWARD', 'MEDIUM',
+   'Dunning email automation blocked by legal review for second consecutive week; ENG-115 BLOCKED',
+   '2026-03-23', false, NULL, NULL, NULL, '2026-03-30 09:15:00+00'),
+  -- Week 13: Carol OVER_BUDGET pre-lock warning
+  ('80000000-0013-0001-0005-000000000000', '00000000-0000-0000-0000-000000000010',
+   '10000000-0013-0000-0005-000000000000', '00000000-0000-0000-0000-000000000005',
+   'OVER_BUDGET', 'LOW',
+   'Carol plan has 9 committed points vs 8-point capacity budget — 12.5% over budget pre-lock',
+   '2026-03-30', false, NULL, NULL, NULL, '2026-03-30 08:00:00+00')
+ON CONFLICT DO NOTHING;
+
+
+-- =========================================================================
+-- J. Notifications (week 13)
+-- =========================================================================
+
+INSERT INTO notification (id, recipient_user_id, notification_type, title, body, reference_id, reference_type, read, priority, created_at) VALUES
+  -- All users: new week open
+  ('70000000-0013-0001-0001-000000000000', '00000000-0000-0000-0000-000000000001',
+   'DRAFT_WINDOW_OPENED', 'Week of 2026-03-30 is now open',
+   'Start planning your Q2 week 1 commitments. Lock deadline: Friday Apr 4 at noon.',
+   '10000000-0013-0000-0001-000000000000', 'WEEKLY_PLAN', false, 'LOW', '2026-03-30 07:00:00+00'),
+  ('70000000-0013-0001-0003-000000000000', '00000000-0000-0000-0000-000000000003',
+   'DRAFT_WINDOW_OPENED', 'Week of 2026-03-30 is now open',
+   'Start planning your Q2 week 1 commitments. Lock deadline: Friday Apr 4 at noon.',
+   '10000000-0013-0000-0003-000000000000', 'WEEKLY_PLAN', false, 'LOW', '2026-03-30 07:00:00+00'),
+  ('70000000-0013-0001-0004-000000000000', '00000000-0000-0000-0000-000000000004',
+   'DRAFT_WINDOW_OPENED', 'Week of 2026-03-30 is now open',
+   'Start planning your Q2 week 1 commitments. Lock deadline: Friday Apr 4 at noon.',
+   '10000000-0013-0000-0004-000000000000', 'WEEKLY_PLAN', false, 'LOW', '2026-03-30 07:00:00+00'),
+  ('70000000-0013-0001-0005-000000000000', '00000000-0000-0000-0000-000000000005',
+   'DRAFT_WINDOW_OPENED', 'Week of 2026-03-30 is now open',
+   'Start planning your Q2 week 1 commitments. Lock deadline: Friday Apr 4 at noon.',
+   '10000000-0013-0000-0005-000000000000', 'WEEKLY_PLAN', false, 'LOW', '2026-03-30 07:00:00+00'),
+  ('70000000-0013-0001-0006-000000000000', '00000000-0000-0000-0000-000000000006',
+   'DRAFT_WINDOW_OPENED', 'Week of 2026-03-30 is now open',
+   'Start planning your Q2 week 1 commitments. Lock deadline: Friday Apr 4 at noon.',
+   '10000000-0013-0000-0006-000000000000', 'WEEKLY_PLAN', false, 'LOW', '2026-03-30 07:00:00+00'),
+  -- Wk12 reconcile window open for all users
+  ('70000000-0012-0002-0001-000000000000', '00000000-0000-0000-0000-000000000001',
+   'RECONCILIATION_OPENED', 'Reconciliation open for week of 2026-03-23',
+   'Fill in your outcomes for last week. Reconciliation deadline: Friday Apr 4 at 10:00.',
+   '10000000-0012-0000-0001-000000000000', 'WEEKLY_PLAN', false, 'MEDIUM', '2026-03-30 07:00:00+00'),
+  ('70000000-0012-0002-0003-000000000000', '00000000-0000-0000-0000-000000000003',
+   'RECONCILIATION_OPENED', 'Reconciliation open for week of 2026-03-23',
+   'Fill in your outcomes for last week. Reconciliation deadline: Friday Apr 4 at 10:00.',
+   '10000000-0012-0000-0003-000000000000', 'WEEKLY_PLAN', false, 'MEDIUM', '2026-03-30 07:00:00+00'),
+  ('70000000-0012-0002-0004-000000000000', '00000000-0000-0000-0000-000000000004',
+   'RECONCILIATION_OPENED', 'Reconciliation open for week of 2026-03-23',
+   'Fill in your outcomes for last week. Reconciliation deadline: Friday Apr 4 at 10:00.',
+   '10000000-0012-0000-0004-000000000000', 'WEEKLY_PLAN', false, 'MEDIUM', '2026-03-30 07:00:00+00'),
+  ('70000000-0012-0002-0005-000000000000', '00000000-0000-0000-0000-000000000005',
+   'RECONCILIATION_OPENED', 'Reconciliation open for week of 2026-03-23',
+   'Fill in your outcomes for last week. Reconciliation deadline: Friday Apr 4 at 10:00.',
+   '10000000-0012-0000-0005-000000000000', 'WEEKLY_PLAN', false, 'MEDIUM', '2026-03-30 07:00:00+00'),
+  ('70000000-0012-0002-0006-000000000000', '00000000-0000-0000-0000-000000000006',
+   'RECONCILIATION_OPENED', 'Reconciliation open for week of 2026-03-23',
+   'Fill in your outcomes for last week. Reconciliation deadline: Friday Apr 4 at 10:00.',
+   '10000000-0012-0000-0006-000000000000', 'WEEKLY_PLAN', false, 'MEDIUM', '2026-03-30 07:00:00+00'),
+  -- Manager: exception digest for week 13 risk signals
+  ('70000000-0013-0002-0002-000000000000', '00000000-0000-0000-0000-000000000002',
+   'MANAGER_EXCEPTION_DIGEST', '3 active risk signals — week of 2026-03-30',
+   'Dev User and Carol have OVER_BUDGET signals. Bob has BLOCKED_CRITICAL on Dunning email (ENG-115, day 5). Review recommendations in the Team Week view.',
+   NULL, NULL, false, 'HIGH', '2026-03-30 08:00:00+00'),
+  -- Bob: carry-forward alert
+  ('70000000-0013-0002-0004-000000000000', '00000000-0000-0000-0000-000000000004',
+   'REPEATED_CARRY_FORWARD_REMINDER', 'Carry-forward: Dunning email automation',
+   'This is the second week this commit has been blocked by ENG-115. Your manager has been notified and is escalating to legal. Expect unblock by Tuesday.',
+   '20000000-0013-0001-0004-000000000000', 'WEEKLY_COMMIT', false, 'HIGH', '2026-03-30 08:00:00+00')
 ON CONFLICT DO NOTHING;

@@ -4,7 +4,7 @@
  */
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Check, Lock, Sparkles, Bot } from "lucide-react";
+import { Check, Lock, Sparkles, Bot, RefreshCw, Ticket } from "lucide-react";
 import { Button } from "../components/ui/Button.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card, CardHeader, CardContent } from "../components/ui/Card.js";
@@ -123,7 +123,7 @@ function CurrentColumn({ commitView }: { readonly commitView: ReconcileCommitVie
       )}
       {commitView.linkedTicketStatus && (
         <span data-testid={`ticket-status-${commitView.commitId}`} className={cn("inline-flex items-center gap-1 px-2 py-px rounded-full text-[0.7rem] font-semibold", commitView.linkedTicketStatus === "DONE" ? "bg-foreground/10 text-foreground" : "bg-foreground/12 text-foreground")}>
-          🎫 {commitView.linkedTicketStatus}
+          <Ticket className="h-3 w-3 inline-block" aria-hidden="true" /> {commitView.linkedTicketStatus}
         </span>
       )}
     </div>
@@ -238,7 +238,7 @@ function ReconcileCommitRow({ commitView, outcome, notes, carryForward, notesErr
         <div className="px-3 py-2.5">
           <label data-testid={`carry-forward-checkbox-label-${commitView.commitId}`} className="flex items-center gap-2 cursor-pointer text-sm">
             <input type="checkbox" checked={carryForward} onChange={(e) => onCarryForwardChange(e.target.checked)} data-testid={`carry-forward-checkbox-${commitView.commitId}`} className="h-4 w-4" />
-            <span>🔁 Carry this commit forward to next week</span>
+            <span className="inline-flex items-center gap-1"><RefreshCw className="h-3 w-3" aria-hidden="true" />Carry this commit forward to next week</span>
           </label>
         </div>
       )}

@@ -69,6 +69,9 @@ export interface RcdoNode {
   updatedAt: string;
 }
 
+/** Ticket priority levels. */
+export type TicketPriority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+
 /** A durable native work item (ticket) that may span multiple weeks. */
 export interface Ticket {
   readonly id: string;
@@ -76,6 +79,7 @@ export interface Ticket {
   title: string;
   description?: string;
   status: TicketStatus;
+  priority: TicketPriority;
   assigneeUserId?: string;
   readonly reporterUserId: string;
   readonly teamId: string;

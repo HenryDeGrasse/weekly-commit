@@ -17,22 +17,22 @@ RUN npm run build -w @weekly-commit/shared
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
+# Railway injects env vars as build args
+ARG VITE_API_BASE_URL="/api"
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 COPY --from=shared-builder /app /app
 COPY frontend/ frontend/
 RUN npm run build -w frontend
 
-# ── Stage 3: nginx serving static bundle ─────────────────────
-FROM nginx:1.27-alpine
+# ── Stage 3: lightweight static file server ──────────────────
+FROM node:20-alpine
 
-# Use nginx's built-in envsubst template support
-# Place config as a template — nginx will substitute env vars on startup
-COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
-COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
+RUN npm install -g serve@14
 
-# Default backend origin for docker-compose; override on Railway
-ENV BACKEND_ORIGIN=http://backend:8080
+COPY --from=frontend-builder /app/frontend/dist /app/dist
+
 ENV PORT=80
-# Only substitute BACKEND_ORIGIN and PORT — leave nginx variables ($host, etc.) alone
-ENV NGINX_ENVSUBST_FILTER="BACKEND_ORIGIN|PORT"
-
 EXPOSE 80
+
+CMD sh -c "serve -s /app/dist -l tcp://0.0.0.0:$PORT"

@@ -40,14 +40,10 @@ test.describe("Lock Validation Rules", () => {
     const validationPanel = page.getByTestId("pre-lock-validation-section");
     await expect(validationPanel).toBeVisible({ timeout: 5000 });
 
-    // If there are no errors, the continue button should be visible
+    // Wait for validation to finish — either continue button or error items appear
     const continueBtn = page.getByTestId("pre-lock-continue-btn");
-    // Wait a moment for validation to complete
-    await page.waitForTimeout(500);
-
-    const isVisible = await continueBtn.isVisible().catch(() => false);
-    // We just verify the validation panel renders without crashing
-    expect(validationPanel).toBeTruthy();
+    const hardError = page.getByTestId("hard-error-item");
+    await expect(continueBtn.or(hardError).or(page.getByTestId("pre-lock-validation-ok"))).toBeVisible({ timeout: 5000 });
   });
 
   test("lock confirmation dialog shows commit summary", async ({ page }) => {

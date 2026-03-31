@@ -2,7 +2,7 @@
  * CommitForm — modal/panel for creating and editing weekly commits.
  */
 import { useState, type FormEvent, Component, type ErrorInfo, type ReactNode } from "react";
-import { X, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Check, RefreshCw } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Input } from "../ui/Input.js";
 import { cn } from "../../lib/utils.js";
@@ -173,7 +173,7 @@ export function CommitForm(props: CommitFormProps) {
         {/* Carry-forward banner */}
         {editCommit && editCommit.carryForwardStreak > 0 && (
           <div data-testid="carry-forward-banner" className="mb-4 rounded-default border border-border bg-foreground/5 px-3 py-2.5 text-sm text-foreground">
-            🔁 <strong>Carried forward</strong> — this commit has been carried forward {editCommit.carryForwardStreak} time{editCommit.carryForwardStreak !== 1 ? "s" : ""}.
+            <RefreshCw className="h-3 w-3 inline-block" aria-hidden="true" /> <strong>Carried forward</strong> — this commit has been carried forward {editCommit.carryForwardStreak} time{editCommit.carryForwardStreak !== 1 ? "s" : ""}.
           </div>
         )}
 

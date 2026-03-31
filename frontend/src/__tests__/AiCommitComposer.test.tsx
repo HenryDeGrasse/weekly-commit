@@ -28,6 +28,7 @@ vi.mock("../api/aiHooks.js", () => ({
   useAiStatus: vi.fn(),
   useAutoReconcileAssist: vi.fn(() => ({ data: undefined, loading: false, error: null })),
   useManagerAiSummary: vi.fn(() => ({ data: undefined, loading: false, error: null })),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 import * as aiHooks from "../api/aiHooks.js";
@@ -79,7 +80,7 @@ const MOCK_AI_API = {
   commitLint: vi.fn(),
   getRiskSignals: vi.fn(),
   reconcileAssist: vi.fn(),
-  getTeamAiSummary: vi.fn(),
+  getTeamAiSummary: vi.fn(), getPlanEvidence: vi.fn(), getCommitEvidence: vi.fn(),
 };
 
 // ── Render helper ─────────────────────────────────────────────────────────────

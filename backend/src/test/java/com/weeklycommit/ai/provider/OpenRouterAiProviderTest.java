@@ -274,10 +274,10 @@ class OpenRouterAiProviderTest {
 	}
 
 	@Test
-	void parseResponse_markdownFenceContent_throwsParseException() {
-		// With response_format=json_object the model should not return fences.
-		// If it does anyway, we treat it as a retry-worthy parse failure rather than
-		// trying to strip the fences.
+	void parseResponse_markdownFenceContent_strippedSuccessfully() throws Exception {
+		// Anthropic Claude via OpenRouter sometimes wraps JSON in markdown fences
+		// even when response_format=json_object is set. The provider strips them
+		// gracefully rather than failing.
 		OpenRouterAiProvider provider = makeProvider("key");
 		String responseBody = """
 				{
@@ -290,8 +290,9 @@ class OpenRouterAiProviderTest {
 				}
 				""";
 
-		assertThatThrownBy(() -> provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1"))
-				.isInstanceOf(OpenRouterAiProvider.ParseException.class);
+		AiSuggestionResult result = provider.parseResponse(responseBody, AiContext.TYPE_COMMIT_DRAFT, "v1");
+		assertThat(result.available()).isTrue();
+		assertThat(result.payload()).contains("suggestion");
 	}
 
 	// ── parseResponse: model override ───────────────────────────────────

@@ -57,6 +57,7 @@ vi.mock("../api/aiHooks.js", () => ({
   useRiskSignals: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
   // WhatIfPanel calls this; return a stable mock so no TypeError inside AiErrorBoundary
   useWhatIfApi: vi.fn(() => ({ simulate: vi.fn() })),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 vi.mock("../api/calibrationHooks.js", () => ({
@@ -702,7 +703,7 @@ describe("MyWeekPage — inline AI lint panel", () => {
       }),
       getRiskSignals: vi.fn(),
       reconcileAssist: vi.fn(),
-      getTeamAiSummary: vi.fn(),
+      getTeamAiSummary: vi.fn(), getPlanEvidence: vi.fn(), getCommitEvidence: vi.fn(),
     } as ReturnType<typeof aiHooks.useAiApi>);
 
     renderPage();
@@ -738,7 +739,7 @@ describe("MyWeekPage — AI commit composer", () => {
       commitLint: vi.fn(),
       getRiskSignals: vi.fn(),
       reconcileAssist: vi.fn(),
-      getTeamAiSummary: vi.fn(),
+      getTeamAiSummary: vi.fn(), getPlanEvidence: vi.fn(), getCommitEvidence: vi.fn(),
     } as ReturnType<typeof aiHooks.useAiApi>);
   });
 

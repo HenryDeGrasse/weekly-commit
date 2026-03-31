@@ -14,66 +14,9 @@ import { ChevronDown, ChevronRight, Database, GitBranch, Search, AlertTriangle }
 import { Badge } from "../ui/Badge.js";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card.js";
 import { cn } from "../../lib/utils.js";
+import type { StructuredEvidence } from "../../api/aiApi.js";
 
-// ── Types mirroring backend StructuredEvidence ──────────────────────────────
-
-interface SqlFacts {
-  userDisplayName: string;
-  teamName: string;
-  weekStart: string;
-  planState: string;
-  capacityBudget: number;
-  totalPlannedPoints: number;
-  totalAchievedPoints: number;
-  commitCount: number;
-  carryForwardCount: number;
-  scopeChangeCount: number;
-  lockCompliance: boolean;
-  reconcileCompliance: boolean;
-  chessDistribution: Record<string, number>;
-}
-
-interface LineageNode {
-  commitId: string;
-  title: string;
-  weekStart: string;
-  outcome: string | null;
-  chessPiece: string | null;
-  estimatePoints: number | null;
-  carryForwardReason: string | null;
-}
-
-interface LineageChain {
-  currentCommitId: string;
-  currentTitle: string;
-  streakLength: number;
-  nodes: LineageNode[];
-}
-
-interface SemanticMatch {
-  entityType: string;
-  entityId: string;
-  score: number;
-  weekStartDate: string;
-  text: string;
-}
-
-interface RiskFeatures {
-  completionRatio: number;
-  avgCompletionRatio4w: number;
-  carryForwardStreakMax: number;
-  scopeChangeCount: number;
-  kingCount: number;
-  queenCount: number;
-  activeRiskSignalTypes: string[];
-}
-
-export interface StructuredEvidence {
-  sqlFacts: SqlFacts | null;
-  lineage: LineageChain | null;
-  semanticMatches: SemanticMatch[];
-  riskFeatures: RiskFeatures | null;
-}
+export type { StructuredEvidence };
 
 interface EvidenceDrawerProps {
   evidence: StructuredEvidence | null;

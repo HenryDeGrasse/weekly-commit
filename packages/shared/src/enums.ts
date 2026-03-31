@@ -40,8 +40,7 @@ export enum RcdoNodeStatus {
 
 /** Native work-item (ticket) workflow statuses. */
 export enum TicketStatus {
-  BACKLOG = "BACKLOG",
-  READY = "READY",
+  TODO = "TODO",
   IN_PROGRESS = "IN_PROGRESS",
   BLOCKED = "BLOCKED",
   DONE = "DONE",

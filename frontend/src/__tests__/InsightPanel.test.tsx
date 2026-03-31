@@ -2,7 +2,7 @@
  * Tests for InsightPanel component.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MockHostProvider } from "../host/MockHostProvider.js";
 import { InsightPanel } from "../components/ai/InsightPanel.js";
 import type { InsightListResponse } from "../api/ragApi.js";
@@ -34,9 +34,11 @@ vi.mock("../api/aiHooks.js", () => ({
     loading: false,
     error: null,
   })),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 import * as ragHooks from "../api/ragHooks.js";
+import * as aiHooks from "../api/aiHooks.js";
 
 // ── Sample data ───────────────────────────────────────────────────────────────
 
@@ -381,5 +383,205 @@ describe("InsightPanel", () => {
     renderPersonal();
 
     expect(screen.getByTestId("insight-panel-error")).toBeInTheDocument();
+  });
+
+  // ── Evidence toggle (personal mode only) ──────────────────────────────
+
+  it("shows evidence toggle button when personal insights are loaded", () => {
+    vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
+      data: { aiAvailable: true, insights: [sampleInsight1] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderPersonal("plan-1");
+
+    expect(screen.getByTestId("insight-evidence-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("insight-evidence-toggle")).toHaveTextContent(
+      "Show evidence",
+    );
+  });
+
+  it("does not show evidence toggle for team mode", () => {
+    vi.mocked(ragHooks.useTeamInsights).mockReturnValue({
+      data: { aiAvailable: true, insights: [sampleInsight1] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderTeam();
+
+    expect(
+      screen.queryByTestId("insight-evidence-toggle"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show evidence toggle when no planId provided", () => {
+    vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
+      data: { aiAvailable: true, insights: [sampleInsight1] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(
+      <MockHostProvider>
+        <InsightPanel mode="personal" />
+      </MockHostProvider>,
+    );
+
+    expect(
+      screen.queryByTestId("insight-evidence-toggle"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows loading skeleton while evidence is fetching", () => {
+    vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
+      data: { aiAvailable: true, insights: [sampleInsight1] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(aiHooks.usePlanEvidence).mockReturnValue({
+      data: undefined,
+      loading: true,
+      error: null,
+    });
+
+    renderPersonal("plan-1");
+    fireEvent.click(screen.getByTestId("insight-evidence-toggle"));
+
+    // Skeleton renders while loading — drawer content not yet visible
+    expect(screen.queryByText("Facts")).not.toBeInTheDocument();
+  });
+
+  it("renders evidence drawer content when evidence loads", () => {
+    vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
+      data: { aiAvailable: true, insights: [sampleInsight1] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(aiHooks.usePlanEvidence).mockReturnValue({
+      data: {
+        available: true,
+        evidence: {
+          sqlFacts: {
+            userDisplayName: "Alice",
+            teamName: "Bravo",
+            weekStart: "2025-01-06",
+            planState: "LOCKED",
+            capacityBudget: 10,
+            totalPlannedPoints: 8,
+            totalAchievedPoints: 6,
+            commitCount: 4,
+            carryForwardCount: 1,
+            scopeChangeCount: 0,
+            lockCompliance: true,
+            reconcileCompliance: true,
+            chessDistribution: { KING: 1 },
+          },
+          lineage: null,
+          semanticMatches: [],
+          riskFeatures: null,
+        },
+      },
+      loading: false,
+      error: null,
+    });
+
+    renderPersonal("plan-1");
+    fireEvent.click(screen.getByTestId("insight-evidence-toggle"));
+
+    // EvidenceDrawer renders SQL facts section header
+    expect(screen.getByText("Facts")).toBeInTheDocument();
+  });
+
+  it("changes toggle label to 'Hide evidence' when open", () => {
+    vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
+      data: { aiAvailable: true, insights: [sampleInsight1] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderPersonal("plan-1");
+    fireEvent.click(screen.getByTestId("insight-evidence-toggle"));
+
+    expect(screen.getByTestId("insight-evidence-toggle")).toHaveTextContent(
+      "Hide evidence",
+    );
+  });
+
+  it("hides evidence drawer when toggle clicked a second time", () => {
+    vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
+      data: { aiAvailable: true, insights: [sampleInsight1] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(aiHooks.usePlanEvidence).mockReturnValue({
+      data: {
+        available: true,
+        evidence: {
+          sqlFacts: {
+            userDisplayName: "Alice",
+            teamName: "Bravo",
+            weekStart: "2025-01-06",
+            planState: "LOCKED",
+            capacityBudget: 10,
+            totalPlannedPoints: 8,
+            totalAchievedPoints: 6,
+            commitCount: 4,
+            carryForwardCount: 1,
+            scopeChangeCount: 0,
+            lockCompliance: true,
+            reconcileCompliance: true,
+            chessDistribution: {},
+          },
+          lineage: null,
+          semanticMatches: [],
+          riskFeatures: null,
+        },
+      },
+      loading: false,
+      error: null,
+    });
+
+    renderPersonal("plan-1");
+    fireEvent.click(screen.getByTestId("insight-evidence-toggle")); // open
+    fireEvent.click(screen.getByTestId("insight-evidence-toggle")); // close
+
+    expect(screen.queryByText("Facts")).not.toBeInTheDocument();
+    expect(screen.getByTestId("insight-evidence-toggle")).toHaveTextContent(
+      "Show evidence",
+    );
+  });
+
+  it("passes planId to usePlanEvidence only when toggle is open", () => {
+    vi.mocked(ragHooks.usePlanInsights).mockReturnValue({
+      data: { aiAvailable: true, insights: [sampleInsight1] },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderPersonal("plan-42");
+
+    // Before toggle: usePlanEvidence called with enabled=false
+    expect(vi.mocked(aiHooks.usePlanEvidence)).toHaveBeenCalledWith(
+      "plan-42",
+      false,
+    );
+
+    fireEvent.click(screen.getByTestId("insight-evidence-toggle"));
+
+    // After toggle: usePlanEvidence called with enabled=true
+    expect(vi.mocked(aiHooks.usePlanEvidence)).toHaveBeenCalledWith(
+      "plan-42",
+      true,
+    );
   });
 });

@@ -21,6 +21,7 @@ import type { ManagerAiSummaryResponse } from "../api/aiApi.js";
 vi.mock("../api/aiHooks.js", () => ({
   useAiApi: vi.fn(() => ({ recordFeedback: vi.fn() })),
   useManagerAiSummary: vi.fn(),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 import { useManagerAiSummary } from "../api/aiHooks.js";
@@ -233,7 +234,6 @@ describe("ManagerAiSummaryCard — partial data (empty lists)", () => {
   });
 
   it("does not render feedback buttons when suggestionId is absent", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { suggestionId: _removed, ...withoutSuggestionId } = fullSummary;
     vi.mocked(useManagerAiSummary).mockReturnValue({
       data: withoutSuggestionId,

@@ -19,7 +19,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, ChevronUp, ChevronDown, Pencil, Trash2, Ticket, Target, ListTodo } from "lucide-react";
+import { GripVertical, ChevronUp, ChevronDown, Pencil, Trash2, Ticket, Target, ListTodo, RefreshCw } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Badge } from "../ui/Badge.js";
 import { EmptyState } from "../shared/EmptyState.js";
@@ -117,7 +117,7 @@ function SortableItem({ commit, rank, totalCount, isDraft, rcdoLabel, onEdit, on
             )}
             {commit.workItemId && (
               <Badge data-testid={`ticket-badge-${commit.id}`} variant="default">
-                <Ticket className="h-3 w-3" />{commit.workItemId}
+                <Ticket className="h-3 w-3" />{commit.workItemKey ?? commit.workItemId}
               </Badge>
             )}
           </div>
@@ -172,7 +172,7 @@ function SortableItem({ commit, rank, totalCount, isDraft, rcdoLabel, onEdit, on
             )}
             {commit.carryForwardStreak > 0 && (
               <div data-testid={`carry-forward-streak-${commit.id}`} className="flex items-center justify-between gap-2 rounded-default bg-foreground/5 px-3 py-1.5 text-xs text-foreground">
-                <span>🔁 Carried forward {commit.carryForwardStreak} time{commit.carryForwardStreak !== 1 ? "s" : ""}</span>
+                <span className="inline-flex items-center gap-1"><RefreshCw className="h-3 w-3" aria-hidden="true" />Carried forward {commit.carryForwardStreak} time{commit.carryForwardStreak !== 1 ? "s" : ""}</span>
                 {onViewLineage && (
                   <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onViewLineage(commit.id); }} data-testid={`view-lineage-btn-${commit.id}`} className="h-6 px-2 text-xs border border-border text-foreground hover:bg-foreground/8">
                     View lineage

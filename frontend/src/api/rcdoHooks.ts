@@ -20,7 +20,7 @@ export function useRcdoApi(): RcdoApi {
   return useMemo(
     () => {
       const client = createApiClient({
-        baseUrl: "/api",
+        baseUrl: API_BASE_URL,
         getAuthToken: () => bridge.context.authToken,
       });
       return createRcdoApi(client, authenticatedUser.id);

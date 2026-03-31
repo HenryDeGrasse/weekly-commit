@@ -2,12 +2,14 @@
  * Risk signals panel — displays AI-detected and rules-based risk signals
  * for a plan. Used on the Team Week page's risk tab.
  */
-import { AlertTriangle, ShieldAlert, TrendingDown, RotateCcw, Zap, Activity } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, ShieldAlert, TrendingDown, RotateCcw, Zap, Activity, FlaskConical } from "lucide-react";
 import { Badge } from "../ui/Badge.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { cn } from "../../lib/utils.js";
-import { useRiskSignals } from "../../api/aiHooks.js";
+import { useRiskSignals, usePlanEvidence } from "../../api/aiHooks.js";
 import type { RiskSignal } from "../../api/aiApi.js";
+import { EvidenceDrawer } from "./EvidenceDrawer.js";
 
 const SIGNAL_ICONS: Record<string, typeof AlertTriangle> = {
   OVERCOMMIT: TrendingDown,
@@ -51,6 +53,11 @@ interface RiskSignalsPanelProps {
 
 export function RiskSignalsPanel({ planId }: RiskSignalsPanelProps) {
   const { data, loading, error } = useRiskSignals(planId);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const { data: evidenceData, loading: evidenceLoading } = usePlanEvidence(
+    planId,
+    evidenceOpen,
+  );
 
   if (!planId) {
     return (
@@ -100,10 +107,31 @@ export function RiskSignalsPanel({ planId }: RiskSignalsPanelProps) {
         <span className="text-xs font-semibold text-muted uppercase tracking-wider">
           {data.signals.length} Risk Signal{data.signals.length !== 1 ? "s" : ""}
         </span>
+        <button
+          type="button"
+          onClick={() => setEvidenceOpen((o) => !o)}
+          className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"
+          data-testid="risk-evidence-toggle"
+        >
+          <FlaskConical className="h-3 w-3" aria-hidden="true" />
+          {evidenceOpen ? "Hide evidence" : "Show evidence"}
+        </button>
       </div>
       {data.signals.map((signal) => (
         <SignalCard key={signal.id} signal={signal} />
       ))}
+      {evidenceOpen && (
+        <div className="mt-1">
+          {evidenceLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : (
+            <EvidenceDrawer
+              evidence={evidenceData?.evidence ?? null}
+              className="text-xs"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

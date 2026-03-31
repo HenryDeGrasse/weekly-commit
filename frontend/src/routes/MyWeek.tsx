@@ -81,26 +81,53 @@ function PlanStateBadge({ state }: { readonly state: PlanState }) {
 
 // ── ComplianceBadge ─────────────────────────────────────────────────────────
 
-function ComplianceBadge({ compliant }: { readonly compliant: boolean }) {
-  return compliant ? (
-    <span data-testid="compliance-badge-ok" title="Plan meets all lock requirements" className="flex items-center gap-1 text-sm font-medium text-success">
-      <Check className="h-3.5 w-3.5" aria-hidden="true" />Compliant
-    </span>
-  ) : (
-    <span data-testid="compliance-badge-warn" title="Plan has unresolved compliance issues" className="flex items-center gap-1 text-sm font-medium text-warning">
-      <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />Not compliant
+function ComplianceBadge({ compliant, errors }: { readonly compliant: boolean; readonly errors: LockValidationError[] }) {
+  const [showErrors, setShowErrors] = useState(false);
+  if (compliant) {
+    return (
+      <span data-testid="compliance-badge-ok" title="Plan meets all lock requirements" className="flex items-center gap-1 text-sm font-medium text-success">
+        <Check className="h-3.5 w-3.5" aria-hidden="true" />Compliant
+      </span>
+    );
+  }
+  return (
+    <span className="relative">
+      <button
+        type="button"
+        data-testid="compliance-badge-warn"
+        onClick={() => setShowErrors((v) => !v)}
+        className="flex items-center gap-1 text-sm font-medium text-warning hover:text-warning/80 transition-colors cursor-pointer bg-transparent border-none p-0"
+        aria-expanded={showErrors}
+        title={errors.length > 0 ? `${errors.length} issue${errors.length !== 1 ? "s" : ""} — click to see details` : "Plan has unresolved compliance issues"}
+      >
+        <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />Not compliant{errors.length > 0 && ` (${errors.length})`}
+      </button>
+      {showErrors && errors.length > 0 && (
+        <div data-testid="compliance-error-list" className="absolute left-0 top-full mt-1 z-20 min-w-[280px] max-w-[420px] rounded-default border border-warning-border bg-warning-bg p-3 shadow-md">
+          <p className="m-0 mb-2 text-xs font-bold text-warning">Issues blocking lock:</p>
+          <ul className="m-0 p-0 list-none flex flex-col gap-1">
+            {errors.map((err, i) => (
+              <li key={i} className="text-xs text-foreground flex gap-1.5">
+                <span className="text-warning shrink-0">•</span>
+                <span><span className="font-semibold">{err.field}:</span> {err.message}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </span>
   );
 }
 
 /** For DRAFT plans, derive compliance from client-side pre-lock validation. */
-function useDraftCompliance(plan: { state: PlanState; compliant: boolean } | undefined, commits: CommitResponse[]): boolean {
+function useDraftCompliance(plan: { state: PlanState; compliant: boolean } | undefined, commits: CommitResponse[]): { compliant: boolean; errors: LockValidationError[] } {
   return useMemo(() => {
-    if (!plan) return true;
+    if (!plan) return { compliant: true, errors: [] };
     // For non-DRAFT plans, trust the server value (set at lock time).
-    if (plan.state !== "DRAFT") return plan.compliant;
+    if (plan.state !== "DRAFT") return { compliant: plan.compliant, errors: [] };
     // For DRAFT, run the same pre-lock hard-error checks the lock button uses.
-    return derivePreLockHardErrors(commits).length === 0;
+    const errors = derivePreLockHardErrors(commits);
+    return { compliant: errors.length === 0, errors };
   }, [plan, commits]);
 }
 
@@ -240,7 +267,7 @@ export default function MyWeek() {
   const plan = planData?.plan;
   const commits = useMemo(() => planData?.commits ?? [], [planData]);
   const effectivePreLockErrors = useMemo(() => getEffectivePreLockErrors(commits, lockValidationErrors), [commits, lockValidationErrors]);
-  const draftCompliant = useDraftCompliance(plan, commits);
+  const draftCompliance = useDraftCompliance(plan, commits);
   const isDraft = plan?.state === "DRAFT";
   const isLocked = plan?.state === "LOCKED";
 
@@ -398,13 +425,13 @@ export default function MyWeek() {
     try {
       if (scopeChangeMode === "add" && pendingCreatePayload) {
         const result = await planApi.applyScopeChange(plan.id, { action: "ADD", reason, commitData: pendingCreatePayload });
-        setScopeChangeEvents(result.events);
+        setScopeChangeEvents(result.events); setShowTimeline(true);
       } else if (scopeChangeMode === "remove" && scopeChangeTargetCommit) {
         const result = await planApi.applyScopeChange(plan.id, { action: "REMOVE", reason, commitId: scopeChangeTargetCommit.id });
-        setScopeChangeEvents(result.events);
+        setScopeChangeEvents(result.events); setShowTimeline(true);
       } else if (scopeChangeMode === "edit" && scopeChangeTargetCommit && pendingEditPayload) {
         const result = await planApi.applyScopeChange(plan.id, { action: "EDIT", reason, commitId: scopeChangeTargetCommit.id, changes: pendingEditPayload });
-        setScopeChangeEvents(result.events);
+        setScopeChangeEvents(result.events); setShowTimeline(true);
       }
       refetchPlan();
     } catch (err) {
@@ -548,7 +575,7 @@ export default function MyWeek() {
           <CardHeader>
             <div className="flex items-center gap-2.5">
               <PlanStateBadge state={plan.state} />
-              <ComplianceBadge compliant={draftCompliant} />
+              <ComplianceBadge compliant={draftCompliance.compliant} errors={draftCompliance.errors} />
             </div>
             <div className="flex items-center gap-2">
               {actionError && (
@@ -809,7 +836,7 @@ export default function MyWeek() {
       )}
 
       {/* Scope change timeline */}
-      {isLocked && scopeChangeEvents.length > 0 && (
+      {isLocked && showTimeline && (
         <section aria-labelledby="scope-timeline-heading">
           <h3 id="scope-timeline-heading" className="m-0 mb-2.5 text-sm font-bold">Post-lock Changes</h3>
           <ScopeChangeTimeline events={scopeChangeEvents} />

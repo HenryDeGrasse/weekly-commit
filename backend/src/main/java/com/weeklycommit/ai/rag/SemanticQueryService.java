@@ -183,21 +183,7 @@ public class SemanticQueryService {
 			// Step 4: resolve namespace
 			String namespace = resolveNamespace(teamId);
 
-			// Step 4.5: HyDE experiment — optionally replace embed text with a
-			// hypothetical document for improved semantic retrieval
-			String textToEmbed = rewritten;
-			if (experimentService.isEnabled("hyde")) {
-				String hydeValue = experimentService.resolveValue("hyde", userId != null ? userId.toString() : "");
-				if ("enabled".equals(hydeValue)) {
-					HydeService.HydeResult hydeResult = hydeService.generateHypothetical(rewritten, userId);
-					if (hydeResult.available() && hydeResult.hypotheticalAnswer() != null) {
-						textToEmbed = hydeResult.hypotheticalAnswer();
-						log.debug("SemanticQueryService: HyDE active — embedding hypothetical document");
-					}
-				}
-			}
-
-			// Step 4.6: embedding-model A/B — determine whether to route to the Voyage
+			// Step 4.5: embedding-model A/B — determine whether to route to the Voyage
 			// index for this request. Treatment group gets voyage-4 embeddings queried
 			// against the secondary 1024-d index; control gets the existing path.
 			boolean useVoyageIndex = false;
@@ -210,42 +196,11 @@ public class SemanticQueryService {
 				}
 			}
 
-			// Step 5: embed and query Pinecone — single query or multi-hop
-			List<PineconeClient.PineconeMatch> matches;
-			if (subQueries.size() <= 1) {
-				if (useVoyageIndex) {
-					// Voyage path: dense-only (no sparse vectors in the voyage index)
-					float[] vector = embeddingService.embed(textToEmbed, "voyage-4");
-					if (vector.length == 0) {
-						log.debug("SemanticQueryService: voyage embedding returned empty vector — unavailable");
-						return RagQueryResult.unavailable();
-					}
-					matches = pineconeClient.queryVoyage(namespace, vector, TOP_K, filter);
-				} else {
-					// Primary path: hybrid dense+sparse
-					float[] vector = embeddingService.embed(textToEmbed);
-					if (vector.length == 0) {
-						log.debug("SemanticQueryService: embedding returned empty vector — unavailable");
-						return RagQueryResult.unavailable();
-					}
-					java.util.Map<Integer, Float> sparseVector = null;
-					try {
-						java.util.Map<Integer, Float> sv = sparseEncoder.encode(textToEmbed);
-						if (!sv.isEmpty()) {
-							sparseVector = sv;
-						}
-					} catch (Exception ex) {
-						log.debug("SemanticQueryService: sparse encoding failed — falling back to dense-only: {}",
-								ex.getMessage());
-					}
-					matches = pineconeClient.query(namespace, vector, TOP_K, filter, sparseVector);
-				}
-			} else {
-				// Multi-hop path: embed each sub-query, merge results
-				matches = queryMultiHop(subQueries, namespace, filter, useVoyageIndex);
-				if (matches == null) {
-					return RagQueryResult.unavailable();
-				}
+			// Step 5: retrieve with original query text
+			List<PineconeClient.PineconeMatch> matches = executeRetrieval(rewritten, namespace, filter, subQueries,
+					useVoyageIndex);
+			if (matches == null) {
+				return RagQueryResult.unavailable();
 			}
 
 			// Step 5b: rerank candidates to find the most relevant top-N
@@ -254,6 +209,41 @@ public class SemanticQueryService {
 
 			// Step 5c: compute evidence-based confidence tier from the reranked chunks
 			ConfidenceTier confidenceTier = confidenceTierCalculator.calculate(toConfidenceMatches(reranked));
+
+			// Step 5d: conditional HyDE — if retrieval quality is LOW (Pinecone returned
+			// chunks but scores were weak), generate a hypothetical answer document and
+			// retry retrieval with it. Intentionally excludes INSUFFICIENT (zero matches)
+			// because an empty index will return nothing regardless of query phrasing —
+			// triggering HyDE on every cold-index query would double LLM call cost for no gain.
+			if (confidenceTier == ConfidenceTier.LOW) {
+				log.debug("SemanticQueryService: initial confidence={} — attempting HyDE fallback", confidenceTier);
+				try {
+					HydeService.HydeResult hydeResult = hydeService.generateHypothetical(rewritten, userId);
+					if (hydeResult.available() && hydeResult.hypotheticalAnswer() != null) {
+						List<PineconeClient.PineconeMatch> hydeMatches = executeRetrieval(
+								hydeResult.hypotheticalAnswer(), namespace, filter, subQueries, useVoyageIndex);
+						if (hydeMatches != null && !hydeMatches.isEmpty()) {
+							List<RerankService.RankedChunk> hydeReranked = rerankService.rerank(rewritten,
+									hydeMatches, rerankService.getTopN());
+							ConfidenceTier hydeTier = confidenceTierCalculator
+									.calculate(toConfidenceMatches(hydeReranked));
+							// Promote to HyDE result only if it genuinely improved confidence
+							if (hydeTier.ordinal() < confidenceTier.ordinal()) {
+								log.debug("SemanticQueryService: HyDE improved confidence {} → {}",
+										confidenceTier, hydeTier);
+								reranked = hydeReranked;
+								confidenceTier = hydeTier;
+							} else {
+								log.debug(
+										"SemanticQueryService: HyDE did not improve confidence ({}) — keeping original results",
+										confidenceTier);
+							}
+						}
+					}
+				} catch (Exception ex) {
+					log.debug("SemanticQueryService: HyDE fallback failed — {}", ex.getMessage());
+				}
+			}
 
 			// Step 6 & 7: build RAG prompt context from reranked results and generate
 			// answer using experiment-aware model selection
@@ -479,6 +469,55 @@ public class SemanticQueryService {
 		} catch (Exception e) {
 			log.debug("SemanticQueryService: could not parse RAG answer — {}", e.getMessage());
 			return new RagAnswer(result.payload(), List.of(), result.confidence());
+		}
+	}
+
+	/**
+	 * Core retrieval step: embeds {@code textToEmbed} and queries Pinecone for the
+	 * most relevant chunks. Handles both single and multi-hop queries and both the
+	 * primary hybrid index and the Voyage dense-only index.
+	 *
+	 * <p>
+	 * Extracted as a separate method so the caller can invoke it twice — once with
+	 * the original query text and once with a HyDE-generated hypothetical document
+	 * — without duplicating the embedding/routing logic.
+	 *
+	 * @return match list, or {@code null} if a fatal error occurred (caller should
+	 *         degrade to {@link RagQueryResult#unavailable()})
+	 */
+	private List<PineconeClient.PineconeMatch> executeRetrieval(String textToEmbed, String namespace,
+			Map<String, Object> filter, List<String> subQueries, boolean useVoyageIndex) {
+		if (subQueries.size() <= 1) {
+			if (useVoyageIndex) {
+				// Voyage path: dense-only (no sparse vectors in the voyage index)
+				float[] vector = embeddingService.embed(textToEmbed, "voyage-4");
+				if (vector.length == 0) {
+					log.debug("SemanticQueryService: voyage embedding returned empty vector — unavailable");
+					return null;
+				}
+				return pineconeClient.queryVoyage(namespace, vector, TOP_K, filter);
+			} else {
+				// Primary path: hybrid dense+sparse
+				float[] vector = embeddingService.embed(textToEmbed);
+				if (vector.length == 0) {
+					log.debug("SemanticQueryService: embedding returned empty vector — unavailable");
+					return null;
+				}
+				java.util.Map<Integer, Float> sparseVector = null;
+				try {
+					java.util.Map<Integer, Float> sv = sparseEncoder.encode(textToEmbed);
+					if (!sv.isEmpty()) {
+						sparseVector = sv;
+					}
+				} catch (Exception ex) {
+					log.debug("SemanticQueryService: sparse encoding failed — falling back to dense-only: {}",
+							ex.getMessage());
+				}
+				return pineconeClient.query(namespace, vector, TOP_K, filter, sparseVector);
+			}
+		} else {
+			// Multi-hop path: embed each sub-query independently and merge results
+			return queryMultiHop(subQueries, namespace, filter, useVoyageIndex);
 		}
 	}
 

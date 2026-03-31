@@ -142,6 +142,20 @@ export function RcdoSuggestionInline({
     );
   }
 
+  // AI returned a result but no confident match — show a brief hint so the user
+  // knows the system tried (rather than appearing broken).
+  if (result && result.aiAvailable && !result.suggestionAvailable) {
+    return (
+      <div
+        className={cn("flex items-center gap-2 text-xs text-muted mt-1.5", className)}
+        data-testid="rcdo-suggestion-no-match"
+      >
+        <span aria-hidden="true" className="opacity-50">✦</span>
+        AI couldn't find a confident RCDO match — select one manually.
+      </div>
+    );
+  }
+
   if (!result?.aiAvailable || !result?.suggestionAvailable || !result?.suggestedRcdoNodeId) {
     return null;
   }

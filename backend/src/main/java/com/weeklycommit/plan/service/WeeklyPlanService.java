@@ -9,6 +9,8 @@ import com.weeklycommit.domain.enums.NotificationEvent;
 import com.weeklycommit.domain.enums.PlanState;
 import com.weeklycommit.domain.repository.UserAccountRepository;
 import com.weeklycommit.domain.repository.WeeklyCommitRepository;
+import com.weeklycommit.domain.repository.WorkItemRepository;
+import com.weeklycommit.domain.entity.WorkItem;
 import com.weeklycommit.domain.repository.WeeklyPlanRepository;
 import com.weeklycommit.notification.service.NotificationService;
 import com.weeklycommit.plan.dto.CommitResponse;
@@ -23,6 +25,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -51,12 +54,16 @@ public class WeeklyPlanService {
 	@Lazy
 	private WeeklyPlanService self;
 
+	private final WorkItemRepository workItemRepo;
+
 	public WeeklyPlanService(WeeklyPlanRepository planRepo, UserAccountRepository userRepo,
-			WeeklyCommitRepository commitRepo, ConfigurationService configurationService,
-			AuditLogService auditLogService, NotificationService notificationService) {
+			WeeklyCommitRepository commitRepo, WorkItemRepository workItemRepo,
+			ConfigurationService configurationService, AuditLogService auditLogService,
+			NotificationService notificationService) {
 		this.planRepo = planRepo;
 		this.userRepo = userRepo;
 		this.commitRepo = commitRepo;
+		this.workItemRepo = workItemRepo;
 		this.configurationService = configurationService;
 		this.auditLogService = auditLogService;
 		this.notificationService = notificationService;
@@ -195,7 +202,18 @@ public class WeeklyPlanService {
 		List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());
 		int totalPoints = commits.stream().mapToInt(c -> c.getEstimatePoints() != null ? c.getEstimatePoints() : 0)
 				.sum();
-		return new PlanWithCommitsResponse(PlanResponse.from(plan), commits.stream().map(CommitResponse::from).toList(),
-				totalPoints);
+
+		// Batch-resolve ticket keys for commits that have a linked work item.
+		List<UUID> workItemIds = commits.stream().map(WeeklyCommit::getWorkItemId).filter(id -> id != null).distinct()
+				.toList();
+		Map<UUID, String> keyMap = workItemIds.isEmpty() ? Map.of()
+				: workItemRepo.findAllById(workItemIds).stream()
+						.collect(Collectors.toMap(WorkItem::getId, WorkItem::getKey));
+
+		List<CommitResponse> commitResponses = commits.stream()
+				.map(c -> CommitResponse.from(c, c.getWorkItemId() != null ? keyMap.get(c.getWorkItemId()) : null))
+				.toList();
+
+		return new PlanWithCommitsResponse(PlanResponse.from(plan), commitResponses, totalPoints);
 	}
 }

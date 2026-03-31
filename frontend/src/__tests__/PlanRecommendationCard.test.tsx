@@ -19,6 +19,7 @@ import type { PlanRecommendation } from "../api/recommendationApi.js";
 
 vi.mock("../api/aiHooks.js", () => ({
   useAiApi: vi.fn(() => ({ recordFeedback: vi.fn() })),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────

@@ -6,8 +6,8 @@
  * the tightest width that doesn't add extra lines, so line lengths are
  * roughly equal instead of ragged-right. See lib/useBalancedText.ts.
  */
-import { useMemo } from "react";
-import { Bot } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Bot, FlaskConical } from "lucide-react";
 import { Badge } from "../ui/Badge.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { cn } from "../../lib/utils.js";
@@ -15,6 +15,8 @@ import { AiFeedbackButtons } from "./AiFeedbackButtons.js";
 import { useTeamInsights, usePlanInsights } from "../../api/ragHooks.js";
 import { useBalancedText } from "../../lib/useBalancedText.js";
 import type { InsightCard } from "../../api/ragApi.js";
+import { usePlanEvidence } from "../../api/aiHooks.js";
+import { EvidenceDrawer } from "./EvidenceDrawer.js";
 
 // ── Balanced text config ──────────────────────────────────────────────────────
 // Must be a named font (not system-ui) for accurate canvas measurement.
@@ -219,6 +221,11 @@ function TeamInsightPanel({
 
 function PersonalInsightPanel({ planId }: { planId?: string }) {
   const { data, loading, error } = usePlanInsights(planId ?? null);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const { data: evidenceData, loading: evidenceLoading } = usePlanEvidence(
+    planId ?? null,
+    evidenceOpen,
+  );
 
   if (loading) return <InsightSkeletons />;
 
@@ -249,7 +256,36 @@ function PersonalInsightPanel({ planId }: { planId?: string }) {
     );
   }
 
-  return <BalancedInsightCardList insights={data.insights} />;
+  return (
+    <div className="flex flex-col gap-3">
+      <BalancedInsightCardList insights={data.insights} />
+      {planId && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setEvidenceOpen((o) => !o)}
+            className="flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors"
+            data-testid="insight-evidence-toggle"
+          >
+            <FlaskConical className="h-3 w-3" aria-hidden="true" />
+            {evidenceOpen ? "Hide evidence" : "Show evidence"}
+          </button>
+          {evidenceOpen && (
+            <div className="mt-2">
+              {evidenceLoading ? (
+                <Skeleton className="h-24 w-full" />
+              ) : (
+                <EvidenceDrawer
+                  evidence={evidenceData?.evidence ?? null}
+                  className="text-xs"
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**

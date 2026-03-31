@@ -34,10 +34,30 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+// ---------------------------------------------------------------------------
+// Helper: read from env first, then fall back to the root .env file.
+// This ensures secrets reach the test JVM even when the Gradle daemon was
+// started before the variable was exported in the calling shell.
+// ---------------------------------------------------------------------------
+fun envOrDotenv(key: String, default: String = ""): String {
+    val fromEnv = System.getenv(key)
+    if (!fromEnv.isNullOrBlank()) return fromEnv
+    val dotenv = rootProject.projectDir.parentFile.resolve(".env")
+    if (dotenv.exists()) {
+        dotenv.bufferedReader().lineSequence()
+            .map { it.trim() }
+            .filter { it.startsWith("$key=") && !it.startsWith("#") }
+            .map { it.substringAfter("=").trim() }
+            .firstOrNull { it.isNotBlank() }
+            ?.let { return it }
+    }
+    return default
+}
+
 tasks.named<Test>("test") {
     useJUnitPlatform {
         // Exclude eval and ab-eval tests from normal test runs — they call real LLM APIs
-        excludeTags("eval", "ab-eval")
+        excludeTags("eval", "ab-eval", "model-compare")
     }
 }
 
@@ -46,18 +66,15 @@ tasks.register<Test>("evalTest") {
     description = "Run AI prompt evaluation tests against real LLM (requires OPENROUTER_API_KEY)"
     group = "verification"
 
-    // Use same classpath and sources as the standard test task
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
 
     useJUnitPlatform {
         includeTags("eval")
     }
-    // Eval tests need longer timeouts (each case calls the LLM)
     systemProperty("junit.jupiter.execution.timeout.default", "120s")
-    // Forward env vars
-    environment("OPENROUTER_API_KEY", System.getenv("OPENROUTER_API_KEY") ?: "")
-    environment("OPENROUTER_MODEL", System.getenv("OPENROUTER_MODEL") ?: "anthropic/claude-sonnet-4-20250514")
+    environment("OPENROUTER_API_KEY", envOrDotenv("OPENROUTER_API_KEY"))
+    environment("OPENROUTER_MODEL",   envOrDotenv("OPENROUTER_MODEL", "openai/gpt-4.1-nano"))
 }
 
 // Dedicated task for running offline A/B model comparison evaluation
@@ -71,14 +88,42 @@ tasks.register<Test>("abEvalTest") {
     useJUnitPlatform {
         includeTags("ab-eval")
     }
-    // A/B eval calls two models per case — allow generous timeouts
     systemProperty("junit.jupiter.execution.timeout.default", "300s")
-    // Forward API key and all AB_* configuration env vars
-    environment("OPENROUTER_API_KEY", System.getenv("OPENROUTER_API_KEY") ?: "")
-    environment("AB_CONTROL_MODEL", System.getenv("AB_CONTROL_MODEL") ?: "")
-    environment("AB_TREATMENT_MODEL", System.getenv("AB_TREATMENT_MODEL") ?: "")
-    environment("AB_CONTROL_EMBEDDING", System.getenv("AB_CONTROL_EMBEDDING") ?: "")
-    environment("AB_TREATMENT_EMBEDDING", System.getenv("AB_TREATMENT_EMBEDDING") ?: "")
+    environment("OPENROUTER_API_KEY",        envOrDotenv("OPENROUTER_API_KEY"))
+    environment("AB_CONTROL_MODEL",          envOrDotenv("AB_CONTROL_MODEL"))
+    environment("AB_TREATMENT_MODEL",        envOrDotenv("AB_TREATMENT_MODEL"))
+    environment("AB_CONTROL_EMBEDDING",      envOrDotenv("AB_CONTROL_EMBEDDING"))
+    environment("AB_TREATMENT_EMBEDDING",    envOrDotenv("AB_TREATMENT_EMBEDDING"))
+}
+
+// N-way model leaderboard: runs every eval dataset against a configurable list of models
+// and ranks them by composite score (schema correctness + judge quality + latency).
+//
+// Usage:
+//   ./gradlew modelCompareTest                                     # full run
+//   QUICK=true ./gradlew modelCompareTest                          # 2-min quality check
+//   COMPARE_MODELS="openai/gpt-4o,openai/gpt-4.1-nano" ./gradlew modelCompareTest
+tasks.register<Test>("modelCompareTest") {
+    description = "Run N-way model leaderboard eval (requires OPENROUTER_API_KEY)"
+    group = "verification"
+
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+
+    useJUnitPlatform {
+        includeTags("model-compare")
+    }
+    // Each case calls N models concurrently + optional Opus judge — allow generous timeout
+    systemProperty("junit.jupiter.execution.timeout.default", "1800s")
+    environment("OPENROUTER_API_KEY",  envOrDotenv("OPENROUTER_API_KEY"))
+    // Comma-separated model IDs; falls back to MultiModelEvalRunner.DEFAULT_MODELS
+    environment("COMPARE_MODELS",      envOrDotenv("COMPARE_MODELS"))
+    // Max eval cases per dataset to run through Opus judge (default 4)
+    environment("JUDGE_SAMPLE_SIZE",   envOrDotenv("JUDGE_SAMPLE_SIZE", "4"))
+    // Per-model call hard timeout in seconds (default 20)
+    environment("CALL_TIMEOUT_SEC",    envOrDotenv("CALL_TIMEOUT_SEC", "20"))
+    // Set QUICK=true to run only the two judge-scored datasets (~2 min)
+    environment("QUICK",               envOrDotenv("QUICK", "false"))
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
@@ -94,5 +139,6 @@ spotless {
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()
+        toggleOffOn()
     }
 }

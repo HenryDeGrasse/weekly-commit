@@ -488,16 +488,23 @@ class SemanticQueryServiceTest {
 		verify(embeddingService).embed(anyString());
 	}
 
-	// ── HyDE experiment ───────────────────────────────────────────────────
+	// ── HyDE conditional fallback ────────────────────────────────────────
+	// HyDE fires automatically when first-pass retrieval confidence is LOW
+	// (Pinecone returned results but scores were weak). It does NOT fire on
+	// INSUFFICIENT (zero matches) — a cold/empty index would waste an LLM
+	// call with no benefit.
 
 	@Test
-	void query_hydeExperimentEnabled_usesHypotheticalAnswerForEmbedding() throws Exception {
+	void query_lowConfidence_hydeFiresAndImproves_usesHydeResults() throws Exception {
 		setUpAvailableServices();
 		setUpTeam();
 		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
 		String hypothetical = "The team committed to 8 work items with 2 KING priorities.";
-		when(experimentService.isEnabled("hyde")).thenReturn(true);
-		when(experimentService.resolveValue(eq("hyde"), anyString())).thenReturn("enabled");
+		// First-pass returns LOW confidence (matches exist but weak) — triggers HyDE
+		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
+		when(confidenceTierCalculator.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
+				.thenReturn(ConfidenceTier.LOW)             // first-pass: poor retrieval
+				.thenReturn(ConfidenceTier.MEDIUM);         // HyDE-pass: improved
 		when(hydeService.generateHypothetical(eq(QUESTION), any()))
 				.thenReturn(new HydeService.HydeResult(true, hypothetical));
 		when(embeddingService.embed(hypothetical)).thenReturn(new float[]{0.5f, 0.6f});
@@ -508,38 +515,89 @@ class SemanticQueryServiceTest {
 		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
 
 		assertThat(result.available()).isTrue();
-		// Verify embedding was called with the hypothetical, not the original question
+		// First-pass embed with original question, then HyDE retry embed
+		verify(embeddingService).embed(QUESTION);
 		verify(embeddingService).embed(hypothetical);
-		verify(embeddingService, never()).embed(QUESTION);
+		verify(hydeService).generateHypothetical(eq(QUESTION), any());
 	}
 
 	@Test
-	void query_hydeExperimentEnabled_butHydeFails_fallsBackToOriginalQuestion() throws Exception {
+	void query_lowConfidence_hydeFails_keepsOriginalResults() throws Exception {
 		setUpAvailableServices();
 		setUpTeam();
 		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
-		when(experimentService.isEnabled("hyde")).thenReturn(true);
-		when(experimentService.resolveValue(eq("hyde"), anyString())).thenReturn("enabled");
-		when(hydeService.generateHypothetical(eq(QUESTION), any())).thenReturn(HydeService.HydeResult.unavailable());
+		// First-pass returns LOW confidence — triggers HyDE; HyDE service itself fails
 		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
-		mockPineconeMatches(List.of(), List.of());
+		when(confidenceTierCalculator.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
+				.thenReturn(ConfidenceTier.LOW);
+		when(hydeService.generateHypothetical(eq(QUESTION), any())).thenReturn(HydeService.HydeResult.unavailable());
+		mockPineconeMatches(List.of("commit:uuid-1"), List.of(0.35));
 		mockRagAnswer("Fallback answer.", 0.7);
 		stubSuggestionStore(UUID.randomUUID());
 
 		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
 
 		assertThat(result.available()).isTrue();
-		// Fallback to original question when HyDE unavailable
+		// Original embedding was used; HyDE was attempted but gracefully skipped
 		verify(embeddingService).embed(QUESTION);
+		verify(hydeService).generateHypothetical(eq(QUESTION), any());
+		// HyDE embedding never called because HyDE service was unavailable
+		// (only the original QUESTION embed should have fired)
 	}
 
 	@Test
-	void query_hydeExperimentDisabled_usesOriginalQuestionForEmbedding() throws Exception {
+	void query_lowConfidence_hydeDoesNotImprove_keepsOriginalResults() throws Exception {
 		setUpAvailableServices();
 		setUpTeam();
 		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
-		// experimentService.isEnabled("hyde") returns false by default (setUp lenient
-		// stub)
+		String hypothetical = "Hypothetical that does not improve retrieval.";
+		// Both first-pass and HyDE-pass return LOW — HyDE ran but did not help
+		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
+		when(embeddingService.embed(hypothetical)).thenReturn(new float[]{0.2f});
+		when(confidenceTierCalculator.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
+				.thenReturn(ConfidenceTier.LOW)   // first-pass: poor retrieval
+				.thenReturn(ConfidenceTier.LOW);  // HyDE-pass: no improvement
+		when(hydeService.generateHypothetical(eq(QUESTION), any()))
+				.thenReturn(new HydeService.HydeResult(true, hypothetical));
+		mockPineconeMatches(List.of("commit:uuid-1"), List.of(0.35));
+		mockRagAnswer("Original answer.", 0.6);
+		stubSuggestionStore(UUID.randomUUID());
+
+		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
+
+		assertThat(result.available()).isTrue();
+		// HyDE was attempted but original results were kept because confidence did not improve
+		verify(hydeService).generateHypothetical(eq(QUESTION), any());
+		verify(embeddingService).embed(hypothetical);   // HyDE embed did fire
+	}
+
+	@Test
+	void query_insufficientConfidence_hydeSkipped_coldIndexGuard() throws Exception {
+		setUpAvailableServices();
+		setUpTeam();
+		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
+		// INSUFFICIENT = zero matches from Pinecone (empty/cold index). HyDE must NOT
+		// fire — embedding a hypothetical against an empty index wastes an LLM call.
+		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
+		when(confidenceTierCalculator.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
+				.thenReturn(ConfidenceTier.INSUFFICIENT);
+		mockPineconeMatches(List.of(), List.of());
+		mockRagAnswer("No evidence answer.", 0.3);
+		stubSuggestionStore(UUID.randomUUID());
+
+		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
+
+		assertThat(result.available()).isTrue();
+		// HyDE must never be called when index returns no matches
+		verify(hydeService, never()).generateHypothetical(anyString(), any());
+	}
+
+	@Test
+	void query_mediumOrHighConfidence_hydeNotTriggered() throws Exception {
+		setUpAvailableServices();
+		setUpTeam();
+		mockIntentResponse(intentPayload("status_query", null, null, null, List.of("commit")));
+		// Default confidenceTierCalculator mock returns MEDIUM — HyDE should be skipped
 		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
 		mockPineconeMatches(List.of(), List.of());
 		mockRagAnswer("Normal answer.", 0.8);

@@ -9,7 +9,7 @@
  * backend rule-based logic that works without a live LLM.
  */
 import { useState, useCallback } from "react";
-import { Sparkles, Loader2, ChevronUp, Plus, X } from "lucide-react";
+import { Sparkles, Loader2, ChevronUp, Plus, X, Lightbulb } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Badge } from "../ui/Badge.js";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card.js";
@@ -607,7 +607,7 @@ export function WhatIfPanel({ planId, currentCommits }: WhatIfPanelProps) {
                       </p>
                       {result.recommendation && (
                         <p className="m-0 mt-2 text-xs text-muted italic">
-                          💡 {result.recommendation}
+                          <Lightbulb className="h-3 w-3 inline-block shrink-0" aria-hidden="true" /> {result.recommendation}
                         </p>
                       )}
                     </div>

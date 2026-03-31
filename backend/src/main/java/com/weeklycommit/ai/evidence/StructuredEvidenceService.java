@@ -105,10 +105,13 @@ public class StructuredEvidenceService {
 		}
 
 		WeeklyPlan plan = planOpt.get();
-		SqlFacts sqlFacts = buildSqlFacts(plan);
-		LineageChain lineage = buildLineage(plan);
+		// Query commits once and share across all builders to avoid redundant DB hits.
+		List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());
+
+		SqlFacts sqlFacts = buildSqlFacts(plan, commits);
+		LineageChain lineage = buildLineage(commits);
 		List<SemanticMatch> semanticMatches = retrieveSemanticEvidence(plan, question);
-		RiskFeatures riskFeatures = buildRiskFeatures(plan);
+		RiskFeatures riskFeatures = buildRiskFeatures(plan, commits);
 
 		return new StructuredEvidence(sqlFacts, lineage, semanticMatches, riskFeatures);
 	}
@@ -139,17 +142,20 @@ public class StructuredEvidenceService {
 		}
 
 		WeeklyPlan plan = planOpt.get();
-		SqlFacts sqlFacts = buildSqlFacts(plan);
+		// Query commits once and share across all builders to avoid redundant DB hits.
+		List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());
+
+		SqlFacts sqlFacts = buildSqlFacts(plan, commits);
 		LineageChain lineage = lineageQueryService.traceLineage(commitId);
 		List<SemanticMatch> semanticMatches = retrieveSemanticEvidence(plan, question);
-		RiskFeatures riskFeatures = buildRiskFeatures(plan);
+		RiskFeatures riskFeatures = buildRiskFeatures(plan, commits);
 
 		return new StructuredEvidence(sqlFacts, lineage, semanticMatches, riskFeatures);
 	}
 
 	// ── SQL facts assembly ───────────────────────────────────────────────
 
-	private SqlFacts buildSqlFacts(WeeklyPlan plan) {
+	private SqlFacts buildSqlFacts(WeeklyPlan plan, List<WeeklyCommit> commits) {
 		try {
 			String userDisplayName = "";
 			String teamName = "";
@@ -159,8 +165,6 @@ public class StructuredEvidenceService {
 			if (plan.getTeamId() != null) {
 				teamName = teamRepo.findById(plan.getTeamId()).map(Team::getName).orElse("");
 			}
-
-			List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());
 
 			int totalPlanned = commits.stream().mapToInt(c -> c.getEstimatePoints() != null ? c.getEstimatePoints() : 0)
 					.sum();
@@ -199,10 +203,9 @@ public class StructuredEvidenceService {
 
 	// ── Lineage assembly ─────────────────────────────────────────────────
 
-	private LineageChain buildLineage(WeeklyPlan plan) {
+	private LineageChain buildLineage(List<WeeklyCommit> commits) {
 		try {
 			// Find the first commit with carry-forward history
-			List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());
 			for (WeeklyCommit commit : commits) {
 				if (commit.getCarryForwardStreak() > 0) {
 					LineageChain chain = lineageQueryService.traceLineage(commit.getId());
@@ -263,7 +266,7 @@ public class StructuredEvidenceService {
 
 	// ── Risk features assembly ───────────────────────────────────────────
 
-	private RiskFeatures buildRiskFeatures(WeeklyPlan plan) {
+	private RiskFeatures buildRiskFeatures(WeeklyPlan plan, List<WeeklyCommit> commits) {
 		try {
 			UUID userId = plan.getOwnerUserId();
 			LocalDate weekStart = plan.getWeekStartDate();
@@ -288,8 +291,7 @@ public class StructuredEvidenceService {
 					.mapToDouble(f -> (double) f.getTotalAchievedPoints() / f.getTotalPlannedPoints()).average()
 					.orElse(0.0);
 
-			// Max carry-forward streak from current plan
-			List<WeeklyCommit> commits = commitRepo.findByPlanIdOrderByPriorityOrder(plan.getId());
+			// Max carry-forward streak from current plan — uses pre-fetched commits
 			int maxCfStreak = commits.stream().mapToInt(WeeklyCommit::getCarryForwardStreak).max().orElse(0);
 			int kingCount = (int) commits.stream().filter(c -> c.getChessPiece() == ChessPiece.KING).count();
 			int queenCount = (int) commits.stream().filter(c -> c.getChessPiece() == ChessPiece.QUEEN).count();

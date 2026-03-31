@@ -91,6 +91,70 @@ threshold, but the outcome condition ("any NOT_ACHIEVED") is too broad.
 
 ---
 
+## Model Comparison Leaderboard
+
+We run a periodic N-way shootout to pick the best OpenRouter model for
+production use. The runner (`MultiModelEvalRunner`, `@Tag("model-compare")`)
+evaluates every model across all 7 eval datasets (60 cases total) and ranks
+them by a composite score:
+
+```
+composite = schemaPassRate x 0.45
+          + meanJudgeScore x 0.35   (Opus 4.6 judge, first 4 cases per dataset)
+          + (1 - normLatency) x 0.20
+```
+
+### Run 3 — 2026-03-31 (full 8-model shootout)
+
+**Models tested:** `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`,
+`gpt-5-mini`, `gpt-5-nano`, `gpt-5.4-nano`, `gemini-2.5-flash`
+
+| Rank | Model | Composite | Schema | Latency | Opus Judge | Price/M in |
+|------|-------|-----------|--------|---------|-----------|------------|
+| 1 (winner) | **gpt-4.1-nano** | **0.9432** | 100% | 1,704ms | 0.846 | **$0.10** |
+| 2 | gpt-5.4-nano | 0.9422 | 100% | 1,472ms | 0.835 | $0.20 |
+| 3 | gpt-4.1 | 0.9384 | 100% | 2,392ms | **0.858** | $2.00 |
+| 4 | gpt-4o | 0.9349 | 100% | 1,908ms | 0.830 | $2.50 |
+| 5 | gemini-2.5-flash | 0.9274 | 100% | **1,474ms** | 0.793 | ~$0.15 |
+| 6 | gpt-4.1-mini | 0.9010 | 100% | 2,118ms | 0.741 | $0.40 |
+| disq. | gpt-5-mini | 0.6158 | 60% | 13,559ms | 0.861 | $0.25 |
+| disq. | gpt-5-nano | 0.2133 | 27% | 17,009ms | n/a | $0.05 |
+
+**Winner: `openai/gpt-4.1-nano`** — 100% schema, 0.846 judge quality, 1.7s
+latency, $0.10/M input (25x cheaper than gpt-4o, 3x cheaper than Gemini Flash).
+`gpt-5-mini` and `gpt-5-nano` disqualified: too slow and unreliable via
+OpenRouter as of this date.
+
+**Production model updated to `openai/gpt-4.1-nano`** across `.env`,
+`application.yml` fallback, and `evalTest` Gradle task default.
+
+### Run 2 — 2026-03-30 (quality scoring, 2 datasets)
+
+Quick quality check on commit-draft + rag-query with Opus 4.6 judge:
+`gpt-4o` led on quality (0.833), `gemini-2.5-flash` was fastest (1,248ms).
+
+### Run 1 — 2026-03-30 (schema-only baseline, 7 models)
+
+Schema-only run across all 7 datasets. Every model hit 100% schema pass rate.
+`gemini-2.5-flash` fastest at 1,248ms; `claude-sonnet-4` slowest at 2,779ms.
+
+### How to run the leaderboard
+
+```bash
+# Full run — all 7 datasets, Opus 4.6 judge on first 4 cases per dataset (~4 min)
+cd backend && ./gradlew modelCompareTest
+
+# Quick quality check — commit-draft + rag-query only (~2 min)
+cd backend && QUICK=true ./gradlew modelCompareTest
+
+# Custom model list
+cd backend && COMPARE_MODELS="openai/gpt-4.1-nano,openai/gpt-4.1" ./gradlew modelCompareTest
+```
+
+Results land in `backend/build/eval-results/model-compare-<timestamp>.json`.
+
+---
+
 ## How to Run
 
 ### Unit tests (no LLM, no API key required)

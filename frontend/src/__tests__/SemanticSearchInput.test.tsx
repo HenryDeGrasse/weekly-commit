@@ -39,6 +39,7 @@ vi.mock("../api/aiHooks.js", () => ({
     loading: false,
     error: null,
   })),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 // Import the mocked module so we can reconfigure per test

@@ -72,8 +72,8 @@ test.describe("Week Navigation & History", () => {
     const historyToggle = page.getByTestId("toggle-plan-history-btn");
     if (await historyToggle.isVisible()) {
       await historyToggle.click();
-      // History content should be visible or loading
-      await page.waitForTimeout(500);
+      // History content should become visible
+      await expect(page.getByTestId("page-my-week")).toBeVisible({ timeout: 3000 });
     }
   });
 

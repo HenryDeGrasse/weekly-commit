@@ -53,6 +53,7 @@ export interface CommitResponse {
   readonly priorityOrder: number;
   readonly rcdoNodeId?: string;
   readonly workItemId?: string;
+  readonly workItemKey?: string;
   readonly estimatePoints?: EstimatePoints;
   readonly successCriteria?: string;
   readonly outcome?: CommitOutcome;
@@ -82,6 +83,7 @@ export interface CreateCommitPayload {
   readonly description?: string;
   readonly rcdoNodeId?: string;
   readonly workItemId?: string;
+  readonly workItemKey?: string;
   readonly estimatePoints?: EstimatePoints;
   readonly successCriteria?: string;
 }
@@ -96,6 +98,7 @@ export interface UpdateCommitPayload {
   readonly description?: string;
   readonly rcdoNodeId?: string;
   readonly workItemId?: string;
+  readonly workItemKey?: string;
   readonly estimatePoints?: EstimatePoints;
   readonly successCriteria?: string;
 }

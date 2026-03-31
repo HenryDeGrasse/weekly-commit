@@ -7,7 +7,7 @@
  * Per PRD §17: every suggestion shows rationale, can be accepted or dismissed,
  * is fully auditable, and never auto-submits. The user must explicitly accept.
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Sparkles, Loader2, X, Check, ArrowRight } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { cn } from "../../lib/utils.js";
@@ -115,7 +115,7 @@ export function AiCommitComposer({
   const [rcdoSearchQuery, setRcdoSearchQuery] = useState("");
 
   const isAvailable = aiStatus?.available ?? false;
-  const nodes = rcdoTree ?? [];
+  const nodes = useMemo(() => rcdoTree ?? [], [rcdoTree]);
 
   const existingKings = existingCommits.filter((c) => c.chessPiece === "KING").length;
   const existingQueens = existingCommits.filter((c) => c.chessPiece === "QUEEN").length;

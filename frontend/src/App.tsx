@@ -59,7 +59,7 @@ function DevUserSwitcher({ current, onChange }: { current: DevUser; onChange: (u
         borderBottom: "1px solid #333",
       }}
     >
-      <span style={{ color: "#737373", flexShrink: 0 }}>👤 Dev user:</span>
+      <span style={{ color: "#737373", flexShrink: 0 }}>Dev user:</span>
       <select
         value={current.id}
         onChange={(e) => {
@@ -84,7 +84,6 @@ function DevUserSwitcher({ current, onChange }: { current: DevUser; onChange: (u
 // ── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const [activeUser, setActiveUser] = useState<DevUser>(DEV_USERS[0]!);
   const bridge = buildBridge(activeUser);
 

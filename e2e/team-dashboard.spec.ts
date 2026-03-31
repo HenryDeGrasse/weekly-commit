@@ -74,8 +74,8 @@ test.describe("Team Dashboard — Comprehensive", () => {
     const initialLabel = await teamPage.weekLabel.textContent();
     await page.getByTestId("team-prev-week-btn").click();
 
-    // Wait for data to reload
-    await page.waitForTimeout(500);
+    // Wait for week label to change
+    await expect(teamPage.weekLabel).not.toHaveText(initialLabel!, { timeout: 5000 });
     const newLabel = await teamPage.weekLabel.textContent();
     expect(newLabel).not.toEqual(initialLabel);
   });

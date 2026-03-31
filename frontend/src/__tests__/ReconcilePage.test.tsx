@@ -53,6 +53,7 @@ vi.mock("../api/aiHooks.js", () => ({
   useAiApi: vi.fn(),
   useAiStatus: vi.fn().mockReturnValue({ data: { available: false }, loading: false, error: null }),
   useRiskSignals: vi.fn().mockReturnValue({ data: undefined, loading: false, error: null }),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
 }));
 
 import { usePlanApi } from "../api/planHooks.js";

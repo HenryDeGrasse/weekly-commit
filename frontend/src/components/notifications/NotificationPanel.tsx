@@ -49,7 +49,7 @@ export function NotificationPanel() {
 
   const api = useMemo(() => {
     const client = createApiClient({
-      baseUrl: "/api",
+      baseUrl: API_BASE_URL,
       getAuthToken: () => bridge.context.authToken,
     });
     return createNotificationApi(client, authenticatedUser.id);

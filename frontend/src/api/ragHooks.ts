@@ -20,7 +20,7 @@ export function useRagApi(): RagApi {
   const { authToken, authenticatedUser } = bridge.context;
   return useMemo(() => {
     const client = createApiClient({
-      baseUrl: "/api",
+      baseUrl: API_BASE_URL,
       getAuthToken: () => bridge.context.authToken,
     });
     return createRagApi(client, authenticatedUser.id);

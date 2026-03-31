@@ -127,7 +127,7 @@ export default function Tickets() {
   );
   const { data: rcdoTreeData } = useRcdoTree();
   const rcdoLabels = useMemo(() => buildRcdoLabels(rcdoTreeData), [rcdoTreeData]);
-  const { data: ticketPage, loading: ticketsLoading, refetch: refetchTickets } = useTicketList(effectiveListParams);
+  const { data: ticketPage, loading: ticketsLoading, error: ticketsError, refetch: refetchTickets } = useTicketList(effectiveListParams);
   const ticketApi = useTicketApi();
 
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -222,6 +222,8 @@ export default function Tickets() {
             sortBy={listParams.sortBy}
             sortDir={listParams.sortDir}
             loading={ticketsLoading}
+            error={ticketsError}
+            onRetry={refetchTickets}
             onPageChange={(p) => updateParams({ page: p })}
             onSortChange={(col, dir) => updateParams({ sortBy: col, sortDir: dir })}
             onSelectTicket={(id) => setSelectedTicketId(id === selectedTicketId ? null : id)}

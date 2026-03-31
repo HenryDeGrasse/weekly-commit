@@ -755,7 +755,7 @@ class AbComparisonRunner {
 
 	private JsonNode callJudge(String filledPrompt) throws Exception {
 		String apiKey = System.getenv("OPENROUTER_API_KEY");
-		String model = System.getenv().getOrDefault("OPENROUTER_MODEL", "anthropic/claude-sonnet-4-20250514");
+		String model = System.getenv().getOrDefault("OPENROUTER_MODEL", "anthropic/claude-opus-4.6");
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("model", model);
 		body.put("max_tokens", 256);

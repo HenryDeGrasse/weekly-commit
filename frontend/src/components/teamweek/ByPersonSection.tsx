@@ -82,7 +82,7 @@ function ExpandedCommitList({ commits }: { commits: MemberWeekView["commits"] })
               {c.outcome}
             </span>
           )}
-          {c.carryForwardStreak >= 1 && <span className="text-[0.65rem] text-muted" title={`Carried forward ${c.carryForwardStreak}×`}>🔁{c.carryForwardStreak}</span>}
+          {c.carryForwardStreak >= 1 && <span className="inline-flex items-center gap-0.5 text-[0.65rem] text-muted" title={`Carried forward ${c.carryForwardStreak}×`}><RefreshCw className="h-2.5 w-2.5" aria-hidden="true" />{c.carryForwardStreak}</span>}
         </li>
       ))}
     </ol>
@@ -146,7 +146,7 @@ export function ByPersonSection({ memberViews, complianceSummary, onViewMemberPl
                         )}
                         {maxStreak >= 1 && (
                           <span data-testid={`cf-streak-${member.userId}`} title={`Max carry-forward streak: ${maxStreak}`} className={cn("text-[0.65rem] px-1.5 py-px rounded-full font-bold", maxStreak >= 2 ? "bg-foreground/10 text-foreground" : "bg-foreground/10 text-muted")}>
-                            🔁{maxStreak}
+                            <RefreshCw className="h-2.5 w-2.5 inline-block" aria-hidden="true" />{maxStreak}
                           </span>
                         )}
                       </div>

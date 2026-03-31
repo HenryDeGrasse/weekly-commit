@@ -1,13 +1,16 @@
 # ─────────────────────────────────────────────────────────────
 #  Weekly Commit — local dev runner
 #  Usage:
-#    make dev        build deps, create DB, start everything
-#    make setup      install deps + create DB only
-#    make stop       kill processes on :8080 and :5173
-#    make clean      stop + wipe build artifacts
-#    make reseed     wipe runtime data + restore demo seed (no restart needed)
-#    make reset      clean + drop DB + setup (true blank slate)
-#    make check      lint + typecheck + tests
+#    make dev            build deps, create DB, start everything
+#    make setup          install deps + create DB only
+#    make stop           kill processes on :8080 and :5173
+#    make clean          stop + wipe build artifacts
+#    make reseed         wipe runtime data + restore demo seed (no restart needed)
+#    make reset          clean + drop DB + setup (true blank slate)
+#    make check          lint + typecheck + tests
+#    make model-compare  run N-way model leaderboard  (requires OPENROUTER_API_KEY)
+#    make ab-eval        run 2-model A/B comparison   (requires OPENROUTER_API_KEY)
+#    make perf           run backend + frontend performance benchmarks
 # ─────────────────────────────────────────────────────────────
 
 # ── Load .env (PINECONE_API_KEY, OPENROUTER_API_KEY, DB_USER, …) ─────────────
@@ -132,10 +135,44 @@ check:
 	npm run typecheck
 	DB_USER=$(DB_USER) DB_PASSWORD=$(DB_PASS) JAVA_HOME=$(JAVA_HOME) PATH=$(JAVA_HOME)/bin:$$PATH npm run test
 
+# ── model-compare: N-way leaderboard across all eval datasets ─
+#   Ranks models by composite score (schema + quality + speed).
+#   Results: backend/build/eval-results/model-compare-*.json
+#
+#   Override the model list:
+#     COMPARE_MODELS="openai/gpt-4o,google/gemini-2.5-flash" make model-compare
+model-compare:
+	@printf "\n$(BOLD)Running model comparison leaderboard...$(NC)\n"
+	@printf "  Models: $(YELLOW)$${COMPARE_MODELS:-default 7-model roster}$(NC)\n"
+	@[ -n "$$OPENROUTER_API_KEY" ] || { printf "$(RED)✗ OPENROUTER_API_KEY not set$(NC)\n"; exit 1; }
+	DB_USER=$(DB_USER) DB_PASSWORD=$(DB_PASS) JAVA_HOME=$(JAVA_HOME) PATH=$(JAVA_HOME)/bin:$$PATH 		cd backend && ./gradlew modelCompareTest --info 2>&1 | grep -E "ModelEval|leaderboard|RANK|─|★|#[0-9]|BEST|FAST|QUALITY|Report:" || true
+	@printf "\n$(GREEN)$(BOLD)✓ Report: backend/build/eval-results/$(NC)\n"
+
+# ── ab-eval: classic 2-model A/B comparison ───────────────────
+#   Compare exactly two models head-to-head. Set env vars:
+#     AB_CONTROL_MODEL   (default: anthropic/claude-sonnet-4-20250514)
+#     AB_TREATMENT_MODEL (default: google/gemini-2.5-flash-preview)
+ab-eval:
+	@printf "\n$(BOLD)Running A/B model comparison...$(NC)\n"
+	@printf "  Control:   $(YELLOW)$${AB_CONTROL_MODEL:-anthropic/claude-sonnet-4-20250514}$(NC)\n"
+	@printf "  Treatment: $(YELLOW)$${AB_TREATMENT_MODEL:-google/gemini-2.5-flash-preview}$(NC)\n"
+	@[ -n "$$OPENROUTER_API_KEY" ] || { printf "$(RED)✗ OPENROUTER_API_KEY not set$(NC)\n"; exit 1; }
+	DB_USER=$(DB_USER) DB_PASSWORD=$(DB_PASS) JAVA_HOME=$(JAVA_HOME) PATH=$(JAVA_HOME)/bin:$$PATH 		cd backend && ./gradlew abEvalTest
+	@printf "\n$(GREEN)$(BOLD)✓ Report: backend/build/eval-results/$(NC)\n"
+
 # ─────────────────────────────────────────────────────────────
 #  Docker targets  (requires Docker Desktop or Docker Engine)
 # ─────────────────────────────────────────────────────────────
-.PHONY: docker-build docker-up docker-down docker-logs docker-reset
+.PHONY: perf docker-build docker-up docker-down docker-logs docker-reset
+
+## Performance benchmarks (requires running dev stack)
+perf:
+	@printf "\n$(BOLD)Running backend API benchmarks (100 iterations)...$(NC)\n"
+	./scripts/perf-benchmark-api.sh 100
+	@printf "\n$(BOLD)Running frontend page load benchmarks (20 iterations)...$(NC)\n"
+	PERF_ITERATIONS=20 npx playwright test --config=e2e/playwright.config.ts e2e/perf-benchmark.spec.ts
+	@printf "\n$(GREEN)✓ Results: scripts/perf-results-api.json + scripts/perf-results-frontend.json$(NC)\n"
+	@printf "See docs/performance-benchmarks.md for analysis.\n"
 
 ## Build all images (no cache: make docker-build CACHE=--no-cache)
 docker-build:

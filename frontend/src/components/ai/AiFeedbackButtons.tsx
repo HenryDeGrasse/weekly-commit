@@ -36,7 +36,7 @@ export function AiFeedbackButtons({ suggestionId, className }: AiFeedbackButtons
   if (submitted) {
     return (
       <span className={cn("text-xs text-muted italic", className)}>
-        {submitted === "ACCEPTED" ? "Thanks! 👍" : "Noted 👎"}
+        {submitted === "ACCEPTED" ? <><ThumbsUp className="h-3 w-3 inline-block" aria-hidden="true" /> Thanks!</> : <><ThumbsDown className="h-3 w-3 inline-block" aria-hidden="true" /> Noted</>}
       </span>
     );
   }

@@ -229,7 +229,99 @@ export function createAiApi(client: ApiClient, actorUserId: string) {
         `/teams/${encodeURIComponent(teamId)}/week/${encodeURIComponent(weekStart)}/ai-summary`,
         { headers: actorHeader },
       ),
+
+    /**
+     * GET /api/plans/{id}/evidence — structured evidence bundle for a plan.
+     * Returns the SQL facts, lineage chain, semantic matches, and risk features
+     * that were used to produce the AI answer. Optional question param scopes
+     * semantic matches to a specific query.
+     */
+    getPlanEvidence: (
+      planId: string,
+      question?: string,
+    ): Promise<StructuredEvidenceResponse> =>
+      client.get(
+        `/plans/${encodeURIComponent(planId)}/evidence${question ? `?question=${encodeURIComponent(question)}` : ""}`,
+        { headers: actorHeader },
+      ),
+
+    /**
+     * GET /api/commits/{id}/evidence — structured evidence bundle for a
+     * specific commit (used by EvidenceDrawer when commit-level context needed).
+     */
+    getCommitEvidence: (
+      commitId: string,
+    ): Promise<StructuredEvidenceResponse> =>
+      client.get(
+        `/commits/${encodeURIComponent(commitId)}/evidence`,
+        { headers: actorHeader },
+      ),
   };
+}
+
+// ── Structured Evidence types ─────────────────────────────────────────────────
+
+export interface SqlFacts {
+  userDisplayName: string;
+  teamName: string;
+  weekStart: string;
+  planState: string;
+  capacityBudget: number;
+  totalPlannedPoints: number;
+  totalAchievedPoints: number;
+  commitCount: number;
+  carryForwardCount: number;
+  scopeChangeCount: number;
+  lockCompliance: boolean;
+  reconcileCompliance: boolean;
+  chessDistribution: Record<string, number>;
+}
+
+export interface LineageNode {
+  commitId: string;
+  title: string;
+  weekStart: string;
+  outcome: string | null;
+  chessPiece: string | null;
+  estimatePoints: number | null;
+  carryForwardReason: string | null;
+}
+
+export interface LineageChain {
+  currentCommitId: string;
+  currentTitle: string;
+  streakLength: number;
+  nodes: LineageNode[];
+}
+
+export interface SemanticMatch {
+  entityType: string;
+  entityId: string;
+  score: number;
+  weekStartDate: string;
+  text: string;
+}
+
+export interface RiskFeatures {
+  completionRatio: number;
+  avgCompletionRatio4w: number;
+  carryForwardStreakMax: number;
+  scopeChangeCount: number;
+  kingCount: number;
+  queenCount: number;
+  activeRiskSignalTypes: string[];
+}
+
+export interface StructuredEvidence {
+  sqlFacts: SqlFacts | null;
+  lineage: LineageChain | null;
+  semanticMatches: SemanticMatch[];
+  riskFeatures: RiskFeatures | null;
+}
+
+export interface StructuredEvidenceResponse {
+  available: boolean;
+  evidence: StructuredEvidence | null;
 }
 
 export type AiApi = ReturnType<typeof createAiApi>;

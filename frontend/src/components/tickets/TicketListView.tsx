@@ -1,7 +1,7 @@
 /**
  * TicketListView — sortable, paginated table of tickets.
  */
-import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Ticket as TicketIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Ticket as TicketIcon, AlertTriangle } from "lucide-react";
 import { Button } from "../ui/Button.js";
 import { Badge } from "../ui/Badge.js";
 import { Skeleton } from "../ui/Skeleton.js";
@@ -20,6 +20,8 @@ export interface TicketListViewProps {
   readonly sortBy: TicketSortColumn;
   readonly sortDir: "asc" | "desc";
   readonly loading: boolean;
+  readonly error?: { message: string } | null;
+  readonly onRetry?: () => void;
   readonly onPageChange: (page: number) => void;
   readonly onSortChange: (col: TicketSortColumn, dir: "asc" | "desc") => void;
   readonly onSelectTicket: (ticketId: string) => void;
@@ -41,7 +43,7 @@ const SORTABLE_COLUMNS: { col: TicketSortColumn; label: string }[] = [
 const thCls = "px-2.5 py-2 text-left text-[0.7rem] font-bold uppercase tracking-wider text-muted border-b-2 border-border whitespace-nowrap cursor-pointer select-none hover:text-foreground transition-colors";
 const tdCls = "px-2.5 py-2 text-sm border-b border-border align-middle";
 
-export function TicketListView({ tickets, total, page, pageSize, sortBy, sortDir, loading, onPageChange, onSortChange, onSelectTicket, rcdoLabels = {} }: TicketListViewProps) {
+export function TicketListView({ tickets, total, page, pageSize, sortBy, sortDir, loading, error, onRetry, onPageChange, onSortChange, onSelectTicket, rcdoLabels = {} }: TicketListViewProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   function handleSortClick(col: TicketSortColumn) {
@@ -72,7 +74,18 @@ export function TicketListView({ tickets, total, page, pageSize, sortBy, sortDir
         </div>
       )}
 
-      {!loading && tickets.length === 0 && (
+
+      {!loading && error && (
+        <div role="alert" data-testid="ticket-list-error" className="flex items-center gap-2 rounded-default border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="flex-1 font-semibold">{error.message || "Failed to load tickets"}</span>
+          {onRetry && (
+            <Button variant="secondary" size="sm" onClick={onRetry}>Retry</Button>
+          )}
+        </div>
+      )}
+
+      {!loading && !error && tickets.length === 0 && (
         <EmptyState
           data-testid="ticket-list-empty"
           icon={<TicketIcon className="h-9 w-9" />}
@@ -81,7 +94,7 @@ export function TicketListView({ tickets, total, page, pageSize, sortBy, sortDir
         />
       )}
 
-      {!loading && tickets.length > 0 && (
+      {!loading && !error && tickets.length > 0 && (
         <div className="overflow-x-auto">
           <table data-testid="ticket-list-table" className="w-full border-collapse text-sm">
             <thead>

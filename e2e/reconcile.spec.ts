@@ -77,7 +77,7 @@ test.describe("Reconcile Page", () => {
     const openBtn = page.getByTestId("open-reconciliation-btn");
     if (await openBtn.isVisible().catch(() => false)) {
       await openBtn.click();
-      await page.waitForTimeout(1000);
+      await page.getByTestId("reconcile-plan-state").waitFor({ timeout: 5000 });
     }
 
     const submitBtn = page.getByTestId("reconcile-submit-btn");

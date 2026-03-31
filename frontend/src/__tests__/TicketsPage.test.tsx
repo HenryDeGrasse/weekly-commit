@@ -230,6 +230,62 @@ describe("TicketsPage — rendering", () => {
 });
 
 // ── Tests: filter bar ─────────────────────────────────────────────────────────
+// ── Tests: error state ────────────────────────────────────────────────────────
+
+describe("TicketsPage — error state", () => {
+  it("shows error alert when useTicketList returns an error", () => {
+    vi.mocked(useTicketList).mockReturnValue({
+      data: undefined,
+      loading: false,
+      error: new (class extends Error { status = 500; })("Failed to load tickets"),
+      refetch: vi.fn(),
+    } as ReturnType<typeof useTicketList>);
+    renderPage();
+    expect(screen.getByTestId("ticket-list-error")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Failed to load tickets");
+  });
+
+  it("error state shows retry button that calls refetch", () => {
+    const mockRetryFn = vi.fn();
+    vi.mocked(useTicketList).mockReturnValue({
+      data: undefined,
+      loading: false,
+      error: new (class extends Error { status = 500; })("Server error"),
+      refetch: mockRetryFn,
+    } as ReturnType<typeof useTicketList>);
+    renderPage();
+    const retryBtn = screen.getByRole("alert").querySelector("button");
+    expect(retryBtn).toBeInTheDocument();
+    fireEvent.click(retryBtn!);
+    expect(mockRetryFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("error state hides ticket table and empty state", () => {
+    vi.mocked(useTicketList).mockReturnValue({
+      data: undefined,
+      loading: false,
+      error: new (class extends Error { status = 500; })("Server error"),
+      refetch: vi.fn(),
+    } as ReturnType<typeof useTicketList>);
+    renderPage();
+    expect(screen.queryByTestId("ticket-list-table")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ticket-list-empty")).not.toBeInTheDocument();
+  });
+
+  it("does not show error alert during loading even if error is set", () => {
+    vi.mocked(useTicketList).mockReturnValue({
+      data: undefined,
+      loading: true,
+      error: new (class extends Error { status = 500; })("Server error"),
+      refetch: vi.fn(),
+    } as ReturnType<typeof useTicketList>);
+    renderPage();
+    expect(screen.queryByTestId("ticket-list-error")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ticket-list-loading")).toBeInTheDocument();
+  });
+});
+
 
 describe("TicketsPage — filter bar", () => {
   it("renders filter controls", () => {
