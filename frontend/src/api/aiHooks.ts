@@ -14,7 +14,7 @@ export function useWhatIfApi(): WhatIfApi {
   const { authToken, authenticatedUser } = bridge.context;
   return useMemo(() => {
     const client = createApiClient({
-      baseUrl: API_BASE_URL,
+      baseUrl: __WC_API_BASE_URL__,
       getAuthToken: () => bridge.context.authToken,
     });
     return createWhatIfApi(client, authenticatedUser.id);
@@ -28,7 +28,7 @@ export function useAiApi(): AiApi {
   const { authToken, authenticatedUser } = bridge.context;
   return useMemo(() => {
     const client = createApiClient({
-      baseUrl: API_BASE_URL,
+      baseUrl: __WC_API_BASE_URL__,
       getAuthToken: () => bridge.context.authToken,
     });
     return createAiApi(client, authenticatedUser.id);

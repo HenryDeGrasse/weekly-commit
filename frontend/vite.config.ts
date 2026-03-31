@@ -5,6 +5,10 @@ import tailwindcss from "@tailwindcss/vite";
 import federation from "@originjs/vite-plugin-federation";
 
 export default defineConfig({
+  define: {
+    // Inline API base URL at build time — avoids Module Federation chunk issues
+    __WC_API_BASE_URL__: JSON.stringify(process.env.VITE_API_BASE_URL || "/api"),
+  },
   server: {
     proxy: {
       // Proxy /api calls to the Spring Boot backend during `vite dev`

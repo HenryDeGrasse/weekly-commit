@@ -17,7 +17,7 @@ RUN npm run build -w @weekly-commit/shared
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
-# Railway injects env vars as build args
+# Pass API URL at build time — Railway sets this via service env vars
 ARG VITE_API_BASE_URL="/api"
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 

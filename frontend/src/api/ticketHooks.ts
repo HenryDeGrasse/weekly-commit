@@ -25,7 +25,7 @@ export function useTicketApi(): TicketApi {
   return useMemo(
     () => {
       const client = createApiClient({
-        baseUrl: API_BASE_URL,
+        baseUrl: __WC_API_BASE_URL__,
         getAuthToken: () => bridge.context.authToken,
       });
       return createTicketApi(client, authenticatedUser.id);

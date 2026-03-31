@@ -13,7 +13,6 @@
  *  - "error"      — error message from the backend
  */
 import type { RagSource } from "./ragApi.js";
-import { API_BASE_URL } from "./config.js";
 
 export type { RagSource };
 
@@ -44,7 +43,7 @@ export function streamRagQuery(
 ): AbortController {
   const controller = new AbortController();
 
-  const url = new URL(`${API_BASE_URL}/ai/rag/stream`, window.location.origin);
+  const url = new URL(`${__WC_API_BASE_URL__}/ai/rag/stream`, window.location.origin);
   url.searchParams.set("question", question);
   url.searchParams.set("teamId", teamId);
   url.searchParams.set("userId", userId);
