@@ -59,7 +59,7 @@ function DevUserSwitcher({ current, onChange }: { current: DevUser; onChange: (u
         borderBottom: "1px solid #333",
       }}
     >
-      <span style={{ color: "#737373", flexShrink: 0 }}>Dev user:</span>
+      <span style={{ color: "#737373", flexShrink: 0 }}>View as:</span>
       <select
         value={current.id}
         onChange={(e) => {
@@ -76,7 +76,7 @@ function DevUserSwitcher({ current, onChange }: { current: DevUser; onChange: (u
           <option key={u.id} value={u.id}>{u.label}</option>
         ))}
       </select>
-      <span style={{ color: "#555", marginLeft: "auto" }}>dev mode</span>
+      <span style={{ color: "#555", marginLeft: "auto" }}>demo</span>
     </div>
   );
 }
