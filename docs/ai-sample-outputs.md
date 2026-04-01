@@ -1,8 +1,8 @@
 # AI Sample Outputs — End-to-End Evidence
 
-This document showcases actual LLM outputs from the eval harness running against real Claude prompts via OpenRouter. Every input→output pair below was produced by the production prompt templates and scored by the automated eval pipeline.
+This document showcases actual LLM outputs from the eval harness running against real prompts via OpenRouter (production model: GPT-4.1-nano). Every input→output pair below was produced by the production prompt templates and scored by the automated eval pipeline.
 
-**How these were generated:** `OPENROUTER_API_KEY=... ./backend/gradlew evalTest` runs 60 golden test cases across 7 AI capabilities. Each case sends a real request to Claude via OpenRouter, validates the JSON schema, runs behavioral checks, and (for draft-assist) uses an LLM-as-judge scorer. Results: `eval-baseline.json` at the repo root.
+**How these were generated:** `OPENROUTER_API_KEY=... ./backend/gradlew evalTest` runs 60 golden test cases across 7 AI capabilities. Each case sends a real request to the production LLM via OpenRouter, validates the JSON schema, runs behavioral checks, and (for draft-assist) uses an LLM-as-judge scorer. Results: `eval-baseline.json` at the repo root.
 
 **Baseline stats:** 18 cases evaluated in the current baseline (commit-lint + commit-draft-assist), 17/18 passing (94.4%). The remaining 42 cases across 5 additional capabilities (rcdo-suggest, risk-signal, reconcile-assist, rag-query, what-if) have golden fixtures ready and run on demand with an API key.
 
@@ -313,7 +313,7 @@ Reconcile assist suggests outcomes, carry-forward decisions, and a weekly summar
 
 ## 6. RAG / Semantic Search (Golden Cases — Ready to Run)
 
-Natural-language queries over planning history via Pinecone vector retrieval + Claude synthesis.
+Natural-language queries over planning history via Pinecone vector retrieval + LLM synthesis.
 
 **Example golden cases:**
 - *"What did Alice commit to last week?"* — expects structured answer citing specific commits
@@ -355,7 +355,7 @@ Each signal has 1 TP and 1 FP scenario by design. The 50% precision is the expec
 
 | Component | What it does |
 |---|---|
-| **`PromptEvalRunner`** | Sends golden cases to Claude via OpenRouter, validates schema + behavioral checks |
+| **`PromptEvalRunner`** | Sends golden cases to the production LLM via OpenRouter, validates schema + behavioral checks |
 | **`MultiModelEvalRunner`** | N-way model comparison (leaderboard mode) + A/B eval |
 | **`HistoricalReplayBenchmark`** | Rules-engine confusion matrices on 12 synthetic plans |
 | **`FaithfulnessEvaluator`** | Production sampling — RAGAS-style claim decomposition |

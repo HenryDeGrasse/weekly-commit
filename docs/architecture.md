@@ -12,7 +12,7 @@ The Weekly Commit Module is a route-level micro-frontend integrated into the PA 
 Browser → React MF Remote → REST/JSON → Spring Boot → PostgreSQL
                                               │
                                               ├──→ Pinecone (vector store)
-                                              ├──→ OpenRouter (LLM — Claude)
+                                              ├──→ OpenRouter (LLM — GPT-4.1-nano)
                                               └──→ OpenAI (embeddings)
 ```
 
@@ -409,7 +409,7 @@ docker compose --profile observability up --build   # + Prometheus + Grafana
 | Variable | Required | Purpose |
 |---|---|---|
 | `DB_USER` / `DB_PASSWORD` | Yes | PostgreSQL credentials |
-| `OPENROUTER_API_KEY` | For AI | OpenRouter API key (Claude) |
+| `OPENROUTER_API_KEY` | For AI | OpenRouter API key (production: GPT-4.1-nano) |
 | `PINECONE_API_KEY` | For RAG | Pinecone vector database |
 | `OPENAI_API_KEY` | For embeddings | OpenAI embedding model |
 | `APP_SCHEDULING_ENABLED` | No | Enable/disable scheduled jobs (default: true) |

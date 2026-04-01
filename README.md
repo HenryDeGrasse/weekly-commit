@@ -35,7 +35,7 @@ A production-grade weekly planning intelligence system that replaces 15Five with
 │  ┌─────────────────────────────────────────────────────────────────┐ │
 │  │ AI Pipeline                                                     │ │
 │  │                                                                 │ │
-│  │  14 Prompt Templates → OpenRouter/Claude → 10 AI Types         │ │
+│  │  14 Prompt Templates → OpenRouter/GPT-4.1-nano → 10 AI Types   │ │
 │  │                                                                 │ │
 │  │  DraftAssist · CommitLint · RcdoSuggest · RiskDetection ·      │ │
 │  │  ReconcileAssist · TeamSummary · RAG · Team/Personal Insights  │ │
@@ -54,7 +54,7 @@ A production-grade weekly planning intelligence system that replaces 15Five with
           ▼              ▼                ▼
    ┌────────────┐ ┌────────────┐  ┌─────────────┐
    │ PostgreSQL │ │  Pinecone  │  │ OpenRouter   │
-   │    16      │ │  Vector DB │  │ Claude LLM   │
+   │    16      │ │  Vector DB │  │ GPT-4.1-nano │
    │            │ │            │  │ + OpenAI     │
    │ 13 Flyway  │ │ Enriched   │  │   Embeddings │
    │ migrations │ │ chunks w/  │  │              │
@@ -112,7 +112,7 @@ Write Path:
 Query Path:
   Question → Intent Classification (entity types, time range, user scope)
     → Embedding → Pinecone retrieval (top-40)
-    → Context assembly → Claude synthesis → Audited response with sources
+    → Context assembly → LLM synthesis → Audited response with sources
 ```
 
 ### Evaluation Infrastructure
@@ -196,7 +196,7 @@ Use the dev user switcher (top banner) to experience different roles:
 | **Frontend** | React 18 · TypeScript strict · Tailwind CSS 4 · Vite · Module Federation |
 | **Backend** | Java 21 · Spring Boot 3.4 · Spring Data JPA · Flyway · OpenAPI/Springdoc |
 | **Database** | PostgreSQL 16 · 13 Flyway migrations · 30+ tables · 5 derived read models |
-| **AI / LLM** | OpenRouter (Claude) · OpenAI embeddings · 14 prompt templates |
+| **AI / LLM** | OpenRouter (GPT-4.1-nano) · OpenAI embeddings · 14 prompt templates |
 | **Vector Store** | Pinecone · Enriched chunks with RCDO paths, lineage, ticket context |
 | **Observability** | Prometheus · Grafana · Structured JSON logging · Micrometer |
 | **Testing** | JUnit 5 · Vitest · Playwright · LLM-as-judge eval harness |

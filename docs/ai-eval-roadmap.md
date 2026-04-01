@@ -2,7 +2,7 @@
 
 **Created:** 2026-03-26
 **Updated:** 2026-03-31
-**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 14 prompt templates total (10 core AI suggestion types + faithfulness eval, HyDE, SQL routing, what-if), 10 AI suggestion types, and 20 frontend AI components (16 mounted + 2 sub-components + 2 reusable-only). Remaining evaluation gaps identified via code audit.
+**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter (LLM, production: GPT-4.1-nano) + OpenAI text-embedding-3-small (embeddings). 14 prompt templates total (10 core AI suggestion types + faithfulness eval, HyDE, SQL routing, what-if), 10 AI suggestion types, and 20 frontend AI components (16 mounted + 2 sub-components + 2 reusable-only). Remaining evaluation gaps identified via code audit.
 
 > **Status key:** ✅ Implemented · 🔨 In progress · 📋 Planned
 
