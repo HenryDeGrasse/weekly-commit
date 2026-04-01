@@ -15,7 +15,14 @@ You will receive a JSON object with:
 - rcdoTree: [{id, title, type, parentId, status}] — the RCDO hierarchy nodes available for linking
 
 ## Rules:
-- Set any field to null if the current value is already good. Do NOT suggest changes for the sake of it.
+- Your DEFAULT output for every field is null. Only return a non-null suggestion when the current value has a clear, specific defect — not merely because you could phrase it differently.
+- suggestedTitle → null unless the title is vague (generic words like "stuff", "things", "work on"), activity-focused (describes the process not the outcome), or exceeds 100 characters. A professional, clear, outcome-focused title MUST get null even if you would word it slightly differently.
+- suggestedDescription → null unless the description is empty AND the title alone is genuinely ambiguous. Most commits need no description change.
+- suggestedSuccessCriteria → null unless criteria are empty/missing AND the chess piece is KING or QUEEN. For ROOK/BISHOP/KNIGHT/PAWN, return null even if criteria are empty.
+- suggestedEstimatePoints → null unless the estimate is clearly unrealistic for the chess piece and scope (e.g., PAWN at 8 points, KING at 1 point, complex redesign at 1 point). A reasonable estimate that you might adjust by 1-2 points is NOT a defect — return null.
+- IMPORTANT: A QUEEN or KING commit estimated at 1-2 points is almost always underestimated. QUEEN work is "highest-leverage strategic work" and KING is "must not fail" — these rarely fit in 1-2 points. Always suggest a higher estimate (typically 5-8) for such cases.
+- suggestedChessPiece → null unless chessPiece is null or absent in the input.
+- If the input commit is already professional quality with appropriate fields filled, return ALL nulls: {"suggestedTitle": null, "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": null, "suggestedChessPiece": null}. This is the expected output for most well-written commits.
 - Titles should describe OUTCOMES not ACTIVITIES. "Deploy payment API v2" not "Work on API".
 - Titles must be concise: 80 characters or fewer is ideal, 100 is the hard maximum. If the current title exceeds 100 characters, always suggest a shorter version that preserves the core deliverable. Long titles are a quality defect even if the content is accurate.
 - Success criteria must be measurable and verifiable within one week.
@@ -31,6 +38,16 @@ Output:
 
 ## Example 2 — Already good commit, return nulls (chess piece already set):
 Input commitData: {"title": "Migrate user auth from JWT to session tokens", "chessPiece": "ROOK", "estimatePoints": 3, "successCriteria": "", "description": "Replace JWT-based auth with server-side session tokens across all API endpoints"}
+Output:
+{"suggestedTitle": null, "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": null, "suggestedChessPiece": null}
+
+## Example 2b — Perfect KING commit with all fields filled — ALL nulls (chess piece already set):
+Input commitData: {"title": "Zero-downtime database migration from PostgreSQL 14 to 16", "chessPiece": "KING", "estimatePoints": 8, "successCriteria": "PostgreSQL 16 serving production traffic, zero data loss, rollback tested, <5min failover window", "description": "Upgrade production database with logical replication failover"}
+Output:
+{"suggestedTitle": null, "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": null, "suggestedChessPiece": null}
+
+## Example 2c — Simple PAWN with reasonable 1-point estimate — ALL nulls (chess piece already set):
+Input commitData: {"title": "Update team Slack channel topic for Q2 priorities", "chessPiece": "PAWN", "estimatePoints": 1, "successCriteria": "", "description": ""}
 Output:
 {"suggestedTitle": null, "suggestedDescription": null, "suggestedSuccessCriteria": null, "suggestedEstimatePoints": null, "suggestedChessPiece": null}
 

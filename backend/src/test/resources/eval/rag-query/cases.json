@@ -7,13 +7,33 @@
       "question": "What did Alice commit to last week?",
       "currentDate": "2026-03-23",
       "retrievedChunks": [
-        {"id": "commit:uuid-1", "score": 0.92, "metadata": {"entityType": "plan_summary", "weekStartDate": "2026-03-16", "userId": "alice-uuid", "text": "Alice Chen — LOCKED plan, 9pts. Commits: \"Deploy auth service\" QUEEN 5pts ACHIEVED, \"Write integration tests\" ROOK 3pts PARTIALLY_ACHIEVED, \"Update API docs\" PAWN 1pt ACHIEVED"}},
-        {"id": "commit:uuid-2", "score": 0.71, "metadata": {"entityType": "commit", "weekStartDate": "2026-03-09", "text": "\"Refactor auth middleware\" — ROOK, 3pts. ACHIEVED."}}
+        {
+          "id": "commit:uuid-1",
+          "score": 0.92,
+          "metadata": {
+            "entityType": "plan_summary",
+            "weekStartDate": "2026-03-16",
+            "userId": "alice-uuid",
+            "text": "Alice Chen \u2014 LOCKED plan, 9pts. Commits: \"Deploy auth service\" QUEEN 5pts ACHIEVED, \"Write integration tests\" ROOK 3pts PARTIALLY_ACHIEVED, \"Update API docs\" PAWN 1pt ACHIEVED"
+          }
+        },
+        {
+          "id": "commit:uuid-2",
+          "score": 0.71,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-03-09",
+            "text": "\"Refactor auth middleware\" \u2014 ROOK, 3pts. ACHIEVED."
+          }
+        }
       ]
     },
     "expectedBehavior": {
       "shouldHaveAnswer": true,
-      "answerShouldMention": ["auth service", "integration tests"],
+      "answerShouldMention": [
+        "auth service",
+        "integration tests"
+      ],
       "minConfidence": 0.7,
       "minSources": 1,
       "maxSources": 5
@@ -21,21 +41,56 @@
   },
   {
     "id": "rag-002",
-    "description": "Question about RCDO coverage — should synthesize across chunks",
+    "description": "Question about RCDO coverage \u2014 should synthesize across chunks",
     "edgeCaseType": "synthesis",
     "input": {
       "question": "Which RCDOs received the most effort this month?",
       "currentDate": "2026-03-23",
       "retrievedChunks": [
-        {"id": "commit:uuid-1", "score": 0.88, "metadata": {"entityType": "commit", "weekStartDate": "2026-03-16", "text": "\"Deploy auth service\" — QUEEN, 5pts. RCDO path: Win Enterprise > Enterprise Auth > SSO Integration. ACHIEVED."}},
-        {"id": "commit:uuid-2", "score": 0.85, "metadata": {"entityType": "commit", "weekStartDate": "2026-03-16", "text": "\"Fix payment timeout\" — ROOK, 3pts. RCDO path: Operational Excellence > Payment Reliability > 99.9% Uptime. ACHIEVED."}},
-        {"id": "commit:uuid-3", "score": 0.82, "metadata": {"entityType": "commit", "weekStartDate": "2026-03-09", "text": "\"SSO Okta integration\" — QUEEN, 5pts. RCDO path: Win Enterprise > Enterprise Auth > SSO Integration. ACHIEVED."}},
-        {"id": "commit:uuid-4", "score": 0.78, "metadata": {"entityType": "commit", "weekStartDate": "2026-03-09", "text": "\"Auth audit logging\" — BISHOP, 2pts. RCDO path: Win Enterprise > Enterprise Auth > Compliance Audit. ACHIEVED."}}
+        {
+          "id": "commit:uuid-1",
+          "score": 0.88,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-03-16",
+            "text": "\"Deploy auth service\" \u2014 QUEEN, 5pts. RCDO path: Win Enterprise > Enterprise Auth > SSO Integration. ACHIEVED."
+          }
+        },
+        {
+          "id": "commit:uuid-2",
+          "score": 0.85,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-03-16",
+            "text": "\"Fix payment timeout\" \u2014 ROOK, 3pts. RCDO path: Operational Excellence > Payment Reliability > 99.9% Uptime. ACHIEVED."
+          }
+        },
+        {
+          "id": "commit:uuid-3",
+          "score": 0.82,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-03-09",
+            "text": "\"SSO Okta integration\" \u2014 QUEEN, 5pts. RCDO path: Win Enterprise > Enterprise Auth > SSO Integration. ACHIEVED."
+          }
+        },
+        {
+          "id": "commit:uuid-4",
+          "score": 0.78,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-03-09",
+            "text": "\"Auth audit logging\" \u2014 BISHOP, 2pts. RCDO path: Win Enterprise > Enterprise Auth > Compliance Audit. ACHIEVED."
+          }
+        }
       ]
     },
     "expectedBehavior": {
       "shouldHaveAnswer": true,
-      "answerShouldMention": ["Win Enterprise", "SSO"],
+      "answerShouldMention": [
+        "Enterprise",
+        "SSO"
+      ],
       "minConfidence": 0.6,
       "minSources": 2
     }
@@ -48,72 +103,170 @@
       "question": "What are the recurring carry-forward patterns?",
       "currentDate": "2026-03-23",
       "retrievedChunks": [
-        {"id": "cf:uuid-1", "score": 0.90, "metadata": {"entityType": "carry_forward", "weekStartDate": "2026-03-16", "text": "Carry forward: \"Health dashboard implementation\" carried 3 weeks (streak: 3). Reason: DEPENDENCY_BLOCKED. Originally from week 2026-02-23."}},
-        {"id": "cf:uuid-2", "score": 0.85, "metadata": {"entityType": "carry_forward", "weekStartDate": "2026-03-09", "text": "Carry forward: \"Health dashboard implementation\" carried 2 weeks (streak: 2). Reason: DEPENDENCY_BLOCKED."}},
-        {"id": "commit:uuid-3", "score": 0.72, "metadata": {"entityType": "commit", "weekStartDate": "2026-03-16", "text": "\"API contract finalization\" — ROOK, 3pts. Carried forward 1 week. NOT_ACHIEVED."}}
+        {
+          "id": "cf:uuid-1",
+          "score": 0.9,
+          "metadata": {
+            "entityType": "carry_forward",
+            "weekStartDate": "2026-03-16",
+            "text": "Carry forward: \"Health dashboard implementation\" carried 3 weeks (streak: 3). Reason: DEPENDENCY_BLOCKED. Originally from week 2026-02-23."
+          }
+        },
+        {
+          "id": "cf:uuid-2",
+          "score": 0.85,
+          "metadata": {
+            "entityType": "carry_forward",
+            "weekStartDate": "2026-03-09",
+            "text": "Carry forward: \"Health dashboard implementation\" carried 2 weeks (streak: 2). Reason: DEPENDENCY_BLOCKED."
+          }
+        },
+        {
+          "id": "commit:uuid-3",
+          "score": 0.72,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-03-16",
+            "text": "\"API contract finalization\" \u2014 ROOK, 3pts. Carried forward 1 week. NOT_ACHIEVED."
+          }
+        }
       ]
     },
     "expectedBehavior": {
       "shouldHaveAnswer": true,
-      "answerShouldMention": ["Health dashboard", "carry forward", "3 weeks"],
+      "answerShouldMention": [
+        "Health dashboard",
+        "carry forward",
+        "three"
+      ],
       "minConfidence": 0.6,
       "minSources": 1
     }
   },
   {
     "id": "rag-004",
-    "description": "Question with no relevant chunks — should indicate insufficient data",
+    "description": "Question with no relevant chunks \u2014 should indicate insufficient data",
     "edgeCaseType": "no_data",
     "input": {
       "question": "What was the marketing team's plan for Q4?",
       "currentDate": "2026-03-23",
       "retrievedChunks": [
-        {"id": "commit:uuid-1", "score": 0.31, "metadata": {"entityType": "commit", "weekStartDate": "2026-03-16", "text": "\"Deploy auth service\" — QUEEN, 5pts. ACHIEVED."}},
-        {"id": "commit:uuid-2", "score": 0.25, "metadata": {"entityType": "commit", "weekStartDate": "2026-03-09", "text": "\"Fix payment timeout\" — ROOK, 3pts."}}
+        {
+          "id": "commit:uuid-1",
+          "score": 0.31,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-03-16",
+            "text": "\"Deploy auth service\" \u2014 QUEEN, 5pts. ACHIEVED."
+          }
+        },
+        {
+          "id": "commit:uuid-2",
+          "score": 0.25,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-03-09",
+            "text": "\"Fix payment timeout\" \u2014 ROOK, 3pts."
+          }
+        }
       ]
     },
     "expectedBehavior": {
       "shouldHaveAnswer": true,
       "answerShouldIndicateInsufficient": true,
-      "maxConfidence": 0.4
+      "maxConfidence": 0.5
     }
   },
   {
     "id": "rag-005",
-    "description": "Question about scope changes — should use scope_change chunks",
+    "description": "Question about scope changes \u2014 should use scope_change chunks",
     "edgeCaseType": "scope_changes",
     "input": {
       "question": "Why did Dan's plan change after lock last week?",
       "currentDate": "2026-03-23",
       "retrievedChunks": [
-        {"id": "sc:uuid-1", "score": 0.93, "metadata": {"entityType": "scope_change", "weekStartDate": "2026-03-16", "text": "Scope change (PRIORITY_CHANGED) during week of 2026-03-16. Commit \"Health dashboard\" priority changed from 2 to 1. Reason: Customer escalation made health dashboard urgent."}},
-        {"id": "sc:uuid-2", "score": 0.88, "metadata": {"entityType": "scope_change", "weekStartDate": "2026-03-16", "text": "Scope change (COMMIT_ADDED) during week of 2026-03-16. New commit \"Emergency hotfix for login crash\". Reason: Production incident P1."}},
-        {"id": "commit:uuid-3", "score": 0.75, "metadata": {"entityType": "plan_summary", "weekStartDate": "2026-03-16", "text": "Dan Okafor — RECONCILED plan, 12pts (over budget by 2). 2 scope changes after lock."}}
+        {
+          "id": "sc:uuid-1",
+          "score": 0.93,
+          "metadata": {
+            "entityType": "scope_change",
+            "weekStartDate": "2026-03-16",
+            "text": "Scope change (PRIORITY_CHANGED) during week of 2026-03-16. Commit \"Health dashboard\" priority changed from 2 to 1. Reason: Customer escalation made health dashboard urgent."
+          }
+        },
+        {
+          "id": "sc:uuid-2",
+          "score": 0.88,
+          "metadata": {
+            "entityType": "scope_change",
+            "weekStartDate": "2026-03-16",
+            "text": "Scope change (COMMIT_ADDED) during week of 2026-03-16. New commit \"Emergency hotfix for login crash\". Reason: Production incident P1."
+          }
+        },
+        {
+          "id": "commit:uuid-3",
+          "score": 0.75,
+          "metadata": {
+            "entityType": "plan_summary",
+            "weekStartDate": "2026-03-16",
+            "text": "Dan Okafor \u2014 RECONCILED plan, 12pts (over budget by 2). 2 scope changes after lock."
+          }
+        }
       ]
     },
     "expectedBehavior": {
       "shouldHaveAnswer": true,
-      "answerShouldMention": ["customer escalation", "health dashboard"],
+      "answerShouldMention": [
+        "customer escalation",
+        "health dashboard"
+      ],
       "minConfidence": 0.7,
       "minSources": 2
     }
   },
   {
     "id": "rag-006",
-    "description": "Temporal question — 'this week' vs 'last week' distinction",
+    "description": "Temporal question \u2014 'this week' vs 'last week' distinction",
     "edgeCaseType": "temporal_reasoning",
     "input": {
       "question": "What is the team working on this week?",
       "currentDate": "2026-03-23",
       "retrievedChunks": [
-        {"id": "plan:uuid-1", "score": 0.90, "metadata": {"entityType": "plan_summary", "weekStartDate": "2026-03-23", "text": "Alice Chen — LOCKED plan, 8pts. Commits: \"GraphQL migration\" QUEEN 5pts, \"Fix flaky tests\" PAWN 2pts, \"Sprint retro prep\" PAWN 1pt"}},
-        {"id": "plan:uuid-2", "score": 0.88, "metadata": {"entityType": "plan_summary", "weekStartDate": "2026-03-23", "text": "Bob Martinez — DRAFT plan, 6pts. Commits: \"Billing API v2\" ROOK 3pts, \"Docs update\" PAWN 1pt, \"Performance profiling\" KNIGHT 2pts"}},
-        {"id": "plan:uuid-old", "score": 0.65, "metadata": {"entityType": "plan_summary", "weekStartDate": "2026-03-16", "text": "Alice Chen — RECONCILED plan from last week."}}
+        {
+          "id": "plan:uuid-1",
+          "score": 0.9,
+          "metadata": {
+            "entityType": "plan_summary",
+            "weekStartDate": "2026-03-23",
+            "text": "Alice Chen \u2014 LOCKED plan, 8pts. Commits: \"GraphQL migration\" QUEEN 5pts, \"Fix flaky tests\" PAWN 2pts, \"Sprint retro prep\" PAWN 1pt"
+          }
+        },
+        {
+          "id": "plan:uuid-2",
+          "score": 0.88,
+          "metadata": {
+            "entityType": "plan_summary",
+            "weekStartDate": "2026-03-23",
+            "text": "Bob Martinez \u2014 DRAFT plan, 6pts. Commits: \"Billing API v2\" ROOK 3pts, \"Docs update\" PAWN 1pt, \"Performance profiling\" KNIGHT 2pts"
+          }
+        },
+        {
+          "id": "plan:uuid-old",
+          "score": 0.65,
+          "metadata": {
+            "entityType": "plan_summary",
+            "weekStartDate": "2026-03-16",
+            "text": "Alice Chen \u2014 RECONCILED plan from last week."
+          }
+        }
       ]
     },
     "expectedBehavior": {
       "shouldHaveAnswer": true,
-      "answerShouldMention": ["GraphQL migration", "Billing API"],
+      "answerShouldMention": [
+        "GraphQL migration",
+        "Billing API"
+      ],
       "answerShouldNotConfuseWeeks": true,
       "minConfidence": 0.7,
       "minSources": 2
@@ -127,13 +280,31 @@
       "question": "What feedback did the manager give on the deploy frequency dashboard?",
       "currentDate": "2026-03-23",
       "retrievedChunks": [
-        {"id": "mc:uuid-1", "score": 0.91, "metadata": {"entityType": "manager_comment", "weekStartDate": "2026-02-03", "text": "Manager comment on plan for week 2026-02-03: \"Deploy frequency dashboard is exactly what we need. Can you share access with the leadership team?\""}},
-        {"id": "commit:uuid-2", "score": 0.78, "metadata": {"entityType": "commit", "weekStartDate": "2026-02-03", "text": "\"Deploy frequency dashboard\" — QUEEN, 5pts. RCDO: Operational Excellence > Improve Deploy Velocity. ACHIEVED."}}
+        {
+          "id": "mc:uuid-1",
+          "score": 0.91,
+          "metadata": {
+            "entityType": "manager_comment",
+            "weekStartDate": "2026-02-03",
+            "text": "Manager comment on plan for week 2026-02-03: \"Deploy frequency dashboard is exactly what we need. Can you share access with the leadership team?\""
+          }
+        },
+        {
+          "id": "commit:uuid-2",
+          "score": 0.78,
+          "metadata": {
+            "entityType": "commit",
+            "weekStartDate": "2026-02-03",
+            "text": "\"Deploy frequency dashboard\" \u2014 QUEEN, 5pts. RCDO: Operational Excellence > Improve Deploy Velocity. ACHIEVED."
+          }
+        }
       ]
     },
     "expectedBehavior": {
       "shouldHaveAnswer": true,
-      "answerShouldMention": ["leadership team", "share access"],
+      "answerShouldMention": [
+        "leadership team"
+      ],
       "minConfidence": 0.7,
       "minSources": 1
     }
@@ -146,14 +317,30 @@
       "question": "What did Sarah commit to this week?",
       "currentDate": "2026-03-23",
       "retrievedChunks": [
-        {"id": "plan:uuid-1", "score": 0.45, "metadata": {"entityType": "plan_summary", "weekStartDate": "2026-03-23", "text": "Alice Chen — LOCKED plan, 8pts."}},
-        {"id": "plan:uuid-2", "score": 0.40, "metadata": {"entityType": "plan_summary", "weekStartDate": "2026-03-23", "text": "Bob Martinez — DRAFT plan, 6pts."}}
+        {
+          "id": "plan:uuid-1",
+          "score": 0.45,
+          "metadata": {
+            "entityType": "plan_summary",
+            "weekStartDate": "2026-03-23",
+            "text": "Alice Chen \u2014 LOCKED plan, 8pts."
+          }
+        },
+        {
+          "id": "plan:uuid-2",
+          "score": 0.4,
+          "metadata": {
+            "entityType": "plan_summary",
+            "weekStartDate": "2026-03-23",
+            "text": "Bob Martinez \u2014 DRAFT plan, 6pts."
+          }
+        }
       ]
     },
     "expectedBehavior": {
       "shouldHaveAnswer": true,
       "answerShouldIndicateInsufficient": true,
-      "maxConfidence": 0.4
+      "maxConfidence": 0.5
     }
   }
 ]

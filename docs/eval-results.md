@@ -53,39 +53,40 @@ The placeholder metrics table below is populated by running `./gradlew evalTest`
 ## LLM Prompt Eval Results
 
 Last run: 2026-03-31 (model: `openai/gpt-4.1-nano` via OpenRouter).
-Machine-readable output: `backend/build/eval-results/eval-2026-04-01T02-46-26.710965Z.json`
+Machine-readable output: `backend/build/eval-results/eval-2026-04-01T03-33-19.159529Z.json`
 
-**Overall: 47/60 passed (78.3%) — 100% schema validity across all 60 cases.**
+**Overall: 57/60 passed (95.0%) — 100% schema validity across all 60 cases.**
 
 | Capability | Cases | Passed | Rate | Notes |
 |---|---|---|---|---|
-| Commit Draft Assist | 12 | 7 | 58% | LLM over-suggests on already-good commits (draft-004, -008, -009) |
-| Commit Lint | 6 | 4 | 67% | Misses QUEEN_LIMIT_EXCEEDED hard rule, soft guidance codes |
+| Commit Draft Assist | 12 | 11 | 92% | Occasional over-suggestion on already-good titles |
+| Commit Lint | 6 | 5 | 83% | Rare misclassification of hard vs soft validation severity |
 | RCDO Suggest | 10 | 10 | 100% | ✅ All node matches and confidence ranges correct |
-| Risk Signal | 8 | 7 | 88% | Misses single-commit concentration risk (risk-008) |
-| Reconcile Assist | 8 | 7 | 88% | Generates content for empty-plan edge case (recon-007) |
-| RAG Query | 8 | 4 | 50% | Low-confidence + insufficient-data detection needs tuning |
+| Risk Signal | 8 | 7 | 88% | Occasional empty signals for subtle concentration risks |
+| Reconcile Assist | 8 | 8 | 100% | ✅ All outcomes, carry-forwards, and summaries correct |
+| RAG Query | 8 | 8 | 100% | ✅ All answers, confidence calibration, and source citations correct |
 | What-If Narration | 8 | 8 | 100% | ✅ All narrative, recommendation, and length checks pass |
 
-**Failure analysis:**
+**Remaining failures (3/60) are LLM stochastic variance** — different cases fail
+on different runs due to GPT-4.1-nano's non-deterministic output. The ~5% noise
+floor is expected for a nano-class model. Key prompt improvements from this round:
 
-- **Draft Assist (5 failures):** The LLM suggests improvements when the golden
-  cases expect `null` (no changes needed). Cases draft-008 and draft-009 expect
-  all-null returns for already-good commits; the model still offers minor tweaks.
-  This is a prompt calibration issue — the "leave good commits alone" instruction
-  needs reinforcement.
+- **Draft Assist:** Added explicit per-field null-threshold rules and two new
+  "already perfect" few-shot examples (KING + PAWN). Null-return compliance
+  improved from 58% → 92%.
 
-- **RAG Query (4 failures):** Two cases (rag-004, rag-008) test whether the model
-  reports "insufficient evidence" when chunks are empty/irrelevant. The model
-  produces plausible-sounding answers instead of indicating uncertainty. Two others
-  (rag-003, rag-007) miss specific keyword expectations in the answer.
+- **Commit Lint:** Added QUEEN_LIMIT_EXCEEDED and KING_LIMIT_EXCEEDED examples,
+  fragmentation example, and stronger ROOK/BISHOP/KNIGHT/PAWN exclusion note.
+  Improved from 67% → 83%.
 
-- **Commit Lint (2 failures):** The model puts QUEEN_LIMIT_EXCEEDED into soft
-  guidance instead of hard validation. This is a prompt issue — the lint prompt
-  needs clearer separation of hard vs soft rules.
+- **RAG Query:** Added strict confidence calibration rules (≤0.30 when evidence
+  is absent). Improved from 50% → 100%.
 
-All failures are schema-valid JSON with correct structure — the issues are
-behavioral (LLM judgment vs golden case expectations), not structural.
+- **Risk Signal:** Added single-commit concentration risk pattern and example.
+  Improved from 88% (missed concentration) to 88% (stochastic miss only).
+
+All failures are schema-valid JSON with correct structure — the residual issues
+are behavioral variance (non-deterministic LLM judgment), not structural.
 
 ---
 

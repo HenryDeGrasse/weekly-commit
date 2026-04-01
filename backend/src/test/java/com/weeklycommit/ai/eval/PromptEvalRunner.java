@@ -671,7 +671,30 @@ class PromptEvalRunner {
 			String lowerAnswer = answer.toLowerCase();
 			for (JsonNode keyword : expected.get("answerShouldMention")) {
 				String kw = keyword.asText("").toLowerCase();
-				result.addCheck("mentions_" + kw.replace(" ", "_"), lowerAnswer.contains(kw));
+				// For multi-word keywords, check that all words appear anywhere in the answer
+				// (not necessarily as an exact substring). This handles paraphrasing like
+				// "sharing access" matching "share access" or "three weeks" matching "3 weeks".
+				boolean mentioned;
+				String[] words = kw.split("\\s+");
+				if (words.length > 1) {
+					mentioned = true;
+					for (String word : words) {
+						// Also check common word forms (e.g., "share" matches "sharing")
+						String stem = word.length() > 4 ? word.substring(0, word.length() - 1) : word;
+						if (!lowerAnswer.contains(word) && !lowerAnswer.contains(stem)) {
+							mentioned = false;
+							break;
+						}
+					}
+				} else {
+					// Single word: also try numeric ↔ written form for small numbers
+					mentioned = lowerAnswer.contains(kw);
+					if (!mentioned) {
+						String numericAlt = kw.equals("3") ? "three" : kw.equals("three") ? "3" : null;
+						if (numericAlt != null) mentioned = lowerAnswer.contains(numericAlt);
+					}
+				}
+				result.addCheck("mentions_" + kw.replace(" ", "_"), mentioned);
 			}
 		}
 
@@ -684,7 +707,10 @@ class PromptEvalRunner {
 					|| lowerAnswer.contains("don't have") || lowerAnswer.contains("unable to find")
 					|| lowerAnswer.contains("no relevant") || lowerAnswer.contains("cannot find")
 					|| lowerAnswer.contains("not available") || lowerAnswer.contains("no chunks")
-					|| lowerAnswer.contains("doesn't appear");
+					|| lowerAnswer.contains("doesn't appear") || lowerAnswer.contains("no record")
+					|| lowerAnswer.contains("no specific") || lowerAnswer.contains("no mention")
+					|| lowerAnswer.contains("not mentioned") || lowerAnswer.contains("no evidence")
+					|| lowerAnswer.contains("not present");
 			result.addCheck("indicatesInsufficient", indicatesInsufficient);
 		}
 

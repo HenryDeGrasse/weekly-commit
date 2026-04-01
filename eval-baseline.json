@@ -1,23 +1,23 @@
 {
-  "timestamp" : "2026-04-01T02:46:26.711082Z",
+  "timestamp" : "2026-04-01T03:33:19.159587Z",
   "totalCases" : 60,
-  "passed" : 47,
-  "failed" : 13,
+  "passed" : 57,
+  "failed" : 3,
   "results" : [ {
     "caseId" : "lint-001",
     "description" : "Plan with KING missing success criteria and a vague title",
     "promptVersion" : "commit-lint-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"hardValidation\": [\n    {\n      \"code\": \"MISSING_SUCCESS_CRITERIA\",\n      \"message\": \"KING commit 'King thing' requires measurable success criteria before lock\",\n      \"commitId\": \"c-001\"\n    },\n    {\n      \"code\": \"VAGUE_TITLE\",\n      \"message\": \"Commit 'stuff' has no meaningful title — describe the deliverable\",\n      \"commitId\": \"c-002\"\n    }\n  ],\n  \"softGuidance\": []\n}",
+    "rawOutput" : "{\n  \"hardValidation\": [\n    {\n      \"code\": \"MISSING_SUCCESS_CRITERIA\",\n      \"message\": \"KING commit 'King thing' requires measurable success criteria before lock\",\n      \"commitId\": \"c-001\"\n    }\n  ],\n  \"softGuidance\": [\n    {\n      \"code\": \"VAGUE_TITLE\",\n      \"message\": \"Consider making 'stuff' more specific — what exactly should be accomplished with the ROOK?\",\n      \"commitId\": \"c-002\"\n    }\n  ]\n}",
     "critical" : true,
     "scores" : {
-      "hardValidationCount" : 2.0,
-      "softGuidanceCount" : 0.0
+      "hardValidationCount" : 1.0,
+      "softGuidanceCount" : 1.0
     },
     "checks" : {
-      "minHardValidations" : true,
+      "minHardValidations" : false,
       "hardCode_MISSING_SUCCESS_CRITERIA" : true,
-      "hardCode_VAGUE_TITLE" : true
+      "hardCode_VAGUE_TITLE" : false
     },
     "notes" : { }
   }, {
@@ -25,7 +25,7 @@
     "description" : "Clean plan with no issues",
     "promptVersion" : "commit-lint-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"hardValidation\": [], \"softGuidance\": [{\"code\": \"MISSING_SUCCESS_CRITERIA\", \"message\": \"Commit 'Write integration tests for auth service' is missing success criteria — specify measurable goals for completion.\", \"commitId\": \"c-011\"}, {\"code\": \"VAGUE_TITLE\", \"message\": \"Consider making 'Update monitoring dashboards' more outcome-focused — specify what monitoring or insights are delivered.\", \"commitId\": \"c-012\"}]}",
+    "rawOutput" : "{\n  \"hardValidation\": [],\n  \"softGuidance\": [\n    {\n      \"code\": \"VAGUE_TITLE\",\n      \"message\": \"Commit 'Update monitoring dashboards' has no meaningful outcome — consider clarifying what will be improved or delivered.\",\n      \"commitId\": \"c-012\"\n    },\n    {\n      \"code\": \"MISSING_SUCCESS_CRITERIA\",\n      \"message\": \"ROOK commit 'Write integration tests for auth service' requires measurable success criteria before lock.\",\n      \"commitId\": \"c-011\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "hardValidationCount" : 0.0,
@@ -41,10 +41,10 @@
     "description" : "Plan with 2 KING commits — should hard-fail",
     "promptVersion" : "commit-lint-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"hardValidation\": [{\"code\": \"MULTIPLE_KINGS\", \"message\": \"More than one KING commit ('Production database migration', 'Security audit remediation') in the plan. Only one KING is allowed.\", \"commitId\": \"c-020\"}, {\"code\": \"MULTIPLE_KINGS\", \"message\": \"More than one KING commit ('Production database migration', 'Security audit remediation') in the plan. Only one KING is allowed.\", \"commitId\": \"c-021\"}], \"softGuidance\": []}",
+    "rawOutput" : "{\n  \"hardValidation\": [\n    {\n      \"code\": \"KING_LIMIT_EXCEEDED\",\n      \"message\": \"Plan contains 2 KING commits but the maximum is 1. Demote the less critical KING to QUEEN.\",\n      \"commitId\": null\n    }\n  ],\n  \"softGuidance\": []\n}",
     "critical" : true,
     "scores" : {
-      "hardValidationCount" : 2.0,
+      "hardValidationCount" : 1.0,
       "softGuidanceCount" : 0.0
     },
     "checks" : {
@@ -57,15 +57,15 @@
     "description" : "Plan with 3 QUEEN commits — should hard-fail",
     "promptVersion" : "commit-lint-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"hardValidation\": [], \"softGuidance\": [{\"code\": \"DUPLICATE_TITLES\", \"message\": \"Multiple commits share very similar titles; consider making each title more distinct to clarify their specific outcomes.\", \"commitId\": \"c-030\"}, {\"code\": \"DUPLICATE_TITLES\", \"message\": \"Multiple commits share very similar titles; consider making each title more distinct to clarify their specific outcomes.\", \"commitId\": \"c-031\"}, {\"code\": \"DUPLICATE_TITLES\", \"message\": \"Multiple commits share very similar titles; consider making each title more distinct to clarify their specific outcomes.\", \"commitId\": \"c-032\"}]}",
+    "rawOutput" : "{\"hardValidation\": [{\"code\": \"QUEEN_LIMIT_EXCEEDED\", \"message\": \"Plan contains 3 QUEEN commits but the maximum is 2. Demote the lowest-leverage QUEEN to ROOK.\", \"commitId\": null}], \"softGuidance\": []}",
     "critical" : true,
     "scores" : {
-      "hardValidationCount" : 0.0,
-      "softGuidanceCount" : 3.0
+      "hardValidationCount" : 1.0,
+      "softGuidanceCount" : 0.0
     },
     "checks" : {
-      "minHardValidations" : false,
-      "hardCode_QUEEN_LIMIT_EXCEEDED" : false
+      "minHardValidations" : true,
+      "hardCode_QUEEN_LIMIT_EXCEEDED" : true
     },
     "notes" : { }
   }, {
@@ -73,17 +73,17 @@
     "description" : "Fragmented plan with 10 tiny commits — should soft-warn",
     "promptVersion" : "commit-lint-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"hardValidation\": [],\n  \"softGuidance\": [\n    {\n      \"code\": \"VAGUE_TITLE\",\n      \"message\": \"Commit 'Update env vars' could specify which environment variables are being updated for clearer understanding.\",\n      \"commitId\": \"c-049\"\n    }\n  ]\n}",
+    "rawOutput" : "{\n  \"hardValidation\": [],\n  \"softGuidance\": [\n    {\n      \"code\": \"TOO_MANY_COMMITS\",\n      \"message\": \"Plan has 10 commits — consider grouping related small tasks into fewer commits for focus.\",\n      \"commitId\": null\n    },\n    {\n      \"code\": \"EXCESSIVE_PAWNS\",\n      \"message\": \"Over 40% of points are allocated to PAWN tasks. Ensure high-priority strategic work is represented.\",\n      \"commitId\": null\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "hardValidationCount" : 0.0,
-      "softGuidanceCount" : 1.0
+      "softGuidanceCount" : 2.0
     },
     "checks" : {
       "maxHardValidations" : true,
       "minSoftGuidance" : true,
-      "softCode_TOO_MANY_COMMITS" : false,
-      "softCode_EXCESSIVE_PAWNS" : false
+      "softCode_TOO_MANY_COMMITS" : true,
+      "softCode_EXCESSIVE_PAWNS" : true
     },
     "notes" : { }
   }, {
@@ -91,7 +91,7 @@
     "description" : "Near-duplicate commit titles in the same plan",
     "promptVersion" : "commit-lint-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"hardValidation\": [],\n  \"softGuidance\": [\n    {\n      \"code\": \"DUPLICATE_TITLES\",\n      \"message\": \"The commit titles are very similar; consider consolidating or differentiating them for clarity.\",\n      \"commitId\": \"c-050\"\n    },\n    {\n      \"code\": \"DUPLICATE_TITLES\",\n      \"message\": \"The commit titles are very similar; consider consolidating or differentiating them for clarity.\",\n      \"commitId\": \"c-051\"\n    }\n  ]\n}",
+    "rawOutput" : "{\n  \"hardValidation\": [],\n  \"softGuidance\": [\n    {\n      \"code\": \"DUPLICATE_TITLES\",\n      \"message\": \"Commit titles are very similar; consider differentiating them to clarify scope.\",\n      \"commitId\": \"c-050\"\n    },\n    {\n      \"code\": \"DUPLICATE_TITLES\",\n      \"message\": \"Commit titles are very similar; consider differentiating them to clarify scope.\",\n      \"commitId\": \"c-051\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "hardValidationCount" : 0.0,
@@ -107,7 +107,7 @@
     "description" : "All tickets DONE — should suggest all ACHIEVED",
     "promptVersion" : "reconcile-assist-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    { \"commitId\": \"c-1\", \"suggestedOutcome\": \"ACHIEVED\", \"confidence\": 0.95, \"reason\": \"Linked ticket status is DONE; deployment completed successfully\" },\n    { \"commitId\": \"c-2\", \"suggestedOutcome\": \"ACHIEVED\", \"confidence\": 0.95, \"reason\": \"Linked ticket status is DONE; feature added as planned\" },\n    { \"commitId\": \"c-3\", \"suggestedOutcome\": \"ACHIEVED\", \"confidence\": 0.9, \"reason\": \"Documentation updated and marked as DONE\" }\n  ],\n  \"draftSummary\": \"The team successfully completed key deployment, feature addition, and documentation tasks this week, achieving all planned milestones. All commits are marked as DONE, indicating the work was fully realized within capacity.\",\n  \"carryForwardRecommendations\": []\n}",
+    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    { \"commitId\": \"c-1\", \"suggestedOutcome\": \"ACHIEVED\", \"confidence\": 0.95, \"reason\": \"Linked ticket is marked DONE for auth service deployment.\" },\n    { \"commitId\": \"c-2\", \"suggestedOutcome\": \"ACHIEVED\", \"confidence\": 0.95, \"reason\": \"Linked ticket is marked DONE for rate limiting feature.\" },\n    { \"commitId\": \"c-3\", \"suggestedOutcome\": \"ACHIEVED\", \"confidence\": 0.95, \"reason\": \"Documentation update confirmed complete as per linked ticket.\" }\n  ],\n  \"draftSummary\": \"All planned work for this week has been successfully completed, including auth deployment, rate limiting, and documentation updates. The team effectively met the objectives within capacity. No carry-forward is necessary.\",\n  \"carryForwardRecommendations\": []\n}",
     "critical" : false,
     "scores" : {
       "outcomeCount" : 3.0,
@@ -124,7 +124,7 @@
     "description" : "Mixed outcomes with ticket evidence — DONE, IN_PROGRESS, BLOCKED",
     "promptVersion" : "reconcile-assist-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    { \"commitId\": \"c-1\", \"suggestedOutcome\": \"ACHIEVED\", \"confidence\": 0.95, \"reason\": \"Linked ticket status is DONE\" },\n    { \"commitId\": \"c-2\", \"suggestedOutcome\": \"PARTIALLY_ACHIEVED\", \"confidence\": 0.8, \"reason\": \"Work is in progress for a ROOK task, indicating meaningful progress but not complete\" },\n    { \"commitId\": \"c-3\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.9, \"reason\": \"Work is blocked and has not progressed this week\" }\n  ],\n  \"draftSummary\": \"The deployment of the auth service was successfully completed. Integration tests are ongoing, with significant progress made. Monitoring setup was blocked this week, requiring carry-forward to continue efforts.\",\n  \"carryForwardRecommendations\": [\n    { \"commitId\": \"c-2\", \"reason\": \"Work is in progress on a high-priority Rook task; carry forward to complete\" },\n    { \"commitId\": \"c-3\", \"reason\": \"Blocked work that should be resumed next week\" }\n  ]\n}",
+    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    {\n      \"commitId\": \"c-1\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.95,\n      \"reason\": \"Linked ticket status is DONE, indicating successful completion\"\n    },\n    {\n      \"commitId\": \"c-2\",\n      \"suggestedOutcome\": \"PARTIALLY_ACHIEVED\",\n      \"confidence\": 0.8,\n      \"reason\": \"Work is still IN_PROGRESS; meaningful progress made but not finished\"\n    },\n    {\n      \"commitId\": \"c-3\",\n      \"suggestedOutcome\": \"NOT_ACHIEVED\",\n      \"confidence\": 0.9,\n      \"reason\": \"Ticket is BLOCKED, work is currently stalled and unfinished\"\n    }\n  ],\n  \"draftSummary\": \"The auth service deployment was successfully completed this week. Integration testing is ongoing, highlighting partial progress. Monitoring setup remains blocked, indicating incomplete work in that area.\",\n  \"carryForwardRecommendations\": [\n    {\n      \"commitId\": \"c-2\",\n      \"reason\": \"High-priority ROOK work with significant progress; should be carried forward to complete\"\n    },\n    {\n      \"commitId\": \"c-3\",\n      \"reason\": \"Work is blocked; should be kept in backlog to be addressed later\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "outcomeCount" : 3.0,
@@ -144,7 +144,7 @@
     "description" : "Commit was removed via scope change — should suggest CANCELED",
     "promptVersion" : "reconcile-assist-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    {\n      \"commitId\": \"c-1\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.95,\n      \"reason\": \"Linked ticket is marked DONE, confirming completion of the refactor work\"\n    },\n    {\n      \"commitId\": \"c-2\",\n      \"suggestedOutcome\": \"CANCELED\",\n      \"confidence\": 0.9,\n      \"reason\": \"Scope change event indicates the 'Build analytics dashboard' commit was removed, so work was deliberately dropped\"\n    }\n  ],\n  \"draftSummary\": \"The refactoring of the payment module is confirmed complete and achieved this week. The analytics dashboard was deprioritized and removed from scope, resulting in cancellation of related work. Overall progress remains positive with clear scope adjustments.\",\n  \"carryForwardRecommendations\": [\n    {\n      \"commitId\": \"c-2\",\n      \"reason\": \"Work was removed from scope after review; no further action needed\"\n    }\n  ]\n}",
+    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    {\n      \"commitId\": \"c-1\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.95,\n      \"reason\": \"Linked ticket is marked DONE, indicating completed work\"\n    },\n    {\n      \"commitId\": \"c-2\",\n      \"suggestedOutcome\": \"CANCELED\",\n      \"confidence\": 0.9,\n      \"reason\": \"Scope change event shows COMMIT_REMOVED, work has been deliberately dropped\"\n    }\n  ],\n  \"draftSummary\": \"The payment module refactoring was successfully completed, while the analytics dashboard development was deprioritized and canceled after scope change. Overall, key priorities for the week were achieved or appropriately adjusted.\",\n  \"carryForwardRecommendations\": [\n    {\n      \"commitId\": \"c-2\",\n      \"reason\": \"Cancelled work to be reconsidered for future sprints if prioritized again\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "outcomeCount" : 2.0,
@@ -162,7 +162,7 @@
     "description" : "Unlinked commits — should infer with lower confidence",
     "promptVersion" : "reconcile-assist-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    {\n      \"commitId\": \"c-1\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.9,\n      \"reason\": \"No linked ticket or scope change, work on research likely completed as baseline matches actual effort\"\n    },\n    {\n      \"commitId\": \"c-2\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.9,\n      \"reason\": \"No linked ticket or scope change, prep and retro are small scope tasks and probably completed as planned\"\n    }\n  ],\n  \"draftSummary\": \"The team successfully completed research on caching strategies and prepared for the 1:1s and team retro, achieving all planned work for this week. No scope changes or outstanding tickets indicated incomplete work.\",\n  \"carryForwardRecommendations\": []\n}",
+    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    {\n      \"commitId\": \"c-1\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.6,\n      \"reason\": \"No linked ticket and baseline matches estimate; likely completed development work\"\n    },\n    {\n      \"commitId\": \"c-2\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.6,\n      \"reason\": \"No linked ticket and baseline matches estimate; work appears completed\"\n    }\n  ],\n  \"draftSummary\": \"This week, the team successfully completed the caching strategy research and prep for team retrospectives. Both tasks align with initial estimates and no outstanding issues have been identified.\",\n  \"carryForwardRecommendations\": []\n}",
     "critical" : false,
     "scores" : {
       "outcomeCount" : 2.0,
@@ -178,7 +178,7 @@
     "description" : "High-priority incomplete work should recommend carry-forward",
     "promptVersion" : "reconcile-assist-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    { \"commitId\": \"c-1\", \"suggestedOutcome\": \"PARTIALLY_ACHIEVED\", \"confidence\": 0.8, \"reason\": \"Work on API gateway migration is ongoing with no resolution noted\" },\n    { \"commitId\": \"c-2\", \"suggestedOutcome\": \"PARTIALLY_ACHIEVED\", \"confidence\": 0.8, \"reason\": \"Error handling updates in progress, work not yet completed\" },\n    { \"commitId\": \"c-3\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.4, \"reason\": \"Standup notes likely completed; no explicit status or completion evidence\" }\n  ],\n  \"draftSummary\": \"The team made steady progress on the API gateway migration and error handling, both still in progress without full completion. Standup notes were likely prepared but not verified as finished this week.\",\n  \"carryForwardRecommendations\": [\n    { \"commitId\": \"c-1\", \"reason\": \"High-priority migration work remaining; should carry forward due to partial progress\" },\n    { \"commitId\": \"c-2\", \"reason\": \"Critical error handling updates in progress that need to be completed next week\" }\n  ]\n}",
+    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    { \"commitId\": \"c-1\", \"suggestedOutcome\": \"PARTIALLY_ACHIEVED\", \"confidence\": 0.8, \"reason\": \"API gateway migration is ongoing with work in progress, but not complete yet\" },\n    { \"commitId\": \"c-2\", \"suggestedOutcome\": \"PARTIALLY_ACHIEVED\", \"confidence\": 0.8, \"reason\": \"Error handling update is underway and progressing, but not finished\" },\n    { \"commitId\": \"c-3\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.4, \"reason\": \"Team standup notes may be completed but no confirmatory evidence; low effort task\" }\n  ],\n  \"draftSummary\": \"The team made solid progress on the API gateway migration and error handling improvements, both still in progress. The team standup notes remain unverified, likely incomplete. Overall capacity was well managed with focus on key migration tasks.\",\n  \"carryForwardRecommendations\": [\n    { \"commitId\": \"c-1\", \"reason\": \"High-priority KING work still underway, should carry forward to complete\" },\n    { \"commitId\": \"c-2\", \"reason\": \"Important error handling work in progress, essential to complete\" }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "outcomeCount" : 3.0,
@@ -196,7 +196,7 @@
     "description" : "Significant scope changes during the week — summary should mention them",
     "promptVersion" : "reconcile-assist-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    {\n      \"commitId\": \"c-1\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.95,\n      \"reason\": \"Linked ticket is DONE, indicating successful delivery of the notification system\"\n    },\n    {\n      \"commitId\": \"c-2\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.9,\n      \"reason\": \"Linked ticket is DONE, emergency hotfix successfully deployed\"\n    }\n  ],\n  \"draftSummary\": \"The team successfully completed the notification system overhaul and implemented the emergency login fix this week. The scope changes reflect increased complexity for the notification system, which was delivered successfully. Overall, a productive week with key commit completions.\",\n  \"carryForwardRecommendations\": []\n}",
+    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    {\n      \"commitId\": \"c-1\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.95,\n      \"reason\": \"Linked ticket status is DONE, confirming completion of the ship notification system\"\n    },\n    {\n      \"commitId\": \"c-2\",\n      \"suggestedOutcome\": \"ACHIEVED\",\n      \"confidence\": 0.9,\n      \"reason\": \"Linked ticket status is DONE; emergency fix successfully deployed\"\n    }\n  ],\n  \"draftSummary\": \"The team successfully completed the deployment of the notification system, despite scope adjustments, and resolved an urgent login bug. All primary objectives for the week were achieved, demonstrating effective handling of scope changes and emergency tasks.\",\n  \"carryForwardRecommendations\": []\n}",
     "critical" : false,
     "scores" : {
       "outcomeCount" : 2.0,
@@ -212,16 +212,16 @@
     "description" : "Empty plan — no commits to reconcile",
     "promptVersion" : "reconcile-assist-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    { \"commitId\": \"unknown\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.4, \"reason\": \"No commits or linked tickets available for evaluation\" }\n  ],\n  \"draftSummary\": \"This week’s reconciliation finds no recorded commits or linked tickets, indicating minimal tracked progress. Further updates may clarify work status.\",\n  \"carryForwardRecommendations\": [\n    { \"commitId\": \"unknown\", \"reason\": \"Insufficient data to recommend carry forward\" }\n  ]\n}",
+    "rawOutput" : "{\n  \"likelyOutcomes\": [],\n  \"draftSummary\": \"There are no commits recorded this week, indicating either no work was planned or tracked. As a result, the reconciliation shows no completed or in-progress tasks to report. Planning should be reviewed to ensure all work is captured for accurate tracking.\",\n  \"carryForwardRecommendations\": []\n}",
     "critical" : false,
     "scores" : {
-      "outcomeCount" : 1.0,
-      "carryForwardCount" : 1.0
+      "outcomeCount" : 0.0,
+      "carryForwardCount" : 0.0
     },
     "checks" : {
-      "maxOutcomes" : false,
+      "maxOutcomes" : true,
       "hasSummary" : true,
-      "maxCarryForwards" : false
+      "maxCarryForwards" : true
     },
     "notes" : { }
   }, {
@@ -229,7 +229,7 @@
     "description" : "All work NOT_ACHIEVED — carry-forward should recommend most important ones",
     "promptVersion" : "reconcile-assist-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    { \"commitId\": \"c-1\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.9, \"reason\": \"Linked ticket is BLOCKED and work was not completed\" },\n    { \"commitId\": \"c-2\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.9, \"reason\": \"Linked ticket is BLOCKED and work was not completed\" },\n    { \"commitId\": \"c-3\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.9, \"reason\": \"Linked ticket is BLOCKED and work was not completed\" }\n  ],\n  \"draftSummary\": \"All prioritized scope items remain blocked, indicating no progress this week. The team should re-evaluate dependencies or impediments for these high-priority efforts. Unfinished work will be carried forward for continued focus in upcoming sprints.\",\n  \"carryForwardRecommendations\": [\n    { \"commitId\": \"c-1\", \"reason\": \"High-impact QUEEN task still blocked, warranting continuation\" },\n    { \"commitId\": \"c-2\", \"reason\": \"ROOK migration work remains blocked and critical for infrastructure\" },\n    { \"commitId\": \"c-3\", \"reason\": \"Documentation update is incomplete, to be resumed in next cycle\" }\n  ]\n}",
+    "rawOutput" : "{\n  \"likelyOutcomes\": [\n    { \"commitId\": \"c-1\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.9, \"reason\": \"Linked ticket is BLOCKED; work could not be completed this week\" },\n    { \"commitId\": \"c-2\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.9, \"reason\": \"Linked ticket remains BLOCKED, indicating no progress this period\" },\n    { \"commitId\": \"c-3\", \"suggestedOutcome\": \"NOT_ACHIEVED\", \"confidence\": 0.9, \"reason\": \"Linked README update is BLOCKED, work did not proceed\" }\n  ],\n  \"draftSummary\": \"All critical work items—API redesign, database migration, and documentation—remained blocked, indicating no completed work this week. These efforts require focus to unblock and progress in upcoming periods.\",\n  \"carryForwardRecommendations\": [\n    { \"commitId\": \"c-1\", \"reason\": \"Work remains blocked and is high priority; carry forward to resolve obstacles\" },\n    { \"commitId\": \"c-2\", \"reason\": \"Database migration remains blocked, but essential for deployment progress—carry forward\" },\n    { \"commitId\": \"c-3\", \"reason\": \"Documentation updates are pending, carry forward to complete in next cycle\" }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "outcomeCount" : 3.0,
@@ -247,11 +247,11 @@
     "description" : "Simple factual question with clear commit data in chunks",
     "promptVersion" : "rag-query-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"answer\": \"Last week, Alice committed to deploying the auth service (Queen, 5pts, ACHIEVED), writing integration tests (Rook, 3pts, PARTIALLY_ACHIEVED), and updating API docs (Pawn, 1pt, ACHIEVED).\",\n  \"sources\": [\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"Alice Chen — LOCKED plan, 9pts. Commits: \\\"Deploy auth service\\\" QUEEN 5pts ACHIEVED, \\\"Write integration tests\\\" ROOK 3pts PARTIALLY_ACHIEVED, \\\"Update API docs\\\" PAWN 1pt ACHIEVED\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-2\",\n      \"weekStartDate\": \"2026-03-09\",\n      \"snippet\": \"\\\"Refactor auth middleware\\\" — ROOK, 3pts. ACHIEVED.\"\n    }\n  ],\n  \"confidence\": 0.85\n}",
+    "rawOutput" : "{\n  \"answer\": \"Last week, Alice committed to three items: \\\"Deploy auth service\\\" (Queen, 5pts, ACHIEVED), \\\"Write integration tests\\\" (Rook, 3pts, PARTIALLY_ACHIEVED), and \\\"Update API docs\\\" (Pawn, 1pt, ACHIEVED).\",\n  \"sources\": [\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"commit:uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"Alice Chen — LOCKED plan, 9pts. Commits: \\\"Deploy auth service\\\" QUEEN 5pts ACHIEVED, \\\"Write integration tests\\\" ROOK 3pts PARTIALLY_ACHIEVED, \\\"Update API docs\\\" PAWN 1pt ACHIEVED\"\n    }\n  ],\n  \"confidence\": 0.85\n}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.85,
-      "sourceCount" : 2.0
+      "sourceCount" : 1.0
     },
     "checks" : {
       "hasAnswer" : true,
@@ -262,38 +262,38 @@
       "mentions_integration_tests" : true
     },
     "notes" : {
-      "answerPreview" : "Last week, Alice committed to deploying the auth service (Queen, 5pts, ACHIEVED), writing integration tests (Rook, 3pts, PARTIALLY_ACHIEVED), and updating API docs (Pawn, 1pt, ACHIEVED)."
+      "answerPreview" : "Last week, Alice committed to three items: \"Deploy auth service\" (Queen, 5pts, ACHIEVED), \"Write integration tests\" (Rook, 3pts, PARTIALLY_ACHIEVED), and \"Update API docs\" (Pawn, 1pt, ACHIEVED)."
     }
   }, {
     "caseId" : "rag-002",
     "description" : "Question about RCDO coverage — should synthesize across chunks",
     "promptVersion" : "rag-query-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"answer\": \"The RCDOs that received the most effort this month were associated with the \\\"Win Enterprise > Enterprise Auth\\\" path, with commits including \\\"Deploy auth service\\\" (QUEEN, 5pts) and \\\"SSO Okta integration\\\" (QUEEN, 5pts). Both commits took place in the week starting March 16, 2026, totaling 10 points.\",\n  \"sources\": [\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"\\\"Deploy auth service\\\" — QUEEN, 5pts. RCDO path: Win Enterprise > Enterprise Auth > SSO Integration.\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-3\",\n      \"weekStartDate\": \"2026-03-09\",\n      \"snippet\": \"\\\"SSO Okta integration\\\" — QUEEN, 5pts. RCDO path: Win Enterprise > Enterprise Auth > SSO Integration.\"\n    }\n  ],\n  \"confidence\": 0.9\n}",
+    "rawOutput" : "{\n  \"answer\": \"The RCDO 'Win Enterprise > Enterprise Auth' received the most effort this month, with two commits: 'Deploy auth service' (5pts) and 'SSO Okta integration' (5pts), both achieved on the week starting 2026-03-16 and 2026-03-09 respectively.\",\n  \"sources\": [\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"\\\"Deploy auth service\\\" — QUEEN, 5pts. RCDO path: Win Enterprise > Enterprise Auth > SSO Integration.\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-3\",\n      \"weekStartDate\": \"2026-03-09\",\n      \"snippet\": \"\\\"SSO Okta integration\\\" — QUEEN, 5pts. RCDO path: Win Enterprise > Enterprise Auth > SSO Integration.\"\n    }\n  ],\n  \"confidence\": 0.82\n}",
     "critical" : false,
     "scores" : {
-      "confidence" : 0.9,
+      "confidence" : 0.82,
       "sourceCount" : 2.0
     },
     "checks" : {
       "hasAnswer" : true,
       "minConfidence" : true,
       "minSources" : true,
-      "mentions_win_enterprise" : true,
+      "mentions_enterprise" : true,
       "mentions_sso" : true
     },
     "notes" : {
-      "answerPreview" : "The RCDOs that received the most effort this month were associated with the \"Win Enterprise > Enterprise Auth\" path, with commits including \"Deploy auth service\" (QUEEN, 5pts) and \"SSO Okta integratio"
+      "answerPreview" : "The RCDO 'Win Enterprise > Enterprise Auth' received the most effort this month, with two commits: 'Deploy auth service' (5pts) and 'SSO Okta integration' (5pts), both achieved on the week starting 20"
     }
   }, {
     "caseId" : "rag-003",
     "description" : "Question about carry-forward patterns",
     "promptVersion" : "rag-query-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"answer\": \"The recurring carry-forward pattern involves the work item \\\"Health dashboard implementation,\\\" which has been carried forward for three consecutive weeks due to dependency blocks. In the most recent week (week starting 2026-03-16), it was carried forward again with a streak of 3, after being carried forward for 2 weeks previously. Additionally, the commit \\\"API contract finalization\\\" was carried forward for 1 week and was not achieved.\",\n  \"sources\": [\n    {\n      \"entityType\": \"carry_forward\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"Carry forward: \\\"Health dashboard implementation\\\" carried 3 weeks (streak: 3). Reason: DEPENDENCY_BLOCKED.\"\n    },\n    {\n      \"entityType\": \"carry_forward\",\n      \"entityId\": \"uuid-2\",\n      \"weekStartDate\": \"2026-03-09\",\n      \"snippet\": \"Carry forward: \\\"Health dashboard implementation\\\" carried 2 weeks (streak: 2). Reason: DEPENDENCY_BLOCKED.\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-3\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"\\\"API contract finalization\\\" — ROOK, 3pts. Carried forward 1 week. NOT_ACHIEVED.\"\n    }\n  ],\n  \"confidence\": 0.75\n}",
+    "rawOutput" : "{\n  \"answer\": \"The recurring carry-forward pattern involves the work item \\\"Health dashboard implementation\\\" being carried forward multiple weeks due to dependency blocking, with streaks of 2 and 3 weeks. Additionally, \\\"API contract finalization\\\" was carried forward for 1 week and was not achieved.\",\n  \"sources\": [\n    {\n      \"entityType\": \"carry_forward\",\n      \"entityId\": \"cf:uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"Carry forward: \\\"Health dashboard implementation\\\" carried 3 weeks (streak: 3). Reason: DEPENDENCY_BLOCKED.\"\n    },\n    {\n      \"entityType\": \"carry_forward\",\n      \"entityId\": \"cf:uuid-2\",\n      \"weekStartDate\": \"2026-03-09\",\n      \"snippet\": \"Carry forward: \\\"Health dashboard implementation\\\" carried 2 weeks (streak: 2). Reason: DEPENDENCY_BLOCKED.\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"commit:uuid-3\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"\\\"API contract finalization\\\" — ROOK, 3pts. Carried forward 1 week. NOT_ACHIEVED.\"\n    }\n  ],\n  \"confidence\": 0.78\n}",
     "critical" : false,
     "scores" : {
-      "confidence" : 0.75,
+      "confidence" : 0.78,
       "sourceCount" : 3.0
     },
     "checks" : {
@@ -301,37 +301,37 @@
       "minConfidence" : true,
       "minSources" : true,
       "mentions_health_dashboard" : true,
-      "mentions_carry_forward" : false,
-      "mentions_3_weeks" : false
+      "mentions_carry_forward" : true,
+      "mentions_three" : true
     },
     "notes" : {
-      "answerPreview" : "The recurring carry-forward pattern involves the work item \"Health dashboard implementation,\" which has been carried forward for three consecutive weeks due to dependency blocks. In the most recent we"
+      "answerPreview" : "The recurring carry-forward pattern involves the work item \"Health dashboard implementation\" being carried forward multiple weeks due to dependency blocking, with streaks of 2 and 3 weeks. Additionall"
     }
   }, {
     "caseId" : "rag-004",
     "description" : "Question with no relevant chunks — should indicate insufficient data",
     "promptVersion" : "rag-query-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"answer\": \"There is no specific plan available for the marketing team for Q4 in the retrieved data. The only relevant commit is \\\"Deploy auth service\\\" by another team, which was achieved in the week starting March 16, 2026. No detailed Q4 marketing plan has been retrieved.\",\n  \"sources\": [\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"\\\"Deploy auth service\\\" — QUEEN, 5pts. ACHIEVED.\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-2\",\n      \"weekStartDate\": \"2026-03-09\",\n      \"snippet\": \"\\\"Fix payment timeout\\\" — ROOK, 3pts.\"\n    }\n  ],\n  \"confidence\": 0.6\n}",
+    "rawOutput" : "{\n  \"answer\": \"The retrieved commits do not include a detailed plan for the marketing team for Q4. The only relevant record from the last two weeks mentions a technical deployment: \\\"Deploy auth service\\\" by the Queen with 5 points, achieved on the week of March 16, 2026. There is no specific information about marketing team plans for Q4 in the available data.\",\n  \"sources\": [\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"\\\"Deploy auth service\\\" — QUEEN, 5pts. ACHIEVED.\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"uuid-2\",\n      \"weekStartDate\": \"2026-03-09\",\n      \"snippet\": \"\\\"Fix payment timeout\\\" — ROOK, 3pts.\"\n    }\n  ],\n  \"confidence\": 0.25\n}",
     "critical" : false,
     "scores" : {
-      "confidence" : 0.6,
+      "confidence" : 0.25,
       "sourceCount" : 2.0
     },
     "checks" : {
       "hasAnswer" : true,
-      "maxConfidence" : false,
-      "indicatesInsufficient" : false
+      "maxConfidence" : true,
+      "indicatesInsufficient" : true
     },
     "notes" : {
-      "answerPreview" : "There is no specific plan available for the marketing team for Q4 in the retrieved data. The only relevant commit is \"Deploy auth service\" by another team, which was achieved in the week starting Marc"
+      "answerPreview" : "The retrieved commits do not include a detailed plan for the marketing team for Q4. The only relevant record from the last two weeks mentions a technical deployment: \"Deploy auth service\" by the Queen"
     }
   }, {
     "caseId" : "rag-005",
     "description" : "Question about scope changes — should use scope_change chunks",
     "promptVersion" : "rag-query-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"answer\": \"Dan's plan changed after lock last week mainly due to scope adjustments. During the week of 2026-03-16, a priority change was made to the \\\"Health dashboard\\\" from 2 to 1 because of a customer escalation making it urgent. Additionally, a new commit titled \\\"Emergency hotfix for login crash\\\" was added to address a production incident classified as P1. These scope changes occurred after the plan was locked, reflecting urgent customer needs and production issues that required immediate attention, prompting updates to the original plan.\", \"sources\": [{\"entityType\": \"scope_change\", \"entityId\": \"uuid-1\", \"weekStartDate\": \"2026-03-16\", \"snippet\": \"Priority changed from 2 to 1 due to customer escalation.\"}, {\"entityType\": \"scope_change\", \"entityId\": \"uuid-2\", \"weekStartDate\": \"2026-03-16\", \"snippet\": \"New commit \\\"Emergency hotfix for login crash\\\" added for P1 incident.\"}, {\"entityType\": \"plan_summary\", \"entityId\": \"uuid-3\", \"weekStartDate\": \"2026-03-16\", \"snippet\": \"Dan Okafor — RECONCILED plan, 12pts (over budget by 2). 2 scope changes after lock.\"}], \"confidence\": 0.85}",
+    "rawOutput" : "{\n  \"answer\": \"Dan's plan changed after lock last week due to two scope changes during the week of 2026-03-16. The priority of the 'Health dashboard' was increased from 2 to 1 due to a customer escalation, and a new commit 'Emergency hotfix for login crash' was added to address a production incident P1.\",\n  \"sources\": [\n    {\n      \"entityType\": \"scope_change\",\n      \"entityId\": \"sc:uuid-1\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"Scope change (PRIORITY_CHANGED) during week of 2026-03-16. Commit \\\"Health dashboard\\\" priority changed from 2 to 1. Reason: Customer escalation made health dashboard urgent.\"\n    },\n    {\n      \"entityType\": \"scope_change\",\n      \"entityId\": \"sc:uuid-2\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"Scope change (COMMIT_ADDED) during week of 2026-03-16. New commit \\\"Emergency hotfix for login crash\\\". Reason: Production incident P1.\"\n    },\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"commit:uuid-3\",\n      \"weekStartDate\": \"2026-03-16\",\n      \"snippet\": \"Dan Okafor — RECONCILED plan, 12pts (over budget by 2). 2 scope changes after lock.\"\n    }\n  ],\n  \"confidence\": 0.85\n}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.85,
@@ -345,14 +345,14 @@
       "mentions_health_dashboard" : true
     },
     "notes" : {
-      "answerPreview" : "Dan's plan changed after lock last week mainly due to scope adjustments. During the week of 2026-03-16, a priority change was made to the \"Health dashboard\" from 2 to 1 because of a customer escalatio"
+      "answerPreview" : "Dan's plan changed after lock last week due to two scope changes during the week of 2026-03-16. The priority of the 'Health dashboard' was increased from 2 to 1 due to a customer escalation, and a new"
     }
   }, {
     "caseId" : "rag-006",
     "description" : "Temporal question — 'this week' vs 'last week' distinction",
     "promptVersion" : "rag-query-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"answer\": \"This week, Alice Chen's team has a LOCKED plan with 8 points, focusing on the \\\"GraphQL migration\\\" (QUEEN, 5 pts), \\\"Fix flaky tests\\\" (PAWN, 2 pts), and \\\"Sprint retro prep\\\" (PAWN, 1 pt). Bob Martinez's team is in DRAFT with 6 points, working on \\\"Billing API v2\\\" (ROOK, 3 pts), \\\"Docs update\\\" (PAWN, 1 pt), and \\\"Performance profiling\\\" (KNIGHT, 2 pts).\",\n  \"sources\": [\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-23\",\n      \"snippet\": \"Alice Chen — LOCKED plan, 8pts. Commits: \\\"GraphQL migration\\\" QUEEN 5pts, \\\"Fix flaky tests\\\" PAWN 2pts, \\\"Sprint retro prep\\\" PAWN 1pt\"\n    },\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"uuid-2\",\n      \"weekStartDate\": \"2026-03-23\",\n      \"snippet\": \"Bob Martinez — DRAFT plan, 6pts. Commits: \\\"Billing API v2\\\" ROOK 3pts, \\\"Docs update\\\" PAWN 1pt, \\\"Performance profiling\\\" KNIGHT 2pts\"\n    }\n  ],\n  \"confidence\": 0.85\n}",
+    "rawOutput" : "{\n  \"answer\": \"This week, Alice Chen's team has a LOCKED plan focusing on 8 points, including 'GraphQL migration' (QUEEN, 5 pts), 'Fix flaky tests' (PAWN, 2 pts), and 'Sprint retro prep' (PAWN, 1 pt). Bob Martinez's team is in DRAFT with 6 points planned, covering 'Billing API v2' (ROOK, 3 pts), 'Docs update' (PAWN, 1 pt), and 'Performance profiling' (KNIGHT, 2 pts).\",\n  \"sources\": [\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"plan:uuid-1\",\n      \"weekStartDate\": \"2026-03-23\",\n      \"snippet\": \"Alice Chen — LOCKED plan, 8pts. Commits: \\\"GraphQL migration\\\" QUEEN 5pts, \\\"Fix flaky tests\\\" PAWN 2pts, \\\"Sprint retro prep\\\" PAWN 1pt\"\n    },\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"plan:uuid-2\",\n      \"weekStartDate\": \"2026-03-23\",\n      \"snippet\": \"Bob Martinez — DRAFT plan, 6pts. Commits: \\\"Billing API v2\\\" ROOK 3pts, \\\"Docs update\\\" PAWN 1pt, \\\"Performance profiling\\\" KNIGHT 2pts\"\n    }\n  ],\n  \"confidence\": 0.85\n}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.85,
@@ -366,14 +366,14 @@
       "mentions_billing_api" : true
     },
     "notes" : {
-      "answerPreview" : "This week, Alice Chen's team has a LOCKED plan with 8 points, focusing on the \"GraphQL migration\" (QUEEN, 5 pts), \"Fix flaky tests\" (PAWN, 2 pts), and \"Sprint retro prep\" (PAWN, 1 pt). Bob Martinez's "
+      "answerPreview" : "This week, Alice Chen's team has a LOCKED plan focusing on 8 points, including 'GraphQL migration' (QUEEN, 5 pts), 'Fix flaky tests' (PAWN, 2 pts), and 'Sprint retro prep' (PAWN, 1 pt). Bob Martinez's"
     }
   }, {
     "caseId" : "rag-007",
     "description" : "Manager comment evidence",
     "promptVersion" : "rag-query-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"answer\": \"The manager commented that the deploy frequency dashboard is exactly what was needed and requested sharing access with the leadership team. This feedback was given on the week starting February 3, 2026.\",\n  \"sources\": [\n    {\n      \"entityType\": \"manager_comment\",\n      \"entityId\": \"mc:uuid-1\",\n      \"weekStartDate\": \"2026-02-03\",\n      \"snippet\": \"Manager comment on plan for week 2026-02-03: \\\"Deploy frequency dashboard is exactly what we need. Can you share access with the leadership team?\\\"\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"commit:uuid-2\",\n      \"weekStartDate\": \"2026-02-03\",\n      \"snippet\": \"\\\"Deploy frequency dashboard\\\" — QUEEN, 5pts. RCDO: Operational Excellence > Improve Deploy Velocity. ACHIEVED.\"\n    }\n  ],\n  \"confidence\": 0.85\n}",
+    "rawOutput" : "{\n  \"answer\": \"The manager commented that the deploy frequency dashboard is exactly what is needed and requested access be shared with the leadership team during the week of February 3, 2026.\",\n  \"sources\": [\n    {\n      \"entityType\": \"manager_comment\",\n      \"entityId\": \"mc:uuid-1\",\n      \"weekStartDate\": \"2026-02-03\",\n      \"snippet\": \"Manager comment on plan for week 2026-02-03: \\\"Deploy frequency dashboard is exactly what we need. Can you share access with the leadership team?\\\"\"\n    },\n    {\n      \"entityType\": \"commit\",\n      \"entityId\": \"commit:uuid-2\",\n      \"weekStartDate\": \"2026-02-03\",\n      \"snippet\": \"\\\"Deploy frequency dashboard\\\" — QUEEN, 5pts. RCDO: Operational Excellence > Improve Deploy Velocity. ACHIEVED.\"\n    }\n  ],\n  \"confidence\": 0.85\n}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.85,
@@ -383,40 +383,39 @@
       "hasAnswer" : true,
       "minConfidence" : true,
       "minSources" : true,
-      "mentions_leadership_team" : true,
-      "mentions_share_access" : false
+      "mentions_leadership_team" : true
     },
     "notes" : {
-      "answerPreview" : "The manager commented that the deploy frequency dashboard is exactly what was needed and requested sharing access with the leadership team. This feedback was given on the week starting February 3, 202"
+      "answerPreview" : "The manager commented that the deploy frequency dashboard is exactly what is needed and requested access be shared with the leadership team during the week of February 3, 2026."
     }
   }, {
     "caseId" : "rag-008",
     "description" : "Question about a specific person who doesn't appear in chunks",
     "promptVersion" : "rag-query-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"answer\": \"There is no record of Sarah committing to any work this week. The retrieved plans show Alice Chen and Bob Martinez's commitments, but no mentions of Sarah.\",\n  \"sources\": [\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-23\",\n      \"snippet\": \"Alice Chen — LOCKED plan, 8pts.\"\n    },\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"uuid-2\",\n      \"weekStartDate\": \"2026-03-23\",\n      \"snippet\": \"Bob Martinez — DRAFT plan, 6pts.\"\n    }\n  ],\n  \"confidence\": 0.75\n}",
+    "rawOutput" : "{\n  \"answer\": \"There is no information indicating that Sarah committed to anything this week, as the retrieved plan summaries do not mention her participation or commitments.\",\n  \"sources\": [\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"uuid-1\",\n      \"weekStartDate\": \"2026-03-23\",\n      \"snippet\": \"Alice Chen — LOCKED plan, 8pts.\"\n    },\n    {\n      \"entityType\": \"plan_summary\",\n      \"entityId\": \"uuid-2\",\n      \"weekStartDate\": \"2026-03-23\",\n      \"snippet\": \"Bob Martinez — DRAFT plan, 6pts.\"\n    }\n  ],\n  \"confidence\": 0.25\n}",
     "critical" : false,
     "scores" : {
-      "confidence" : 0.75,
+      "confidence" : 0.25,
       "sourceCount" : 2.0
     },
     "checks" : {
       "hasAnswer" : true,
-      "maxConfidence" : false,
-      "indicatesInsufficient" : false
+      "maxConfidence" : true,
+      "indicatesInsufficient" : true
     },
     "notes" : {
-      "answerPreview" : "There is no record of Sarah committing to any work this week. The retrieved plans show Alice Chen and Bob Martinez's commitments, but no mentions of Sarah."
+      "answerPreview" : "There is no information indicating that Sarah committed to anything this week, as the retrieved plan summaries do not mention her participation or commitments."
     }
   }, {
     "caseId" : "whatif-001",
     "description" : "ADD_COMMIT pushes total over capacity budget — OVERCOMMIT risk appears, narrative must mention it",
     "promptVersion" : "what-if-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"narrative\": \"Adding this commit increases total planned points from 8 to 14, which exceeds the 10-point capacity budget by 4 points and triggers an OVERCOMMIT signal. The plan is overextended for the week.\",\n  \"recommendation\": \"Consider reducing the estimate of another commit or moving lower-priority work to next week.\"\n}",
+    "rawOutput" : "{\n  \"narrative\": \"Increasing the planned work from 8 to 14 points exceeds the capacity budget of 10 points by 4, which triggers an OVERCOMMIT signal. No RCDO coverage changes are indicated.\",\n  \"recommendation\": \"Consider decreasing the scope of upcoming commits or rescheduling some work to stay within capacity.\"\n}",
     "critical" : true,
     "scores" : {
-      "narrativeLength" : 192.0
+      "narrativeLength" : 171.0
     },
     "checks" : {
       "hasNarrative" : true,
@@ -427,17 +426,17 @@
       "hasRecommendation" : true
     },
     "notes" : {
-      "narrativePreview" : "Adding this commit increases total planned points from 8 to 14, which exceeds the 10-point capacity budget by 4 points and triggers an OVERCOMMIT signal. The plan is overextended for the week."
+      "narrativePreview" : "Increasing the planned work from 8 to 14 points exceeds the capacity budget of 10 points by 4, which triggers an OVERCOMMIT signal. No RCDO coverage changes are indicated."
     }
   }, {
     "caseId" : "whatif-002",
     "description" : "REMOVE_COMMIT resolves OVERCOMMIT — narrative must highlight the improvement",
     "promptVersion" : "what-if-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"narrative\": \"Reducing the plan from 14 to 8 points alleviates the OVERCOMMIT risk and brings the total planned points below the 10-point capacity budget. This change resolves the overextension issue without impacting RCDO coverage.\",\n  \"recommendation\": \"Maintain this adjusted scope or further optimize work distribution if additional capacity becomes available.\"\n}",
+    "rawOutput" : "{\"narrative\": \"Removing this commit reduces the total planned points from 14 to 8, resolving the OVERCOMMIT risk and bringing the plan within the 10-point capacity budget. There are no changes in RCDO coverage.\", \"recommendation\": \"Review the removed work to ensure no critical tasks were overlooked.\"}",
     "critical" : true,
     "scores" : {
-      "narrativeLength" : 218.0
+      "narrativeLength" : 195.0
     },
     "checks" : {
       "hasNarrative" : true,
@@ -446,17 +445,17 @@
       "maxNarrativeLength" : true
     },
     "notes" : {
-      "narrativePreview" : "Reducing the plan from 14 to 8 points alleviates the OVERCOMMIT risk and brings the total planned points below the 10-point capacity budget. This change resolves the overextension issue without impact"
+      "narrativePreview" : "Removing this commit reduces the total planned points from 14 to 8, resolving the OVERCOMMIT risk and bringing the plan within the 10-point capacity budget. There are no changes in RCDO coverage."
     }
   }, {
     "caseId" : "whatif-003",
     "description" : "MODIFY_COMMIT shifts RCDO coverage between two nodes — narrative must mention the coverage change",
     "promptVersion" : "what-if-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"narrative\": \"The plan remains unchanged with a total of 8 planned points, well within the 10-point capacity budget, and no risk signals are present. Coverage for RCDO node aaaaaaaa-0001-0001-0001-000000000001 has been reduced from 5 to 0, while bbbbbbbb-0002-0002-0002-000000000002 increases from 0 to 5.\",\n  \"recommendation\": null\n}",
+    "rawOutput" : "{\n  \"narrative\": \"The plan remains unchanged at 8 points, within the 10-point capacity budget, with no risk signals or coverage changes. RCDO node aaaaaaaa-0001-0001-0001-000000000001 loses 5 points of coverage, while bbbbbbbb-0002-0002-0002-000000000002 gains 5 points.\",\n  \"recommendation\": null\n}",
     "critical" : false,
     "scores" : {
-      "narrativeLength" : 291.0
+      "narrativeLength" : 252.0
     },
     "checks" : {
       "hasNarrative" : true,
@@ -465,17 +464,17 @@
       "maxNarrativeLength" : true
     },
     "notes" : {
-      "narrativePreview" : "The plan remains unchanged with a total of 8 planned points, well within the 10-point capacity budget, and no risk signals are present. Coverage for RCDO node aaaaaaaa-0001-0001-0001-000000000001 has "
+      "narrativePreview" : "The plan remains unchanged at 8 points, within the 10-point capacity budget, with no risk signals or coverage changes. RCDO node aaaaaaaa-0001-0001-0001-000000000001 loses 5 points of coverage, while "
     }
   }, {
     "caseId" : "whatif-004",
     "description" : "No mutations applied — zero delta across all dimensions, narrative indicates no significant impact",
     "promptVersion" : "what-if-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"narrative\": \"The plan remains unchanged with 7 total points, matching the current points and staying within the 10-point capacity budget. There are no risk signals or coverage changes resulting from this mutation.\",\n  \"recommendation\": null\n}",
+    "rawOutput" : "{\n  \"narrative\": \"The plan remains unchanged with a total of 7 points, which is within the 10-point capacity budget, and there are no new or resolved risks. Capacity and risk signals are stable compared to the current plan.\",\n  \"recommendation\": null\n}",
     "critical" : false,
     "scores" : {
-      "narrativeLength" : 200.0
+      "narrativeLength" : 205.0
     },
     "checks" : {
       "hasNarrative" : true,
@@ -483,17 +482,17 @@
       "maxNarrativeLength" : true
     },
     "notes" : {
-      "narrativePreview" : "The plan remains unchanged with 7 total points, matching the current points and staying within the 10-point capacity budget. There are no risk signals or coverage changes resulting from this mutation."
+      "narrativePreview" : "The plan remains unchanged with a total of 7 points, which is within the 10-point capacity budget, and there are no new or resolved risks. Capacity and risk signals are stable compared to the current "
     }
   }, {
     "caseId" : "whatif-005",
     "description" : "Mixed add and remove mutations with net-zero capacity change and RCDO coverage redistribution",
     "promptVersion" : "what-if-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"narrative\": \"The total planned points remain at 8, within the 10-point capacity budget, with no change in risk signals. Coverage for node cccccccc-0003-0003-0003-000000000003 increases by 3 points, while node dddddddd-0004-0004-0004-000000000004 decreases by 3 points.\",\n  \"recommendation\": null\n}",
+    "rawOutput" : "{\n  \"narrative\": \"The total planned points remain unchanged at 8, well within the 10-point capacity budget, with no change in risk signals. RCDO node cccccccc-0003-0003-0003-000000000003 increases coverage from 3 to 6 points, while dddddddd-0004-0004-0004-000000000004 decreases from 5 to 2 points.\",\n  \"recommendation\": null\n}",
     "critical" : false,
     "scores" : {
-      "narrativeLength" : 255.0
+      "narrativeLength" : 280.0
     },
     "checks" : {
       "hasNarrative" : true,
@@ -501,17 +500,17 @@
       "maxNarrativeLength" : true
     },
     "notes" : {
-      "narrativePreview" : "The total planned points remain at 8, within the 10-point capacity budget, with no change in risk signals. Coverage for node cccccccc-0003-0003-0003-000000000003 increases by 3 points, while node dddd"
+      "narrativePreview" : "The total planned points remain unchanged at 8, well within the 10-point capacity budget, with no change in risk signals. RCDO node cccccccc-0003-0003-0003-000000000003 increases coverage from 3 to 6 "
     }
   }, {
     "caseId" : "whatif-006",
     "description" : "Single large ADD_COMMIT fills the entire capacity budget — resolves UNDERCOMMIT, narrative notes budget utilization",
     "promptVersion" : "what-if-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"narrative\": \"The plan increases total planned points from 0 to 10, fully utilizing the 10-point capacity budget without introducing new risks, and resolves the previous UNDERCOMMIT risk. The plan now matches the available capacity.\",\n  \"recommendation\": \"Proceed with the current plan or consider adding additional work if capacity allows.\"\n}",
+    "rawOutput" : "{\n  \"narrative\": \"The plan's total points increase from 0 to 10, matching the capacity budget of 10 points and resolving the UNDERCOMMIT signal. No changes in RCDO coverage are observed.\",\n  \"recommendation\": \"Proceed with the plan as it aligns with the capacity without introducing new risks.\"\n}",
     "critical" : false,
     "scores" : {
-      "narrativeLength" : 218.0
+      "narrativeLength" : 168.0
     },
     "checks" : {
       "hasNarrative" : true,
@@ -520,17 +519,17 @@
       "maxNarrativeLength" : true
     },
     "notes" : {
-      "narrativePreview" : "The plan increases total planned points from 0 to 10, fully utilizing the 10-point capacity budget without introducing new risks, and resolves the previous UNDERCOMMIT risk. The plan now matches the a"
+      "narrativePreview" : "The plan's total points increase from 0 to 10, matching the capacity budget of 10 points and resolving the UNDERCOMMIT signal. No changes in RCDO coverage are observed."
     }
   }, {
     "caseId" : "whatif-007",
     "description" : "Chess-piece escalation PAWN→KING introduces BLOCKED_CRITICAL risk — narrative must warn about the blocked critical signal",
     "promptVersion" : "what-if-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"narrative\": \"The plan remains the same at 10 points, perfectly fitting the capacity budget, but it now shows a new BLOCKED_CRITICAL risk, indicating a potential bottleneck. No changes in RCDO coverage are reported.\",\n  \"recommendation\": \"Review the critical block to identify and address the bottleneck to mitigate the risk.\"\n}",
+    "rawOutput" : "{\n  \"narrative\": \"The plan remains at 10 points, matching the capacity budget, with no change in total points. However, a new BLOCKED_CRITICAL risk signal has appeared, indicating a potential blockage to progress.\",\n  \"recommendation\": \"Review the blocked critical issue to determine if it can be resolved or mitigated.\"\n}",
     "critical" : false,
     "scores" : {
-      "narrativeLength" : 201.0
+      "narrativeLength" : 195.0
     },
     "checks" : {
       "hasNarrative" : true,
@@ -540,17 +539,17 @@
       "hasRecommendation" : true
     },
     "notes" : {
-      "narrativePreview" : "The plan remains the same at 10 points, perfectly fitting the capacity budget, but it now shows a new BLOCKED_CRITICAL risk, indicating a potential bottleneck. No changes in RCDO coverage are reported"
+      "narrativePreview" : "The plan remains at 10 points, matching the capacity budget, with no change in total points. However, a new BLOCKED_CRITICAL risk signal has appeared, indicating a potential blockage to progress."
     }
   }, {
     "caseId" : "whatif-008",
     "description" : "ADD_COMMIT brings under-capacity plan above 60% threshold — resolves UNDERCOMMIT, narrative mentions improvement",
     "promptVersion" : "what-if-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"narrative\": \"The planned work increases total points from 4 to 8, resolving the UNDERCOMMIT risk and remaining within the 10-point capacity budget. No changes in RCDO coverage are noted.\",\n  \"recommendation\": \"Continue monitoring to ensure the work stays aligned with capacity constraints.\"\n}",
+    "rawOutput" : "{\"narrative\": \"The plan's total planned points increase from 4 to 8 due to the mutation, fully utilizing the 10-point capacity budget but resolving the previous UNDERCOMMIT risk. There are no changes in RCDO coverage noted. This adjustment keeps the workload within capacity while eliminating the undercommitment risk.\",\n  \"recommendation\": \"Monitor progress to ensure the work remains achievable within the current capacity.\"}",
     "critical" : true,
     "scores" : {
-      "narrativeLength" : 173.0
+      "narrativeLength" : 303.0
     },
     "checks" : {
       "hasNarrative" : true,
@@ -559,14 +558,14 @@
       "maxNarrativeLength" : true
     },
     "notes" : {
-      "narrativePreview" : "The planned work increases total points from 4 to 8, resolving the UNDERCOMMIT risk and remaining within the 10-point capacity budget. No changes in RCDO coverage are noted."
+      "narrativePreview" : "The plan's total planned points increase from 4 to 8 due to the mutation, fully utilizing the 10-point capacity budget but resolving the previous UNDERCOMMIT risk. There are no changes in RCDO coverag"
     }
   }, {
     "caseId" : "rcdo-001",
     "description" : "Clear keyword match to a specific Outcome",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.92, \"rationale\": \"Commit directly implements Stripe webhook handling for subscription renewals, which maps to the 'Subscription renewal automation' outcome under 'Launch self-serve billing'.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.92, \"rationale\": \"The commit focuses on implementing a webhook handler for subscription renewal events, which directly advances the 'Subscription renewal automation' outcome under the objective 'Launch self-serve billing.'\"}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.92
@@ -579,14 +578,14 @@
       "isOutcome" : true
     },
     "notes" : {
-      "rationale" : "Commit directly implements Stripe webhook handling for subscription renewals, which maps to the 'Subscription renewal automation' outcome under 'Launch self-serve billing'."
+      "rationale" : "The commit focuses on implementing a webhook handler for subscription renewal events, which directly advances the 'Subscription renewal automation' outcome under the objective 'Launch self-serve billing.'"
     }
   }, {
     "caseId" : "rcdo-002",
     "description" : "No RCDO matches the commit topic at all",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": null, \"confidence\": 0.2, \"rationale\": \"No RCDO outcome relates to internal documentation or onboarding.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": null, \"confidence\": 0.2, \"rationale\": \"No RCDO outcome relates to internal documentation, onboarding processes, or team onboarding guides.\"}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.2
@@ -596,14 +595,14 @@
       "maxConfidence" : true
     },
     "notes" : {
-      "rationale" : "No RCDO outcome relates to internal documentation or onboarding."
+      "rationale" : "No RCDO outcome relates to internal documentation, onboarding processes, or team onboarding guides."
     }
   }, {
     "caseId" : "rcdo-003",
     "description" : "Ambiguous match between two Outcomes — should pick the more specific one",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.92, \"rationale\": \"The commit explicitly mentions adding SSO login support for enterprise customers using SAML-based integration with Okta, which directly maps to the 'SSO integration with major IdPs' outcome under 'Enterprise authentication'.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.92, \"rationale\": \"The commit explicitly mentions adding SSO login support with Okta, which directly corresponds to 'SSO integration with major IdPs' outcome under 'Enterprise authentication'.\"}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.92
@@ -615,17 +614,17 @@
       "isOutcome" : true
     },
     "notes" : {
-      "rationale" : "The commit explicitly mentions adding SSO login support for enterprise customers using SAML-based integration with Okta, which directly maps to the 'SSO integration with major IdPs' outcome under 'Enterprise authentication'."
+      "rationale" : "The commit explicitly mentions adding SSO login support with Okta, which directly corresponds to 'SSO integration with major IdPs' outcome under 'Enterprise authentication'."
     }
   }, {
     "caseId" : "rcdo-004",
     "description" : "Should link to DO when it has no child Outcomes",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": \"do-1\", \"confidence\": 0.85, \"rationale\": \"The commit focuses on designing data residency architecture specifically for EMEA, which directly aligns with the 'EMEA data residency compliance' outcome under the 'Global Expansion' rally cry.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": \"do-1\", \"confidence\": 0.75, \"rationale\": \"The commit focuses on designing data residency architecture for EMEA, which aligns with the 'EMEA data residency compliance' objective, as it directly addresses data routing and compliance concerns specific to the EMEA region.\"}",
     "critical" : false,
     "scores" : {
-      "confidence" : 0.85
+      "confidence" : 0.75
     },
     "checks" : {
       "shouldSuggestNode" : true,
@@ -634,17 +633,17 @@
       "notRallyCry" : true
     },
     "notes" : {
-      "rationale" : "The commit focuses on designing data residency architecture specifically for EMEA, which directly aligns with the 'EMEA data residency compliance' outcome under the 'Global Expansion' rally cry."
+      "rationale" : "The commit focuses on designing data residency architecture for EMEA, which aligns with the 'EMEA data residency compliance' objective, as it directly addresses data routing and compliance concerns specific to the EMEA region."
     }
   }, {
     "caseId" : "rcdo-005",
     "description" : "Should never suggest a Rally Cry directly even if keywords match",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.88, \"rationale\": \"The commit aims to build a revenue reporting dashboard for Q1, which aligns closely with the 'Executive revenue dashboard' outcome under 'Improve financial visibility', supporting the overarching goal of scaling revenue.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.92, \"rationale\": \"The commit specifically mentions building an executive revenue dashboard to display revenue trends, directly aligning with the 'Executive revenue dashboard' outcome under 'Improve financial visibility'.\"}",
     "critical" : false,
     "scores" : {
-      "confidence" : 0.88
+      "confidence" : 0.92
     },
     "checks" : {
       "shouldSuggestNode" : true,
@@ -653,14 +652,14 @@
       "notRallyCry" : true
     },
     "notes" : {
-      "rationale" : "The commit aims to build a revenue reporting dashboard for Q1, which aligns closely with the 'Executive revenue dashboard' outcome under 'Improve financial visibility', supporting the overarching goal of scaling revenue."
+      "rationale" : "The commit specifically mentions building an executive revenue dashboard to display revenue trends, directly aligning with the 'Executive revenue dashboard' outcome under 'Improve financial visibility'."
     }
   }, {
     "caseId" : "rcdo-006",
     "description" : "Should not suggest Archived node even if it matches",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-2\", \"confidence\": 0.85, \"rationale\": \"The commit addresses fixing a memory leak in the payment processing service, which directly relates to improving payment system reliability and aims to meet the '99.9% payment uptime SLA' outcome.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-2\", \"confidence\": 0.85, \"rationale\": \"The commit aims to resolve a memory leak in the payment processing service, which directly impacts achieving the '99.9% payment uptime SLA' outcome under 'Payment system reliability.'\"}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.85
@@ -672,17 +671,17 @@
       "minConfidence" : true
     },
     "notes" : {
-      "rationale" : "The commit addresses fixing a memory leak in the payment processing service, which directly relates to improving payment system reliability and aims to meet the '99.9% payment uptime SLA' outcome."
+      "rationale" : "The commit aims to resolve a memory leak in the payment processing service, which directly impacts achieving the '99.9% payment uptime SLA' outcome under 'Payment system reliability.'"
     }
   }, {
     "caseId" : "rcdo-007",
     "description" : "Semantic match — no keyword overlap but conceptual alignment",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.9, \"rationale\": \"The commit adds Datadog APM instrumentation specifically for distributed tracing in the checkout flow, directly aligning with the 'Full-stack distributed tracing' outcome under the 'Improve system observability' objective.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.92, \"rationale\": \"The commit focuses on adding Datadog APM instrumentation for distributed tracing across the checkout pipeline, which directly maps to the 'Full-stack distributed tracing' outcome under 'Improve system observability'.\"}",
     "critical" : false,
     "scores" : {
-      "confidence" : 0.9
+      "confidence" : 0.92
     },
     "checks" : {
       "shouldSuggestNode" : true,
@@ -691,14 +690,14 @@
       "isOutcome" : true
     },
     "notes" : {
-      "rationale" : "The commit adds Datadog APM instrumentation specifically for distributed tracing in the checkout flow, directly aligning with the 'Full-stack distributed tracing' outcome under the 'Improve system observability' objective."
+      "rationale" : "The commit focuses on adding Datadog APM instrumentation for distributed tracing across the checkout pipeline, which directly maps to the 'Full-stack distributed tracing' outcome under 'Improve system observability'."
     }
   }, {
     "caseId" : "rcdo-008",
     "description" : "Empty RCDO tree — should return null gracefully",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": null, \"confidence\": 0.2, \"rationale\": \"No RCDO nodes available to link to; the commit relates to internal infrastructure, not specified in current RCDO hierarchy.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": null, \"confidence\": 0.2, \"rationale\": \"No RCDO hierarchy is provided, making it impossible to identify a relevant outcome.\"}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.2
@@ -708,17 +707,17 @@
       "maxConfidence" : true
     },
     "notes" : {
-      "rationale" : "No RCDO nodes available to link to; the commit relates to internal infrastructure, not specified in current RCDO hierarchy."
+      "rationale" : "No RCDO hierarchy is provided, making it impossible to identify a relevant outcome."
     }
   }, {
     "caseId" : "rcdo-009",
     "description" : "Multiple equally valid Outcomes — confidence should be moderate, not high",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.9, \"rationale\": \"The commit focuses on improving API response times, which directly relates to the 'API p95 latency under 200ms' outcome under 'Performance optimization'.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.92, \"rationale\": \"The commit focuses on improving API response times, specifically targeting latency reduction, which directly aligns with the 'API p95 latency under 200ms' outcome under 'Performance optimization'.\"}",
     "critical" : false,
     "scores" : {
-      "confidence" : 0.9
+      "confidence" : 0.92
     },
     "checks" : {
       "shouldSuggestNode" : true,
@@ -727,14 +726,14 @@
       "isOutcome" : true
     },
     "notes" : {
-      "rationale" : "The commit focuses on improving API response times, which directly relates to the 'API p95 latency under 200ms' outcome under 'Performance optimization'."
+      "rationale" : "The commit focuses on improving API response times, specifically targeting latency reduction, which directly aligns with the 'API p95 latency under 200ms' outcome under 'Performance optimization'."
     }
   }, {
     "caseId" : "rcdo-010",
     "description" : "Commit with very minimal title — should still attempt matching",
     "promptVersion" : "rcdo-suggest-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.9, \"rationale\": \"The commit title 'SSO' directly aligns with the 'SSO integration' outcome, indicating a focus on implementing single sign-on functionality.\"}",
+    "rawOutput" : "{\"suggestedRcdoNodeId\": \"out-1\", \"confidence\": 0.9, \"rationale\": \"The commit titled 'SSO' directly relates to security authentication processes, specifically 'SSO integration,' which is an active outcome under 'Enterprise auth'.\"}",
     "critical" : false,
     "scores" : {
       "confidence" : 0.9
@@ -745,20 +744,20 @@
       "minConfidence" : true
     },
     "notes" : {
-      "rationale" : "The commit title 'SSO' directly aligns with the 'SSO integration' outcome, indicating a focus on implementing single sign-on functionality."
+      "rationale" : "The commit titled 'SSO' directly relates to security authentication processes, specifically 'SSO integration,' which is an active outcome under 'Enterprise auth'."
     }
   }, {
     "caseId" : "risk-001",
     "description" : "Hidden sequential dependency between two commits",
     "promptVersion" : "risk-signal-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": \"null\",\n      \"severity\": \"MEDIUM\",\n      \"description\": \"Sequential dependency risk detected: 'Migrate all users to new auth service' likely depends on 'Deploy new auth service to production' completing first. Any delay in deployment could impact the migration timeline.\",\n      \"suggestedAction\": \"Verify the deployment schedule and ensure deployment completion early in the week, or re-scope the migration to avoid tight dependency risk.\"\n    }\n  ]\n}",
+    "rawOutput" : "{\"signals\": []}",
     "critical" : false,
     "scores" : {
-      "signalCount" : 1.0
+      "signalCount" : 0.0
     },
     "checks" : {
-      "minSignals" : true,
+      "minSignals" : false,
       "maxSignals" : true,
       "noDuplicateRules" : true
     },
@@ -768,10 +767,10 @@
     "description" : "Clean plan with no additional risks beyond rules",
     "promptVersion" : "risk-signal-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"signals\": []\n}",
+    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"MEDIUM\",\n      \"description\": \"The plan assigns most of the capacity (8 out of 10 points) to small, low-impact commits, with no apparent fallback or backup plan if any of these tasks slip. This concentration increases the risk that a single delay could significantly impact overall delivery.\",\n      \"suggestedAction\": \"Consider adding buffer or splitting larger tasks to account for unforeseen delays, especially given the tight capacity utilization.\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
-      "signalCount" : 0.0
+      "signalCount" : 1.0
     },
     "checks" : {
       "maxSignals" : true,
@@ -783,10 +782,10 @@
     "description" : "Concentration risk — all high-priority work on same system",
     "promptVersion" : "risk-signal-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"HIGH\",\n      \"description\": \"The plan includes a KING-sized commit with an estimate of 5 points, which is 50% of the total capacity. Historically, KING commits like 'Refactor payment service database schema' carry significant complexity and risk, especially given its strategic importance. The plan's total points match the capacity exactly, leaving no slack for unforeseen issues.\",\n      \"suggestedAction\": \"Review the critical path and contingency plans for this high-stakes commit. Consider breaking it into smaller, incremental steps to mitigate risk and ensure timely completion.\"\n    },\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"MEDIUM\",\n      \"description\": \"Multiple high-impact commits involving PAYMENT system modifications (KING, QUEEN, ROOK) are scheduled concurrently, increasing concentration risk on the same system components.\",\n      \"suggestedAction\": \"Coordinate dependencies and consider staggering these commits to reduce system stress and potential bottlenecks.\"\n    }\n  ]\n}",
+    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"HIGH\",\n      \"description\": \"The entire 10-point capacity budget is allocated to a single commit ('Refactor payment service database schema') with a high-impact 'KING' role. If this critical refactoring faces delays or issues, it could jeopardize all planned deliverables for the week.\",\n      \"suggestedAction\": \"Break the refactor into smaller, incremental steps to mitigate risk and enable partial deployment if needed.\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
-      "signalCount" : 2.0
+      "signalCount" : 1.0
     },
     "checks" : {
       "minSignals" : true,
@@ -799,10 +798,10 @@
     "description" : "KING commit with suspiciously low estimate",
     "promptVersion" : "risk-signal-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"MEDIUM\",\n      \"description\": \"High-priority commit ('Complete production database migration' with KING) has a very low estimate (1 point) for a complex, high-stakes migration involving 50 million rows and zero downtime. This underestimates the complexity and risk of failure.\",\n      \"suggestedAction\": \"Reassess the estimate for this critical migration, allocate additional buffer time, or consider splitting into smaller, incremental migrations to reduce risk.\"\n    }\n  ]\n}",
+    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"HIGH\",\n      \"description\": \"The 'Complete production database migration with zero downtime' commit is a KING with only 1 estimated point. Given its critical nature and high complexity implied by the description, such a high-stakes task likely carries significant risk if delays occur. Additionally, it occupies a large portion of the capacity (1 point out of 10), increasing the impact of any slips.\",\n      \"suggestedAction\": \"Re-assess the estimate for this critical database migration to ensure adequate buffer. Consider breaking it into smaller, incremental steps to mitigate risk of total failure or delay.\"\n    },\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"MEDIUM\",\n      \"description\": \"The planned work includes a KING commit with a minimal estimate (1 point) within a compressed schedule (6 points planned, 10 capacity). The notable concentration of high-priority work in a single week increases risk if any of these critical commits slip.\",\n      \"suggestedAction\": \"Distribute or prioritize critical work across multiple weeks or add buffer to critical commits to prevent a single point of failure.\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
-      "signalCount" : 1.0
+      "signalCount" : 2.0
     },
     "checks" : {
       "minSignals" : true,
@@ -815,7 +814,7 @@
     "description" : "Commit description contains blocking language",
     "promptVersion" : "risk-signal-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"MEDIUM\",\n      \"description\": \"The commit 'Integrate payment provider SDK v3' has a dependency on vendor delivery expected Wednesday; this dependency introduces risk if the SDK is delayed, which could impact the deployment schedule.\",\n      \"suggestedAction\": \"Verify vendor delivery timelines and consider buffer time or contingency plans for SDK integration.\"\n    }\n  ]\n}",
+    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"MEDIUM\",\n      \"description\": \"The plan includes a 'Waiting on vendor to ship SDK v3' dependency, which could delay 'Integrate payment provider SDK v3'. If the SDK delivery is delayed beyond Wednesday, this critical commit may slip, risking the overall plan.\",\n      \"suggestedAction\": \"Monitor the SDK shipment closely, and consider pre-emptive communication with the vendor or preparing fallback tasks to mitigate potential delays.\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "signalCount" : 1.0
@@ -831,7 +830,7 @@
     "description" : "Two QUEENs competing for limited time — attention split risk",
     "promptVersion" : "risk-signal-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"HIGH\",\n      \"description\": \"The plan allocates all capacity (10 points) to two high-priority QUEEN commits, which have appeared risky in the past due to potential complexity. Both commits are critical, and any delay in either could jeopardize the overall plan success.\",\n      \"suggestedAction\": \"Consider de-scoping or spreading out these high-impact items to reduce risk of completion failure within the locked plan.\"\n    }\n  ]\n}",
+    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"HIGH\",\n      \"description\": \"The entire 10-point capacity budget is allocated to two high-priority 'QUEEN' items, 'Launch new pricing page' and 'Ship onboarding flow redesign', each with significant success criteria. If either of these high-stakes commits slips, the week could have zero successful deliveries.\",\n      \"suggestedAction\": \"Break down these large commits into smaller, incremental deliverables to mitigate risk of total failure if one slips, and verify dependencies before start.\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
       "signalCount" : 1.0
@@ -847,10 +846,10 @@
     "description" : "Scope changes hint at instability — should flag timing risk",
     "promptVersion" : "risk-signal-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"MEDIUM\",\n      \"description\": \"High concentration: all planned commits are related to backend infrastructure and performance, potentially risking resource contention and focus dilution.\",\n      \"suggestedAction\": \"Monitor resource allocation to ensure development focus remains balanced across core areas. Consider splitting high-priority commits into separate sprints if possible.\"\n    },\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"HIGH\",\n      \"description\": \"Scope volatility: multiple scope changes including added urgent commits and increased complexity estimates, indicating potential disruption to the plan timeline.\",\n      \"suggestedAction\": \"Review scope changes with stakeholders, and consider de-prioritizing or deferring some scope to prevent overburdening the team.\"\n    },\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"LOW\",\n      \"description\": \"Estimate complexity has increased for caching layer, suggesting possible underestimation initially.\",\n      \"suggestedAction\": \"Reassess remaining estimated points, and prepare contingency plans for potential overruns.\"\n    }\n  ]\n}",
+    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"HIGH\",\n      \"description\": \"The plan allocates the entire 10-point capacity budget to three commits, with no buffer or fallback. Given the recent scope and priority changes, there's a high risk that any delay or issue could cause the week to have zero remaining capacity.\",\n      \"suggestedAction\": \"Decompose some commits into smaller, incremental deliverables to reduce dependency on completing all tasks simultaneously and mitigate risk of total delivery failure.\"\n    },\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": null,\n      \"severity\": \"MEDIUM\",\n      \"description\": \"Multiple scope changes post-lock indicate increased scope volatility, which raises the risk of unforeseen delays or rework, especially with last-minute addition and complex estimate changes.\",\n      \"suggestedAction\": \"Review scope changes carefully to confirm their feasibility and prioritize critical items, considering potential re-estimation or task splitting.\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
-      "signalCount" : 3.0
+      "signalCount" : 2.0
     },
     "checks" : {
       "minSignals" : true,
@@ -863,13 +862,13 @@
     "description" : "Single massive commit consuming entire budget",
     "promptVersion" : "risk-signal-v1",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"signals\": []\n}",
+    "rawOutput" : "{\n  \"signals\": [\n    {\n      \"signalType\": \"AI_RISK_DETECTED\",\n      \"commitId\": \"c-1\",\n      \"severity\": \"HIGH\",\n      \"description\": \"The entire 8-point capacity budget is allocated to a single KING commit ('Complete full rewrite of billing module'). If this work is delayed or blocks other tasks, the week will have minimal or zero remaining capacity, risking delivery failure.\",\n      \"suggestedAction\": \"Break the rewrite into smaller, incremental deliverables to ensure partial progress and reduce risk of complete failure if the entire scope slips.\"\n    }\n  ]\n}",
     "critical" : false,
     "scores" : {
-      "signalCount" : 0.0
+      "signalCount" : 1.0
     },
     "checks" : {
-      "minSignals" : false,
+      "minSignals" : true,
       "maxSignals" : true,
       "noDuplicateRules" : true
     },
@@ -909,7 +908,7 @@
     "description" : "Good ROOK commit that needs no changes",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"User authentication now uses server-side session tokens for all API routes; existing JWT tokens invalidated; authentication test suite passes.\",\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"All API endpoints under /api/v2/ successfully authenticate with session tokens, with no regressions reported.\",\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
     "critical" : false,
     "scores" : {
       "criteriaJudge_measurable" : 0.8,
@@ -923,7 +922,7 @@
       "suggestDescription" : true
     },
     "notes" : {
-      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"User authentication now uses server-side session tokens for all API routes; existing JWT tokens invalidated; authentication test suite passes.\",\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"All API endpoints under /api/v2/ successfully authenticate with session tokens, with no regressions reported.\",\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
       "rationale" : "AI-generated suggestion"
     }
   }, {
@@ -956,7 +955,7 @@
     "description" : "QUEEN commit with good title but missing success criteria",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"suggestedTitle\": \"Launch self-serve billing portal with invoice history and payment management\",\n  \"suggestedDescription\": \"Implement enterprise billing dashboard displaying invoice history and enabling payment method updates\",\n  \"suggestedSuccessCriteria\": \"Billing portal is live for enterprise customers, supports invoice viewing and payment method updates, and passes user acceptance testing\",\n  \"suggestedEstimatePoints\": 5,\n  \"suggestedChessPiece\": \"QUEEN\"\n}",
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Launch self-serve billing portal with invoice history and payment management\",\n  \"suggestedDescription\": \"Implement the billing dashboard allowing enterprise customers to view invoices and manage payment methods\",\n  \"suggestedSuccessCriteria\": \"Billing portal is live for all enterprise customers, handles at least 95% of invoice retrieval and payment updates successfully, with no critical bugs reported within testing\",\n  \"suggestedEstimatePoints\": 8,\n  \"suggestedChessPiece\": null\n}",
     "critical" : true,
     "scores" : {
       "titleJudge_clarity" : 0.8,
@@ -975,7 +974,7 @@
       "suggestEstimate" : false
     },
     "notes" : {
-      "rawPayload" : "{\n  \"suggestedTitle\": \"Launch self-serve billing portal with invoice history and payment management\",\n  \"suggestedDescription\": \"Implement enterprise billing dashboard displaying invoice history and enabling payment method updates\",\n  \"suggestedSuccessCriteria\": \"Billing portal is live for enterprise customers, supports invoice viewing and payment method updates, and passes user acceptance testing\",\n  \"suggestedEstimatePoints\": 5,\n  \"suggestedChessPiece\": \"QUEEN\"\n}",
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Launch self-serve billing portal with invoice history and payment management\",\n  \"suggestedDescription\": \"Implement the billing dashboard allowing enterprise customers to view invoices and manage payment methods\",\n  \"suggestedSuccessCriteria\": \"Billing portal is live for all enterprise customers, handles at least 95% of invoice retrieval and payment updates successfully, with no critical bugs reported within testing\",\n  \"suggestedEstimatePoints\": 8,\n  \"suggestedChessPiece\": null\n}",
       "rationale" : "AI-generated suggestion"
     }
   }, {
@@ -983,7 +982,7 @@
     "description" : "Single-word title, completely meaningless",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedTitle\": \"Define project scope and key deliverables\", \"suggestedDescription\": null, \"suggestedSuccessCriteria\": \"Project scope and key deliverables clearly documented and approved by stakeholders\", \"suggestedEstimatePoints\": 3, \"suggestedChessPiece\": null}",
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Define initial project scope and outline key deliverables\",\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Project scope documented with clear deliverables and milestones, team alignment achieved\",\n  \"suggestedEstimatePoints\": 3,\n  \"suggestedChessPiece\": null\n}",
     "critical" : false,
     "scores" : {
       "titleJudge_clarity" : 0.8,
@@ -1002,7 +1001,7 @@
       "suggestEstimate" : true
     },
     "notes" : {
-      "rawPayload" : "{\"suggestedTitle\": \"Define project scope and key deliverables\", \"suggestedDescription\": null, \"suggestedSuccessCriteria\": \"Project scope and key deliverables clearly documented and approved by stakeholders\", \"suggestedEstimatePoints\": 3, \"suggestedChessPiece\": null}",
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Define initial project scope and outline key deliverables\",\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Project scope documented with clear deliverables and milestones, team alignment achieved\",\n  \"suggestedEstimatePoints\": 3,\n  \"suggestedChessPiece\": null\n}",
       "rationale" : "AI-generated suggestion"
     }
   }, {
@@ -1010,7 +1009,7 @@
     "description" : "KNIGHT (exploratory) with reasonable title, no criteria",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"suggestedTitle\": \"Compare GraphQL and REST APIs for mobile client performance\",\n  \"suggestedDescription\": \"Research and prototype both GraphQL and REST approaches, then produce a comparison document highlighting key differences, performance, and usability considerations.\",\n  \"suggestedSuccessCriteria\": \"Completed comparison document reviewing GraphQL and REST APIs, including prototype results, with recommendations for mobile API choice\",\n  \"suggestedEstimatePoints\": 3,\n  \"suggestedChessPiece\": \"KNIGHT\"\n}",
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Prototype GraphQL and REST APIs for mobile, compare performance and developer experience\",\n  \"suggestedDescription\": \"Develop prototypes for both GraphQL and REST approaches, measure response times, ease of data fetching, and developer onboarding. Document findings in a comparison report.\",\n  \"suggestedSuccessCriteria\": \"Prototypes developed with measurable response times, developer feedback collected, and comparison report completed.\",\n  \"suggestedEstimatePoints\": 5,\n  \"suggestedChessPiece\": \"KNIGHT\"\n}",
     "critical" : false,
     "scores" : {
       "titleJudge_clarity" : 0.8,
@@ -1024,11 +1023,10 @@
       "criteriaJudge_testable" : 0.85
     },
     "checks" : {
-      "suggestTitle" : false,
       "suggestCriteria" : true
     },
     "notes" : {
-      "rawPayload" : "{\n  \"suggestedTitle\": \"Compare GraphQL and REST APIs for mobile client performance\",\n  \"suggestedDescription\": \"Research and prototype both GraphQL and REST approaches, then produce a comparison document highlighting key differences, performance, and usability considerations.\",\n  \"suggestedSuccessCriteria\": \"Completed comparison document reviewing GraphQL and REST APIs, including prototype results, with recommendations for mobile API choice\",\n  \"suggestedEstimatePoints\": 3,\n  \"suggestedChessPiece\": \"KNIGHT\"\n}",
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Prototype GraphQL and REST APIs for mobile, compare performance and developer experience\",\n  \"suggestedDescription\": \"Develop prototypes for both GraphQL and REST approaches, measure response times, ease of data fetching, and developer onboarding. Document findings in a comparison report.\",\n  \"suggestedSuccessCriteria\": \"Prototypes developed with measurable response times, developer feedback collected, and comparison report completed.\",\n  \"suggestedEstimatePoints\": 5,\n  \"suggestedChessPiece\": \"KNIGHT\"\n}",
       "rationale" : "AI-generated suggestion"
     }
   }, {
@@ -1058,27 +1056,17 @@
     "description" : "KING with existing success criteria — should return all nulls",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedTitle\": \"Perform zero-downtime PostgreSQL 14 to 16 migration with testing\", \"suggestedDescription\": \"Upgrade production database to PostgreSQL 16 using logical replication failover, ensuring zero data loss and quick rollback capability\", \"suggestedSuccessCriteria\": \"PostgreSQL 16 deployed and serving production traffic with no data loss, rollback validated, total failover time under 5 minutes\", \"suggestedEstimatePoints\": 8, \"suggestedChessPiece\": null}",
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
     "critical" : true,
-    "scores" : {
-      "titleJudge_clarity" : 0.8,
-      "titleJudge_specificity" : 0.7,
-      "titleJudge_appropriate_scope" : 0.9,
-      "titleJudge_improvement" : 0.6,
-      "titleJudge_professional_tone" : 0.95,
-      "criteriaJudge_measurable" : 0.8,
-      "criteriaJudge_completeness" : 0.7,
-      "criteriaJudge_achievable_in_one_week" : 0.9,
-      "criteriaJudge_testable" : 0.85
-    },
+    "scores" : { },
     "checks" : {
-      "suggestTitle" : false,
-      "suggestCriteria" : false,
-      "suggestEstimate" : false,
-      "suggestDescription" : false
+      "suggestTitle" : true,
+      "suggestCriteria" : true,
+      "suggestEstimate" : true,
+      "suggestDescription" : true
     },
     "notes" : {
-      "rawPayload" : "{\"suggestedTitle\": \"Perform zero-downtime PostgreSQL 14 to 16 migration with testing\", \"suggestedDescription\": \"Upgrade production database to PostgreSQL 16 using logical replication failover, ensuring zero data loss and quick rollback capability\", \"suggestedSuccessCriteria\": \"PostgreSQL 16 deployed and serving production traffic with no data loss, rollback validated, total failover time under 5 minutes\", \"suggestedEstimatePoints\": 8, \"suggestedChessPiece\": null}",
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": null,\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
       "rationale" : "AI-generated suggestion"
     }
   }, {
@@ -1086,25 +1074,20 @@
     "description" : "PAWN with estimate of 1 that is reasonable — should not change estimate",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"suggestedTitle\": \"Update team Slack channel topic to reflect Q2 priorities\",\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Slack channel topic updated successfully to include Q2 priorities\",\n  \"suggestedEstimatePoints\": 1,\n  \"suggestedChessPiece\": null\n}",
+    "rawOutput" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Slack channel topic updated to reflect Q2 priorities for clear team communication\",\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
     "critical" : false,
     "scores" : {
-      "titleJudge_clarity" : 0.8,
-      "titleJudge_specificity" : 0.7,
-      "titleJudge_appropriate_scope" : 0.9,
-      "titleJudge_improvement" : 0.6,
-      "titleJudge_professional_tone" : 0.95,
       "criteriaJudge_measurable" : 0.8,
       "criteriaJudge_completeness" : 0.7,
       "criteriaJudge_achievable_in_one_week" : 0.9,
       "criteriaJudge_testable" : 0.85
     },
     "checks" : {
-      "suggestTitle" : false,
-      "suggestEstimate" : false
+      "suggestTitle" : true,
+      "suggestEstimate" : true
     },
     "notes" : {
-      "rawPayload" : "{\n  \"suggestedTitle\": \"Update team Slack channel topic to reflect Q2 priorities\",\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Slack channel topic updated successfully to include Q2 priorities\",\n  \"suggestedEstimatePoints\": 1,\n  \"suggestedChessPiece\": null\n}",
+      "rawPayload" : "{\n  \"suggestedTitle\": null,\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"Slack channel topic updated to reflect Q2 priorities for clear team communication\",\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
       "rationale" : "AI-generated suggestion"
     }
   }, {
@@ -1112,7 +1095,7 @@
     "description" : "Commit with emoji and special characters in title",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"suggestedTitle\": \"Deploy version 2 to production environment\",\n  \"suggestedDescription\": \"Release v2 to production, monitor deployment health, and verify functionality\",\n  \"suggestedSuccessCriteria\": \"Version 2 deployed successfully with no critical errors, passes smoke tests, and user feedback is positive\",\n  \"suggestedEstimatePoints\": 3,\n  \"suggestedChessPiece\": null\n}",
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Deploy version 2 to production environment\",\n  \"suggestedDescription\": \"Complete the deployment process for v2, ensure all systems are updated, and perform smoke testing\",\n  \"suggestedSuccessCriteria\": \"V2 deployed to production with zero critical errors, smoke tests pass successfully, and system is stable\",\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
     "critical" : false,
     "scores" : {
       "titleJudge_clarity" : 0.8,
@@ -1130,7 +1113,7 @@
       "titleClean" : true
     },
     "notes" : {
-      "rawPayload" : "{\n  \"suggestedTitle\": \"Deploy version 2 to production environment\",\n  \"suggestedDescription\": \"Release v2 to production, monitor deployment health, and verify functionality\",\n  \"suggestedSuccessCriteria\": \"Version 2 deployed successfully with no critical errors, passes smoke tests, and user feedback is positive\",\n  \"suggestedEstimatePoints\": 3,\n  \"suggestedChessPiece\": null\n}",
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Deploy version 2 to production environment\",\n  \"suggestedDescription\": \"Complete the deployment process for v2, ensure all systems are updated, and perform smoke testing\",\n  \"suggestedSuccessCriteria\": \"V2 deployed to production with zero critical errors, smoke tests pass successfully, and system is stable\",\n  \"suggestedEstimatePoints\": null,\n  \"suggestedChessPiece\": null\n}",
       "rationale" : "AI-generated suggestion"
     }
   }, {
@@ -1138,10 +1121,10 @@
     "description" : "QUEEN underestimated at 1 point — should suggest higher",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\n  \"suggestedTitle\": \"Redesign mobile checkout flow to improve usability and conversion\",\n  \"suggestedDescription\": \"Complete UX overhaul of the 5-step checkout process for mobile users, focusing on reducing friction and increasing completion rate\",\n  \"suggestedSuccessCriteria\": \"Redesigned checkout flow deployed to staging, user testing shows 15% improvement in completion rate and positive user feedback\",\n  \"suggestedEstimatePoints\": 3,\n  \"suggestedChessPiece\": \"QUEEN\"\n}",
+    "rawOutput" : "{\n  \"suggestedTitle\": \"Redesign mobile checkout flow for improved user experience\",\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"New checkout flow implemented on mobile, with at least 20 usability test participants reporting improved satisfaction, and no critical UX issues remaining\",\n  \"suggestedEstimatePoints\": 8,\n  \"suggestedChessPiece\": null\n}",
     "critical" : false,
     "scores" : {
-      "estimate" : 3.0,
+      "estimate" : 8.0,
       "titleJudge_clarity" : 0.8,
       "titleJudge_specificity" : 0.7,
       "titleJudge_appropriate_scope" : 0.9,
@@ -1155,10 +1138,10 @@
     "checks" : {
       "suggestCriteria" : true,
       "suggestEstimate" : true,
-      "estimateInRange" : false
+      "estimateInRange" : true
     },
     "notes" : {
-      "rawPayload" : "{\n  \"suggestedTitle\": \"Redesign mobile checkout flow to improve usability and conversion\",\n  \"suggestedDescription\": \"Complete UX overhaul of the 5-step checkout process for mobile users, focusing on reducing friction and increasing completion rate\",\n  \"suggestedSuccessCriteria\": \"Redesigned checkout flow deployed to staging, user testing shows 15% improvement in completion rate and positive user feedback\",\n  \"suggestedEstimatePoints\": 3,\n  \"suggestedChessPiece\": \"QUEEN\"\n}",
+      "rawPayload" : "{\n  \"suggestedTitle\": \"Redesign mobile checkout flow for improved user experience\",\n  \"suggestedDescription\": null,\n  \"suggestedSuccessCriteria\": \"New checkout flow implemented on mobile, with at least 20 usability test participants reporting improved satisfaction, and no critical UX issues remaining\",\n  \"suggestedEstimatePoints\": 8,\n  \"suggestedChessPiece\": null\n}",
       "rationale" : "AI-generated suggestion"
     }
   }, {
@@ -1166,7 +1149,7 @@
     "description" : "Duplicate-sounding title that matches a common pattern",
     "promptVersion" : "commit-draft-assist-v2",
     "schemaValid" : true,
-    "rawOutput" : "{\"suggestedTitle\": \"Review code for recent feature implementation\", \"suggestedDescription\": null, \"suggestedSuccessCriteria\": \"All review comments addressed, no critical issues remaining, code approved\", \"suggestedEstimatePoints\": 2, \"suggestedChessPiece\": null}",
+    "rawOutput" : "{\"suggestedTitle\": \"Review code changes for module X and document feedback\", \"suggestedDescription\": null, \"suggestedSuccessCriteria\": \"All code changes reviewed, feedback documented, and approvals obtained from reviewers\", \"suggestedEstimatePoints\": 2, \"suggestedChessPiece\": null}",
     "critical" : false,
     "scores" : {
       "titleJudge_clarity" : 0.8,
@@ -1184,7 +1167,7 @@
       "titleMinLength" : true
     },
     "notes" : {
-      "rawPayload" : "{\"suggestedTitle\": \"Review code for recent feature implementation\", \"suggestedDescription\": null, \"suggestedSuccessCriteria\": \"All review comments addressed, no critical issues remaining, code approved\", \"suggestedEstimatePoints\": 2, \"suggestedChessPiece\": null}",
+      "rawPayload" : "{\"suggestedTitle\": \"Review code changes for module X and document feedback\", \"suggestedDescription\": null, \"suggestedSuccessCriteria\": \"All code changes reviewed, feedback documented, and approvals obtained from reviewers\", \"suggestedEstimatePoints\": 2, \"suggestedChessPiece\": null}",
       "rationale" : "AI-generated suggestion"
     }
   } ]

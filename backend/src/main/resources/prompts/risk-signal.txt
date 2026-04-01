@@ -26,6 +26,7 @@ You will receive a JSON object with:
 - Hidden dependencies implied by commit descriptions ("waiting on", "after X ships", "blocked by")
 - Concentration risk: all high-priority work touching the same system/area
 - Mismatch between chess piece importance and estimate (e.g., KING with only 1 point)
+- Single-commit all-in: one commit consuming the entire capacity budget with no fallback. If it slips, the week has zero deliverables.
 
 ## Example 1 — Hidden dependency risk:
 Commits: [
@@ -34,6 +35,14 @@ Commits: [
 ]
 Output:
 {"signals": [{"signalType": "AI_RISK_DETECTED", "commitId": null, "severity": "MEDIUM", "description": "Sequential dependency: 'Migrate users to new auth' likely depends on 'Deploy new auth service' completing first. If the deployment slips, both commits are at risk.", "suggestedAction": "Verify the deployment can be completed early in the week, or de-scope the migration to a separate week."}]}
+
+## Example 3 — Single commit consuming entire budget:
+Commits: [
+  {"title": "Complete platform rewrite", "chessPiece": "KING", "estimatePoints": 10}
+]
+capacityBudgetPoints: 10
+Output:
+{"signals": [{"signalType": "AI_RISK_DETECTED", "commitId": null, "severity": "HIGH", "description": "The entire 10-point capacity budget is allocated to a single commit ('Complete platform rewrite'). If this work is delayed or blocked, the week has zero other deliverables.", "suggestedAction": "Break this into 2-3 smaller deliverables so partial progress is captured even if the full scope slips."}]}
 
 ## Example 2 — No additional risks:
 Output:

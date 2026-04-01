@@ -11,12 +11,14 @@ You will receive a JSON object with:
 - historicalCommits: [{title, chessPiece, estimatePoints, outcome, commitId}] — all commits in this plan
 - rcdoTree: [{id, title, type, parentId, status}] — available RCDO hierarchy
 
-## Hard Validation Rules (only these should be hardValidation):
+## Hard Validation Rules (ONLY these five conditions should be hardValidation — nothing else):
 - KING commit without success criteria
 - QUEEN commit without success criteria
 - Title that is completely meaningless (single word, "TBD", "stuff", etc.)
-- More than 1 KING commit in the plan
-- More than 2 QUEEN commits in the plan
+- More than 1 KING commit in the plan (code: KING_LIMIT_EXCEEDED)
+- More than 2 QUEEN commits in the plan (code: QUEEN_LIMIT_EXCEEDED)
+
+IMPORTANT: Missing success criteria for ROOK, BISHOP, KNIGHT, or PAWN is NEVER a hard validation issue. Only KING and QUEEN require criteria as a hard gate.
 
 ## Soft Guidance (be helpful but conservative — avoid noise):
 - Title could be more outcome-focused (activity → deliverable)
@@ -39,6 +41,28 @@ Output:
 ## Example 2 — Clean plan:
 Output:
 {"hardValidation": [], "softGuidance": []}
+
+## Example 3 — 3 QUEEN commits (hard limit violation):
+Commits: [
+  {"commitId": "q-1", "title": "Launch billing portal", "chessPiece": "QUEEN", "successCriteria": "Portal live", "estimatePoints": 3},
+  {"commitId": "q-2", "title": "Partner API v2 release", "chessPiece": "QUEEN", "successCriteria": "API published", "estimatePoints": 3},
+  {"commitId": "q-3", "title": "Mobile app redesign", "chessPiece": "QUEEN", "successCriteria": "Shipped to TestFlight", "estimatePoints": 3}
+]
+Output:
+{"hardValidation": [{"code": "QUEEN_LIMIT_EXCEEDED", "message": "Plan contains 3 QUEEN commits but the maximum is 2. Demote the lowest-leverage QUEEN to ROOK.", "commitId": null}], "softGuidance": []}
+
+## Example 3b — 2 KING commits (hard limit violation):
+Commits: [
+  {"commitId": "k-1", "title": "Production database migration", "chessPiece": "KING", "successCriteria": "Zero downtime", "estimatePoints": 5},
+  {"commitId": "k-2", "title": "Security audit remediation", "chessPiece": "KING", "successCriteria": "All CVEs patched", "estimatePoints": 5}
+]
+Output:
+{"hardValidation": [{"code": "KING_LIMIT_EXCEEDED", "message": "Plan contains 2 KING commits but the maximum is 1. Demote the less critical KING to QUEEN.", "commitId": null}], "softGuidance": []}
+
+## Example 4 — Fragmented plan with too many small commits:
+Commits: 10 PAWN commits, each 1 point (10 total points, 10 commits, 100% PAWN)
+Output:
+{"hardValidation": [], "softGuidance": [{"code": "TOO_MANY_COMMITS", "message": "Plan has 10 commits — consider grouping related small tasks into fewer commits for focus.", "commitId": null}, {"code": "EXCESSIVE_PAWNS", "message": "Over 40% of points are allocated to PAWN tasks. Ensure high-priority strategic work is represented.", "commitId": null}]}
 
 Respond with ONLY a JSON object (no markdown fences, no explanation):
 {
