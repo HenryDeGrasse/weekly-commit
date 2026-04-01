@@ -50,6 +50,45 @@ The placeholder metrics table below is populated by running `./gradlew evalTest`
 
 ---
 
+## LLM Prompt Eval Results
+
+Last run: 2026-03-31 (model: `openai/gpt-4.1-nano` via OpenRouter).
+Machine-readable output: `backend/build/eval-results/eval-2026-04-01T02-46-26.710965Z.json`
+
+**Overall: 47/60 passed (78.3%) — 100% schema validity across all 60 cases.**
+
+| Capability | Cases | Passed | Rate | Notes |
+|---|---|---|---|---|
+| Commit Draft Assist | 12 | 7 | 58% | LLM over-suggests on already-good commits (draft-004, -008, -009) |
+| Commit Lint | 6 | 4 | 67% | Misses QUEEN_LIMIT_EXCEEDED hard rule, soft guidance codes |
+| RCDO Suggest | 10 | 10 | 100% | ✅ All node matches and confidence ranges correct |
+| Risk Signal | 8 | 7 | 88% | Misses single-commit concentration risk (risk-008) |
+| Reconcile Assist | 8 | 7 | 88% | Generates content for empty-plan edge case (recon-007) |
+| RAG Query | 8 | 4 | 50% | Low-confidence + insufficient-data detection needs tuning |
+| What-If Narration | 8 | 8 | 100% | ✅ All narrative, recommendation, and length checks pass |
+
+**Failure analysis:**
+
+- **Draft Assist (5 failures):** The LLM suggests improvements when the golden
+  cases expect `null` (no changes needed). Cases draft-008 and draft-009 expect
+  all-null returns for already-good commits; the model still offers minor tweaks.
+  This is a prompt calibration issue — the "leave good commits alone" instruction
+  needs reinforcement.
+
+- **RAG Query (4 failures):** Two cases (rag-004, rag-008) test whether the model
+  reports "insufficient evidence" when chunks are empty/irrelevant. The model
+  produces plausible-sounding answers instead of indicating uncertainty. Two others
+  (rag-003, rag-007) miss specific keyword expectations in the answer.
+
+- **Commit Lint (2 failures):** The model puts QUEEN_LIMIT_EXCEEDED into soft
+  guidance instead of hard validation. This is a prompt issue — the lint prompt
+  needs clearer separation of hard vs soft rules.
+
+All failures are schema-valid JSON with correct structure — the issues are
+behavioral (LLM judgment vs golden case expectations), not structural.
+
+---
+
 ## Historical Replay Benchmark
 
 The benchmark uses 12 deterministic synthetic plans covering all 5 risk signal
@@ -67,7 +106,7 @@ types (2 per signal: one TP, one FP, plus cross-cutting FN/TN cases).
 
 ### Benchmark Results
 
-Last run: 2026-03-30. Machine-readable output: `build/eval-results/replay-benchmark.json`
+Last run: 2026-03-31. Machine-readable output: `build/eval-results/replay-benchmark.json`
 
 | Signal | Predicted | Actual | TP | FP | FN | TN | Precision | Recall | F1 |
 |---|---|---|---|---|---|---|---|---|---|

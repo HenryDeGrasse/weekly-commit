@@ -122,6 +122,7 @@ Query Path:
 - **Prometheus metrics** — rolling 7-day faithfulness, acceptance rates, provider availability
 - **Alerting** — thresholds from Manus RAG Evaluation Research (faithfulness < 0.88 → warning, < 0.85 → critical)
 - **Prompt version tracking** — every suggestion stores the prompt template version for A/B analysis
+- **Deterministic experiment assignment** — hash-based per-user variant bucketing for consistent A/B experiences
 
 ---
 

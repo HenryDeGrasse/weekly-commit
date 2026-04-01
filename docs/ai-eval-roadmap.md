@@ -1,8 +1,8 @@
 # AI Evaluation & Quality Roadmap
 
 **Created:** 2026-03-26
-**Updated:** 2026-03-28
-**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 14 prompt templates total (10 core AI suggestion types + faithfulness eval, HyDE, SQL routing, what-if), 10 AI suggestion types, and 20 frontend AI components (15 mounted + 2 sub-components + 3 reusable-only). Remaining evaluation gaps identified via code audit.
+**Updated:** 2026-03-31
+**Context:** Weekly Commit Module — RAG pipeline uses Pinecone (vector store) + OpenRouter/Claude (LLM) + OpenAI text-embedding-3-small (embeddings). 14 prompt templates total (10 core AI suggestion types + faithfulness eval, HyDE, SQL routing, what-if), 10 AI suggestion types, and 20 frontend AI components (16 mounted + 2 sub-components + 2 reusable-only). Remaining evaluation gaps identified via code audit.
 
 > **Status key:** ✅ Implemented · 🔨 In progress · 📋 Planned
 
@@ -246,7 +246,7 @@ This requires passing RCDO node and team data into the chunk builder, which mean
 
 ### 3b. Reconcile Assist in ReconcilePage ✅
 
-**Status:** The live Reconcile page now uses `useAutoReconcileAssist()` in `frontend/src/routes/Reconcile.tsx` to prefill likely outcomes, a draft summary, and carry-forward recommendations automatically when a plan enters `RECONCILING`. The reusable `frontend/src/components/ai/ReconcileAssistPanel.tsx` component also exists, but it is not currently mounted in the route.
+**Status:** The live Reconcile page now uses `useAutoReconcileAssist()` in `frontend/src/routes/Reconcile.tsx` to prefill likely outcomes, a draft summary, and carry-forward recommendations automatically when a plan enters `RECONCILING`. In on-demand AI mode (`aiMode === "on-demand"`), a "Request AI Suggestions" button triggers the same prefill flow explicitly — ensuring on-demand users still have access to reconciliation AI. The reusable `frontend/src/components/ai/ReconcileAssistPanel.tsx` component also exists as an alternative manual-trigger surface, but it is not currently mounted in the route.
 
 ### 3c. Suggested Questions in SemanticSearchInput ✅
 
@@ -350,15 +350,15 @@ Mounted frontend AI surfaces:
   WhatIfPanel             — interactive what-if planner for hypothetical commit mutations (calls what-if.txt)
   CalibrationCard         — displays user rolling calibration profile and confidence tier
   PlanRecommendationCard  — personalized plan adjustment recommendations
+  RiskSignalsPanel        — detailed risk signal display in Team Week By Person expanded rows (reads RISK_SIGNAL)
 
 Sub-components (used inside mounted components):
   ConfidenceBadge         — renders calibration/evidence confidence tier badges
   AnswerRenderer          — renders LLM answer text with lightweight markdown support
+  EvidenceDrawer          — explainability drawer; rendered inside InsightPanel and RiskSignalsPanel
 
 Reusable components not currently mounted:
-  RiskSignalsPanel        — detailed risk signal display (reads RISK_SIGNAL)
   ReconcileAssistPanel    — manual AI reconciliation assistant (calls RECONCILE_ASSIST)
-  EvidenceDrawer          — explainability drawer for structured evidence bundles
 ```
 
 ## Reference: Key Manus Report Thresholds

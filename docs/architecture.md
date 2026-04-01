@@ -270,6 +270,8 @@ Question
 
 ### Prompt Version Tracking and A/B Analysis
 
+Experiment variant assignment is **deterministic per user** — `ExperimentService` hashes the experiment name and user ID to produce a stable bucket, ensuring the same user always receives the same variant for a given experiment. This avoids inconsistent UX from per-request randomisation and produces valid between-subjects A/B data. Environment-variable overrides (`AB_FORCE_<NAME>=control|treatment`) are available for testing and canary deploys.
+
 Every `ai_suggestion` row stores `prompt_version` (e.g., `commit-draft-assist-v1`). Combined with `ai_feedback` (accept/dismiss), this enables:
 
 ```sql
@@ -333,11 +335,11 @@ The `HostProvider` injects authenticated user identity, team context, feature fl
 | `PlanRecommendationCard` | Mounted on My Week | Personalized plan adjustment recommendations |
 | `ConfidenceBadge` | Sub-component (CalibrationCard, PlanRecommendationCard, QueryAnswerCard) | Renders calibration/evidence confidence tier badges |
 | `AnswerRenderer` | Sub-component (QueryAnswerCard) | Renders LLM answer text with lightweight markdown support |
-| `RiskSignalsPanel` | Reusable component, not currently mounted | Detailed risk signal display |
+| `RiskSignalsPanel` | Mounted on Team Week (By Person expanded rows) | Detailed risk signal display with evidence toggle |
 | `ReconcileAssistPanel` | Reusable component, not currently mounted | Manual AI-assisted reconciliation surface |
-| `EvidenceDrawer` | Reusable component, not currently mounted | Shows SQL facts, lineage, semantic matches, and risk features behind AI output |
+| `EvidenceDrawer` | Sub-component (InsightPanel, RiskSignalsPanel) | Shows SQL facts, lineage, semantic matches, and risk features behind AI output |
 
-The current Reconcile route uses `useAutoReconcileAssist()` to prefill outcomes and carry-forward recommendations automatically when a plan enters `RECONCILING`, rather than rendering `ReconcileAssistPanel` directly.
+The current Reconcile route uses `useAutoReconcileAssist()` to prefill outcomes and carry-forward recommendations automatically when a plan enters `RECONCILING`, rather than rendering `ReconcileAssistPanel` directly. In on-demand AI mode, a "Request AI Suggestions" button triggers the same prefill flow explicitly.
 
 ---
 
