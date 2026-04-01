@@ -15,7 +15,8 @@ import org.springframework.stereotype.Service;
  * <li>Environment-variable override:
  * {@code AB_FORCE_<EXPERIMENT_NAME_UPPER>=control|treatment} (useful for
  * testing and canary deploys).</li>
- * <li>Random draw: assigns control if {@code Math.random() < controlWeight},
+ * <li>Deterministic hash: assigns control if the hash of
+ * {@code experimentName + ":" + userId} falls below {@code controlWeight},
  * otherwise treatment.</li>
  * </ol>
  *
@@ -81,9 +82,14 @@ public class ExperimentService {
 			return new ExperimentAssignment(experimentName, forced, value);
 		}
 
-		String variant = (Math.random() < def.getControlWeight()) ? VARIANT_CONTROL : VARIANT_TREATMENT;
+		// Deterministic hash-based assignment: the same user always gets the
+		// same variant for a given experiment. UUID user-ID strings have high
+		// entropy, so Java's polynomial hashCode is well-distributed here.
+		String hashKey = experimentName + ":" + (userId != null ? userId : "");
+		double bucket = (hashKey.hashCode() & 0x7FFFFFFF) / (double) Integer.MAX_VALUE;
+		String variant = (bucket < def.getControlWeight()) ? VARIANT_CONTROL : VARIANT_TREATMENT;
 		String value = VARIANT_TREATMENT.equals(variant) ? def.getTreatmentValue() : def.getControlValue();
-		log.debug("Experiment '{}' assigned variant='{}' for userId='{}'", experimentName, variant, userId);
+		log.debug("Experiment '{}' assigned variant='{}' for userId='{}' (bucket={})", experimentName, variant, userId, bucket);
 		return new ExperimentAssignment(experimentName, variant, value);
 	}
 

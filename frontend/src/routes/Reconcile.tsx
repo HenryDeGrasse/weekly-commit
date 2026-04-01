@@ -316,6 +316,7 @@ export default function ReconcilePage() {
   const [carryForwardLoading, setCarryForwardLoading] = useState(false);
   const [openingReconcile, setOpeningReconcile] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
+  const [aiManuallyRequested, setAiManuallyRequested] = useState(false);
 
   // ── AI pre-fill state ─────────────────────────────────────────────────────
   /** Tracks which commitIds have AI-suggested outcomes not yet user-confirmed. */
@@ -333,7 +334,7 @@ export default function ReconcilePage() {
 
   const isReconciling = data?.plan.state === "RECONCILING";
   const { data: aiAssistData } = useAutoReconcileAssist(
-    aiAssistanceEnabled && aiMode !== "on-demand" ? planId : null,
+    aiAssistanceEnabled && (aiMode !== "on-demand" || aiManuallyRequested) ? planId : null,
     userId,
     isReconciling ?? false,
   );
@@ -586,6 +587,29 @@ export default function ReconcilePage() {
           <div><span className="font-bold">{data.currentTotalPoints} pts</span> <span className="text-muted">current</span></div>
         </CardContent>
       </Card>
+
+      {/* On-demand AI trigger — shown when aiMode is "on-demand" and AI hasn't been requested yet */}
+      {aiAssistanceEnabled && aiMode === "on-demand" && !aiManuallyRequested && !isReadOnly && isReconciling && (
+        <div
+          data-testid="ai-on-demand-trigger"
+          className="flex items-center gap-2.5 rounded-default border border-dashed border-primary/30 bg-primary/5 px-4 py-3"
+        >
+          <Bot className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
+          <p className="m-0 flex-1 text-sm text-muted">
+            AI can suggest likely outcomes and carry-forward recommendations.
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAiManuallyRequested(true)}
+            className="text-primary hover:text-primary/80 border border-primary/30 shrink-0"
+            data-testid="ai-on-demand-request-btn"
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+            Request AI Suggestions
+          </Button>
+        </div>
+      )}
 
       {/* AI pre-fill banner — shown when AI has pre-populated outcomes */}
       {aiPrefillApplied && !isReadOnly && Object.keys(aiSuggestedOutcomes).length > 0 && (

@@ -111,6 +111,50 @@ class ExperimentServiceTest {
 		}
 	}
 
+
+	// ── assign: deterministic (same user → same variant) ─────────────────
+
+	@Test
+	void assign_sameUserAlwaysGetsSameVariant() {
+		ExperimentConfig cfg = configWith(
+				Map.of("embedding-model", def(true, 0.5, "openai", "voyage", List.of())));
+		ExperimentService svc = service(cfg);
+		// Call 200 times for the same user — must always return the same variant
+		String firstVariant = svc.assign("embedding-model", "550e8400-e29b-41d4-a716-446655440000").variant();
+		for (int i = 0; i < 200; i++) {
+			ExperimentAssignment a = svc.assign("embedding-model", "550e8400-e29b-41d4-a716-446655440000");
+			assertThat(a.variant()).as("call %d must be deterministic", i).isEqualTo(firstVariant);
+		}
+	}
+
+	@Test
+	void assign_differentUsersCanGetDifferentVariants() {
+		ExperimentConfig cfg = configWith(
+				Map.of("embedding-model", def(true, 0.5, "openai", "voyage", List.of())));
+		ExperimentService svc = service(cfg);
+		// With a 50/50 split and 200 distinct users, both variants should appear
+		long controlCount = 0;
+		long treatmentCount = 0;
+		for (int i = 0; i < 200; i++) {
+			ExperimentAssignment a = svc.assign("embedding-model", "user-uuid-" + i);
+			if (a.isControl()) controlCount++;
+			else treatmentCount++;
+		}
+		assertThat(controlCount).as("control count").isGreaterThan(0);
+		assertThat(treatmentCount).as("treatment count").isGreaterThan(0);
+	}
+
+	@Test
+	void assign_nullUserIdIsDeterministic() {
+		ExperimentConfig cfg = configWith(
+				Map.of("hyde", def(true, 0.5, "disabled", "enabled", List.of())));
+		ExperimentService svc = service(cfg);
+		String first = svc.assign("hyde", null).variant();
+		for (int i = 0; i < 50; i++) {
+			assertThat(svc.assign("hyde", null).variant()).isEqualTo(first);
+		}
+	}
+
 	// ── resolveValue ─────────────────────────────────────────────────────
 
 	@Test

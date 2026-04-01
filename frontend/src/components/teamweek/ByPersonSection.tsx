@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight, LockOpen, Clock, RefreshCw } from "lucide-re
 import { Badge } from "../ui/Badge.js";
 import { cn } from "../../lib/utils.js";
 import type { MemberWeekView, MemberComplianceSummary, ChessPiece, PlanState } from "../../api/teamTypes.js";
+import { RiskSignalsPanel } from "../ai/RiskSignalsPanel.js";
 
 const CHESS_PIECE_ICONS: Record<ChessPiece, string> = { KING: "♔", QUEEN: "♕", ROOK: "♖", BISHOP: "♗", KNIGHT: "♘", PAWN: "♙" };
 const STATE_VARIANT: Record<PlanState, "draft" | "locked" | "reconciling" | "reconciled"> = {
@@ -164,7 +165,14 @@ export function ByPersonSection({ memberViews, complianceSummary, onViewMemberPl
                   </tr>
                   {isExpanded && (
                     <tr data-testid={`member-row-expanded-${member.userId}`} className="border-b border-border">
-                      <td colSpan={5} className="px-3 pb-3 pl-8"><ExpandedCommitList commits={member.commits} /></td>
+                      <td colSpan={5} className="px-3 pb-3 pl-8">
+                        <ExpandedCommitList commits={member.commits} />
+                        {member.planId && (member.planState === "LOCKED" || member.planState === "RECONCILING") && (
+                          <div className="mt-3">
+                            <RiskSignalsPanel planId={member.planId} />
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   )}
                 </Fragment>
