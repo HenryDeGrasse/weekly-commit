@@ -33,6 +33,8 @@ export interface ApiClientConfig {
   readonly baseUrl: string;
   /** Returns the current auth token (may change between calls). */
   getAuthToken(): string;
+  /** Returns the current user ID for the X-Actor-User-Id header. */
+  getUserId?(): string;
 }
 
 /**
