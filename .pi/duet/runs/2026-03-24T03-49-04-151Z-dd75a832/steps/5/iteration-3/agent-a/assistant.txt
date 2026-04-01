@@ -1,8 +1,0 @@
-All four checks pass cleanly. No defects to fix.
-
-```observations
-- [medium] backend/src/main/java/com/weeklycommit/lock/service/LockService.java: Auto-lock idempotency relies only on a state check (DRAFT guard). There is no database-level optimistic lock (`@Version`) to protect against concurrent auto-lock runners. This is acceptable for v1 given single-instance deployment, but a future step should add `@Version` to `WeeklyPlan` and a Flyway migration for the `version` column if concurrent scheduling ever becomes a concern.
-- [low] backend/src/test/java/com/weeklycommit/lock/controller/LockControllerTest.java: Uses deprecated `@MockBean`; emits compile warnings but does not break anything.
-```
-
-Verdict: approve

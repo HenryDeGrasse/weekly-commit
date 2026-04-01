@@ -1,9 +1,0 @@
-All four checks pass cleanly. The implementation is correct and the previous agent's fix is sound:
-
-- `CarryForwardService.carryForward()` now accepts `planId` and calls `validateCommitBelongsToPlan(planId, source)`, which throws `PlanValidationException` if the commit's `planId` doesn't match the route `planId`.
-- `CarryForwardController` binds `{planId}` from the path and passes it through to the service.
-- `CarryForwardServiceTest` covers the mismatch case (`carryForward_commitFromDifferentPlan_throwsValidation`).
-
-No further defects found.
-
-Verdict: approve

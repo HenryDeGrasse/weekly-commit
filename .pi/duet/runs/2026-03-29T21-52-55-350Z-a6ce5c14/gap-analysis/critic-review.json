@@ -1,6 +1,0 @@
-{
-  "verdict": "changes_requested",
-  "blockingIssues": [
-    "The embedding-model A/B steps are incomplete/incompatible with the current RAG storage architecture: `PineconeClient` is fixed to a 1536-d index and `SemanticIndexService` only writes default-model embeddings, so routing live queries to `text-embedding-3-large` would fail or produce invalid retrievals unless the plan adds a matching treatment index/reindex/dual-write strategy (or removes live embedding-model routing)."
-  ]
-}

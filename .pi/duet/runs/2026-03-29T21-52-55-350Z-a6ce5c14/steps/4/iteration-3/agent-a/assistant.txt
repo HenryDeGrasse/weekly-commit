@@ -1,3 +1,0 @@
-The fix is in place — `isEnabled("llm-model")` guards all experiment resolution, preserving default-off behavior. Both static and unit checks pass cleanly.
-
-Verdict: approve

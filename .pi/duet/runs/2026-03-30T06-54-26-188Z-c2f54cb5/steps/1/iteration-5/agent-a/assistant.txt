@@ -1,3 +1,0 @@
-Both checks pass cleanly. No remaining neutral-class violations in the frontend (only the intentional `ScopeChangeTimeline` / `CapacityMeter` fills), static check is green, and all unit tests now pass.
-
-Verdict: approve

@@ -1,5 +1,0 @@
-The fix from the previous agent is confirmed: `planId` in `buildCommitChunk` now comes from `plan.getId()` (line `meta.put("planId", str(plan.getId()))`) rather than `commit.getPlanId()`. The build passes cleanly with all tests passing.
-
-No further changes needed.
-
-Verdict: approve

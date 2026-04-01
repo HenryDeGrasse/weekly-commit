@@ -1,3 +1,0 @@
-All checks pass: `static` ✅, `unit` ✅, and `abEvalTest` runs and skips gracefully without an API key ✅. The previous agent's fixes are complete and correct.
-
-Verdict: approve

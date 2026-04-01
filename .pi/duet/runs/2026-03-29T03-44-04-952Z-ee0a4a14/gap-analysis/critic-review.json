@@ -1,8 +1,0 @@
-{
-  "verdict": "changes_requested",
-  "blockingIssues": [
-    "**Decision 1 is materially mis-scoped and partly contradicts the current theming architecture.** This is not a “swap 6 CSS vars” change. The current system is wired through `frontend/src/index.css`, `frontend/src/components/ui/Badge.tsx`, `Button.tsx`, `Toast.tsx`, many semantic usages, and also host-token plumbing in `frontend/src/components/AppShell.tsx` / `frontend/src/host/MockHostProvider.tsx`. The plan needs to acknowledge the real surface area and update the priority/effort claim accordingly.",
-    "**Decision 1’s proposed token values are not ready to implement because some miss WCAG AA for normal text.** The plan cites accessibility as a core reason, but at least some listed pairs fall short on actual contrast checks (for example warning light `#8A7A5A` on `#F5F2EA` is ~3.75:1; success light `#5F7A66` on `#EEF3EF` is ~4.19:1; danger dark `#A37878` on `#221A1A` is ~4.48:1). The palette needs corrected values or an explicit “final colors TBD after contrast validation.”",
-    "**Decision 4 understates the implementation path and currently points at the wrong lever.** In this app, the base font is applied via HostBridge/AppShell design tokens, not just CSS defaults (`AppShell.tsx` sets `--font-family-base`, `MockHostProvider.tsx` provides the default, and `packages/shared/src/host.ts` defines the contract). So “swap font vars” is insufficient. The plan must include the host-token/default-token path in addition to importing the font and auditing which components need explicit monospace preservation."
-  ]
-}

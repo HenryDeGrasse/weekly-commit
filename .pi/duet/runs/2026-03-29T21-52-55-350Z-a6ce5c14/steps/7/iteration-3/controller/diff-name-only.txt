@@ -1,8 +1,0 @@
-.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/cost.json
-.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/observations.jsonl
-.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/sessions/continuous/relay-a/2026-03-29T22-15-56-016Z_4d8a934a-459e-41a2-bc00-87beceb1d233.jsonl
-.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/sessions/continuous/relay-b/2026-03-29T22-18-26-552Z_5dd146d3-1137-4d36-824a-14b1aae37343.jsonl
-.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/state.json
-backend/build.gradle.kts
-.pi/duet/runs/2026-03-29T21-52-55-350Z-a6ce5c14/steps/7
-backend/src/test/java/com/weeklycommit/ai/eval/AbComparisonRunner.java

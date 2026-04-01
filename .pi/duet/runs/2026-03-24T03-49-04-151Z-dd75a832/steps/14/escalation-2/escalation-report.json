@@ -1,5 +1,0 @@
-{
-  "stepId": "step-14",
-  "reason": "Current step is backend contract alignment, but the repository state for this attempt contains frontend-only work while the required backend APIs/DTOs/migration are still missing.",
-  "category": "other"
-}

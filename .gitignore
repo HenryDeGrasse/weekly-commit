@@ -56,3 +56,6 @@ coverage/
 
 # Performance benchmark results (machine-specific)
 scripts/perf-results-*.json
+
+# Pi agent tooling
+.pi/

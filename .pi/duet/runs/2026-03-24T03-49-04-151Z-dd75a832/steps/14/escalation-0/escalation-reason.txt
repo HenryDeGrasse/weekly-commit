@@ -1,1 +1,0 @@
-Step 14 frontend was built against APIs/data shapes that the current backend does not provide, so the feature set cannot work in runtime without broader contract-alignment work.

@@ -1,7 +1,0 @@
-All four checks pass cleanly: `lint` ✓, `typecheck` ✓, `unit` ✓, `build` ✓. The previous agent's fix (adding `test` script with `unit` as alias) is already in place and working. There is nothing to fix.
-
-```observations
-- [low] backend/build.gradle.kts: Spotless uses Eclipse JDT formatter instead of google-java-format. This is a known environmental constraint (google-java-format's internal JDK API was removed in JDK 25). Checks pass. If a future step requires google-java-format specifically, the JDK would need to be downgraded to ≤24.
-```
-
-Verdict: approve

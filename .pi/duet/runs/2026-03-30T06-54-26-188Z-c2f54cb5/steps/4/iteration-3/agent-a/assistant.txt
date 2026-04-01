@@ -1,3 +1,0 @@
-All three requirements are correctly implemented: default `active-only`, auto-activate on create, DRAFT visual indicator. Both checks pass cleanly.
-
-Verdict: approve
