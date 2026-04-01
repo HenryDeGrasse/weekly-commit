@@ -203,8 +203,8 @@ class ReconcileControllerTest {
 		SetOutcomeRequest req = new SetOutcomeRequest(CommitOutcome.NOT_ACHIEVED, "Blocked by external dependency");
 
 		CommitResponse mockResponse = new CommitResponse(commitId, planId, UUID.randomUUID(), "Title", null,
-				ChessPiece.ROOK, 1, null, null, null, 3, null, CommitOutcome.NOT_ACHIEVED, "Blocked by external dependency",
-				0, Instant.now(), Instant.now());
+				ChessPiece.ROOK, 1, null, null, null, 3, null, CommitOutcome.NOT_ACHIEVED,
+				"Blocked by external dependency", 0, Instant.now(), Instant.now());
 		when(reconciliationService.setCommitOutcome(eq(planId), eq(commitId), eq(CommitOutcome.NOT_ACHIEVED),
 				eq("Blocked by external dependency"))).thenReturn(mockResponse);
 

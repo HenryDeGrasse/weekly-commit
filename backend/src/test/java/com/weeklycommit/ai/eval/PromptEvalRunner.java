@@ -691,7 +691,8 @@ class PromptEvalRunner {
 					mentioned = lowerAnswer.contains(kw);
 					if (!mentioned) {
 						String numericAlt = kw.equals("3") ? "three" : kw.equals("three") ? "3" : null;
-						if (numericAlt != null) mentioned = lowerAnswer.contains(numericAlt);
+						if (numericAlt != null)
+							mentioned = lowerAnswer.contains(numericAlt);
 					}
 				}
 				result.addCheck("mentions_" + kw.replace(" ", "_"), mentioned);

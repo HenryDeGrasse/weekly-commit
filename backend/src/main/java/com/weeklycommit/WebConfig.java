@@ -28,20 +28,12 @@ public class WebConfig implements WebMvcConfigurer {
 
 	@Override
 	public void addCorsMappings(CorsRegistry registry) {
-		registry.addMapping("/api/**")
-				.allowedOrigins(allowedOrigins)
-				.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-				.allowedHeaders("*")
-				.exposedHeaders("X-Request-Id")
-				.allowCredentials(true)
-				.maxAge(3600);
+		registry.addMapping("/api/**").allowedOrigins(allowedOrigins)
+				.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS").allowedHeaders("*")
+				.exposedHeaders("X-Request-Id").allowCredentials(true).maxAge(3600);
 
 		// Health/actuator endpoints — allow from anywhere (no credentials)
-		registry.addMapping("/health")
-				.allowedOrigins("*")
-				.allowedMethods("GET");
-		registry.addMapping("/actuator/**")
-				.allowedOrigins("*")
-				.allowedMethods("GET");
+		registry.addMapping("/health").allowedOrigins("*").allowedMethods("GET");
+		registry.addMapping("/actuator/**").allowedOrigins("*").allowedMethods("GET");
 	}
 }

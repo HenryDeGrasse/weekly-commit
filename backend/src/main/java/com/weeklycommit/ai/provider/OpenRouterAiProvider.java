@@ -63,7 +63,8 @@ public class OpenRouterAiProvider implements AiProvider {
 	private final Object rateLock = new Object();
 	private long windowStart = System.currentTimeMillis();
 	private int windowCount = 0;
-	private static final int MAX_REQUESTS_PER_MINUTE = 200; // OpenRouter handles its own rate limiting; this is just a local safety ceiling
+	private static final int MAX_REQUESTS_PER_MINUTE = 200; // OpenRouter handles its own rate limiting; this is just a
+															// local safety ceiling
 
 	/** Running totals for observability. */
 	private final AtomicLong totalTokensUsed = new AtomicLong(0);
@@ -470,17 +471,19 @@ public class OpenRouterAiProvider implements AiProvider {
 	/**
 	 * Strips leading/trailing markdown code fences from model output.
 	 *
-	 * <p>Handles variants: {@code ```json ... ```}, {@code ``` ... ```}, and
-	 * plain leading/trailing backtick runs. Returns the trimmed content unchanged
-	 * if no fence is detected.
+	 * <p>
+	 * Handles variants: {@code ```json ... ```}, {@code ``` ... ```}, and plain
+	 * leading/trailing backtick runs. Returns the trimmed content unchanged if no
+	 * fence is detected.
 	 */
 	static String stripMarkdownFences(String raw) {
-		if (raw == null) return raw;
+		if (raw == null)
+			return raw;
 		String s = raw.strip();
 		// Match ```json or ``` at start
 		if (s.startsWith("```")) {
 			int firstNewline = s.indexOf('\n');
-			int lastFence    = s.lastIndexOf("```");
+			int lastFence = s.lastIndexOf("```");
 			if (firstNewline != -1 && lastFence > firstNewline) {
 				return s.substring(firstNewline + 1, lastFence).strip();
 			}

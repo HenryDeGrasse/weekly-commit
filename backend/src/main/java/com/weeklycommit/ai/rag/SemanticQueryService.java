@@ -214,7 +214,8 @@ public class SemanticQueryService {
 			// chunks but scores were weak), generate a hypothetical answer document and
 			// retry retrieval with it. Intentionally excludes INSUFFICIENT (zero matches)
 			// because an empty index will return nothing regardless of query phrasing —
-			// triggering HyDE on every cold-index query would double LLM call cost for no gain.
+			// triggering HyDE on every cold-index query would double LLM call cost for no
+			// gain.
 			if (confidenceTier == ConfidenceTier.LOW) {
 				log.debug("SemanticQueryService: initial confidence={} — attempting HyDE fallback", confidenceTier);
 				try {
@@ -223,14 +224,14 @@ public class SemanticQueryService {
 						List<PineconeClient.PineconeMatch> hydeMatches = executeRetrieval(
 								hydeResult.hypotheticalAnswer(), namespace, filter, subQueries, useVoyageIndex);
 						if (hydeMatches != null && !hydeMatches.isEmpty()) {
-							List<RerankService.RankedChunk> hydeReranked = rerankService.rerank(rewritten,
-									hydeMatches, rerankService.getTopN());
+							List<RerankService.RankedChunk> hydeReranked = rerankService.rerank(rewritten, hydeMatches,
+									rerankService.getTopN());
 							ConfidenceTier hydeTier = confidenceTierCalculator
 									.calculate(toConfidenceMatches(hydeReranked));
 							// Promote to HyDE result only if it genuinely improved confidence
 							if (hydeTier.ordinal() < confidenceTier.ordinal()) {
-								log.debug("SemanticQueryService: HyDE improved confidence {} → {}",
-										confidenceTier, hydeTier);
+								log.debug("SemanticQueryService: HyDE improved confidence {} → {}", confidenceTier,
+										hydeTier);
 								reranked = hydeReranked;
 								confidenceTier = hydeTier;
 							} else {

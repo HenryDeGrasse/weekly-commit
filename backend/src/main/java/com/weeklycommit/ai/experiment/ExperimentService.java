@@ -89,7 +89,8 @@ public class ExperimentService {
 		double bucket = (hashKey.hashCode() & 0x7FFFFFFF) / (double) Integer.MAX_VALUE;
 		String variant = (bucket < def.getControlWeight()) ? VARIANT_CONTROL : VARIANT_TREATMENT;
 		String value = VARIANT_TREATMENT.equals(variant) ? def.getTreatmentValue() : def.getControlValue();
-		log.debug("Experiment '{}' assigned variant='{}' for userId='{}' (bucket={})", experimentName, variant, userId, bucket);
+		log.debug("Experiment '{}' assigned variant='{}' for userId='{}' (bucket={})", experimentName, variant, userId,
+				bucket);
 		return new ExperimentAssignment(experimentName, variant, value);
 	}
 

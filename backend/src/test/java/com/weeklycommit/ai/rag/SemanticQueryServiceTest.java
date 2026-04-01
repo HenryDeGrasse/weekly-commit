@@ -503,8 +503,8 @@ class SemanticQueryServiceTest {
 		// First-pass returns LOW confidence (matches exist but weak) — triggers HyDE
 		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
 		when(confidenceTierCalculator.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
-				.thenReturn(ConfidenceTier.LOW)             // first-pass: poor retrieval
-				.thenReturn(ConfidenceTier.MEDIUM);         // HyDE-pass: improved
+				.thenReturn(ConfidenceTier.LOW) // first-pass: poor retrieval
+				.thenReturn(ConfidenceTier.MEDIUM); // HyDE-pass: improved
 		when(hydeService.generateHypothetical(eq(QUESTION), any()))
 				.thenReturn(new HydeService.HydeResult(true, hypothetical));
 		when(embeddingService.embed(hypothetical)).thenReturn(new float[]{0.5f, 0.6f});
@@ -555,8 +555,8 @@ class SemanticQueryServiceTest {
 		when(embeddingService.embed(QUESTION)).thenReturn(new float[]{0.1f});
 		when(embeddingService.embed(hypothetical)).thenReturn(new float[]{0.2f});
 		when(confidenceTierCalculator.calculate(org.mockito.ArgumentMatchers.<List<PineconeClient.PineconeMatch>>any()))
-				.thenReturn(ConfidenceTier.LOW)   // first-pass: poor retrieval
-				.thenReturn(ConfidenceTier.LOW);  // HyDE-pass: no improvement
+				.thenReturn(ConfidenceTier.LOW) // first-pass: poor retrieval
+				.thenReturn(ConfidenceTier.LOW); // HyDE-pass: no improvement
 		when(hydeService.generateHypothetical(eq(QUESTION), any()))
 				.thenReturn(new HydeService.HydeResult(true, hypothetical));
 		mockPineconeMatches(List.of("commit:uuid-1"), List.of(0.35));
@@ -566,9 +566,10 @@ class SemanticQueryServiceTest {
 		SemanticQueryService.RagQueryResult result = service.query(QUESTION, TEAM_ID, USER_ID);
 
 		assertThat(result.available()).isTrue();
-		// HyDE was attempted but original results were kept because confidence did not improve
+		// HyDE was attempted but original results were kept because confidence did not
+		// improve
 		verify(hydeService).generateHypothetical(eq(QUESTION), any());
-		verify(embeddingService).embed(hypothetical);   // HyDE embed did fire
+		verify(embeddingService).embed(hypothetical); // HyDE embed did fire
 	}
 
 	@Test

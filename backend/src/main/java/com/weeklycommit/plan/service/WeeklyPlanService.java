@@ -206,7 +206,8 @@ public class WeeklyPlanService {
 		// Batch-resolve ticket keys for commits that have a linked work item.
 		List<UUID> workItemIds = commits.stream().map(WeeklyCommit::getWorkItemId).filter(id -> id != null).distinct()
 				.toList();
-		Map<UUID, String> keyMap = workItemIds.isEmpty() ? Map.of()
+		Map<UUID, String> keyMap = workItemIds.isEmpty()
+				? Map.of()
 				: workItemRepo.findAllById(workItemIds).stream()
 						.collect(Collectors.toMap(WorkItem::getId, WorkItem::getKey));
 

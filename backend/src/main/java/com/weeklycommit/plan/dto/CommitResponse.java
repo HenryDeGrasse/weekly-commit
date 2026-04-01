@@ -11,7 +11,10 @@ public record CommitResponse(UUID id, UUID planId, UUID ownerUserId, String titl
 		Integer estimatePoints, String successCriteria, CommitOutcome outcome, String outcomeNotes,
 		int carryForwardStreak, Instant createdAt, Instant updatedAt) {
 
-	/** Create a response without a resolved ticket key (legacy / single-commit endpoints). */
+	/**
+	 * Create a response without a resolved ticket key (legacy / single-commit
+	 * endpoints).
+	 */
 	public static CommitResponse from(WeeklyCommit c) {
 		return from(c, null);
 	}

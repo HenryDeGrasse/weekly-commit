@@ -36,8 +36,9 @@ vi.mock("../api/aiHooks.js", () => ({
     data: { available: true },
     loading: false,
     error: null,
+    refetch: vi.fn(),
   })),
-  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
 }));
 
 import * as aiHooks from "../api/aiHooks.js";
@@ -112,6 +113,7 @@ describe("RiskSignalsPanel", () => {
       data: undefined,
       loading: false,
       error: null,
+      refetch: vi.fn(),
     });
   });
 
@@ -335,6 +337,7 @@ describe("RiskSignalsPanel", () => {
       data: undefined,
       loading: true,
       error: null,
+      refetch: vi.fn(),
     });
 
     renderPanel();
@@ -355,6 +358,7 @@ describe("RiskSignalsPanel", () => {
       data: { available: true, evidence: sampleEvidence },
       loading: false,
       error: null,
+      refetch: vi.fn(),
     });
 
     renderPanel();
@@ -391,6 +395,7 @@ describe("RiskSignalsPanel", () => {
       data: { available: true, evidence: sampleEvidence },
       loading: false,
       error: null,
+      refetch: vi.fn(),
     });
 
     renderPanel();

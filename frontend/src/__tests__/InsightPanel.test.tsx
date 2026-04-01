@@ -33,8 +33,9 @@ vi.mock("../api/aiHooks.js", () => ({
     data: { available: false },
     loading: false,
     error: null,
+    refetch: vi.fn(),
   })),
-  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null })),
+  usePlanEvidence: vi.fn(() => ({ data: undefined, loading: false, error: null, refetch: vi.fn() })),
 }));
 
 import * as ragHooks from "../api/ragHooks.js";
@@ -448,6 +449,7 @@ describe("InsightPanel", () => {
       data: undefined,
       loading: true,
       error: null,
+      refetch: vi.fn(),
     });
 
     renderPersonal("plan-1");
@@ -490,6 +492,7 @@ describe("InsightPanel", () => {
       },
       loading: false,
       error: null,
+      refetch: vi.fn(),
     });
 
     renderPersonal("plan-1");
@@ -548,6 +551,7 @@ describe("InsightPanel", () => {
       },
       loading: false,
       error: null,
+      refetch: vi.fn(),
     });
 
     renderPersonal("plan-1");
