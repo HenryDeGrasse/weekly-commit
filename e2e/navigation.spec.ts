@@ -15,7 +15,7 @@ test.describe("Navigation & Layout", () => {
     const header = page.getByRole("banner");
     await expect(header).toBeVisible();
     // Week selector
-    await expect(page.getByLabelText("Select week")).toBeVisible();
+    await expect(page.getByLabel("Select week")).toBeVisible();
     // Notification bell
     await expect(
       page.getByRole("button", { name: "Notifications" }),

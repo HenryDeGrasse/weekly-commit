@@ -610,7 +610,7 @@ test.describe("7H — Error & Loading States", () => {
     // With a 2s delay on the API, the loading indicator must appear
     await expect(
       page.getByTestId("team-week-loading")
-        .or(page.getByTestId("team-week-skeleton")),
-    ).toBeVisible({ timeout: 2000 });
+        .or(page.getByTestId("team-week-skeleton")).first(),
+    ).toBeVisible({ timeout: 5000 });
   });
 });

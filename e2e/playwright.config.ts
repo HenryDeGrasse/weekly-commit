@@ -17,10 +17,15 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI ? "html" : "list",
 
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: {
+    timeout: process.env.CI ? 15_000 : 5_000,
+  },
   use: {
     baseURL: "http://localhost:5173",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    actionTimeout: process.env.CI ? 15_000 : 10_000,
   },
 
   projects: [

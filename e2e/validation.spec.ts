@@ -33,7 +33,7 @@ test.describe("Lock Validation Rules", () => {
     if (!stateText?.includes("DRAFT")) return;
 
     // Add a valid commit (with RCDO, estimate, etc.)
-    await myWeek.addCommit("Valid commit for lock", "PAWN", 2);
+    await myWeek.addCommit("Valid commit for lock", "PAWN", 2, { selectRcdo: true });
 
     // Click lock
     await page.getByTestId("lock-plan-btn").click();
@@ -43,7 +43,7 @@ test.describe("Lock Validation Rules", () => {
     // Wait for validation to finish — either continue button or error items appear
     const continueBtn = page.getByTestId("pre-lock-continue-btn");
     const hardError = page.getByTestId("hard-error-item");
-    await expect(continueBtn.or(hardError).or(page.getByTestId("pre-lock-validation-ok"))).toBeVisible({ timeout: 5000 });
+    await expect(continueBtn.or(hardError).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test("lock confirmation dialog shows commit summary", async ({ page }) => {

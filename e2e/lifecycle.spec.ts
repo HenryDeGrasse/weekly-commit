@@ -21,11 +21,11 @@ test.describe("Full Lifecycle: DRAFT → LOCKED → RECONCILING → RECONCILED",
     await myWeek.expectDraftState();
 
     // Add first commit (Pawn)
-    await myWeek.addCommit("E2E Lifecycle Pawn", "PAWN", 2);
+    await myWeek.addCommit("E2E Lifecycle Pawn", "PAWN", 2, { selectRcdo: true });
     await expect(page.getByText("E2E Lifecycle Pawn")).toBeVisible();
 
     // Add second commit (Rook)
-    await myWeek.addCommit("E2E Lifecycle Rook", "ROOK", 3);
+    await myWeek.addCommit("E2E Lifecycle Rook", "ROOK", 3, { selectRcdo: true });
     await expect(page.getByText("E2E Lifecycle Rook")).toBeVisible();
 
     // Capacity meter should reflect total points

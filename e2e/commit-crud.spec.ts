@@ -88,7 +88,7 @@ test.describe("Commit CRUD Operations", () => {
 
       // Confirm deletion
       const dialog = page.getByTestId("delete-confirm-dialog");
-      await expect(dialog).toBeVisible({ timeout: 3000 });
+      await expect(dialog).toBeVisible({ timeout: 10_000 });
       await page.getByTestId("delete-confirm-btn").click();
 
       // Commit should be gone

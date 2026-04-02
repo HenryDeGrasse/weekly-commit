@@ -432,7 +432,7 @@ test.describe("8C. AI Lint Panel", () => {
     // Either the lint panel shows unavailable, or it doesn't render at all
     const panel = page.getByTestId("inline-ai-lint-panel");
     const unavailable = page.getByTestId("ai-lint-unavailable");
-    await expect(panel.or(unavailable).or(page.getByTestId("commit-list"))).toBeVisible({ timeout: 8000 });
+    await expect(panel.or(unavailable).first()).toBeVisible({ timeout: 8000 });
 
     if (await panel.isVisible()) {
       await expect(unavailable).toBeVisible({ timeout: 5000 });

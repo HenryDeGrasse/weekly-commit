@@ -23,7 +23,7 @@ test.describe("Golden Path: Plan → Lock → Reconcile", () => {
     });
     await expect(nav).toBeVisible();
     const links = nav.getByRole("link");
-    await expect(links).toHaveCount(5);
+    await expect(links).toHaveCount(7);
   });
 
   test("week selector navigates between weeks", async ({ page }) => {

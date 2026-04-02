@@ -15,7 +15,7 @@ test.describe("Post-Lock Scope Changes", () => {
 
     // If plan is not LOCKED, we need to create commits and lock
     if (stateText?.includes("DRAFT")) {
-      await myWeek.addCommit("Scope change base", "PAWN", 2);
+      await myWeek.addCommit("Scope change base", "PAWN", 2, { selectRcdo: true });
       await myWeek.lockPlan();
     }
 
