@@ -21,7 +21,8 @@ test.describe("Navigation & Layout", () => {
       page.getByRole("button", { name: "Notifications" }),
     ).toBeVisible();
     // User display name
-    await expect(page.getByText("Dev User")).toBeVisible();
+    // "Dev User" appears in both header and dev user switcher banner
+    await expect(page.getByText("Dev User").first()).toBeVisible();
   });
 
   test("sidebar can be collapsed and expanded", async ({ page }) => {

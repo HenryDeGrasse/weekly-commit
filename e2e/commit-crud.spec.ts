@@ -79,10 +79,9 @@ test.describe("Commit CRUD Operations", () => {
     await expect(page.getByText("Delete me")).toBeVisible();
 
     // Find and click the delete button for this commit
-    const commitRow = page.getByText("Delete me").locator("..").locator("..");
-    const deleteBtn = commitRow
-      .getByRole("button", { name: /delete/i })
-      .or(commitRow.locator('[data-testid*="delete"]'));
+    const deleteBtn = page.locator('[data-testid^="commit-item-"]')
+      .filter({ hasText: "Delete me" })
+      .locator('[data-testid*="delete"]');
     if (await deleteBtn.first().isVisible()) {
       await deleteBtn.first().click();
 

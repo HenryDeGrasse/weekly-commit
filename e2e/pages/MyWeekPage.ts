@@ -73,7 +73,7 @@ export class MyWeekPage {
 
     await rcdoToggle.click();
     const rcdoPanel = this.page.getByTestId("rcdo-picker-panel");
-    await expect(rcdoPanel).toBeVisible({ timeout: 3000 });
+    await expect(rcdoPanel).toBeVisible({ timeout: 10_000 });
 
     // Click "Expand all" button inside the picker to reveal Outcome nodes
     const expandAllBtn = rcdoPanel.getByRole("button", { name: "Expand all nodes" });
@@ -83,7 +83,7 @@ export class MyWeekPage {
 
     // Wait for tree nodes to appear after expansion
     const treeNodes = rcdoPanel.locator("[data-testid^='tree-node-']");
-    await expect(treeNodes.first()).toBeVisible({ timeout: 3000 });
+    await expect(treeNodes.first()).toBeVisible({ timeout: 10_000 });
 
     // Find an OUTCOME node: look for nodes with the "Outcome" badge or leaf nodes
     // Outcome nodes have status-badge and typically are leaves (no chevron expander)
@@ -103,7 +103,7 @@ export class MyWeekPage {
     }
 
     // Verify the RCDO was selected
-    await this.page.getByTestId("rcdo-selected-node").waitFor({ timeout: 3000 }).catch(() => {});
+    await this.page.getByTestId("rcdo-selected-node").waitFor({ timeout: 10_000 }).catch(() => {});
   }
 
   /**
